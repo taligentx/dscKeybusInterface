@@ -1,12 +1,12 @@
 # DSC Keybus Interface
-This library interfaces Arduino and esp8266 microcontrollers to DSC PowerSeries security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
+This library interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
 
 For example, using this library with a $3USD NodeMCU/Wemos D1 Mini and [Homebridge](https://github.com/nfarina/homebridge) allows for notifications and control of the security system through Apple HomeKit and Siri:
 
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and supports the DSC PC1555MX (PowerSeries 632).  Captured Keybus data is needed for the PC1616/PC1832/PC1864 series.
+This is an early release and supports the DSC PC1555MX (PowerSeries 632).  Captured Keybus data is needed for the PC1616/PC1832/PC1864 series, feel free to add an issue with logs of data from these panels using the KeybusReader example.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
