@@ -1,0 +1,55 @@
+dscKeybusInterface		KEYWORD1
+
+begin	KEYWORD2
+write	KEYWORD2
+writeReady	KEYWORD2
+handlePanel	KEYWORD2
+handleKeypad	KEYWORD2
+
+printPanelBinary	KEYWORD2
+printPanelCommand	KEYWORD2
+printPanelMessage	KEYWORD2
+printKeypadBinary	KEYWORD2
+printKeypadMessage	KEYWORD2
+
+processRedundantData	KEYWORD2
+displayTrailingBits	KEYWORD2
+processKeypadData	KEYWORD2
+
+statusChanged	KEYWORD2
+dscTime	KEYWORD2
+timeAvailable	KEYWORD2
+exitDelay	KEYWORD2
+exitDelayChanged	KEYWORD2
+entryDelay	KEYWORD2
+entryDelayChanged	KEYWORD2
+partitionArmed	KEYWORD2
+partitionArmedChanged	KEYWORD2
+partitionArmedAway	KEYWORD2
+partitionArmedStay	KEYWORD2
+armedNoEntryDelay	KEYWORD2
+partitionAlarm	KEYWORD2
+partitionAlarmChanged	KEYWORD2
+keypadFireAlarm	KEYWORD2
+keypadAuxAlarm	KEYWORD2
+keypadPanicAlarm	KEYWORD2
+troubleStatus	KEYWORD2
+troubleStatusChanged	KEYWORD2
+previousTroubleStatus	KEYWORD2
+batteryTrouble	KEYWORD2
+batteryTroubleChanged	KEYWORD2
+powerTrouble	KEYWORD2
+powerTroubleChanged	KEYWORD2
+openZonesGroup1	KEYWORD2
+previousOpenZonesGroup1	KEYWORD2
+openZonesGroup1Changed	KEYWORD2
+openZones	KEYWORD2
+openZonesChanged	KEYWORD2
+alarmZones	KEYWORD2
+alarmZonesChanged	KEYWORD2
+alarmZonesGroup1Changed	KEYWORD2
+
+dscClockPin	LITERAL1
+dscReadPin	LITERAL1
+dscWritePin	LITERAL1
+dscZones	LITERAL1
