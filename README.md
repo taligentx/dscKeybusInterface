@@ -1,5 +1,5 @@
 # DSC Keybus Interface
-This library enables interfacing Arduino and esp8266 microcontrollers to DSC PowerSeries security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
+This library interfaces Arduino and esp8266 microcontrollers to DSC PowerSeries security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
 
 For example, using this library with a $3USD NodeMCU/Wemos D1 Mini and [Homebridge](https://github.com/nfarina/homebridge) allows for notifications and control of the security system through Apple HomeKit and Siri:
 
@@ -76,4 +76,3 @@ DSC Aux(+) ---+--- Arduino Vin pin
  ## Notes
  * There are many system states that have been decoded but do not have separate variables to keep track of their status - this is to keep memory usage low, but feel free to open an issue or pull request for additional system states that would be useful.
  * The zone count is currently hardcoded to limit memory usage - to monitor more than 8 zones, change `dscZones` in `dscKeybusInterface.h` to support 16 or 32 zones.
- 
