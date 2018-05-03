@@ -79,6 +79,8 @@ DSC Aux(+) ---+--- Arduino Vin pin
  * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line 250us after the clock changes in a non-blocking way (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
 ## References
-[AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): The most extensive discussion on how data is sent on the Keybus
+[AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): An excellent discussion on how data is sent on the Keybus.
+
 [stagf15/DSC_Panel](https://github.com/stagf15/DSC_Panel): A library that nearly works for the PC1555MX but had timing and data errors.  Writing the DSC Keybus Interface library from scratch was primarily a programming excercise, otherwise it should be possible to patch the DSC_Panel library.
+
 [dougkpowers/pc1550-interface](https://github.com/dougkpowers/pc1550-interface): An interface for the DSC Classic series
