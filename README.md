@@ -83,4 +83,4 @@ DSC Aux(+) ---+--- Arduino Vin pin
 
 [stagf15/DSC_Panel](https://github.com/stagf15/DSC_Panel): A library that nearly works for the PC1555MX but had timing and data errors.  Writing the DSC Keybus Interface library from scratch was primarily a programming excercise, otherwise it should be possible to patch the DSC_Panel library.
 
-[dougkpowers/pc1550-interface](https://github.com/dougkpowers/pc1550-interface): An interface for the DSC Classic series
+[dougkpowers/pc1550-interface](https://github.com/dougkpowers/pc1550-interface): An interface for the DSC Classic series.
