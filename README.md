@@ -84,7 +84,6 @@ DSC Aux(+) ---+--- Arduino Vin pin
  * Left arrow (unconfirmed): `<`
  
  ## Notes
- * There are many system states that have been decoded but do not have separate variables to keep track of their status - this is to keep memory usage low, but feel free to open an issue or pull request for additional system states that would be useful.
  * The zone count is currently hardcoded to limit memory usage - to monitor more than 8 zones, change `dscZones` in `src/dscKeybusInterface.h` to support 16 or 32 zones.
  * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line 250us after the clock changes in a non-blocking way (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
