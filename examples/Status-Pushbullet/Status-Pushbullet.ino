@@ -33,7 +33,7 @@
  *   -- BC547, BC548, BC549
  *
  *  Issues and (especially) pull requests are welcome:
- *  https://github.com/taligentx/
+ *  https://github.com/taligentx/dscKeybusInterface
  *
  *  This example code is in the public domain.
  */
