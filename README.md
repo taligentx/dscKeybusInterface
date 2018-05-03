@@ -13,9 +13,19 @@ This is an early release and supports the DSC PC1555MX (PowerSeries 632).  Captu
 
   This is primarily to help decode the Keybus protocol - for the PC1555MX, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat, smoke alarm, and wireless commands as I do not have these modules. 
 
-  See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands.  Issues and pull requests with additions/corrections are welcome!
+  See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
-* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed and what has changed, and how to take action based on those changes.  For now, only a subset of all decoded commands are being tracked for status.
+* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed and what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional commands - for now, only a subset of all decoded commands are being tracked for status:
+  * Armed away/stay/disarmed
+  * Partition in alarm
+  * Zones
+  * Zones in alarm
+  * Exit delay in progress
+  * Entry delay in progress
+  * Keypad fire/auxiliary/panic alarm
+  * Panel AC power
+  * Panel battery
+  * Panel trouble
 
 * Status-Homebridge-mqttthing: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with Homebridge and homebridge-mqttthing for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states for the contactSensor objects.
   * [Homebridge](https://github.com/nfarina/homebridge)
