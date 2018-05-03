@@ -6,7 +6,7 @@ For example, using this library with the inexpensive NodeMCU and Wemos D1 Mini m
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and supports the DSC PC1555MX (PowerSeries 632).  Captured Keybus data is needed for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 8 zones.  Captured Keybus data is needed for zones 9-32 and the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
