@@ -177,15 +177,45 @@ void dscKeybusInterface::processPanel_0x27() {
   switch (panelData[3]) {
     case 0x01: break;  // Partition ready
     case 0x03: break;  // Partition not ready
-    case 0x04: break;  // Armed stay
-    case 0x05: break;  // Armed away
+    case 0x04: {       // Armed stay
+      partitionArmed = true;
+      partitionArmedStay = true;
+      partitionArmedAway = false;
+      exitDelay = false;
+      if (partitionArmed != previousPartitionArmed) {
+        previousPartitionArmed = partitionArmed;
+        partitionArmedChanged = true;
+        statusChanged = true;
+      }
+      break;
+    }
+    case 0x05: {       // Armed away
+      partitionArmed = true;
+      partitionArmedStay = false;
+      partitionArmedAway = true;
+      exitDelay = false;
+      if (partitionArmed != previousPartitionArmed) {
+        previousPartitionArmed = partitionArmed;
+        partitionArmedChanged = true;
+        statusChanged = true;
+      }
+      break;
+    }
     case 0x08: break;  // Exit delay in progress
+    case 0x09: break;  // Enter code to arm without entry delay
+    case 0x0B: break;  // Quick exit in progress
     case 0x0C: break;  // Entry delay in progress
     case 0x10: break;  // Keypad lockout
     case 0x11: break;  // Partition in alarm
+    case 0x14: break;  // Auto-arm in progress
+    case 0x16: break;  // Armed without entry delay
     case 0x33: break;  // Partition busy
+    case 0x3D: break;  // Disarmed after alarm in memory
     case 0x3E: break;  // Partition disarmed
     case 0x40: break;  // Keypad blanked
+    case 0x8A: break;  // Activate stay/away zones
+    case 0x8B: break;  // Quick exit
+    case 0x8E: break;  // Invalid option
     case 0x8F: break;  // Invalid access code
   }
 
@@ -320,6 +350,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
             partitionArmed = false;
             partitionArmedAway = false;
             partitionArmedStay = false;
+            previousPartitionArmed = false;
             armedNoEntryDelay = false;
             partitionArmedChanged = true;
             statusChanged = true;
@@ -430,6 +461,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
         partitionArmed = false;
         partitionArmedAway = false;
         partitionArmedStay = false;
+        previousPartitionArmed = false;
         armedNoEntryDelay = false;
         partitionArmedChanged = true;
         statusChanged = true;
@@ -575,24 +607,8 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0x00() {
           statusChanged = true;
           break;
         }
-        case 0x9A: {       // Armed: stay
-          partitionArmed = true;
-          partitionArmedStay = true;
-          partitionArmedAway = false;
-          exitDelay = false;
-          partitionArmedChanged = true;
-          statusChanged = true;
-          break;
-        }
-        case 0x9B:{       // Armed: away
-          partitionArmed = true;
-          partitionArmedStay = false;
-          partitionArmedAway = true;
-          exitDelay = false;
-          partitionArmedChanged = true;
-          statusChanged = true;
-          break;
-        }
+        case 0x9A: break;  // Armed: stay
+        case 0x9B: break;  // Armed: away
         case 0x9C: {       // Armed without entry delay
           armedNoEntryDelay = true;
           break;

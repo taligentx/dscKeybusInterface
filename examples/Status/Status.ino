@@ -81,21 +81,17 @@ void loop() {
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;
       if (dsc.partitionArmed) {
-        Serial.print(dsc.dscTime);
-        Serial.print(F(" | Partition armed"));
+        Serial.print(F("Partition armed"));
         if (dsc.partitionArmedAway) Serial.println(F(" away"));
         if (dsc.partitionArmedStay) Serial.println(F(" stay"));
       }
-      else {
-        Serial.print(dsc.dscTime);
-        Serial.println(F(" | Partition disarmed"));
-      }
+      else Serial.println(F("Partition disarmed"));
     }
 
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;
       if (dsc.partitionAlarm) {
-        Serial.print(dsc.dscTime);
+        Serial.print(dsc.dscTime);  // Messages in the 0xA5 panel command include a timestamp
         Serial.println(F(" | Partition in alarm"));
       }
     }

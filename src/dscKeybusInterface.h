@@ -59,12 +59,12 @@ class dscKeybusInterface {
     bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
     bool partitionAlarm, partitionAlarmChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
-    bool troubleStatus, troubleStatusChanged, previousTroubleStatus;
-    bool exitDelay, exitDelayChanged, previousExitDelay;
-    bool entryDelay, entryDelayChanged, previousEntryDelay;
+    bool troubleStatus, troubleStatusChanged;
+    bool exitDelay, exitDelayChanged;
+    bool entryDelay, entryDelayChanged;
     bool batteryTrouble, batteryTroubleChanged;
     bool powerTrouble, powerTroubleChanged;
-    byte openZonesGroup1, previousOpenZonesGroup1;
+    byte openZonesGroup1;
     bool openZonesGroup1Changed, openZones[dscZones], openZonesChanged[dscZones];
     bool alarmZones[dscZones], alarmZonesChanged[dscZones], alarmZonesGroup1Changed;
 
@@ -131,6 +131,7 @@ class dscKeybusInterface {
     void printKeypad_0xDD();
     void printKeypad_0xFF_Byte2();
     void printKeypad_0xFF_Byte3();
+    void printKeypad_0xFF_Byte4_0x40();
     void printKeypad_0xFF_Byte4_0xFE();
     void printKeypad_0xFF_Byte5_0xFB();
     void printKeypad_0xFF_Panel_0xD5();
@@ -138,6 +139,8 @@ class dscKeybusInterface {
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
+    bool previousTroubleStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
+    byte previousOpenZonesGroup1;
 
     static byte dscClockPin;
     static byte dscReadPin;

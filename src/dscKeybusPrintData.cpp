@@ -123,6 +123,10 @@ void dscKeybusInterface::printKeypadMessage() {
         printKeypad_0xFF_Byte4_0xFE();
         break;
       }
+      if (keypadData[4] == 0x40) {
+        printKeypad_0xFF_Byte4_0x40();
+        break;
+      }
       if (keypadData[5] == 0xFB) {
         printKeypad_0xFF_Byte5_0xFB();
         break;
@@ -165,13 +169,25 @@ void dscKeybusInterface::printKeypad_0xFF_Byte4_0xFE() {
 
 
 /*
+ *  Keypad: status update notification, panel responds with 0x28
+ *
+ *  11111111 1 11111111 11111111 10111111 11111011 [Keypad] LCD5500Z Status notification
+ *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28]
+ *  11111111 1 01010101 01010101 01010101 01010101 01000100 [Keypad]
+ */
+void dscKeybusInterface::printKeypad_0xFF_Byte4_0x40() {
+  stream->print(F("LCD5500Z Status notification"));
+}
+
+
+/*
  *  Keypad: status update notification, panel responds with 0xD5 query
  *
- *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] Status notification
+ *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] PC1555RKZ Status notification
  *  11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
  */
 void dscKeybusInterface::printKeypad_0xFF_Byte5_0xFB() {
-  stream->print(F("Status notification"));
+  stream->print(F("PC1555RKZ Status notification"));
 }
 
 
@@ -518,18 +534,59 @@ void dscKeybusInterface::printPanel_0x27() {
   }
 
   switch (panelData[3]) {
-    case 0x01: stream->print(F("| Partition ready ")); break;
-    case 0x03: stream->print(F("| Partition not ready ")); break;
-    case 0x04: stream->print(F("| Armed stay ")); break;
-    case 0x05: stream->print(F("| Armed away ")); break;
-    case 0x08: stream->print(F("| Exit delay in progress ")); break;
-    case 0x0C: stream->print(F("| Entry delay in progress ")); break;
-    case 0x10: stream->print(F("| Keypad lockout ")); break;
-    case 0x11: stream->print(F("| Partition in alarm ")); break;
-    case 0x33: stream->print(F("| Partition busy ")); break;
-    case 0x3E: stream->print(F("| Partition disarmed ")); break;
-    case 0x40: stream->print(F("| Keypad blanked ")); break;
-    case 0x8F: stream->print(F("| Invalid access code ")); break;
+    case 0x01: stream->print(F("| Partition ready")); break;
+    case 0x03: stream->print(F("| Partition not ready")); break;
+    case 0x04: stream->print(F("| Armed stay")); break;
+    case 0x05: stream->print(F("| Armed away")); break;
+    case 0x07: stream->print(F("| Failed to arm")); break;
+    case 0x08: stream->print(F("| Exit delay in progress")); break;
+    case 0x09: stream->print(F("| Arming without entry delay")); break;
+    case 0x0B: stream->print(F("| Quick exit in progress")); break;
+    case 0x0C: stream->print(F("| Entry delay in progress")); break;
+    case 0x10: stream->print(F("| Keypad lockout")); break;
+    case 0x11: stream->print(F("| Partition in alarm")); break;
+    case 0x14: stream->print(F("| Auto-arm in progress")); break;
+    case 0x16: stream->print(F("| Armed without entry delay")); break;
+    case 0x33: stream->print(F("| Partition busy")); break;
+    case 0x3D: stream->print(F("| Disarmed after alarm in memory")); break;
+    case 0x3E: stream->print(F("| Partition disarmed")); break;
+    case 0x40: stream->print(F("| Keypad blanked")); break;
+    case 0x8A: stream->print(F("| Activate stay/away zones")); break;
+    case 0x8B: stream->print(F("| Quick exit")); break;
+    case 0x8E: stream->print(F("| Invalid option")); break;
+    case 0x8F: stream->print(F("| Invalid access code")); break;
+    case 0x9E: stream->print(F("| *  pressed")); break;
+    case 0x9F: stream->print(F("| Command output 1")); break;
+    case 0xA1: stream->print(F("| *2: Trouble menu")); break;
+    case 0xA2: stream->print(F("| *3: Alarm memory display")); break;
+    case 0xA3: stream->print(F("| Door chime enabled")); break;
+    case 0xA4: stream->print(F("| Door chime disabled")); break;
+    case 0xA5: stream->print(F("| Enter master code")); break;
+    case 0xA6: stream->print(F("| *5: Access codes")); break;
+    case 0xA7: stream->print(F("| *5: Enter new code")); break;
+    case 0xA9: stream->print(F("| *6: User functions")); break;
+    case 0xAA: stream->print(F("| *6: Time and Date")); break;
+    case 0xAB: stream->print(F("| *6: Auto-arm time")); break;
+    case 0xAC: stream->print(F("| *6: Auto-arm enabled")); break;
+    case 0xAD: stream->print(F("| *6: Auto-arm disabled")); break;
+    case 0xAF: stream->print(F("| *6: System test")); break;
+    case 0xB0: stream->print(F("| *6: Enable DLS")); break;
+    case 0xB2: stream->print(F("| *7: Command output")); break;
+    case 0xB7: stream->print(F("| Enter installer code")); break;
+    case 0xB8: stream->print(F("| *  pressed while armed")); break;
+    case 0xB9: stream->print(F("| *2: Zone tamper menu")); break;
+    case 0xBA: stream->print(F("| *2: Zones with low batteries")); break;
+    case 0xC6: stream->print(F("| *2: Zone fault menu")); break;
+    case 0xC8: stream->print(F("| *2: Service required menu")); break;
+    case 0xD0: stream->print(F("| *2: Handheld keypads with low batteries")); break;
+    case 0xD1: stream->print(F("| *2: Wireless keys with low batteries")); break;
+    case 0xE4: stream->print(F("| *8: Main menu")); break;
+    case 0xEE: stream->print(F("| *8: Submenu")); break;
+    default:
+      stream->print(F("| Unrecognized command, byte 3: 0x"));
+      if (panelData[3] < 10) stream->print(F("0"));
+      stream->print(panelData[3], HEX);
+      break;
   }
 
   stream->print(F("| Open zones: "));
@@ -574,6 +631,62 @@ void dscKeybusInterface::printPanel_0x0A() {
     if (bitRead(panelData[2],5)) stream->print(F("Program "));
     if (bitRead(panelData[2],6)) stream->print(F("Fire "));
     if (bitRead(panelData[2],7)) stream->print(F("Backlight "));
+  }
+  
+  switch (panelData[3]) {
+    case 0x01: stream->print(F("| Partition ready")); break;
+    case 0x03: stream->print(F("| Partition not ready")); break;
+    case 0x04: stream->print(F("| Armed stay")); break;
+    case 0x05: stream->print(F("| Armed away")); break;
+    case 0x07: stream->print(F("| Failed to arm")); break;
+    case 0x08: stream->print(F("| Exit delay in progress")); break;
+    case 0x09: stream->print(F("| Arming without entry delay")); break;
+    case 0x0B: stream->print(F("| Quick exit in progress")); break;
+    case 0x0C: stream->print(F("| Entry delay in progress")); break;
+    case 0x10: stream->print(F("| Keypad lockout")); break;
+    case 0x11: stream->print(F("| Partition in alarm")); break;
+    case 0x14: stream->print(F("| Auto-arm in progress")); break;
+    case 0x16: stream->print(F("| Armed without entry delay")); break;
+    case 0x33: stream->print(F("| Partition busy")); break;
+    case 0x3D: stream->print(F("| Disarmed after alarm in memory")); break;
+    case 0x3E: stream->print(F("| Partition disarmed")); break;
+    case 0x40: stream->print(F("| Keypad blanked")); break;
+    case 0x8A: stream->print(F("| Activate stay/away zones")); break;
+    case 0x8B: stream->print(F("| Quick exit")); break;
+    case 0x8E: stream->print(F("| Invalid option")); break;
+    case 0x8F: stream->print(F("| Invalid access code")); break;
+    case 0x9E: stream->print(F("| *  pressed")); break;
+    case 0x9F: stream->print(F("| Command output 1")); break;
+    case 0xA1: stream->print(F("| *2: Trouble menu")); break;
+    case 0xA2: stream->print(F("| *3: Alarm memory display")); break;
+    case 0xA3: stream->print(F("| Door chime enabled")); break;
+    case 0xA4: stream->print(F("| Door chime disabled")); break;
+    case 0xA5: stream->print(F("| Enter master code")); break;
+    case 0xA6: stream->print(F("| *5: Access codes")); break;
+    case 0xA7: stream->print(F("| *5: Enter new code")); break;
+    case 0xA9: stream->print(F("| *6: User functions")); break;
+    case 0xAA: stream->print(F("| *6: Time and Date")); break;
+    case 0xAB: stream->print(F("| *6: Auto-arm time")); break;
+    case 0xAC: stream->print(F("| *6: Auto-arm enabled")); break;
+    case 0xAD: stream->print(F("| *6: Auto-arm disabled")); break;
+    case 0xAF: stream->print(F("| *6: System test")); break;
+    case 0xB0: stream->print(F("| *6: Enable DLS")); break;
+    case 0xB2: stream->print(F("| *7: Command output")); break;
+    case 0xB7: stream->print(F("| Enter installer code")); break;
+    case 0xB8: stream->print(F("| *  pressed while armed")); break;
+    case 0xB9: stream->print(F("| *2: Zone tamper menu")); break;
+    case 0xBA: stream->print(F("| *2: Zones with low batteries")); break;
+    case 0xC6: stream->print(F("| *2: Zone fault menu")); break;
+    case 0xC8: stream->print(F("| *2: Service required menu")); break;
+    case 0xD0: stream->print(F("| *2: Handheld keypads with low batteries")); break;
+    case 0xD1: stream->print(F("| *2: Wireless keys with low batteries")); break;
+    case 0xE4: stream->print(F("| *8: Main menu")); break;
+    case 0xEE: stream->print(F("| *8: Submenu")); break;
+    default:
+      stream->print(F("| Unrecognized command, byte 3: 0x"));
+      if (panelData[3] < 10) stream->print(F("0"));
+      stream->print(panelData[3], HEX);
+      break;
   }
 
   bool zoneLights = false;
@@ -620,9 +733,9 @@ void dscKeybusInterface::printPanel_0x11() {
  *  0x16: Zone wiring
  *  Interval: 4min
  *  CRC: yes
- *  Byte 2: TBD
- *  Byte 3: TBD
- *  Byte 4 bits 2-7: TBD
+ *  Byte 2: TBD, identical with PC1555MX and PC5015
+ *  Byte 3: TBD, different between PC1555MX and PC5015
+ *  Byte 4 bits 2-7: TBD, identical with PC1555MX and PC5015
  *
  *  00010110 0 00001110 00100011 11010001 00011001 [0x16] Zone wiring: NC | Exit *8 programming
  *  00010110 0 00001110 00100011 11010010 00011001 [0x16] Zone wiring: EOL | Exit *8 programming
@@ -631,17 +744,26 @@ void dscKeybusInterface::printPanel_0x11() {
  *  00010110 0 00001110 00100011 11100110 00101101 [0x16] Zone wiring: EOL | Enter *8 programming
  *  00010110 0 00001110 00100011 11110010 00111001 [0x16] Zone wiring: EOL | Armed, Exit *8 +15s, Power-on +2m
  *  00010110 0 00001110 00100011 11110111 00111101 [0x16] Zone wiring: DEOL | Interval 4m
+ *  00010110 0 00001110 00010000 11110011 00100111 [0x16]  // PC5015 - armed
  */
 void dscKeybusInterface::printPanel_0x16() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
     return;
   }
-  if (panelData[2] == 0x0E && panelData[3] == 0x23) {
+
+  if (panelData[2] == 0x0E) {
+
+    switch (panelData[3]) {
+      case 0x10: stream->print(F("PC5015 ")); break;
+      case 0x23: stream->print(F("PC1555MX ")); break;
+      default: stream->print(F("Unknown panel ")); break;
+    }
+
     switch (panelData[4] & 0x03) {
-      case 0x01: stream->print(F("Zone wiring: NC ")); break;
-      case 0x02: stream->print(F("Zone wiring: EOL ")); break;
-      case 0x03: stream->print(F("Zone wiring: DEOL ")); break;
+      case 0x01: stream->print(F("| Zone wiring: NC ")); break;
+      case 0x02: stream->print(F("| Zone wiring: EOL ")); break;
+      case 0x03: stream->print(F("| Zone wiring: DEOL ")); break;
     }
 
     switch (panelData[4] >> 2) {
