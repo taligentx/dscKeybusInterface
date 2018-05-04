@@ -9,7 +9,7 @@ For example, using this library with the inexpensive NodeMCU and Wemos D1 Mini m
 This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 8 zones.  Captured Keybus data is needed for zones 9-32 and the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Usage
-[Download the latest release](https://github.com/taligentx/dscKeybusInterface/releases) and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): Sketch > Include Library > Add .ZIP Library.  Alternatively, clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for easier updates.
+Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): Sketch > Include Library > Add .ZIP Library.  Alternatively, clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for easier updates.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
@@ -30,7 +30,7 @@ This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 8
   * Panel battery
   * Panel trouble
 
-* Status-Homebridge-mqttthing: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with Homebridge and homebridge-mqttthing for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states for the contactSensor objects.
+* Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with Homebridge and homebridge-mqttthing for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states for the contactSensor objects.
   * [Homebridge](https://github.com/nfarina/homebridge)
   * [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing)
   * [Mosquitto MQTT broker](https://mosquitto.org)

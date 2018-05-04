@@ -2,22 +2,30 @@
  *  DSC Status with MQTT (esp8266)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
- *  Siri.  This uses MQTT to interface with Homebridge and homebridge-mqttthing for HomeKit integration and
- *  demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states 
+ *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
+ *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states 
  *  for the contactSensor objects.
  *
- *  Mosquitto MQTT broker: https://mosquitto.org
  *  Homebridge: https://github.com/nfarina/homebridge
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
- *
+ *  Mosquitto MQTT broker: https://mosquitto.org
+ *  
  *  In this example, the alarm states are setup in Homebridge as:
- *    "S": stay arm, no access code required
- *    "A": away arm, no access code required
- *    "Nxxxx" - night arm with an access code (arms without an entry delay)
- *    "Dxxxx" - disarm with an access code
+ *    "S": Stay arm
+ *    "A": Away arm
+ *    "N": Night arm (arm without an entry delay)
+ *    "D": Disarm
  *
- *  The interface publishes alarm states to topic "dsc/Get" and listens for commands in topic "dsc/Set".  Zone states
- *  are published on a separate topic per zone as "dsc/Get/Zonex" with values:
+ *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the 
+ *  configured mqttPublishTopic:
+ *    "SA": Stay arm
+ *    "AA": Away arm
+ *    "NA": Night arm
+ *     "D": Disarm
+ *     "T": Alarm tripped
+ *  
+ *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone 
+ *  number.  The zone state is published as an integer:
  *    "0": closed
  *    "1": open
  *
@@ -33,7 +41,7 @@
  *              "getCurrentState":    "dsc/Get",
  *              "setTargetState":     "dsc/Set"
  *          },
- *          "targetStateValues": ["S", "A", "N1234", "D1234"]
+ *          "targetStateValues": ["S", "A", "N", "D"]
  *      },
  *      {
  *          "accessory": "mqttthing",
@@ -98,14 +106,14 @@
 
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+const char* accessCode = "";  // An access code is required to disarm and night arm
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPublishTopic = "dsc/Get";    // Provides status updates
 const char* mqttSubscribeTopic = "dsc/Set";  // Writes to the panel
-char mqttZoneTopic[] = "dsc/Get/Zone";       // Zone number will be appended to this topic name: dsc/Get/Zone1, etc
-unsigned long mqttLastTime;
-char publishMessage[50];  // Sets the maximum MQTT message size
+const char* mqttZoneTopic = "dsc/Get/Zone";  // Zone number will be appended to this topic name: dsc/Get/Zone1, etc
+unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -130,8 +138,8 @@ void setup() {
 
   mqtt.setServer(mqttServer, 1883);
   mqtt.setCallback(mqttCallback);
-  if (mqttConnect()) mqttLastTime = millis();
-  else mqttLastTime = 0;
+  if (mqttConnect()) mqttPreviousTime = millis();
+  else mqttPreviousTime = 0;
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
@@ -147,22 +155,25 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;  // Reset the status tracking flag
 
+    // Publish armed status
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;
       if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");
-        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA");
-        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");
-        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA");
+        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");       // Night armed
+        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA");                           // Away armed
+        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");  // Night armed
+        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA");                           // Stay armed
       }
-      else mqtt.publish(mqttPublishTopic, "D");
+      else mqtt.publish(mqttPublishTopic, "D");  // Disarmed
     }
 
+    // Publish alarm status
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;
-      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T");
+      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T");  // Alarm tripped
     }
 
+    // Publish zone status
     if (dsc.openZonesGroup1Changed) {
       dsc.openZonesGroup1Changed = false;
       for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
@@ -171,12 +182,12 @@ void loop() {
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneCount + 1, zone, 10);
-            strcat(zonePublishTopic, zone);
+            strcat(zonePublishTopic, zone);       // Appends the mqttZoneTopic with the zone number
           if (dsc.openZones[zoneCount]) {
-            mqtt.publish(zonePublishTopic, "1");
+            mqtt.publish(zonePublishTopic, "1");  // Zone open
           }
           else {
-            mqtt.publish(zonePublishTopic, "0");
+            mqtt.publish(zonePublishTopic, "0");  // Zone closed
           }
         }
       }
@@ -190,11 +201,11 @@ void loop() {
 void mqttHandle() {
   if (!mqtt.connected()) {
     unsigned long mqttCurrentTime = millis();
-    if (mqttCurrentTime - mqttLastTime > 5000) {
-      mqttLastTime = mqttCurrentTime;
+    if (mqttCurrentTime - mqttPreviousTime > 5000) {
+      mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
         Serial.println("MQTT disconnected, successfully reconnected.");
-        mqttLastTime = 0;
+        mqttPreviousTime = 0;
       }
       else Serial.println("MQTT disconnected, failed to reconnect.");
     }
@@ -217,39 +228,38 @@ boolean mqttConnect() {
 }
 
 
+// Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  topic = topic;
+  // Handles unused parameters
+  (void)topic;
+  (void)length;
 
-  // Homebridge-mqttthing STAY_ARM
+  // homebridge-mqttthing STAY_ARM
   if (payload[0] == 'S' && !dsc.partitionArmed && !dsc.exitDelay) {
-    while (!dsc.writeReady) dsc.handlePanel();
+    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.write('s');  // Keypad stay arm
   }
 
-  // Homebridge-mqttthing AWAY_ARM
+  // homebridge-mqttthing AWAY_ARM
   else if (payload[0] == 'A' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write('w');  // Keypad away arm
   }
 
-  // Homebridge-mqttthing NIGHT_ARM - sends *9 to set no entry delay, then arms with the code in the payload
+  // homebridge-mqttthing NIGHT_ARM - sends *9 to set no entry delay, then arms with the access code
   else if (payload[0] == 'N' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write('*');
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write('9');
-    for (byte i = 1; i < length; i++) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Blocks for ~55ms between characters
-      dsc.write((char)payload[i]);
-    }
+    while (!dsc.writeReady) dsc.handlePanel();
+    dsc.write(accessCode);
   }
 
-  // Homebridge-mqttthing DISARM
+  // homebridge-mqttthing DISARM
   else if (payload[0] == 'D' && (dsc.partitionArmed || dsc.exitDelay)) {
-    for (byte i = 1; i < length; i++) {
-      while (!dsc.writeReady) dsc.handlePanel();  // Blocks for ~55ms between characters
-      dsc.write((char)payload[i]);
-    }
+    while (!dsc.writeReady) dsc.handlePanel();
+    dsc.write(accessCode);
   }
 }
 
