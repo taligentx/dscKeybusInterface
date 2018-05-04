@@ -55,6 +55,7 @@ void setup() {
   Serial.println();
 
   // Optional configuration
+  dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
   dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: false)
   dsc.processKeypadData = true;      // Controls if keypad data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)

@@ -222,19 +222,48 @@ void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
 void dscKeybusInterface::printKeypad_0xFF_Byte2() {
   bool decodedKey = true;
   switch (keypadData[2]) {
-    case 0x00: stream->print(F("0")); break;
-    case 0x05: stream->print(F("1")); break;
-    case 0x0A: stream->print(F("2")); break;
-    case 0x0F: stream->print(F("3")); break;
-    case 0x11: stream->print(F("4")); break;
-    case 0x16: stream->print(F("5")); break;
-    case 0x1B: stream->print(F("6")); break;
-    case 0x1C: stream->print(F("7")); break;
-    case 0x22: stream->print(F("8")); break;
-    case 0x27: stream->print(F("9")); break;
+    case 0x00: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("0"));
+      break;
+    case 0x05: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("1"));
+      break;
+    case 0x0A: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("2"));
+      break;
+    case 0x0F: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("3"));
+      break;
+    case 0x11: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("4"));
+      break;
+    case 0x16: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("5"));
+      break;
+    case 0x1B: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("6"));
+      break;
+    case 0x1C: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("7"));
+      break;
+    case 0x22: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("8"));
+      break;
+    case 0x27: 
+      if (hideKeypadDigits) stream->print(F("[Digit]"));
+      else stream->print(F("9"));
+      break;
     case 0x28: stream->print(F("*")); break;
     case 0x2D: stream->print(F("#")); break;
-    case 0x33: stream->print(F("Valid key, unknown function")); break;
     case 0x34: stream->print(F("Valid key, unknown function")); break;
     case 0x39: stream->print(F("Valid key, unknown function")); break;
     case 0x3E: stream->print(F("Valid key, unknown function")); break;

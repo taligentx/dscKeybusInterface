@@ -43,8 +43,10 @@ class dscKeybusInterface {
     void printKeypadMessage();
 
     // These can be configured in the sketch setup() before begin()
+    bool hideKeypadDigits;
     bool processRedundantData;
     bool displayTrailingBits;
+    static bool processKeypadData;
 
     // Panel time
     bool timeAvailable;             // True after the panel sends the first timestamp message
@@ -66,10 +68,9 @@ class dscKeybusInterface {
     bool openZonesGroup1Changed, openZones[dscZones], openZonesChanged[dscZones];
     bool alarmZones[dscZones], alarmZonesChanged[dscZones], alarmZonesGroup1Changed;
 
-    //
+    // Panel and keypad data can be accessed directly
     static volatile byte panelData[dscReadSize];
     static volatile byte keypadData[dscReadSize];
-    static bool processKeypadData;
 
     static void dscDataInterrupt();
 

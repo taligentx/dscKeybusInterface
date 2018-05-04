@@ -12,6 +12,7 @@ printPanelMessage	KEYWORD2
 printKeypadBinary	KEYWORD2
 printKeypadMessage	KEYWORD2
 
+hideKeypadDigits	KEYWORD2
 processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
 processKeypadData	KEYWORD2
