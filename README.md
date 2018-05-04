@@ -35,6 +35,10 @@ Download the repo and extract to the Arduino library directory or [install throu
   * [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing)
   * [Mosquitto MQTT broker](https://mosquitto.org)
 
+* Status-MQTT-HomeAssistant: Processes the security system status and allows for control with HomeAssistant via MQTT.  This uses the armed and alarm states for the HomeAssistant Alarm Control Panel component, and the zone states for the Binary Sensor component.
+  * [Home Assistant](https://www.home-assistant.io)
+  * [Mosquitto MQTT broker](https://mosquitto.org)
+
 * Status-Email: Processes the security system status and demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
 * Status-Pushbullet:  Processes the security system status and demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com).

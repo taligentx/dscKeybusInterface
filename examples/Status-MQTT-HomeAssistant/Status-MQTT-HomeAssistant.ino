@@ -1,71 +1,61 @@
 /*
  *  DSC Status with MQTT (esp8266)
  *
- *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
- *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
- *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states 
- *  for the contactSensor objects.
+ *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
- *  Homebridge: https://github.com/nfarina/homebridge
- *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
+ *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
  *  
- *  In this example, the commands to set the alarm state are setup in Homebridge as:
+ *  In this example, the commands to set the alarm state are setup in Home Assistant as:
+ *    Disarm: "D"
  *    Stay arm: "S"
  *    Away arm: "A"
- *    Night arm (arm without an entry delay): "N"
- *    Disarm: "D"
  *
  *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the 
  *  configured mqttPublishTopic:
- *    Stay arm: "SA"
- *    Away arm: "AA"
- *    Night arm: "NA"
- *    Disarm: "D"
- *    Alarm tripped: "T"
+ *    Disarmed: "disarmed"
+ *    Stay arm: "armed_home"
+ *    Away arm: "armed_away"
+ *    Exit delay in progress: "pending"
+ *    Alarm tripped: "triggered"
  *  
  *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone 
  *  number.  The zone state is published as an integer:
- *    "0": closed
- *    "1": open
+ *    Closed: "0"
+ *    Open: "1"
  *
- *  Example Homebridge config.json "accessories" configuration:
+ *  Example Home Assistant configuration.yaml:
 
-        {
-            "accessory": "mqttthing",
-            "type": "securitySystem",
-            "name": "Security System",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getCurrentState":    "dsc/Get",
-                "setTargetState":     "dsc/Set"
-            },
-            "targetStateValues": ["S", "A", "N", "D"]
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone1"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 8",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone8"
-            },
-            "integerValue": "true"
-        }
-  
+      # https://www.home-assistant.io/components/mqtt/
+      mqtt:
+        broker: URL or IP address
+        client_id: homeAssistant
+      
+      # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
+      alarm_control_panel:
+        - platform: mqtt
+          name: "Security System"
+          state_topic: "dsc/Get"
+          command_topic: "dsc/Set"
+          payload_disarm: "D"
+          payload_arm_home: "S"
+          payload_arm_away: "A"
+      
+      # https://www.home-assistant.io/components/binary_sensor/
+      binary_sensor:
+        - platform: mqtt
+          name: "Zone 1"
+          state_topic: "dsc/Get/Zone1"
+          device_class: "door"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Zone 8"
+          state_topic: "dsc/Get/Zone8"
+          device_class: "window"
+          payload_on: "1"
+          payload_off: "0"
+
  *  Wiring:
  *      DSC Aux(-) --- Arduino/esp8266 ground
  *
@@ -155,22 +145,26 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;  // Reset the status tracking flag
 
+    // Publish exit delay status
+    if (dsc.exitDelayChanged) {
+      dsc.exitDelayChanged = false;
+      if (dsc.exitDelay) mqtt.publish(mqttPublishTopic, "pending");
+    }
+    
     // Publish armed status
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;
       if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");       // Night armed
-        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA");                           // Away armed
-        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");  // Night armed
-        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA");                           // Stay armed
+        if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "armed_away");
+        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "armed_home");
       }
-      else mqtt.publish(mqttPublishTopic, "D");  // Disarmed
+      else mqtt.publish(mqttPublishTopic, "disarmed");
     }
 
     // Publish alarm status
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;
-      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T");  // Alarm tripped
+      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered");
     }
 
     // Publish zone status
@@ -178,14 +172,14 @@ void loop() {
       dsc.openZonesGroup1Changed = false;
       for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
         if (dsc.openZonesChanged[zoneCount]) {
-
+          
           // Appends the mqttZoneTopic with the zone number
           char zonePublishTopic[strlen(mqttZoneTopic) + 2];
           char zone[3];
           strcpy(zonePublishTopic, mqttZoneTopic);
           itoa(zoneCount + 1, zone, 10);
           strcat(zonePublishTopic, zone);
-
+          
           if (dsc.openZones[zoneCount]) {
             mqtt.publish(zonePublishTopic, "1");  // Zone open
           }
@@ -208,29 +202,19 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   (void)topic;
   (void)length;
 
-  // homebridge-mqttthing STAY_ARM
+  // Stay arm
   if (payload[0] == 'S' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.write('s');  // Keypad stay arm
   }
 
-  // homebridge-mqttthing AWAY_ARM
+  // Away arm
   else if (payload[0] == 'A' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write('w');  // Keypad away arm
   }
 
-  // homebridge-mqttthing NIGHT_ARM - sends *9 to set no entry delay, then arms with the access code
-  else if (payload[0] == 'N' && !dsc.partitionArmed && !dsc.exitDelay) {
-    while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write('*');
-    while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write('9');
-    while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write(accessCode);
-  }
-
-  // homebridge-mqttthing DISARM
+  // Disarm
   else if (payload[0] == 'D' && (dsc.partitionArmed || dsc.exitDelay)) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write(accessCode);
