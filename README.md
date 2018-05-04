@@ -9,7 +9,7 @@ For example, using this library with the inexpensive NodeMCU and Wemos D1 Mini m
 This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 8 zones.  Captured Keybus data is needed for zones 9-32 and the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Usage
-Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): Sketch > Include Library > Add .ZIP Library.  Alternatively, clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for easier updates.
+Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
@@ -18,7 +18,7 @@ Download the repo and extract to the Arduino library directory or [install throu
 
   See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
-* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed and what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional commands - for now, only a subset of all decoded commands are being tracked for status:
+* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional commands - for now, only a subset of all decoded commands are being tracked for status:
   * Armed away/stay/disarmed
   * Partition in alarm
   * Zones
