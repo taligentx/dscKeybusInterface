@@ -5,21 +5,21 @@
  *
  *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
- *  
+ *
  *  In this example, the commands to set the alarm state are setup in Home Assistant as:
  *    Disarm: "D"
  *    Stay arm: "S"
  *    Away arm: "A"
  *
- *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the 
+ *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the
  *  configured mqttPublishTopic:
  *    Disarmed: "disarmed"
  *    Stay arm: "armed_home"
  *    Away arm: "armed_away"
  *    Exit delay in progress: "pending"
  *    Alarm tripped: "triggered"
- *  
- *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone 
+ *
+ *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
  *  number.  The zone state is published as an integer:
  *    Closed: "0"
  *    Open: "1"
@@ -30,7 +30,7 @@
       mqtt:
         broker: URL or IP address
         client_id: homeAssistant
-      
+
       # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
       alarm_control_panel:
         - platform: mqtt
@@ -40,7 +40,7 @@
           payload_disarm: "D"
           payload_arm_home: "S"
           payload_arm_away: "A"
-      
+
       # https://www.home-assistant.io/components/binary_sensor/
       binary_sensor:
         - platform: mqtt
@@ -143,17 +143,17 @@ void loop() {
   mqttHandle();
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;  // Reset the status tracking flag
+    dsc.statusChanged = false;                   // Reset the status tracking flag
 
     // Publish exit delay status
     if (dsc.exitDelayChanged) {
-      dsc.exitDelayChanged = false;
+      dsc.exitDelayChanged = false;  // Resets the exit delay status flag
       if (dsc.exitDelay) mqtt.publish(mqttPublishTopic, "pending");
     }
 
     // Publish armed status
     if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;
+      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
       if (dsc.partitionArmed) {
         if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "armed_away");
         else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "armed_home");
@@ -163,16 +163,17 @@ void loop() {
 
     // Publish alarm status
     if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;
+      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
       if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered");
     }
 
     // Publish zones 1-64 status
     if (dsc.openZonesStatusChanged) {
-      dsc.openZonesStatusChanged = false;
+      dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {
+          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
+            bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
             char zonePublishTopic[strlen(mqttZoneTopic) + 2];
@@ -182,9 +183,9 @@ void loop() {
             strcat(zonePublishTopic, zone);
 
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              mqtt.publish(zonePublishTopic, "1");     // Zone open
+              mqtt.publish(zonePublishTopic, "1");                  // Zone open
             }
-            else mqtt.publish(zonePublishTopic, "0");  // Zone closed
+            else mqtt.publish(zonePublishTopic, "0");               // Zone closed
           }
         }
       }

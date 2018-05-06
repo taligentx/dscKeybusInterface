@@ -79,16 +79,16 @@ void setup() {
 
 void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;  // Resets the status flag
+    dsc.statusChanged = false;                   // Resets the status flag
 
     if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;
+      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
       if (dsc.partitionAlarm) sendEmail("Security system in alarm", dsc.dscTime);
       else sendEmail("Security system disarmed after alarm", dsc.dscTime);
     }
 
     if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;
+      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) sendEmail("Security system AC power trouble", dsc.dscTime);
       else sendEmail("Security system AC power restored", dsc.dscTime);
     }

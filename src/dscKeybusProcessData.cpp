@@ -157,7 +157,6 @@ void dscKeybusInterface::processPanel_0x27() {
         if (bitRead(panelData[6], zoneBit)) bitWrite(openZones[0], zoneBit, 1);
         else bitWrite(openZones[0], zoneBit, 0);
       }
-      else bitWrite(openZonesChanged[0], zoneBit, 0);
     }
   }
 }
@@ -180,7 +179,6 @@ void dscKeybusInterface::processPanel_0x2D() {
         if (bitRead(panelData[6], zoneBit)) bitWrite(openZones[1], zoneBit, 1);
         else bitWrite(openZones[1], zoneBit, 0);
       }
-      else bitWrite(openZonesChanged[1], zoneBit, 0);
     }
   }
 }
@@ -203,7 +201,6 @@ void dscKeybusInterface::processPanel_0x34() {
         if (bitRead(panelData[6], zoneBit)) bitWrite(openZones[2], zoneBit, 1);
         else bitWrite(openZones[2], zoneBit, 0);
       }
-      else bitWrite(openZonesChanged[2], zoneBit, 0);
     }
   }
 }
@@ -226,7 +223,6 @@ void dscKeybusInterface::processPanel_0x3E() {
         if (bitRead(panelData[6], zoneBit)) bitWrite(openZones[3], zoneBit, 1);
         else bitWrite(openZones[3], zoneBit, 0);
       }
-      else bitWrite(openZonesChanged[3], zoneBit, 0);
     }
   }
 }

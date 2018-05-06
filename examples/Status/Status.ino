@@ -70,16 +70,16 @@ void loop() {
   }
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;  // Reset the status flag
+    dsc.statusChanged = false;                   // Resets the status flag
 
     if (dsc.troubleStatusChanged) {
-      dsc.troubleStatusChanged = false;
+      dsc.troubleStatusChanged = false;  // Resets the trouble status flag
       if (dsc.troubleStatus) Serial.println(F("Trouble status on"));
       else Serial.println(F("Trouble status restored"));
     }
 
     if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;
+      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
       if (dsc.partitionArmed) {
         Serial.print(F("Partition armed"));
         if (dsc.partitionArmedAway) Serial.println(F(" away"));
@@ -89,60 +89,61 @@ void loop() {
     }
 
     if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;
+      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
       if (dsc.partitionAlarm) {
-        Serial.print(dsc.dscTime);  // Messages in the 0xA5 panel command include a timestamp
+        Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
         Serial.println(F(" | Partition in alarm"));
       }
     }
 
     if (dsc.exitDelayChanged) {
-      dsc.exitDelayChanged = false;
+      dsc.exitDelayChanged = false;  // Resets the exit delay status flag
       if (dsc.exitDelay) Serial.println(F("Exit delay in progress"));
     }
 
     if (dsc.entryDelayChanged) {
-      dsc.entryDelayChanged = false;
+      dsc.entryDelayChanged = false;  // Resets the entry delay status flag
       if (dsc.entryDelay) Serial.println(F("Entry delay in progress"));
     }
 
     if (dsc.batteryTroubleChanged) {
-      dsc.batteryTroubleChanged = false;
-      Serial.print(dsc.dscTime);
+      dsc.batteryTroubleChanged = false;  // Resets the battery trouble status flag
+      Serial.print(dsc.dscTime);          // Messages in the 0xA5 panel command include a timestamp
       if (dsc.batteryTrouble) Serial.println(F(" | Panel battery trouble"));
       else Serial.println(F(" | Panel battery restored"));
     }
 
     if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;
-      Serial.print(dsc.dscTime);
+      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
+      Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
       if (dsc.powerTrouble) Serial.println(F(" | Panel AC power trouble"));
       else Serial.println(F(" | Panel AC power restored"));
     }
 
     if (dsc.keypadFireAlarm) {
-      dsc.keypadFireAlarm = false;
-      Serial.print(dsc.dscTime);
+      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
+      Serial.print(dsc.dscTime);    // Messages in the 0xA5 panel command include a timestamp
       Serial.println(F(" | Keypad fire alarm"));
     }
 
     if (dsc.keypadAuxAlarm) {
-      dsc.keypadAuxAlarm = false;
-      Serial.print(dsc.dscTime);
+      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
+      Serial.print(dsc.dscTime);   // Messages in the 0xA5 panel command include a timestamp
       Serial.println(F(" | Keypad aux alarm"));
     }
 
     if (dsc.keypadPanicAlarm) {
-      dsc.keypadPanicAlarm = false;
-      Serial.print(dsc.dscTime);
+      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
+      Serial.print(dsc.dscTime);     // Messages in the 0xA5 panel command include a timestamp
       Serial.println(F(" | Keypad panic alarm"));
     }
 
     if (dsc.openZonesStatusChanged) {
-      dsc.openZonesStatusChanged = false;
+      dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {
+          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
+            bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
               Serial.print(F("Zone open: "));
               Serial.println(zoneBit + 1 + (zoneGroup * 8));
@@ -157,11 +158,11 @@ void loop() {
     }
 
     if (dsc.alarmZonesStatusChanged) {
-      dsc.alarmZonesStatusChanged = false;
+      dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-          if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {
-            bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);
+          if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
+            bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
               Serial.print(dsc.dscTime);
               Serial.print(F(" | Zone alarm: "));

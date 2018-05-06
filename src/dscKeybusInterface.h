@@ -97,6 +97,7 @@ class dscKeybusInterface {
     void printPanel_0x16();
     void printPanel_0x1C();
     void printPanel_0x27();
+    void printPanel_0x28();
     void printPanel_0x2D();
     void printPanel_0x34();
     void printPanel_0x3E();
@@ -123,9 +124,10 @@ class dscKeybusInterface {
     void printKeypad_0xDD();
     void printKeypad_0xFF_Byte2();
     void printKeypad_0xFF_Byte3();
-    void printKeypad_0xFF_Byte4_0x40();
+    void printKeypad_0xFF_Byte4_0xBF();
     void printKeypad_0xFF_Byte4_0xFE();
     void printKeypad_0xFF_Byte5_0xFB();
+    void printKeypad_0xFF_Panel_0x28();
     void printKeypad_0xFF_Panel_0xD5();
 
     Stream* stream;

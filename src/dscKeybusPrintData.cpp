@@ -1,6 +1,6 @@
 /*
     DSC Keybus Interface
-    
+
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -30,6 +30,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x16: printPanel_0x16(); break;
     case 0x1C: printPanel_0x1C(); break;
     case 0x27: printPanel_0x27(); break;
+    case 0x28: printPanel_0x28(); break;
     case 0x2D: printPanel_0x2D(); break;
     case 0x34: printPanel_0x34(); break;
     case 0x3E: printPanel_0x3E(); break;
@@ -62,16 +63,18 @@ void dscKeybusInterface::printPanelMessage() {
 
 
 void dscKeybusInterface::printKeypadMessage() {
-  stream->print(F("[Keypad] "));
-
   switch (keypadData[0]) {
     case 0xFF:  {
+      if (panelData[0] == 0x28) {
+        printKeypad_0xFF_Panel_0x28();
+        break;
+      }
       if (keypadData[4] == 0xFE) {
         printKeypad_0xFF_Byte4_0xFE();
         break;
       }
-      if (keypadData[4] == 0x40) {
-        printKeypad_0xFF_Byte4_0x40();
+      if (keypadData[4] == 0xBF) {
+        printKeypad_0xFF_Byte4_0xBF();
         break;
       }
       if (keypadData[5] == 0xFB) {
@@ -127,7 +130,8 @@ void dscKeybusInterface::printKeypadMessage() {
 void dscKeybusInterface::printPanelStatus() {
   switch (panelData[3]) {
     case 0x01: stream->print(F("| Partition ready")); break;
-    case 0x03: stream->print(F("| Partition not ready")); break;
+    case 0x02: stream->print(F("| Stay/away zones open")); break;
+    case 0x03: stream->print(F("| Zones open")); break;
     case 0x04: stream->print(F("| Armed stay")); break;
     case 0x05: stream->print(F("| Armed away")); break;
     case 0x07: stream->print(F("| Failed to arm")); break;
@@ -343,7 +347,7 @@ void dscKeybusInterface::printPanel_0x1C() {
 
 
 /*
- *  0x27, 0x2D, 0x34, 0x3E: Status with zones
+ *  0x27: Status with zones 1-8
  *  Interval: 4m
  *  CRC: yes
  *  Byte 4: TBD
@@ -359,11 +363,11 @@ void dscKeybusInterface::printPanel_0x1C() {
  *  00100111 0 10000010 00010001 10010001 11000111 00000001 00010011 [0x27] Status lights: Armed Backlight | Zones lights: 1   *  Periodic after delay zone 1 tripped, alarm on   *  Periodic after fire alarm, alarm on
  *  00100111 0 10000010 00001101 10010001 11000111 00000001 00001111 [0x27] Status lights: Armed Backlight | Zones lights: 1   *  Immediate after delay zone 1 tripped after previous alarm tripped
  *  00100111 0 10000010 00010001 11011011 11111111 00000010 10010110 [0x27] Status lights: Armed Backlight | Zones lights: 2   *  Instant zone 2 tripped away
- *  00100111 0 00000001 00000001 11111111 11111111 00000000 00100111 [0x27] Status lights: Ready | Open zones: none   *  Immediate after power on after panel reset
- *  00100111 0 10010001 00000001 11111111 11111111 00000000 10110111 [0x27] Status lights: Ready Trouble Backlight | Open zones: none   *  +15s after exit *8
- *  00100111 0 10010001 00000001 10100000 00000000 00000000 01011001 [0x27] Status lights: Ready Trouble Backlight | Open zones: none   *  +33s after power on after panel reset
- *  00100111 0 10010000 00000011 11111111 11111111 00111111 11110111 [0x27] Status lights: Trouble Backlight | Open zones: 1 2 3 4 5 6   *  +122s after power on after panel reset
- *  00100111 0 10010000 00000011 10010001 11000111 00111111 01010001 [0x27] Status lights: Trouble Backlight | Open zones: 1 2 3 4 5 6   *  +181s after power on after panel reset
+ *  00100111 0 00000001 00000001 11111111 11111111 00000000 00100111 [0x27] Status lights: Ready | Zones open 1-8: none   *  Immediate after power on after panel reset
+ *  00100111 0 10010001 00000001 11111111 11111111 00000000 10110111 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none   *  +15s after exit *8
+ *  00100111 0 10010001 00000001 10100000 00000000 00000000 01011001 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none   *  +33s after power on after panel reset
+ *  00100111 0 10010000 00000011 11111111 11111111 00111111 11110111 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6   *  +122s after power on after panel reset
+ *  00100111 0 10010000 00000011 10010001 11000111 00111111 01010001 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6   *  +181s after power on after panel reset
  */
 void dscKeybusInterface::printPanel_0x27() {
   if (!validCRC()) {
@@ -375,7 +379,7 @@ void dscKeybusInterface::printPanel_0x27() {
   printPanelLights();
   printPanelStatus();
 
-  stream->print(F(" | Open zones: "));
+  stream->print(F(" | Zones 1-8 open: "));
   if (panelData[6] == 0) stream->print(F("none"));
   else {
     if (bitRead(panelData[6],0)) stream->print(F("1 "));
@@ -390,6 +394,29 @@ void dscKeybusInterface::printPanel_0x27() {
 }
 
 
+/*
+ *  0x28: Zone expander query
+ *  Interval: after LCD5500Z keypad message
+ *  CRC: no
+ *
+ *  11111111 1 11111111 11111111 10111111 11111111 [Keypad]
+ *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query
+ *  11111111 1 01010111 01010101 11111111 11111111 01101111 [Keypad] Valid key, unknown function - 0xBB Byte 3: 0x01
+ */
+void dscKeybusInterface::printPanel_0x28() {
+  stream->print(F("Zone expander query"));
+}
+
+
+/*
+ *  0x2D: Status with zones 9-16
+ *  Interval: 4m
+ *  CRC: yes
+ *  Byte 4: TBD
+ *  Byte 5: TBD
+ *
+ *  00101101 0 10000000 00000011 10000001 11000111 00000001 11111001 [0x2D] Status lights: Backlight | Partition not ready | Open zones: 9
+ */
 void dscKeybusInterface::printPanel_0x2D() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
@@ -400,7 +427,7 @@ void dscKeybusInterface::printPanel_0x2D() {
   printPanelLights();
   printPanelStatus();
 
-  stream->print(F(" | Open zones: "));
+  stream->print(F(" | Zones 9-16 open: "));
   if (panelData[6] == 0) stream->print(F("none"));
   else {
     if (bitRead(panelData[6],0)) stream->print(F("9 "));
@@ -415,6 +442,13 @@ void dscKeybusInterface::printPanel_0x2D() {
 }
 
 
+/*
+ *  0x34: Status with zones 17-24
+ *  Interval: 4m
+ *  CRC: yes
+ *  Byte 4: TBD
+ *  Byte 5: TBD
+ */
 void dscKeybusInterface::printPanel_0x34() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
@@ -425,7 +459,7 @@ void dscKeybusInterface::printPanel_0x34() {
   printPanelLights();
   printPanelStatus();
 
-  stream->print(F(" | Open zones: "));
+  stream->print(F(" | Zones 17-24 open: "));
   if (panelData[6] == 0) stream->print(F("none"));
   else {
     if (bitRead(panelData[6],0)) stream->print(F("17 "));
@@ -440,6 +474,13 @@ void dscKeybusInterface::printPanel_0x34() {
 }
 
 
+/*
+ *  0x3E: Status with zones 25-32
+ *  Interval: 4m
+ *  CRC: yes
+ *  Byte 4: TBD
+ *  Byte 5: TBD
+ */
 void dscKeybusInterface::printPanel_0x3E() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
@@ -450,7 +491,7 @@ void dscKeybusInterface::printPanel_0x3E() {
   printPanelLights();
   printPanelStatus();
 
-  stream->print(F(" | Open zones: "));
+  stream->print(F(" | Zones 25-32 open: "));
   if (panelData[6] == 0) stream->print(F("none"));
   else {
     if (bitRead(panelData[6],0)) stream->print(F("25 "));
@@ -506,12 +547,11 @@ void dscKeybusInterface::printPanel_0x5D() {
     return;
   }
 
-  stream->print(F("Flashing status: "));
+  stream->print(F("Status lights flashing: "));
   printPanelLights();
 
   bool zoneLights = false;
-  if (panelData[2] != 0) stream->print(F("| Zones: "));
-  else stream->print(F("| Flashing zones: "));
+  stream->print(F("| Zones flashing: "));
   for (byte panelByte = 3; panelByte <= 6; panelByte++) {
     if (panelData[panelByte] != 0) {
       zoneLights = true;
@@ -540,12 +580,11 @@ void dscKeybusInterface::printPanel_0x63() {
     return;
   }
 
-  stream->print(F("Flashing panel lights"));
+  stream->print(F("Status lights flashing:"));
   printPanelLights();
 
   bool zoneLights = false;
-  if (panelData[2] != 0) stream->print(F("| Zones: "));
-  else stream->print(F("| Flashing zones: "));
+  stream->print(F("| Zones flashing: "));
   for (byte panelByte = 3; panelByte <= 6; panelByte++) {
     if (panelData[panelByte] != 0) {
       zoneLights = true;
@@ -1260,36 +1299,48 @@ void dscKeybusInterface::printPanel_0xD5() {
 
 
 /*
+ *  Zone expander: status update notification, panel responds with 0x28
+ *
+ *  11111111 1 11111111 11111111 10111111 11111011 [Keypad] Zone expander status notification
+ *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query
+ *  11111111 1 01010101 01010101 01010101 01010101 01000100 [Keypad]
+ */
+void dscKeybusInterface::printKeypad_0xFF_Byte4_0xBF() {
+  stream->print(F("[Zone Expander] Status notification"));
+}
+
+
+/*
  *  Keypad: Keybus notification, panel responds with 0x4C query
  *
  *  11111111 1 11111111 11111111 11111110 11111111 [Keypad] Keybus notification
  *  01001100 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x4C] Keybus query
  */
 void dscKeybusInterface::printKeypad_0xFF_Byte4_0xFE() {
-  stream->print(F("Keybus notification"));
-}
-
-
-/*
- *  Keypad: status update notification, panel responds with 0x28
- *
- *  11111111 1 11111111 11111111 10111111 11111011 [Keypad] LCD5500Z Status notification
- *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28]
- *  11111111 1 01010101 01010101 01010101 01010101 01000100 [Keypad]
- */
-void dscKeybusInterface::printKeypad_0xFF_Byte4_0x40() {
-  stream->print(F("LCD5500Z Status notification"));
+  stream->print(F("[Keypad] Keybus notification"));
 }
 
 
 /*
  *  Keypad: status update notification, panel responds with 0xD5 query
  *
- *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] PC1555RKZ Status notification
+ *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] Keypad status notification
  *  11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
  */
 void dscKeybusInterface::printKeypad_0xFF_Byte5_0xFB() {
-  stream->print(F("PC1555RKZ Status notification"));
+  stream->print(F("[Keypad] Status notification"));
+}
+
+
+/*  Zone expander: Panel 0x28 zone expander query response
+ *  Byte 2: changed on zone open
+ *  Byte 3: changed on zone closed
+ *
+ *  11111111 1 01010111 01010101 11111111 11111111 01101111 [Zone Expander] Query response  // Zone 9 open
+ *  11111111 1 01010101 01010111 11111111 11111111 01101111 [Zone Expander] Query response  // Zone 9 closed
+ */
+void dscKeybusInterface::printKeypad_0xFF_Panel_0x28() {
+  stream->print(F("[Zone Expander] Status"));
 }
 
 
@@ -1312,6 +1363,7 @@ void dscKeybusInterface::printKeypad_0xFF_Byte5_0xFB() {
  *  11111111 1 00111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone closed  //After exiting *8 programming after NC
  */
 void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
+  stream->print(F("[Keypad] "));
   bool firstData = true;
   for (byte keypadByte = 2; keypadByte <= 9; keypadByte++) {
     byte slotData = keypadData[keypadByte];
@@ -1329,7 +1381,7 @@ void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
 
 /*
  *  Keypad: buttons and panel 0x11 keypad slot query response for slots 1-4
- * 
+ *
  *  The panel rejects unknown keypad data - all keys that are accepted by
  *  the panel are included here.
  *
@@ -1338,45 +1390,46 @@ void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1
  */
 void dscKeybusInterface::printKeypad_0xFF_Byte2() {
+  stream->print(F("[Keypad] "));
   bool decodedKey = true;
   switch (keypadData[2]) {
-    case 0x00: 
+    case 0x00:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("0"));
       break;
-    case 0x05: 
+    case 0x05:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("1"));
       break;
-    case 0x0A: 
+    case 0x0A:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("2"));
       break;
-    case 0x0F: 
+    case 0x0F:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("3"));
       break;
-    case 0x11: 
+    case 0x11:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("4"));
       break;
-    case 0x16: 
+    case 0x16:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("5"));
       break;
-    case 0x1B: 
+    case 0x1B:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("6"));
       break;
-    case 0x1C: 
+    case 0x1C:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("7"));
       break;
-    case 0x22: 
+    case 0x22:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("8"));
       break;
-    case 0x27: 
+    case 0x27:
       if (hideKeypadDigits) stream->print(F("[Digit]"));
       else stream->print(F("9"));
       break;
@@ -1451,6 +1504,7 @@ void dscKeybusInterface::printKeypad_0xFF_Byte2() {
  *  11111111 1 11111111 11111100 11111111 11111111 11111111 [Keypad] Slot 8
  */
 void dscKeybusInterface::printKeypad_0xFF_Byte3() {
+  stream->print(F("[Keypad] "));
   if (keypadData[2] == 0xFF) stream->print(F("Slots active: "));
     if ((keypadData[3] & 0xC0) == 0) stream->print(F("5 "));
     if ((keypadData[3] & 0x30) == 0) stream->print(F("6"));
@@ -1465,7 +1519,7 @@ void dscKeybusInterface::printKeypad_0xFF_Byte3() {
  *  01110111 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
  */
 void dscKeybusInterface::printKeypad_0x77() {
-  stream->print(F("Fire alarm"));
+  stream->print(F("[Keypad] Fire alarm"));
 }
 
 
@@ -1475,7 +1529,7 @@ void dscKeybusInterface::printKeypad_0x77() {
  *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
  */
 void dscKeybusInterface::printKeypad_0xBB() {
-  stream->print(F("Auxiliary alarm"));
+  stream->print(F("[Keypad] Auxiliary alarm"));
 }
 
 
@@ -1485,7 +1539,7 @@ void dscKeybusInterface::printKeypad_0xBB() {
  *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
  */
 void dscKeybusInterface::printKeypad_0xDD() {
-  stream->print(F("Panic alarm"));
+  stream->print(F("[Keypad] Panic alarm"));
 }
 
 
