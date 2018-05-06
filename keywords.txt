@@ -41,14 +41,12 @@ batteryTrouble	KEYWORD2
 batteryTroubleChanged	KEYWORD2
 powerTrouble	KEYWORD2
 powerTroubleChanged	KEYWORD2
-openZonesGroup1	KEYWORD2
-previousOpenZonesGroup1	KEYWORD2
-openZonesGroup1Changed	KEYWORD2
 openZones	KEYWORD2
 openZonesChanged	KEYWORD2
+openZonesStatusChanged	KEYWORD2
 alarmZones	KEYWORD2
 alarmZonesChanged	KEYWORD2
-alarmZonesGroup1Changed	KEYWORD2
+alarmZonesStatusChanged	KEYWORD2
 
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1

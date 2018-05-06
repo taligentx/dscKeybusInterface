@@ -20,7 +20,6 @@
 
 #include <Arduino.h>
 
-const byte dscZones = 8;      // Number of zones to process: 8, 16, 32
 const byte dscReadSize = 13;  // Keybus data size limit
 
 class dscKeybusInterface {
@@ -64,9 +63,10 @@ class dscKeybusInterface {
     bool entryDelay, entryDelayChanged;
     bool batteryTrouble, batteryTroubleChanged;
     bool powerTrouble, powerTroubleChanged;
-    byte openZonesGroup1;
-    bool openZonesGroup1Changed, openZones[dscZones], openZonesChanged[dscZones];
-    bool alarmZones[dscZones], alarmZonesChanged[dscZones], alarmZonesGroup1Changed;
+    bool openZonesStatusChanged;
+    bool alarmZonesStatusChanged;
+    byte openZones[8], openZonesChanged[8];    // Zone status is stored using 1 bit per zone, up to 64 zones
+    byte alarmZones[8], alarmZonesChanged[8];  // Zone alarm status is stored using 1 bit per zone, up to 64 zones
 
     // Panel and keypad data can be accessed directly
     static volatile byte panelData[dscReadSize];
@@ -80,15 +80,30 @@ class dscKeybusInterface {
     bool redundantPanelData(byte previousCmd[]);
     void writeKeys(const char * writeKeysArray);
 
+    void processPanel_0x05();
+    void processPanel_0x27();
+    void processPanel_0x2D();
+    void processPanel_0x34();
+    void processPanel_0x3E();
+    void processPanel_0xA5();
+    void processPanel_0xA5_Byte7_0xFF();
+    void processPanel_0xA5_Byte7_0x00();
+
+    void printPanelLights();
+    void printPanelStatus();
     void printPanel_0x05();
-    void printPanel_0x27();
     void printPanel_0x0A();
     void printPanel_0x11();
     void printPanel_0x16();
     void printPanel_0x1C();
+    void printPanel_0x27();
+    void printPanel_0x2D();
+    void printPanel_0x34();
+    void printPanel_0x3E();
     void printPanel_0x4C();
     void printPanel_0x58();
     void printPanel_0x5D();
+    void printPanel_0x63();
     void printPanel_0x64();
     void printPanel_0x75();
     void printPanel_0x7F();
@@ -102,29 +117,6 @@ class dscKeybusInterface {
     void printPanel_0xBB();
     void printPanel_0xC3();
     void printPanel_0xD5();
-
-    void processPanel_0x05();
-    void processPanel_0x27();
-    void processPanel_0x0A();
-    void processPanel_0x11();
-    void processPanel_0x16();
-    void processPanel_0x1C();
-    void processPanel_0x4C();
-    void processPanel_0x58();
-    void processPanel_0x5D();
-    void processPanel_0x64();
-    void processPanel_0x75();
-    void processPanel_0x7F();
-    void processPanel_0x87();
-    void processPanel_0x8D();
-    void processPanel_0x94();
-    void processPanel_0xA5();
-    void processPanel_0xA5_Byte7_0xFF();
-    void processPanel_0xA5_Byte7_0x00();
-    void processPanel_0xB1();
-    void processPanel_0xBB();
-    void processPanel_0xC3();
-    void processPanel_0xD5();
 
     void printKeypad_0x77();
     void printKeypad_0xBB();
@@ -140,7 +132,7 @@ class dscKeybusInterface {
     const char* writeKeysArray;
     bool writeKeysPending;
     bool previousTroubleStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
-    byte previousOpenZonesGroup1;
+    byte previousOpenZones[8];
 
     static byte dscClockPin;
     static byte dscReadPin;

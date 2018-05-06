@@ -6,7 +6,7 @@ For example, using this library with the inexpensive NodeMCU and Wemos D1 Mini m
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 8 zones.  Captured Keybus data is needed for zones 9-32 and the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+This is an early release and supports the DSC PC1555MX (PowerSeries 632) up to 32 zones.  Captured Keybus data is needed to confirm zones 9-32 status, zones 9-32 in alarm status, and the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Usage
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
@@ -91,7 +91,6 @@ DSC Aux(+) ---+--- Arduino Vin pin
  * Left arrow (unconfirmed): `<`
  
  ## Notes
- * The zone count is currently hardcoded to limit memory usage - to monitor more than 8 zones, change `dscZones` in `src/dscKeybusInterface.h` to support 16 or 32 zones.
  * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line 250us after the clock changes in a non-blocking way (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
 ## References

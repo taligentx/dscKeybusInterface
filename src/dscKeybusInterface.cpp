@@ -206,7 +206,11 @@ bool dscKeybusInterface::handlePanel() {
     static byte previousCmd11[dscReadSize];
     static byte previousCmd16[dscReadSize];
     static byte previousCmd27[dscReadSize];
+    static byte previousCmd2D[dscReadSize];
+    static byte previousCmd34[dscReadSize];
+    static byte previousCmd3E[dscReadSize];
     static byte previousCmd5D[dscReadSize];
+    static byte previousCmd63[dscReadSize];
     static byte previousCmdB1[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
@@ -217,12 +221,28 @@ bool dscKeybusInterface::handlePanel() {
         if (redundantPanelData(previousCmd16)) return false;
         break;
 
-      case 0x27:  // Status with zone info
+      case 0x27:  // Status with zone 1-8 info
         if (redundantPanelData(previousCmd27)) return false;
+        break;
+
+      case 0x2D:  // Status with zone 9-16 info
+        if (redundantPanelData(previousCmd2D)) return false;
+        break;
+
+      case 0x34:  // Status with zone 17-24 info
+        if (redundantPanelData(previousCmd34)) return false;
+        break;
+
+      case 0x3E:  // Status with zone 25-32 info
+        if (redundantPanelData(previousCmd3E)) return false;
         break;
 
       case 0x5D:  // Flashing panel lights
         if (redundantPanelData(previousCmd5D)) return false;
+        break;
+
+      case 0x63:  // Flashing panel lights?
+        if (redundantPanelData(previousCmd63)) return false;
         break;
 
       case 0xB1:  // Enabled zones
@@ -235,6 +255,9 @@ bool dscKeybusInterface::handlePanel() {
   switch (panelData[0]) {
     case 0x05: processPanel_0x05(); break;
     case 0x27: processPanel_0x27(); break;
+    case 0x2D: processPanel_0x2D(); break;
+    case 0x34: processPanel_0x34(); break;
+    case 0x3E: processPanel_0x3E(); break;
     case 0xA5: processPanel_0xA5(); break;
   }
 

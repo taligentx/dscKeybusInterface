@@ -102,7 +102,7 @@ const char* mqttServer = "";
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPublishTopic = "dsc/Get";    // Provides status updates
 const char* mqttSubscribeTopic = "dsc/Set";  // Writes to the panel
-const char* mqttZoneTopic = "dsc/Get/Zone";  // Zone number will be appended to this topic name: dsc/Get/Zone1, etc
+const char* mqttZoneTopic = "dsc/Get/Zone";  // Zone number will be appended to this topic name: dsc/Get/Zone1, dsc/Get/Zone64
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
@@ -150,7 +150,7 @@ void loop() {
       dsc.exitDelayChanged = false;
       if (dsc.exitDelay) mqtt.publish(mqttPublishTopic, "pending");
     }
-    
+
     // Publish armed status
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;
@@ -167,24 +167,24 @@ void loop() {
       if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered");
     }
 
-    // Publish zone status
-    if (dsc.openZonesGroup1Changed) {
-      dsc.openZonesGroup1Changed = false;
-      for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
-        if (dsc.openZonesChanged[zoneCount]) {
-          
-          // Appends the mqttZoneTopic with the zone number
-          char zonePublishTopic[strlen(mqttZoneTopic) + 2];
-          char zone[3];
-          strcpy(zonePublishTopic, mqttZoneTopic);
-          itoa(zoneCount + 1, zone, 10);
-          strcat(zonePublishTopic, zone);
-          
-          if (dsc.openZones[zoneCount]) {
-            mqtt.publish(zonePublishTopic, "1");  // Zone open
-          }
-          else {
-            mqtt.publish(zonePublishTopic, "0");  // Zone closed
+    // Publish zones 1-64 status
+    if (dsc.openZonesStatusChanged) {
+      dsc.openZonesStatusChanged = false;
+      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {
+
+            // Appends the mqttZoneTopic with the zone number
+            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zone[3];
+            strcpy(zonePublishTopic, mqttZoneTopic);
+            itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);
+            strcat(zonePublishTopic, zone);
+
+            if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
+              mqtt.publish(zonePublishTopic, "1");     // Zone open
+            }
+            else mqtt.publish(zonePublishTopic, "0");  // Zone closed
           }
         }
       }

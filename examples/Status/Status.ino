@@ -138,36 +138,40 @@ void loop() {
       Serial.println(F(" | Keypad panic alarm"));
     }
 
-    if (dsc.openZonesGroup1Changed) {
-      dsc.openZonesGroup1Changed = false;
-      for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
-        if (dsc.openZonesChanged[zoneCount]) {
-          if (dsc.openZones[zoneCount]) {
-            Serial.print(F("Zone open: "));
-            Serial.println(zoneCount + 1);
-          }
-          else {
-            Serial.print(F("Zone restored: "));
-            Serial.println(zoneCount + 1);
+    if (dsc.openZonesStatusChanged) {
+      dsc.openZonesStatusChanged = false;
+      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {
+            if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
+              Serial.print(F("Zone open: "));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+            }
+            else {
+              Serial.print(F("Zone restored: "));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+            }
           }
         }
       }
     }
 
-    if (dsc.alarmZonesGroup1Changed) {
-      dsc.alarmZonesGroup1Changed = false;
-      for (byte zoneCount = 0; zoneCount < dscZones; zoneCount++) {
-        if (dsc.alarmZonesChanged[zoneCount]) {
-          dsc.alarmZonesChanged[zoneCount] = false;
-          if (dsc.alarmZones[zoneCount]) {
-            Serial.print(dsc.dscTime);
-            Serial.print(F(" | Zone alarm: "));
-            Serial.println(zoneCount + 1);
-          }
-          else {
-            Serial.print(dsc.dscTime);
-            Serial.print(F(" | Zone alarm restored: "));
-            Serial.println(zoneCount + 1);
+    if (dsc.alarmZonesStatusChanged) {
+      dsc.alarmZonesStatusChanged = false;
+      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {
+            bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);
+            if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
+              Serial.print(dsc.dscTime);
+              Serial.print(F(" | Zone alarm: "));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+            }
+            else {
+              Serial.print(dsc.dscTime);
+              Serial.print(F(" | Zone alarm restored: "));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+            }
           }
         }
       }
