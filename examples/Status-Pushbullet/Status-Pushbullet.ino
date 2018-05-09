@@ -107,19 +107,20 @@ bool sendPush(const char* pushMessage) {
   pushClient.print(F("Access-Token: "));
   pushClient.println(pushToken);
   pushClient.println();
-  pushClient.print("{\"body\":\"");
+  pushClient.print(F("{\"body\":\""));
   pushClient.print(pushMessage);
-  pushClient.print("\",\"type\":\"note\"}");
+  pushClient.print(F("\",\"type\":\"note\"}"));
 
   // Waits for a response
   unsigned long previousMillis = millis();
   while (!pushClient.available()) {
+    dsc.handlePanel();
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
       pushClient.stop();
       return false;
     }
-    delay(1);
+    yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code

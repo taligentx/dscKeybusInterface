@@ -1,4 +1,5 @@
-dscKeybusInterface		KEYWORD1
+dscKeybusInterface	KEYWORD1
+dsc	KEYWORD1
 
 begin	KEYWORD2
 write	KEYWORD2
@@ -36,6 +37,8 @@ keypadAuxAlarm	KEYWORD2
 keypadPanicAlarm	KEYWORD2
 troubleStatus	KEYWORD2
 troubleStatusChanged	KEYWORD2
+fireStatus	KEYWORD2
+fireStatusChanged	KEYWORD2
 previousTroubleStatus	KEYWORD2
 batteryTrouble	KEYWORD2
 batteryTroubleChanged	KEYWORD2

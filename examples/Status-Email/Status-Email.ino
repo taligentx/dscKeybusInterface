@@ -138,12 +138,13 @@ bool smtpValidResponse() {
   // Waits for a response
   unsigned long previousMillis = millis();
   while (!smtpClient.available()) {
+    dsc.handlePanel();  // Processes Keybus data while waiting on the SMTP response
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
       smtpClient.stop();
       return false;
     }
-    delay(1);
+    yield();
   }
 
   // Checks the first character of the SMTP reply code - the command was successful if the reply code begins

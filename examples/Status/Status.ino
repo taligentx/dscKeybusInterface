@@ -66,7 +66,7 @@ void loop() {
 
   // Reads from serial input and writes to the Keybus as a virtual keypad
   if (Serial.available() > 0 && dsc.writeReady) {
-      dsc.write(Serial.read());
+    dsc.write(Serial.read());
   }
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
@@ -118,6 +118,12 @@ void loop() {
       Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
       if (dsc.powerTrouble) Serial.println(F(" | Panel AC power trouble"));
       else Serial.println(F(" | Panel AC power restored"));
+    }
+
+    if (dsc.fireStatusChanged) {
+      dsc.fireStatusChanged = false;  // Resets the fire status flag
+      if (dsc.fireStatus) Serial.println(F("Fire status on"));
+      else Serial.println(F("Fire status restored"));
     }
 
     if (dsc.keypadFireAlarm) {

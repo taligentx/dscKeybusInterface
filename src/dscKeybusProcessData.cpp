@@ -22,7 +22,9 @@ void dscKeybusInterface::processPanel_0x05() {
 
   // Status lights
   if (panelData[2] != 0) {
-    if (bitRead(panelData[2],4)) {    // Trouble
+
+    // Trouble status
+    if (bitRead(panelData[2],4)) {
       troubleStatus = true;
       if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
         previousTroubleStatus = troubleStatus;
@@ -35,6 +37,24 @@ void dscKeybusInterface::processPanel_0x05() {
       if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
         previousTroubleStatus = troubleStatus;
         troubleStatusChanged = true;
+        statusChanged = true;
+      }
+    }
+
+    // Fire status
+    if (bitRead(panelData[2],6)) {
+      fireStatus = true;
+      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+        previousFireStatus = fireStatus;
+        fireStatusChanged = true;
+        statusChanged = true;
+      }
+    }
+    else {
+      fireStatus = false;
+      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+        previousFireStatus = fireStatus;
+        fireStatusChanged = true;
         statusChanged = true;
       }
     }
@@ -266,8 +286,36 @@ void dscKeybusInterface::processPanel_0xA5() {
     return;
   }
 
-  if (panelData[7] == 0xFF) processPanel_0xA5_Byte7_0xFF();
-  if (panelData[7] == 0) processPanel_0xA5_Byte7_0x00();
+  switch (panelData[7]) {
+    case 0x09: processPanel_0xA5_Byte7_0x09(); break;
+    case 0xFF: processPanel_0xA5_Byte7_0xFF(); break;
+  }
+}
+
+
+void dscKeybusInterface::processPanel_0xA5_Byte7_0x09() {
+
+  // Process data based on byte 5 bits 0 and 1
+  switch (panelData[5] & 0x03) {
+
+    // Byte 5: xxxxxx00
+    case 0x00: {
+
+      // Zone expander alarm, zones 9-16: panelData[6] 0x11-0x18
+      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]
+      if (panelData[6] >= 0x11 && panelData[6] <= 0x18) {
+        alarmZonesStatusChanged = true;
+        for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
+          if (panelData[6] == 0x11 + zoneCount) {
+            bitWrite(alarmZones[1], zoneCount, 1);
+            bitWrite(alarmZonesChanged[1], zoneCount, 1);
+            statusChanged = true;
+          }
+        }
+      }
+      break;
+    }
+  }
 }
 
 
@@ -374,8 +422,6 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
             }
           }
         }
-
-        decodeComplete = true;
         break;
       }
 
@@ -407,7 +453,6 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
             }
           }
         }
-        decodeComplete = true;
         break;
       }
 
@@ -423,42 +468,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
         decodeComplete = true;
         break;
       }
-
-      decodeComplete = false;
       break;
     }
   }
-  if (decodeComplete) return;
-}
-
-
-void dscKeybusInterface::processPanel_0xA5_Byte7_0x00() {
-  bool decodeComplete = true;
-
-  // Process data based on byte 5, bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx10
-    case 0x02: {
-      switch (panelData[6]) {
-        case 0x99: {       // Activate stay/away zones
-          partitionArmed = true;
-          partitionArmedStay = false;
-          partitionArmedAway = true;
-          partitionArmedChanged = true;
-          statusChanged = true;
-          break;
-        }
-        case 0x9A: break;  // Armed: stay
-        case 0x9B: break;  // Armed: away
-        case 0x9C: {       // Armed without entry delay
-          armedNoEntryDelay = true;
-          break;
-        }
-        default: decodeComplete = false;
-      }
-      break;
-    }
-  }
-  if (decodeComplete) return;
 }

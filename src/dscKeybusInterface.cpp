@@ -200,7 +200,7 @@ bool dscKeybusInterface::handlePanel() {
       break;
   }
 
-  // Skips redundant data from periodic commands - these are sent at regular intervals and skipping is a configurable
+  // Skips redundant data from periodic commands sent at regular intervals, skipping is a configurable
   // option and the default behavior to help see new Keybus data when decoding the protocol
   if (!processRedundantData) {
     static byte previousCmd11[dscReadSize];

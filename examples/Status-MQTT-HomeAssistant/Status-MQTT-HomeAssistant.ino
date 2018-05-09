@@ -229,10 +229,10 @@ void mqttHandle() {
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
       mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
-        Serial.println("MQTT disconnected, successfully reconnected.");
+        Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
       }
-      else Serial.println("MQTT disconnected, failed to reconnect.");
+      else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }
   }
   else mqtt.loop();
@@ -241,12 +241,12 @@ void mqttHandle() {
 
 bool mqttConnect() {
   if (mqtt.connect(mqttClientName)) {
-    Serial.print("MQTT connected: ");
+    Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
     mqtt.subscribe(mqttSubscribeTopic);
   }
   else {
-    Serial.print("MQTT connection failed: ");
+    Serial.print(F("MQTT connection failed: "));
     Serial.println(mqttServer);
   }
   return mqtt.connected();

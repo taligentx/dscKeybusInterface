@@ -32,20 +32,20 @@ class dscKeybusInterface {
     void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
     bool handlePanel();                               // Returns true if valid panel data is available
     bool handleKeypad();                              // Returns true if valid keypad data is available
-    static volatile bool writeReady;                  // Check if this is true before writing a key
+    static volatile bool writeReady;                  // True if the library is ready to write a key
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
-    void printPanelCommand();
-    void printPanelMessage();
+    void printPanelCommand();                         // Prints the panel command as hex
+    void printPanelMessage();                         // Prints the decoded panel message
     void printKeypadBinary(bool printSpaces = true);  // Includes spaces between bytes by default
-    void printKeypadMessage();
+    void printKeypadMessage();                        // Prints the decoded keypad message
 
     // These can be configured in the sketch setup() before begin()
-    bool hideKeypadDigits;
-    bool processRedundantData;
-    bool displayTrailingBits;
-    static bool processKeypadData;
+    bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
+    bool processRedundantData;      // Controls if repeated periodic commands are processed and displayed (default: false)
+    static bool processKeypadData;  // Controls if keypad data is processed and displayed (default: false)
+    bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
     // Panel time
     bool timeAvailable;             // True after the panel sends the first timestamp message
@@ -58,20 +58,28 @@ class dscKeybusInterface {
     bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
     bool partitionAlarm, partitionAlarmChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
+    bool fireStatus, fireStatusChanged;
     bool troubleStatus, troubleStatusChanged;
     bool exitDelay, exitDelayChanged;
     bool entryDelay, entryDelayChanged;
     bool batteryTrouble, batteryTroubleChanged;
     bool powerTrouble, powerTroubleChanged;
     bool openZonesStatusChanged;
+    byte openZones[8], openZonesChanged[8];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
-    byte openZones[8], openZonesChanged[8];    // Zone status is stored using 1 bit per zone, up to 64 zones
-    byte alarmZones[8], alarmZonesChanged[8];  // Zone alarm status is stored using 1 bit per zone, up to 64 zones
+    byte alarmZones[8], alarmZonesChanged[8];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
 
-    // Panel and keypad data can be accessed directly
+    // Panel and keypad data is stored in an array: command [0], stop bit by itself [1], followed by the remaining
+    // data.  panelData[] and keypadData[] can be accessed directly within the sketch.
+    //
+    // panelData[] example:
+    //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
+    //   00000101 0 10000001 00000001 10010001 11000111 [0x05] Status lights: Ready Backlight | Partition ready
+    //            ^ Byte 1 (stop bit)
     static volatile byte panelData[dscReadSize];
     static volatile byte keypadData[dscReadSize];
 
+    // Timer interrupt function to capture data - declared as public for use by the timer
     static void dscDataInterrupt();
 
   private:
@@ -86,8 +94,8 @@ class dscKeybusInterface {
     void processPanel_0x34();
     void processPanel_0x3E();
     void processPanel_0xA5();
+    void processPanel_0xA5_Byte7_0x09();
     void processPanel_0xA5_Byte7_0xFF();
-    void processPanel_0xA5_Byte7_0x00();
 
     void printPanelLights();
     void printPanelStatus();
@@ -112,8 +120,9 @@ class dscKeybusInterface {
     void printPanel_0x8D();
     void printPanel_0x94();
     void printPanel_0xA5();
-    void printPanel_0xA5_Byte7_0xFF();
     void printPanel_0xA5_Byte7_0x00();
+    void printPanel_0xA5_Byte7_0x09();
+    void printPanel_0xA5_Byte7_0xFF();
     void printPanel_0xB1();
     void printPanel_0xBB();
     void printPanel_0xC3();
@@ -133,7 +142,7 @@ class dscKeybusInterface {
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
-    bool previousTroubleStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
+    bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
     byte previousOpenZones[8];
 
     static byte dscClockPin;
