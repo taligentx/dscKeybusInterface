@@ -287,7 +287,7 @@ void dscKeybusInterface::processPanel_0xA5() {
   }
 
   switch (panelData[7]) {
-    case 0x09: processPanel_0xA5_Byte7_0x00(); break;
+    case 0x00: processPanel_0xA5_Byte7_0x00(); break;
     case 0x09: processPanel_0xA5_Byte7_0x09(); break;
     case 0xFF: processPanel_0xA5_Byte7_0xFF(); break;
   }
