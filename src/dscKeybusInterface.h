@@ -94,6 +94,7 @@ class dscKeybusInterface {
     void processPanel_0x34();
     void processPanel_0x3E();
     void processPanel_0xA5();
+    void processPanel_0xA5_Byte7_0x00();
     void processPanel_0xA5_Byte7_0x09();
     void processPanel_0xA5_Byte7_0xFF();
 

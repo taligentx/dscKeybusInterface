@@ -545,6 +545,7 @@ void dscKeybusInterface::printPanel_0x58() {
  *  01011101 0 00100000 00000000 00000000 00000000 00000000 01111101 [0x5D] Status lights flashing: Program | Zones 1-32 flashing: none
  *  01011101 0 00000000 00100000 00000000 00000000 00000000 01111101 [0x5D] Status lights flashing: none  | Zones 1-32 flashing: none 6
  *  01011101 0 00000100 00100000 00000000 00000000 00000000 10000001 [0x5D] Status lights flashing: Memory | Zones 1-32 flashing: 6
+ *  01011101 0 00000000 00000000 00000001 00000000 00000000 01011110 [0x5D] Status lights flashing: none | Zones flashing: 9
  */
 void dscKeybusInterface::printPanel_0x5D() {
   if (!validCRC()) {

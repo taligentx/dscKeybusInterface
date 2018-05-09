@@ -287,8 +287,38 @@ void dscKeybusInterface::processPanel_0xA5() {
   }
 
   switch (panelData[7]) {
+    case 0x09: processPanel_0xA5_Byte7_0x00(); break;
     case 0x09: processPanel_0xA5_Byte7_0x09(); break;
     case 0xFF: processPanel_0xA5_Byte7_0xFF(); break;
+  }
+}
+
+
+void dscKeybusInterface::processPanel_0xA5_Byte7_0x00() {
+
+  // Process data based on byte 5, bits 0 and 1
+  switch (panelData[5] & 0x03) {
+
+    // Byte 5: xxxxxx10
+    case 0x02: {
+      switch (panelData[6]) {
+        case 0x99: {       // Activate stay/away zones
+          partitionArmed = true;
+          partitionArmedStay = false;
+          partitionArmedAway = true;
+          partitionArmedChanged = true;
+          statusChanged = true;
+          break;
+        }
+        case 0x9A: break;  // Armed: stay
+        case 0x9B: break;  // Armed: away
+        case 0x9C: {       // Armed without entry delay
+          armedNoEntryDelay = true;
+          break;
+        }
+      }
+      break;
+    }
   }
 }
 
