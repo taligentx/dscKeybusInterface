@@ -20,7 +20,15 @@
 
 #include <Arduino.h>
 
-const byte dscReadSize = 13;  // Keybus data size limit
+// Maximum size of a Keybus command
+const byte dscReadSize = 13;
+
+// Number of commands to buffer if the sketch is busy
+#if defined(__AVR__)
+const byte dscBufferSize = 1;
+#elif defined(ESP8266)
+const byte dscBufferSize = 50;
+#endif
 
 class dscKeybusInterface {
 
@@ -53,7 +61,7 @@ class dscKeybusInterface {
     byte hour, minute, day, month;
     int year;
 
-    // Status
+    // Status tracking
     bool statusChanged;             // True after any status change
     bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
     bool partitionAlarm, partitionAlarmChanged;
@@ -79,14 +87,10 @@ class dscKeybusInterface {
     static volatile byte panelData[dscReadSize];
     static volatile byte keypadData[dscReadSize];
 
-    // Timer interrupt function to capture data - declared as public for use by the timer
+    // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
 
   private:
-    static void dscClockInterrupt();
-    bool validCRC();
-    bool redundantPanelData(byte previousCmd[]);
-    void writeKeys(const char * writeKeysArray);
 
     void processPanel_0x05();
     void processPanel_0x27();
@@ -140,6 +144,11 @@ class dscKeybusInterface {
     void printKeypad_0xFF_Panel_0x28();
     void printKeypad_0xFF_Panel_0xD5();
 
+    bool validCRC();
+    void writeKeys(const char * writeKeysArray);
+    static void dscClockInterrupt();
+    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[]);
+
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
@@ -155,6 +164,9 @@ class dscKeybusInterface {
     static volatile bool keypadDataCaptured;
     static volatile unsigned long clockHighTime;
     static volatile bool dataComplete, dataOverflow;
+    static volatile byte panelBufferLength;
+    static volatile byte panelBuffer[dscBufferSize][dscReadSize];
+    static volatile byte panelBitCountBuffer[dscBufferSize], panelByteCountBuffer[dscBufferSize];
     static volatile byte panelBitCount, panelByteCount;
     static volatile byte keypadBitCount, keypadByteCount;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
