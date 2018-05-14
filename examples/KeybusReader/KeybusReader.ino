@@ -1,5 +1,5 @@
 /*
- *  DSC Keybus Reader
+ *  DSC Keybus Reader (Arduino, esp8266)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status examples to put the interface
@@ -57,7 +57,7 @@ void setup() {
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
   dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: false)
-  dsc.processKeypadData = true;      // Controls if keypad data is processed and displayed (default: false)
+  dsc.processKeypadData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
   // Starts the Keybus interface and optionally specifies how to print data.
@@ -75,8 +75,19 @@ void loop() {
       dsc.write(Serial.read());
   }
 
-  // Prints panel data
   if (dsc.handlePanel()) {
+
+    // If the Keybus data size limit is exceeded on this panel, post an issue with the panel model:
+    // https://github.com/taligentx/dscKeybusInterface
+    if (dsc.dataOverflow) Serial.println(F("Keybus data overflow"));
+    dsc.dataOverflow = false;
+
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
+    // Prints panel data
     printTimestamp();
     Serial.print(" ");
     dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
@@ -86,24 +97,24 @@ void loop() {
     dsc.printPanelMessage();  // Prints the decoded message
     Serial.println();
 
-    // Prints keypad data - when valid panel data is printed
-    if (dsc.handleKeypad()) {
+    // Prints keypad and module data when valid panel data is printed
+    if (dsc.handleKeybus()) {
       printTimestamp();
       Serial.print(" ");
-      dsc.printKeypadBinary();   // Optionally prints without spaces: printKeypadBinary(false);
+      dsc.printKeybusBinary();   // Optionally prints without spaces: printKeybusBinary(false);
       Serial.print(" ");
-      dsc.printKeypadMessage();  // Prints the decoded message
+      dsc.printKeybusMessage();  // Prints the decoded message
       Serial.println();
     }
   }
 
-  // Prints keypad data - when valid panel data is not available
-  else if (dsc.handleKeypad()) {
+  // Prints keypad and module data when valid panel data is not available
+  else if (dsc.handleKeybus()) {
     printTimestamp();
     Serial.print(" ");
-    dsc.printKeypadBinary();  // Optionally prints without spaces: printKeypadBinary(false);
+    dsc.printKeybusBinary();  // Optionally prints without spaces: printKeybusBinary(false);
     Serial.print(" ");
-    dsc.printKeypadMessage();
+    dsc.printKeybusMessage();
     Serial.println();
   }
 }

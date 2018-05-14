@@ -5,18 +5,18 @@ begin	KEYWORD2
 write	KEYWORD2
 writeReady	KEYWORD2
 handlePanel	KEYWORD2
-handleKeypad	KEYWORD2
+handleKeybus	KEYWORD2
 
 printPanelBinary	KEYWORD2
 printPanelCommand	KEYWORD2
 printPanelMessage	KEYWORD2
-printKeypadBinary	KEYWORD2
-printKeypadMessage	KEYWORD2
+printKeybusBinary	KEYWORD2
+printKeybusMessage	KEYWORD2
 
 hideKeypadDigits	KEYWORD2
 processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
-processKeypadData	KEYWORD2
+processKeybusData	KEYWORD2
 
 statusChanged	KEYWORD2
 dscTime	KEYWORD2
@@ -50,6 +50,7 @@ openZonesStatusChanged	KEYWORD2
 alarmZones	KEYWORD2
 alarmZonesChanged	KEYWORD2
 alarmZonesStatusChanged	KEYWORD2
+bufferOverflow	KEYWORD2
 
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1

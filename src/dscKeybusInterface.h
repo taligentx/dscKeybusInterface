@@ -20,12 +20,13 @@
 
 #include <Arduino.h>
 
-// Maximum size of a Keybus command
+// Maximum size of a Keybus command - post an issue if this needs to be increased for a panel model:
+// https://github.com/taligentx/dscKeybusInterface
 const byte dscReadSize = 13;
 
-// Number of commands to buffer if the sketch is busy
+// Number of commands to buffer if the sketch is busy, requires dscReadSize + 2 bytes of memory per command
 #if defined(__AVR__)
-const byte dscBufferSize = 1;
+const byte dscBufferSize = 10;
 #elif defined(ESP8266)
 const byte dscBufferSize = 50;
 #endif
@@ -39,20 +40,20 @@ class dscKeybusInterface {
 
     void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
     bool handlePanel();                               // Returns true if valid panel data is available
-    bool handleKeypad();                              // Returns true if valid keypad data is available
+    bool handleKeybus();                              // Returns true if valid keypad or module data is available
     static volatile bool writeReady;                  // True if the library is ready to write a key
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
     void printPanelCommand();                         // Prints the panel command as hex
     void printPanelMessage();                         // Prints the decoded panel message
-    void printKeypadBinary(bool printSpaces = true);  // Includes spaces between bytes by default
-    void printKeypadMessage();                        // Prints the decoded keypad message
+    void printKeybusBinary(bool printSpaces = true);  // Includes spaces between bytes by default
+    void printKeybusMessage();                        // Prints the decoded keypad or module message
 
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
     bool processRedundantData;      // Controls if repeated periodic commands are processed and displayed (default: false)
-    static bool processKeypadData;  // Controls if keypad data is processed and displayed (default: false)
+    static bool processKeypadData;  // Controls if keypad and module data is processed and displayed (default: false)
     bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
     // Panel time
@@ -84,8 +85,11 @@ class dscKeybusInterface {
     //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
     //   00000101 0 10000001 00000001 10010001 11000111 [0x05] Status lights: Ready Backlight | Partition ready
     //            ^ Byte 1 (stop bit)
-    static volatile byte panelData[dscReadSize];
-    static volatile byte keypadData[dscReadSize];
+    static byte panelData[dscReadSize];
+    static volatile byte keybusData[dscReadSize];
+
+    // True if dscReadSize or dscBufferSize needs to be increased
+    static volatile bool dataOverflow, bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
@@ -133,16 +137,14 @@ class dscKeybusInterface {
     void printPanel_0xC3();
     void printPanel_0xD5();
 
-    void printKeypad_0x77();
-    void printKeypad_0xBB();
-    void printKeypad_0xDD();
-    void printKeypad_0xFF_Byte2();
-    void printKeypad_0xFF_Byte3();
-    void printKeypad_0xFF_Byte4_0xBF();
-    void printKeypad_0xFF_Byte4_0xFE();
-    void printKeypad_0xFF_Byte5_0xFB();
-    void printKeypad_0xFF_Panel_0x28();
-    void printKeypad_0xFF_Panel_0xD5();
+    void printKeybus_0x77();
+    void printKeybus_0xBB();
+    void printKeybus_0xDD();
+    void printKeybus_Panel_0x11();
+    void printKeybus_Panel_0x28();
+    void printKeybus_Panel_0xD5();
+    void printKeybus_Notification();
+    void printKeybus_Keys();
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
@@ -152,6 +154,7 @@ class dscKeybusInterface {
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
+    bool queryResponse;
     bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
     byte previousOpenZones[8];
 
@@ -160,17 +163,17 @@ class dscKeybusInterface {
     static byte dscWritePin;
     static bool virtualKeypad;
     static char writeKey;
+    static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
-    static volatile bool keypadDataCaptured;
+    static volatile bool keybusDataCaptured;
     static volatile unsigned long clockHighTime;
-    static volatile bool dataComplete, dataOverflow;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBitCountBuffer[dscBufferSize], panelByteCountBuffer[dscBufferSize];
-    static volatile byte panelBitCount, panelByteCount;
-    static volatile byte keypadBitCount, keypadByteCount;
+    static volatile byte keybusBitCount, keybusByteCount;
+    static volatile byte currentCmd, queryCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrKeypadData[dscReadSize], isrKeypadBitTotal, isrKeypadBitCount, isrKeypadByteCount;
+    static volatile byte isrKeybusData[dscReadSize], isrKeybusBitTotal, isrKeybusBitCount, isrKeybusByteCount;
 };
 
 #endif  // dscKeybusInterface_h

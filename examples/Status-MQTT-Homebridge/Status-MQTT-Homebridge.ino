@@ -1,5 +1,5 @@
 /*
- *  DSC Status with MQTT (esp8266)
+ *  DSC Status with MQTT (Arduino, esp8266)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -155,25 +155,31 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Reset the status tracking flag
 
-    // Publish armed status
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
+    // Publishes armed status
     if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;                                                                 // Resets the partition armed status flag
+      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
       if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");       // Night armed
-        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA");                           // Away armed
-        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA");  // Night armed
-        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA");                           // Stay armed
+        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA", true);       // Night armed
+        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA", true);                           // Away armed
+        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA", true);  // Night armed
+        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA", true);                           // Stay armed
       }
-      else mqtt.publish(mqttPublishTopic, "D");                                                          // Disarmed
+      else mqtt.publish(mqttPublishTopic, "D", true);                                                          // Disarmed
     }
 
-    // Publish alarm status
+    // Publishes alarm status
     if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;                            // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T");  // Alarm tripped
+      dsc.partitionAlarmChanged = false;                                  // Resets the partition alarm status flag
+      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T", true);  // Alarm tripped
     }
 
-    // Publish zones 1-64 status
+    // Publishes zones 1-64 status in a separate topic per zone
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
@@ -189,9 +195,9 @@ void loop() {
             strcat(zonePublishTopic, zone);
 
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              mqtt.publish(zonePublishTopic, "1");                  // Zone open
+              mqtt.publish(zonePublishTopic, "1", true);                  // Zone open
             }
-            else mqtt.publish(zonePublishTopic, "0");               // Zone closed
+            else mqtt.publish(zonePublishTopic, "0", true);               // Zone closed
           }
         }
       }

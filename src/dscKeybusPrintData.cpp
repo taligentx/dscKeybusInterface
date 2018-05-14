@@ -24,81 +24,66 @@
 
 void dscKeybusInterface::printPanelMessage() {
   switch (panelData[0]) {
-    case 0x05: printPanel_0x05(); break;
-    case 0x0A: printPanel_0x0A(); break;
-    case 0x11: printPanel_0x11(); break;
-    case 0x16: printPanel_0x16(); break;
-    case 0x1C: printPanel_0x1C(); break;
-    case 0x27: printPanel_0x27(); break;
-    case 0x28: printPanel_0x28(); break;
-    case 0x2D: printPanel_0x2D(); break;
-    case 0x34: printPanel_0x34(); break;
-    case 0x3E: printPanel_0x3E(); break;
-    case 0x4C: printPanel_0x4C(); break;
-    case 0x58: printPanel_0x58(); break;
-    case 0x5D: printPanel_0x5D(); break;
-    case 0x63: printPanel_0x63(); break;
-    case 0x64: printPanel_0x64(); break;
-    case 0x75: printPanel_0x75(); break;
-    case 0x7F: printPanel_0x7F(); break;
-    case 0x87: printPanel_0x87(); break;
-    case 0x8D: printPanel_0x8D(); break;
-    case 0x94: printPanel_0x94(); break;
-    case 0xA5: printPanel_0xA5(); break;
-    case 0xB1: printPanel_0xB1(); break;
-    case 0xBB: printPanel_0xBB(); break;
-    case 0xC3: printPanel_0xC3(); break;
-    case 0xD5: printPanel_0xD5(); break;
+    case 0x05: printPanel_0x05(); return;  // Status
+    case 0x0A: printPanel_0x0A(); return;  // Status in alarm, programming
+    case 0x11: printPanel_0x11(); return;  // Keypad slot query
+    case 0x16: printPanel_0x16(); return;  // Zone wiring
+    case 0x1C: printPanel_0x1C(); return;  // Verify keypad Fire/Auxiliary/Panic
+    case 0x27: printPanel_0x27(); return;  // Status with zones 1-8
+    case 0x28: printPanel_0x28(); return;  // Zone expander query
+    case 0x2D: printPanel_0x2D(); return;  // Status with zones 9-16
+    case 0x34: printPanel_0x34(); return;  // Status with zones 17-24
+    case 0x3E: printPanel_0x3E(); return;  // Status with zones 25-32
+    case 0x4C: printPanel_0x4C(); return;  // Unknown Keybus query
+    case 0x58: printPanel_0x58(); return;  // Unknown Keybus query
+    case 0x5D: printPanel_0x5D(); return;  // Flash panel lights: status and zones 1-32
+    case 0x63: printPanel_0x63(); return;  // Flash panel lights: status and zones 33-64
+    case 0x64: printPanel_0x64(); return;  // Beep - one-time
+    case 0x75: printPanel_0x75(); return;  // Beep - repeated
+    case 0x7F: printPanel_0x7F(); return;  // Beep - one-time long beep
+    case 0x87: printPanel_0x87(); return;  // Panel outputs
+    case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32
+    case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming
+    case 0xA5: printPanel_0xA5(); return;  // Date, time, system status messages
+    case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
+    case 0xBB: printPanel_0xBB(); return;  // Bell
+    case 0xC3: printPanel_0xC3(); return;  // Unknown
+    case 0xD5: printPanel_0xD5(); return;  // Keypad zone query
     default: {
       stream->print(F("Unrecognized command "));
       if (!validCRC()) {
         stream->print(F("[No CRC or CRC Error]"));
-        break;
+        return;
       }
       else stream->print(F("[CRC OK]"));
-      break;
+      return;
     }
   }
 }
 
 
-void dscKeybusInterface::printKeypadMessage() {
-  switch (keypadData[0]) {
-    case 0xFF:  {
-      if (panelData[0] == 0x28) {
-        printKeypad_0xFF_Panel_0x28();
-        break;
-      }
-      if (keypadData[4] == 0xFE) {
-        printKeypad_0xFF_Byte4_0xFE();
-        break;
-      }
-      if (keypadData[4] == 0xBF) {
-        printKeypad_0xFF_Byte4_0xBF();
-        break;
-      }
-      if (keypadData[5] == 0xFB) {
-        printKeypad_0xFF_Byte5_0xFB();
-        break;
-      }
-      if (panelData[0] == 0xD5) {
-        printKeypad_0xFF_Panel_0xD5();
-        break;
-      }
-      else {
-        if (keypadData[2] != 0xFF) {
-          printKeypad_0xFF_Byte2();
-        }
-        if (keypadData[3] != 0xFF) {
-          printKeypad_0xFF_Byte3();
-        }
-      }
-      break;
-    }
-    case 0x77: printKeypad_0x77(); break;
-    case 0xBB: printKeypad_0xBB(); break;
-    case 0xDD: printKeypad_0xDD(); break;
+void dscKeybusInterface::printKeybusMessage() {
+  switch (keybusData[0]) {
+    case 0x77: printKeybus_0x77(); return;  // Keypad fire alarm
+    case 0xBB: printKeybus_0xBB(); return;  // Keypad auxiliary alarm
+    case 0xDD: printKeybus_0xDD(); return;  // Keypad panic alarm
   }
+
+  // Keypad and module status update notifications
+  if (keybusData[4] != 0xFF || keybusData[5] != 0xFF) {
+    printKeybus_Notification();
+    return;
+  }
+
+  // Keypad and module responses to panel queries
+  switch (currentCmd) {
+    case 0x11: printKeybus_Panel_0x11(); return;  // Keypad slot query response
+    case 0x28: printKeybus_Panel_0x28(); return;  // Zone expander query response
+    case 0xD5: printKeybus_Panel_0xD5(); return;  // Keypad zone query response
+  }
+
+  // Keypad keys
+  printKeybus_Keys();
 }
 
 
@@ -152,7 +137,8 @@ void dscKeybusInterface::printPanelStatus() {
     case 0x8E: stream->print(F("| Invalid option")); break;
     case 0x8F: stream->print(F("| Invalid access code")); break;
     case 0x9E: stream->print(F("| *  pressed")); break;
-    case 0x9F: stream->print(F("| Command output 1")); break;
+    case 0x9F: stream->print(F("| *9: No entry delay arm")); break;
+    case 0xA0: stream->print(F("| *1: Zone bypass programming"));
     case 0xA1: stream->print(F("| *2: Trouble menu")); break;
     case 0xA2: stream->print(F("| *3: Alarm memory display")); break;
     case 0xA3: stream->print(F("| Door chime enabled")); break;
@@ -177,7 +163,14 @@ void dscKeybusInterface::printPanelStatus() {
     case 0xD0: stream->print(F("| *2: Handheld keypads with low batteries")); break;
     case 0xD1: stream->print(F("| *2: Wireless keys with low batteries")); break;
     case 0xE4: stream->print(F("| *8: Main menu")); break;
+    case 0xE5: stream->print(F("| Keypad slot assignment")); break;
     case 0xEE: stream->print(F("| *8: Submenu")); break;
+    case 0xF0: stream->print(F("| Function key 1 programming")); break;
+    case 0xF1: stream->print(F("| Function key 2 programming")); break;
+    case 0xF2: stream->print(F("| Function key 3 programming")); break;
+    case 0xF3: stream->print(F("| Function key 4 programming")); break;
+    case 0xF4: stream->print(F("| Function key 5 programming")); break;
+    case 0xF8: stream->print(F("| Keypad programming")); break;
     default:
       stream->print(F("| Unrecognized command, byte 3: 0x"));
       if (panelData[3] < 10) stream->print(F("0"));
@@ -223,7 +216,7 @@ void dscKeybusInterface::printPanel_0x05() {
 
 
 /*
- *  0x0A: Status in programming
+ *  0x0A: Status in alarm, programming
  *  Interval: constant in *  programming
  *  CRC: yes
  *  Byte 3: matches 0x05 byte 3 and 0x27 byte 3, messages
@@ -270,7 +263,7 @@ void dscKeybusInterface::printPanel_0x0A() {
 
 
 /*
- *  0x11: Keypad query (possible general keybus query)
+ *  0x11: Keypad slot query
  *  Interval: 30s
  *  CRC: no
  *
@@ -396,7 +389,7 @@ void dscKeybusInterface::printPanel_0x27() {
 
 /*
  *  0x28: Zone expander query
- *  Interval: after LCD5500Z keypad message
+ *  Interval: after zone expander status notification
  *  CRC: no
  *
  *  11111111 1 11111111 11111111 10111111 11111111 [Zone Expander] Status notification
@@ -520,14 +513,17 @@ void dscKeybusInterface::printPanel_0x4C() {
 
 
 /*
- *  0x58: ???
+ *  0x58: Keybus query - valid response produces 0xA5 command, byte 6 0xB1-0xC0
  *  Interval: immediate after power on after panel reset
  *  CRC: no
  *
- *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Unknown command: Power-on +0s
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11111100 11111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 11010111 10110011 11111111 11011011 [0xA5] 05/10/2018 00:53 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB3
  */
 void dscKeybusInterface::printPanel_0x58() {
-  stream->print(F("Unknown command: Power-on +0s"));
+  stream->print(F("Keybus query"));
 }
 
 
@@ -634,7 +630,7 @@ void dscKeybusInterface::printPanel_0x64() {
 
 
 /*
- *  0x75: Beep - repeated
+ *  0x75: Beep pattern - repeated
  *  CRC: yes
  *
  *  01110101 0 10000000 11110101 [0x75] Beep pattern: solid tone
@@ -684,6 +680,7 @@ void dscKeybusInterface::printPanel_0x7F() {
  *  10000111 0 11111111 11110000 01110110 [0x87] Panel output: Bell on | PGM1 off | PGM2 off
  *  10000111 0 11111111 11110010 01111000 [0x87] Panel output: Bell on | PGM1 off | PGM2 on
  *  10000111 0 00000000 00000001 10001000 [0x87] Panel output: Bell off | PGM1 on | PGM2 off
+ *  10000111 0 00000000 00001000 10001111 [0x87] Panel output: Bell off | Unrecognized command: Add to 0x87
  */
 void dscKeybusInterface::printPanel_0x87() {
   if (!validCRC()) {
@@ -704,7 +701,7 @@ void dscKeybusInterface::printPanel_0x87() {
     if (bitRead(panelData[3],1)) stream->print(F(" | PGM2 on"));
     else stream->print(F(" | PGM2 off"));
   }
-  else stream->print(F("Unrecognized command: Add to 0x87"));
+  else stream->print(F(" | Unrecognized command: Add to 0x87"));
 }
 
 
@@ -1333,7 +1330,7 @@ void dscKeybusInterface::printPanel_0xC3() {
  *  0xD5: Keypad zone query
  *  CRC: no
  *
- *  11111111 1 11111111 11111111 11111111 11111011 [Keypad]
+ *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] Status notification
  *  11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00001111 [Keypad] Slot 8
  */
@@ -1343,41 +1340,214 @@ void dscKeybusInterface::printPanel_0xD5() {
 
 
 /*
- *  Print keypad messages
+ *  Print keypad and module messages
  */
 
-
 /*
- *  Zone expander: status update notification, panel responds with 0x28
+ *  Unknown Keybus module commands triggering a panel response - Byte 4
  *
- *  11111111 1 11111111 11111111 10111111 11111011 [Keypad] Zone expander status notification
- *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query
+ *  11111111 1 11111111 11111111 10111111 11111111 [Keypad] Zone expander status notification
+ *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] PC5015 Zone expander query
  *  11111111 1 01010101 01010101 01010101 01010101 01000100 [Keypad]
- */
-void dscKeybusInterface::printKeypad_0xFF_Byte4_0xBF() {
-  stream->print(F("[Zone Expander] Status notification"));
-}
-
-
-/*
- *  Keypad: Keybus notification, panel responds with 0x4C query
+ *
+ *  11111111 1 11111111 11111111 11110111 11111111
+ *  01000001 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [0x41] Unrecognized command [No CRC or CRC Error]
+ *  01000001 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 10011001 11111001 [0x41] Unrecognized command [No CRC or CRC Error]  // Repeats 9 times
+ *
+ *  11111111 1 11111111 11111111 11111011 11111111
+ *  10101111 0 11111111 11111111 11111111 11111111 [0xAF] Unrecognized command [No CRC or CRC Error]  // Repeats 10 times
+ *
+ *  11111111 1 11111111 11111111 11111101 11111111
+ *  01001011 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [0x4B] Unrecognized command [No CRC or CRC Error]
+ *  01001011 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 10011001 [0x4B] Unrecognized command [No CRC or CRC Error]  // Repeats 9 times
  *
  *  11111111 1 11111111 11111111 11111110 11111111 [Keypad] Keybus notification
  *  01001100 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x4C] Keybus query
+ *
+ *  Unknown Keybus module commands triggering a panel response - Byte 5
+ *
+ *  11111111 1 11111111 11111111 11111111 01111111
+ *  01010010 0 11111111 11111111 11111111 11111111 [0x52] Unrecognized command [No CRC or CRC Error]  // Repeats 10 times
+ *
+ *  11111111 1 11111111 11111111 11111111 10111111
+ *  01010111 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [0x57] Unrecognized command [No CRC or CRC Error]
+ *  01010111 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 10011001 11111001 [0x57] Unrecognized command [No CRC or CRC Error]  // Repeats 9 times
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11111100 11111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 11010111 10110011 11111111 11011011 [0xA5] 05/10/2018 00:53 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB3
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11110011 11111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00001011 10110100 11111111 00010000 [0xA5] 05/10/2018 00:02 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB4
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11001111 11111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00000011 10110001 11111111 00000101 [0xA5] 05/10/2018 00:00 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB1
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 00111111 11111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00001011 10110010 11111111 00001110 [0xA5] 05/10/2018 00:02 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB2
+ *
+ *  11111111 1 11111111 11111100 11111111 11111111 [Keypad] Slots active: 8
+ *  10100101 0 00011000 01010101 01000000 00010111 10110111 11111111 00011111 [0xA5] 05/10/2018 00:05 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB7
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11111111 11110011 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00010111 10111000 11111111 00100000 [0xA5] 05/10/2018 00:05 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB8
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11111111 11001111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00010111 10110101 11111111 00011101 [0xA5] 05/10/2018 00:05 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB5
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111
+ *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Keybus query
+ *  11111111 1 11111111 00111111 11111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00010111 10110110 11111111 00011110 [0xA5] 05/10/2018 00:05 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xB6
+
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11111100 11111111
+ *  10100101 0 00011000 01010101 01000000 00101111 10111011 11111111 00111011 0 [0xA5] 05/10/2018 00:11 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xBB
+
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11110011 11111111
+
+ *  10100101 0 00011000 01010101 01000000 00101111 10111100 11111111 00111100 0 [0xA5] 05/10/2018 00:11 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xBC
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11001111 11111111
+ *  10100101 0 00011000 01010101 01000000 00101111 10111001 00000000 00111010 0 [0xA5] 05/10/2018 00:11 | Unrecognized data, add to 0xA5_Byte7_0x00, Byte 6: 0xB9
+
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 00111111 11111111
+ *  10100101 0 00011000 01010101 01000000 00101111 10111010 00000000 00111011 0 [0xA5] 05/10/2018 00:11 | Unrecognized data, add to 0xA5_Byte7_0x00, Byte 6: 0xBA
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11111111 11111100
+ *  10100101 0 00011000 01010101 01000000 00110111 10111111 11111111 01000111 0 [0xA5] 05/10/2018 00:13 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xBF
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11111111 11110011
+ *  10100101 0 00011000 01010101 01000000 00110111 11000000 11111111 01001000 0 [0xA5] 05/10/2018 00:13 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xC0
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11111111 11001111
+ *  10100101 0 00011000 01010101 01000000 00110111 10111101 11111111 01000101 0 [0xA5] 05/10/2018 00:13 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xBD
+ *
+ *  11111111 1 11111111 11111111 11111111 11011111 1
+ *  01011000 0 10101010 10101010 10101010 10101010  [0x58] Keybus query
+ *  11111111 1 11111111 11111111 11111111 00111111
+ *  10100101 0 00011000 01010101 01000000 00110111 10111110 11111111 01000110 0 [0xA5] 05/10/2018 00:13 | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0xBE
+ *
+ *
+ *  11111111 1 11111111 11111111 11111111 11101111
+ *  10110110 0 11111111 11111111 11111111 [0xB6] Unrecognized command [No CRC or CRC Error]  // Repeats 10 times
+ *
+ *  11111111 1 11111111 11111111 11111111 11110111
+ *  10111100 0 11111111 11111111 11111111 [0xBC] Unrecognized command [No CRC or CRC Error]  // Repeats 10 times
+ *
+ *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] Status notification
+ *  11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
+ *  11111111 1 00000011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone open
+ *
+ *  11111111 1 11111111 11111111 11111111 11111101
+ *  11010000 0 11111111 11111111 11111111 11111111 11111111 11111111 [0xD0] Unrecognized command [No CRC or CRC Error]  // Repeats 10 times
+ *
+ *  11111111 1 11111111 11111111 11111111 11111110
+ *  11011010 0 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [0xDA] Unrecognized command [No CRC or CRC Error]
  */
-void dscKeybusInterface::printKeypad_0xFF_Byte4_0xFE() {
-  stream->print(F("[Keypad] Keybus notification"));
+
+
+/*
+ *  Keypad: Fire alarm
+ *
+ *  01110111 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
+ */
+void dscKeybusInterface::printKeybus_0x77() {
+  stream->print(F("[Keypad] Fire alarm"));
 }
 
 
 /*
- *  Keypad: status update notification, panel responds with 0xD5 query
+ *  Keypad: Auxiliary alarm
  *
- *  11111111 1 11111111 11111111 11111111 11111011 [Keypad] Keypad status notification
- *  11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
+ *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
  */
-void dscKeybusInterface::printKeypad_0xFF_Byte5_0xFB() {
-  stream->print(F("[Keypad] Status notification"));
+void dscKeybusInterface::printKeybus_0xBB() {
+  stream->print(F("[Keypad] Auxiliary alarm"));
+}
+
+
+/*
+ *  Keypad: Panic alarm
+ *
+ *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
+ */
+void dscKeybusInterface::printKeybus_0xDD() {
+  stream->print(F("[Keypad] Panic alarm"));
+}
+
+
+/*
+ *  Keybus status notifications
+ */
+
+void dscKeybusInterface::printKeybus_Notification() {
+  switch (keybusData[4]) {
+    // Zone expander: status update notification, panel responds with 0x28
+    // 11111111 1 11111111 11111111 10111111 11111111 [Zone Expander] Status notification
+    // 00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query
+    case 0xBF:
+      stream->print(F("[Zone Expander] Status notification"));
+      break;
+
+    // Keypad: Unknown Keybus notification, panel responds with 0x4C query
+    // 11111111 1 11111111 11111111 11111110 11111111 [Keypad] Unknown Keybus notification
+    // 01001100 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x4C] Unknown Keybus query
+    case 0xFE:
+      stream->print(F("[Keypad] Unknown Keybus notification"));
+      break;
+  }
+
+  switch (keybusData[5]) {
+    // Keypad: zone status update notification, panel responds with 0xD5 query
+    // 11111111 1 11111111 11111111 11111111 11111011 [Keypad] Zone status notification
+    // 11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
+    case 0xFB:
+      stream->print(F("[Keypad] Zone status notification"));
+      break;
+  }
+}
+
+
+/*
+ *  Keypad: Slot query response
+ *
+ *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Keypad slot query
+ *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slots active: 1
+ */
+void dscKeybusInterface::printKeybus_Panel_0x11() {
+  stream->print(F("[Keypad] Slots active: "));
+  if ((keybusData[2] & 0xC0) == 0) stream->print(F("1 "));
+  if ((keybusData[2] & 0x30) == 0) stream->print(F("2 "));
+  if ((keybusData[2] & 0x0C) == 0) stream->print(F("3 "));
+  if ((keybusData[2] & 0x03) == 0) stream->print(F("4 "));
+  if ((keybusData[3] & 0xC0) == 0) stream->print(F("5 "));
+  if ((keybusData[3] & 0x30) == 0) stream->print(F("6 "));
+  if ((keybusData[3] & 0x0C) == 0) stream->print(F("7 "));
+  if ((keybusData[3] & 0x03) == 0) stream->print(F("8 "));
 }
 
 
@@ -1394,7 +1564,7 @@ void dscKeybusInterface::printKeypad_0xFF_Byte5_0xFB() {
  *  11111111 1 01010101 01010111 11111111 11111111 01101111 [Zone Expander] Status  // 9 closed
  *  11111111 1 01010101 01010001 11111111 11111111 00001111 [Zone Expander] Status  // 10 closed
  */
-void dscKeybusInterface::printKeypad_0xFF_Panel_0x28() {
+void dscKeybusInterface::printKeybus_Panel_0x28() {
   stream->print(F("[Zone Expander] "));
 
   Serial.print("Zones open: ");
@@ -1442,15 +1612,15 @@ void dscKeybusInterface::printKeypad_0xFF_Panel_0x28() {
  *  11111111 1 00110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone closed // NC
  *  11111111 1 00111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone closed  //After exiting *8 programming after NC
  */
-void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
+void dscKeybusInterface::printKeybus_Panel_0xD5() {
   stream->print(F("[Keypad] "));
   bool firstData = true;
-  for (byte keypadByte = 2; keypadByte <= 9; keypadByte++) {
-    byte slotData = keypadData[keypadByte];
+  for (byte keybusByte = 2; keybusByte <= 9; keybusByte++) {
+    byte slotData = keybusData[keybusByte];
     if (slotData < 0xFF) {
       if (firstData) stream->print(F("Slot "));
       else stream->print(F(" | Slot "));
-      stream->print(keypadByte - 1);
+      stream->print(keybusByte - 1);
       if ((slotData & 0x03) == 0x03 && (slotData & 0x30) == 0) stream->print(F(" zone open"));
       if ((slotData & 0x03) == 0 && (slotData & 0x30) == 0x30) stream->print(F(" zone closed"));
       firstData = false;
@@ -1460,174 +1630,60 @@ void dscKeybusInterface::printKeypad_0xFF_Panel_0xD5() {
 
 
 /*
- *  Keypad: buttons and panel 0x11 keypad slot query response for slots 1-4
+ *  Keypad: keys
  *
  *  The panel rejects unknown keypad data - all keys that are accepted by
  *  the panel are included here.
  *
  *  11111111 1 00000101 11111111 11111111 11111111 [Keypad] 1
  *  11111111 1 00101101 11111111 11111111 11111111 [Keypad] #
- *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1
  */
-void dscKeybusInterface::printKeypad_0xFF_Byte2() {
+void dscKeybusInterface::printKeybus_Keys() {
   stream->print(F("[Keypad] "));
-  bool decodedKey = true;
-  switch (keypadData[2]) {
-    case 0x00:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("0"));
-      break;
-    case 0x05:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("1"));
-      break;
-    case 0x0A:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("2"));
-      break;
-    case 0x0F:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("3"));
-      break;
-    case 0x11:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("4"));
-      break;
-    case 0x16:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("5"));
-      break;
-    case 0x1B:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("6"));
-      break;
-    case 0x1C:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("7"));
-      break;
-    case 0x22:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("8"));
-      break;
-    case 0x27:
-      if (hideKeypadDigits) stream->print(F("[Digit]"));
-      else stream->print(F("9"));
-      break;
+  if (hideKeypadDigits && keybusData[2] <= 0x27) {
+    stream->print(F("[Digit]"));
+    return;
+  }
+
+  switch (keybusData[2]) {
+    case 0x00: stream->print(F("0")); break;
+    case 0x05: stream->print(F("1")); break;
+    case 0x0A: stream->print(F("2")); break;
+    case 0x0F: stream->print(F("3")); break;
+    case 0x11: stream->print(F("4")); break;
+    case 0x16: stream->print(F("5")); break;
+    case 0x1B: stream->print(F("6")); break;
+    case 0x1C: stream->print(F("7")); break;
+    case 0x22: stream->print(F("8")); break;
+    case 0x27: stream->print(F("9")); break;
     case 0x28: stream->print(F("*")); break;
     case 0x2D: stream->print(F("#")); break;
-    case 0x34: stream->print(F("Valid key, unknown function")); break;
-    case 0x39: stream->print(F("Valid key, unknown function")); break;
-    case 0x3E: stream->print(F("Valid key, unknown function")); break;
-    case 0x41: stream->print(F("Arm stay 2")); break;
-    case 0x46: stream->print(F("Valid key, unknown function")); break;
-    case 0x4B: stream->print(F("Arm away 2")); break;
-    case 0x4C: stream->print(F("Valid key, unknown function")); break;
-    case 0x52: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x00")); break;
-    case 0x57: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x01")); break;
-    case 0x58: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x02")); break;
-    case 0x5D: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x03")); break;
-    case 0x63: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x04")); break;
-    case 0x64: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x05")); break;
-    case 0x69: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x06")); break;
-    case 0x6E: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x07")); break;
-    case 0x70: stream->print(F("Valid key, unknown function - 0x05 Byte 3: 0x0E unknown message")); break;
-    case 0x75: stream->print(F("Valid key, unknown function")); break;
-    case 0x7A: stream->print(F("Valid key, unknown function")); break;
-    case 0x7F: stream->print(F("Valid key, unknown function")); break;
-    case 0x82: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0x87: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0x88: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0x8D: stream->print(F("Valid key, unknown function")); break;
-    case 0x93: stream->print(F("Valid key, unknown function")); break;
-    case 0x94: stream->print(F("Valid key, unknown function")); break;
-    case 0x99: stream->print(F("Valid key, unknown function")); break;
-    case 0x9E: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0xA0: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0xA5: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
-    case 0xAA: stream->print(F("Valid key, unknown function - 0x05: * pressed")); break;
+    case 0x52: stream->print(F("Identified voice prompt help")); break;
+    case 0x70: stream->print(F("Command output 3")); break;
     case 0xAF: stream->print(F("Arm stay")); break;
     case 0xB1: stream->print(F("Arm away")); break;
-    case 0xB6: stream->print(F("Valid key, unknown function - 0x05: command output 1, 0x0A programming status")); break;
+    case 0xB6: stream->print(F("*9 No entry delay arm, requires access code")); break;
     case 0xBB: stream->print(F("Door chime configuration")); break;
-    case 0xBC: stream->print(F("*6 System Test")); break;
-    case 0xC3: stream->print(F("*1 Zone Bypass Programming")); break;
-    case 0xC4: stream->print(F("*2 Trouble Menu")); break;
-    case 0xC9: stream->print(F("*3 Alarm Memory Display")); break;
+    case 0xBC: stream->print(F("*6 System test")); break;
+    case 0xC3: stream->print(F("*1 Zone bypass programming")); break;
+    case 0xC4: stream->print(F("*2 Trouble menu")); break;
+    case 0xC9: stream->print(F("*3 Alarm memory display")); break;
     case 0xCE: stream->print(F("*5 Programming, requires master code")); break;
     case 0xD0: stream->print(F("*6 Programming, requires master code")); break;
-    case 0xD5: stream->print(F("Valid key, unknown function - 0x05: command output 1")); break;
-    case 0xDA: stream->print(F("Reset")); break;
-    case 0xDF: stream->print(F("Valid key, unknown function - 0xBB Byte 3: 0x00")); break;
-    case 0xE1: stream->print(F("Exit")); break;
-    case 0xE6: stream->print(F("Valid key, unknown function - long beep, 0x05: invalid option")); break;
-    case 0xEB: stream->print(F("Valid key, unknown function - long beep")); break;
-    case 0xEC: stream->print(F("Valid key, unknown function - long beep, 0x05 Byte 3: 0x0E unknown message")); break;
-    case 0xF2: stream->print(F("Valid key, unknown function")); break;
-    case 0xF7: stream->print(F("Left Arrow")); break;
-    case 0xF8: stream->print(F("Valid key, unknown function")); break;
-    case 0xFD: stream->print(F("Valid key, unknown function")); break;
-    default: decodedKey = false; break;
+    case 0xD5: stream->print(F("Command output 1")); break;
+    case 0xDA: stream->print(F("Reset / Command output 2")); break;
+    case 0xDF: stream->print(F("General voice prompt help")); break;
+    case 0xE1: stream->print(F("Quick exit")); break;
+    case 0xE6: stream->print(F("Activate stay/away zones")); break;
+    case 0xEB: stream->print(F("Function key [20] Future Use")); break;
+    case 0xEC: stream->print(F("Command output 4")); break;
+    case 0xF2: stream->print(F("Right arrow")); break;
+    case 0xF7: stream->print(F("Left arrow")); break;
+    default:
+      stream->print(F("Unrecognized key: 0x"));
+      stream->print(keybusData[2], HEX);
+      break;
   }
-  if (decodedKey) return;
-
-  stream->print(F("Slots active: "));
-    if ((keypadData[2] & 0xC0) == 0) stream->print(F("1 "));
-    if ((keypadData[2] & 0x30) == 0) stream->print(F("2 "));
-    if ((keypadData[2] & 0x0C) == 0) stream->print(F("3 "));
-    if ((keypadData[2] & 0x03) == 0) stream->print(F("4 "));
-}
-
-
-/*
- *  Keypad: panel 0x11 keypad slot query response for slots 5-8
- *
- *  11111111 1 11111111 11111100 11111111 11111111 11111111 [Keypad] Slot 8
- */
-void dscKeybusInterface::printKeypad_0xFF_Byte3() {
-  stream->print(F("[Keypad] "));
-  if (keypadData[2] == 0xFF) stream->print(F("Slots active: "));
-    if ((keypadData[3] & 0xC0) == 0) stream->print(F("5 "));
-    if ((keypadData[3] & 0x30) == 0) stream->print(F("6"));
-    if ((keypadData[3] & 0x0C) == 0) stream->print(F("7 "));
-    if ((keypadData[3] & 0x03) == 0) stream->print(F("8 "));
-}
-
-
-/*
- *  Keypad: Fire alarm
- *
- *  01110111 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
- */
-void dscKeybusInterface::printKeypad_0x77() {
-  stream->print(F("[Keypad] Fire alarm"));
-}
-
-
-/*
- *  Keypad: Auxiliary alarm
- *
- *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
- */
-void dscKeybusInterface::printKeypad_0xBB() {
-  stream->print(F("[Keypad] Auxiliary alarm"));
-}
-
-
-/*
- *  Keypad: Panic alarm
- *
- *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
- */
-void dscKeybusInterface::printKeypad_0xDD() {
-  stream->print(F("[Keypad] Panic alarm"));
-}
-
-
-void dscKeybusInterface::printPanelCommand() {
-  // Prints the hex value of command byte 0
-  stream->print(F("0x"));
-  if (panelData[0] < 16) stream->print("0");
-  stream->print(panelData[0], HEX);
 }
 
 
@@ -1658,24 +1714,36 @@ void dscKeybusInterface::printPanelBinary(bool printSpaces) {
 }
 
 
-void dscKeybusInterface::printKeypadBinary(bool printSpaces) {
-  for (byte keypadByte = 0; keypadByte < keypadByteCount; keypadByte++) {
-    if (keypadByte == 1) stream->print(keypadData[keypadByte]);  //Prints the stop bit
+void dscKeybusInterface::printKeybusBinary(bool printSpaces) {
+  for (byte keybusByte = 0; keybusByte < keybusByteCount; keybusByte++) {
+    if (keybusByte == 1) stream->print(keybusData[keybusByte]);  // Prints the stop bit
+    else if (keybusByte == 2 && hideKeypadDigits && keybusData[2] <= 0x27 && !queryResponse) stream->print(F("........"));  // Hides keypad digits
     else {
       for (byte mask = 0x80; mask; mask >>= 1) {
-        if (mask & keypadData[keypadByte]) stream->print("1");
+        if (mask & keybusData[keybusByte]) stream->print("1");
         else stream->print("0");
       }
     }
-    if (printSpaces && (keypadByte != keypadByteCount - 1 || displayTrailingBits)) stream->print(" ");
+    if (printSpaces && (keybusByte != keybusByteCount - 1 || displayTrailingBits)) stream->print(" ");
   }
 
   if (displayTrailingBits) {
-    byte trailingBits = (keypadBitCount - 1) % 8;
+    byte trailingBits = (keybusBitCount - 1) % 8;
     if (trailingBits > 0) {
       for (int i = trailingBits - 1; i >= 0; i--) {
-        stream->print(bitRead(keypadData[keypadByteCount], i));
+        stream->print(bitRead(keybusData[keybusByteCount], i));
       }
     }
   }
+}
+
+
+/*
+ * Print panel command as hex
+ */
+void dscKeybusInterface::printPanelCommand() {
+  // Prints the hex value of command byte 0
+  stream->print(F("0x"));
+  if (panelData[0] < 16) stream->print("0");
+  stream->print(panelData[0], HEX);
 }

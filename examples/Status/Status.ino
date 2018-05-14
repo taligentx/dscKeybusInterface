@@ -1,5 +1,5 @@
 /*
- *  DSC Status
+ *  DSC Status (Arduino, esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed and what has
@@ -72,6 +72,11 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
 
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
     if (dsc.troubleStatusChanged) {
       dsc.troubleStatusChanged = false;  // Resets the trouble status flag
       if (dsc.troubleStatus) Serial.println(F("Trouble status on"));
@@ -122,8 +127,8 @@ void loop() {
 
     if (dsc.fireStatusChanged) {
       dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Serial.println(F("Fire status on"));
-      else Serial.println(F("Fire status restored"));
+      if (dsc.fireStatus) Serial.println(F("Fire alarm on"));
+      else Serial.println(F("Fire alarm restored"));
     }
 
     if (dsc.keypadFireAlarm) {
@@ -144,6 +149,7 @@ void loop() {
       Serial.println(F(" | Keypad panic alarm"));
     }
 
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
@@ -163,6 +169,7 @@ void loop() {
       }
     }
 
+    // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     if (dsc.alarmZonesStatusChanged) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {

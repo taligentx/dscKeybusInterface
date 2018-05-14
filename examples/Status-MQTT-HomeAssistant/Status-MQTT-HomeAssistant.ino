@@ -1,5 +1,5 @@
 /*
- *  DSC Status with MQTT (esp8266)
+ *  DSC Status with MQTT (Arduino, esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -145,29 +145,35 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Reset the status tracking flag
 
-    // Publish exit delay status
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
+    // Publishes exit delay status
     if (dsc.exitDelayChanged) {
       dsc.exitDelayChanged = false;  // Resets the exit delay status flag
-      if (dsc.exitDelay) mqtt.publish(mqttPublishTopic, "pending");
+      if (dsc.exitDelay) mqtt.publish(mqttPublishTopic, "pending", true);  // Publish as a retained message
     }
 
-    // Publish armed status
+    // Publishes armed status
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
       if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "armed_away");
-        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "armed_home");
+        if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "armed_away", true);
+        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "armed_home", true);
       }
-      else mqtt.publish(mqttPublishTopic, "disarmed");
+      else mqtt.publish(mqttPublishTopic, "disarmed", true);
     }
 
-    // Publish alarm status
+    // Publishes alarm status
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered");
+      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered", true);
     }
 
-    // Publish zones 1-64 status
+    // Publishes zones 1-64 status in a separate topic per zone
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
@@ -183,9 +189,9 @@ void loop() {
             strcat(zonePublishTopic, zone);
 
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              mqtt.publish(zonePublishTopic, "1");                  // Zone open
+              mqtt.publish(zonePublishTopic, "1", true);                  // Zone open
             }
-            else mqtt.publish(zonePublishTopic, "0");               // Zone closed
+            else mqtt.publish(zonePublishTopic, "0", true);               // Zone closed
           }
         }
       }

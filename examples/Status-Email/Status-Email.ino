@@ -1,5 +1,5 @@
 /*
- *  DSC Status with email notification (esp8266)
+ *  DSC Status with email notification (esp8266 only, uses SSL)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendEmail().
@@ -80,6 +80,11 @@ void setup() {
 void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
+
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
 
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag

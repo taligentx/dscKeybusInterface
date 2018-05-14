@@ -1,5 +1,5 @@
 /*
- *  DSC Status with push notification (esp8266)
+ *  DSC Status with push notification (esp8266 only, requires SSL)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com
@@ -77,6 +77,11 @@ void setup() {
 void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
+
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
 
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag

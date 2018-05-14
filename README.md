@@ -1,7 +1,7 @@
 # DSC Keybus Interface
 This library interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
 
-For example, using this library with the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) and [Homebridge](https://github.com/nfarina/homebridge) allows for notifications and control of the security system through Apple HomeKit and Siri:
+For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can be used with [Homebridge](https://github.com/nfarina/homebridge) for notifications and control of the security system through Apple HomeKit and Siri:
 
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
@@ -35,9 +35,9 @@ Download the repo and extract to the Arduino library directory or [install throu
 
 * Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, and the zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
-* Status-Pushbullet:  Processes the security system status and demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com).
+* Status-Pushbullet (esp8266-only):  Processes the security system status and demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
 
-* Status-Email: Processes the security system status and demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* Status-Email (esp8266-only): Processes the security system status and demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
 ## Wiring
 
@@ -82,14 +82,13 @@ DSC Aux(+) ---+--- Arduino Vin pin
 * Auxiliary alarm: `a`
 * Panic alarm: `p`
 * Door chime: `c`
-* Reset (unconfirmed): `r`
-* Exit (unconfirmed): `x`
+* Reset: `r`
+* Exit: `x`
 * Right arrow (unconfirmed): `>`
 * Left arrow (unconfirmed): `<`
 
 ## Notes
-* To ensure that every Keybus command is processed, `handlePanel()` should be called at least every ~46ms - this is the transmit time for the shortest Keybus command tracked for status (command `0x05`).
-* Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line 250us after the clock changes in a non-blocking way (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
+* Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
 ## References
 [AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): An excellent discussion on how data is sent on the Keybus.
