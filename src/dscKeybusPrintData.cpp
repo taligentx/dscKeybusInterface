@@ -1567,29 +1567,30 @@ void dscKeybusInterface::printKeybus_Panel_0x11() {
 void dscKeybusInterface::printKeybus_Panel_0x28() {
   stream->print(F("[Zone Expander] "));
 
-  Serial.print("Zones open: ");
-  if (panelData[2] == 0x55) Serial.print("none");
+  stream->print("Zones open: ");
+  if (keybusData[2] == 0x55) stream->print(F("none "));
   else {
-    if (!bitRead(panelData[2],0)) stream->print(F("16 "));
-    if (bitRead(panelData[2],1)) stream->print(F("9 "));
-    if (!bitRead(panelData[2],2)) stream->print(F("10 "));
-    if (bitRead(panelData[2],3)) stream->print(F("11 "));
-    if (!bitRead(panelData[2],4)) stream->print(F("12 "));
-    if (bitRead(panelData[2],5)) stream->print(F("13 "));
-    if (!bitRead(panelData[2],6)) stream->print(F("14 "));
-    if (bitRead(panelData[2],7)) stream->print(F("15 "));
+    if (!bitRead(keybusData[2],0)) stream->print(F("16 "));
+    if (bitRead(keybusData[2],1)) stream->print(F("9 "));
+    if (!bitRead(keybusData[2],2)) stream->print(F("10 "));
+    if (bitRead(keybusData[2],3)) stream->print(F("11 "));
+    if (!bitRead(keybusData[2],4)) stream->print(F("12 "));
+    if (bitRead(keybusData[2],5)) stream->print(F("13 "));
+    if (!bitRead(keybusData[2],6)) stream->print(F("14 "));
+    if (bitRead(keybusData[2],7)) stream->print(F("15 "));
   }
 
-  if (panelData[3] != 0x55) {
-    Serial.print("| Zones closed: ");
-    if (!bitRead(panelData[3],0)) stream->print(F("16 "));
-    if (bitRead(panelData[3],1)) stream->print(F("9 "));
-    if (!bitRead(panelData[3],2)) stream->print(F("10 "));
-    if (bitRead(panelData[3],3)) stream->print(F("11 "));
-    if (!bitRead(panelData[3],4)) stream->print(F("12 "));
-    if (bitRead(panelData[3],5)) stream->print(F("13 "));
-    if (!bitRead(panelData[3],6)) stream->print(F("14 "));
-    if (bitRead(panelData[3],7)) stream->print(F("15 "));
+  stream->print("| Zones closed: ");
+  if (keybusData[3] == 0x55) stream->print(F("none"));
+  else {
+    if (!bitRead(keybusData[3],0)) stream->print(F("16 "));
+    if (bitRead(keybusData[3],1)) stream->print(F("9 "));
+    if (!bitRead(keybusData[3],2)) stream->print(F("10 "));
+    if (bitRead(keybusData[3],3)) stream->print(F("11 "));
+    if (!bitRead(keybusData[3],4)) stream->print(F("12 "));
+    if (bitRead(keybusData[3],5)) stream->print(F("13 "));
+    if (!bitRead(keybusData[3],6)) stream->print(F("14 "));
+    if (bitRead(keybusData[3],7)) stream->print(F("15 "));
   }
 }
 
