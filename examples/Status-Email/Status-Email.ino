@@ -92,6 +92,27 @@ void loop() {
       else sendEmail("Security system disarmed after alarm", dsc.dscTime);
     }
 
+    if (dsc.fireStatusChanged) {
+      dsc.fireStatusChanged = false;  // Resets the fire status flag
+      if (dsc.fireStatus) sendEmail("Security system fire alarm on", dsc.dscTime);
+      else sendEmail("Security system fire alarm restored", dsc.dscTime);
+    }
+
+    if (dsc.keypadFireAlarm) {
+      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
+      sendEmail("Security system fire alarm button pressed", dsc.dscTime);
+    }
+
+    if (dsc.keypadAuxAlarm) {
+      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
+      sendEmail("Security system aux alarm button pressed", dsc.dscTime);
+    }
+
+    if (dsc.keypadPanicAlarm) {
+      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
+      sendEmail("Security system panic alarm button pressed", dsc.dscTime);
+    }
+
     if (dsc.powerTroubleChanged) {
       dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) sendEmail("Security system AC power trouble", dsc.dscTime);

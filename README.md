@@ -1,12 +1,12 @@
 # DSC Keybus Interface
-This library interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems, including decoding the system status and writing as a virtual keypad.  The included examples demonstrate reading Keybus data, monitoring status, and sending notifications on system events using MQTT, push notifications, and email.
+This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant and Apple HomeKit using MQTT, sending push notifications/email, and reading/decoding Keybus data.
 
-For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can be used with [Homebridge](https://github.com/nfarina/homebridge) for notifications and control of the security system through Apple HomeKit and Siri:
+For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can be used with [Homebridge](https://github.com/nfarina/homebridge) for notifications and control of the security system through the iOS Home app and Siri:
 
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832).  Captured Keybus data is needed to check functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832).  Captured Keybus data is needed to verify functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Usage
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, git clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
