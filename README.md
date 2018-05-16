@@ -76,8 +76,9 @@ DSC Aux(+) ---+--- Arduino Vin pin
 
 ## Virtual keypad keys
 * Keypad: `0-9 * #`
-* Stay arm: `s`
-* Away arm: `w`
+* Arm stay: `s`
+* Arm away: `w`
+* Arm with no entry delay: `n`
 * Fire alarm: `f`
 * Auxiliary alarm: `a`
 * Panic alarm: `p`

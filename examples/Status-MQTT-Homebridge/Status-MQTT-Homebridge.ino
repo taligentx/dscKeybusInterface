@@ -227,12 +227,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.write('w');  // Keypad away arm
   }
 
-  // homebridge-mqttthing NIGHT_ARM - sends *9 to set no entry delay, then arms with the access code
+  // homebridge-mqttthing NIGHT_ARM
   else if (payload[0] == 'N' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write('*');
-    while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write('9');
+    dsc.write('n');  // Keypad arm with no entry delay
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write(accessCode);
   }

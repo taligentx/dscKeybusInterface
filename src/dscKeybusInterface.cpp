@@ -272,6 +272,8 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'S': writeKey = 0xAF; break;                     // Arm stay
       case 'w':
       case 'W': writeKey = 0xB1; break;                     // Arm away
+      case 'n':
+      case 'N': writeKey = 0xB6; break;                     // Arm with no entry delay
       case 'A':
       case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
       case 'c':
