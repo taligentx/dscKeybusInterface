@@ -69,17 +69,17 @@ void dscKeybusInterface::printKeybusMessage() {
     case 0xDD: printKeybus_0xDD(); return;  // Keypad panic alarm
   }
 
-  // Keypad and module status update notifications
-  if (keybusData[4] != 0xFF || keybusData[5] != 0xFF) {
-    printKeybus_Notification();
-    return;
-  }
-
   // Keypad and module responses to panel queries
   switch (currentCmd) {
     case 0x11: printKeybus_Panel_0x11(); return;  // Keypad slot query response
     case 0x28: printKeybus_Panel_0x28(); return;  // Zone expander query response
     case 0xD5: printKeybus_Panel_0xD5(); return;  // Keypad zone query response
+  }
+
+  // Keypad and module status update notifications
+  if (keybusData[4] != 0xFF || keybusData[5] != 0xFF) {
+    printKeybus_Notification();
+    return;
   }
 
   // Keypad keys
