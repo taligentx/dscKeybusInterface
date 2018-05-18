@@ -193,9 +193,9 @@ void loop() {
             strcat(zonePublishTopic, zone);
 
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              mqtt.publish(zonePublishTopic, "1", true);                  // Zone open
+              mqtt.publish(zonePublishTopic, "1", true);            // Zone open
             }
-            else mqtt.publish(zonePublishTopic, "0", true);               // Zone closed
+            else mqtt.publish(zonePublishTopic, "0", true);         // Zone closed
           }
         }
       }
@@ -213,16 +213,16 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   (void)topic;
   (void)length;
 
-  // Stay arm
+  // Arm stay
   if (payload[0] == 'S' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-    dsc.write('s');  // Keypad stay arm
+    dsc.write('s');  // Virtual keypad arm stay
   }
 
-  // Away arm
+  // Arm away
   else if (payload[0] == 'A' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write('w');  // Keypad away arm
+    dsc.write('w');  // Virtual keypad arm away
   }
 
   // Disarm

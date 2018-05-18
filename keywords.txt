@@ -51,6 +51,7 @@ alarmZones	KEYWORD2
 alarmZonesChanged	KEYWORD2
 alarmZonesStatusChanged	KEYWORD2
 bufferOverflow	KEYWORD2
+dataOverflow	KEYWORD2
 
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1

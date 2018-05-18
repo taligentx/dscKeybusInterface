@@ -179,7 +179,7 @@ void loop() {
     }
 
     // Publishes zones 1-64 status in a separate topic per zone
-    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones:
     //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
     //   ...
@@ -199,9 +199,9 @@ void loop() {
             strcat(zonePublishTopic, zone);
 
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              mqtt.publish(zonePublishTopic, "1", true);                  // Zone open
+              mqtt.publish(zonePublishTopic, "1", true);            // Zone open
             }
-            else mqtt.publish(zonePublishTopic, "0", true);               // Zone closed
+            else mqtt.publish(zonePublishTopic, "0", true);         // Zone closed
           }
         }
       }

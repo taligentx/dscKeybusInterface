@@ -254,7 +254,7 @@ void dscKeybusInterface::processPanel_0xA5() {
   byte dscYear3 = panelData[2] >> 4;
   byte dscYear4 = panelData[2] & 0x0F;
   year = 2000 + (dscYear3 * 10) + dscYear4;
-  month = panelData[3] << 2; month >>=4;
+  month = panelData[3] << 2; month >>= 4;
   byte dscDay1 = panelData[3] << 6; dscDay1 >>= 3;
   byte dscDay2 = panelData[4] >> 5;
   day = dscDay1 | dscDay2;
