@@ -124,10 +124,12 @@ void dscKeybusInterface::printPanelStatus() {
     case 0x09: stream->print(F("| Arming without entry delay")); break;
     case 0x0B: stream->print(F("| Quick exit in progress")); break;
     case 0x0C: stream->print(F("| Entry delay in progress")); break;
+    case 0x0D: stream->print(F("| Opening after alarm")); break;
     case 0x10: stream->print(F("| Keypad lockout")); break;
     case 0x11: stream->print(F("| Partition in alarm")); break;
     case 0x14: stream->print(F("| Auto-arm in progress")); break;
     case 0x16: stream->print(F("| Armed without entry delay")); break;
+    case 0x22: stream->print(F("| Recent closing")); break;
     case 0x33: stream->print(F("| Partition busy")); break;
     case 0x3D: stream->print(F("| Disarmed after alarm in memory")); break;
     case 0x3E: stream->print(F("| Partition disarmed")); break;
@@ -164,7 +166,14 @@ void dscKeybusInterface::printPanelStatus() {
     case 0xD1: stream->print(F("| *2: Wireless keys with low batteries")); break;
     case 0xE4: stream->print(F("| *8: Main menu")); break;
     case 0xE5: stream->print(F("| Keypad slot assignment")); break;
-    case 0xEE: stream->print(F("| *8: Submenu")); break;
+    case 0xE6: stream->print(F("| *8: Input required: 2 digits")); break;
+    case 0xE7: stream->print(F("| *8: Input required: 3 digits")); break;
+    case 0xE8: stream->print(F("| *8: Input required: 4 digits")); break;
+    case 0xEA: stream->print(F("| *8: Reporting code: 2 digits")); break;
+    case 0xEB: stream->print(F("| *8: Telephone number account code: 4 digits")); break;
+    case 0xEC: stream->print(F("| *8: Input required: 6 digits")); break;
+    case 0xED: stream->print(F("| *8: Input required: 32 digits")); break;
+    case 0xEE: stream->print(F("| *8: Input required: 1 option per zone")); break;
     case 0xF0: stream->print(F("| Function key 1 programming")); break;
     case 0xF1: stream->print(F("| Function key 2 programming")); break;
     case 0xF2: stream->print(F("| Function key 3 programming")); break;

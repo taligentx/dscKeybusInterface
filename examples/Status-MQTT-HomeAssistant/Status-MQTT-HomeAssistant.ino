@@ -8,14 +8,14 @@
  *
  *  In this example, the commands to set the alarm state are setup in Home Assistant as:
  *    Disarm: "D"
- *    Stay arm: "S"
- *    Away arm: "A"
+ *    Arm stay: "S"
+ *    Arm away: "A"
  *
  *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the
  *  configured mqttPublishTopic:
  *    Disarmed: "disarmed"
- *    Stay arm: "armed_home"
- *    Away arm: "armed_away"
+ *    Arm stay: "armed_home"
+ *    Arm away: "armed_away"
  *    Exit delay in progress: "pending"
  *    Alarm tripped: "triggered"
  *
@@ -173,7 +173,11 @@ void loop() {
     }
 
     // Publishes zones 1-64 status in a separate topic per zone
-    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones:
+    //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+    //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+    //   ...
+    //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {

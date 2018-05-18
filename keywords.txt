@@ -16,7 +16,7 @@ printKeybusMessage	KEYWORD2
 hideKeypadDigits	KEYWORD2
 processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
-processKeybusData	KEYWORD2
+processKeypadData	KEYWORD2
 
 statusChanged	KEYWORD2
 dscTime	KEYWORD2

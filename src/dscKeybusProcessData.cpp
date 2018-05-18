@@ -163,7 +163,7 @@ void dscKeybusInterface::processPanel_0x27() {
     }
   }
 
-  // Open zones 1-8 status is stored in openZones[0] and openZonesChanged[0]
+  // Open zones 1-8 status is stored in openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
   openZones[0] = panelData[6];
   byte zonesChanged = openZones[0] ^ previousOpenZones[0];
   if (zonesChanged != 0) {
@@ -185,7 +185,7 @@ void dscKeybusInterface::processPanel_0x27() {
 void dscKeybusInterface::processPanel_0x2D() {
   if (!validCRC()) return;
 
-  // Open zones 9-16 status is stored in openZones[1] and openZonesChanged[1]
+  // Open zones 9-16 status is stored in openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
   openZones[1] = panelData[6];
   byte zonesChanged = openZones[1] ^ previousOpenZones[1];
   if (zonesChanged != 0) {
@@ -207,7 +207,7 @@ void dscKeybusInterface::processPanel_0x2D() {
 void dscKeybusInterface::processPanel_0x34() {
   if (!validCRC()) return;
 
-  // Open zones 17-24 status is stored in openZones[2] and openZonesChanged[2]
+  // Open zones 17-24 status is stored in openZones[2] and openZonesChanged[2]: Bit 0 = Zone 17 ... Bit 7 = Zone 24
   openZones[1] = panelData[6];
   byte zonesChanged = openZones[2] ^ previousOpenZones[2];
   if (zonesChanged != 0) {
@@ -229,7 +229,7 @@ void dscKeybusInterface::processPanel_0x34() {
 void dscKeybusInterface::processPanel_0x3E() {
   if (!validCRC()) return;
 
-  // Open zones 25-32 status is stored in openZones[3] and openZonesChanged[3]
+  // Open zones 25-32 status is stored in openZones[3] and openZonesChanged[3]: Bit 0 = Zone 25 ... Bit 7 = Zone 32
   openZones[1] = panelData[6];
   byte zonesChanged = openZones[3] ^ previousOpenZones[3];
   if (zonesChanged != 0) {
@@ -332,7 +332,11 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0x09() {
     case 0x00: {
 
       // Zone expander alarm, zones 9-16: panelData[6] 0x11-0x18
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]
+      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+      //   ...
+      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
       if (panelData[6] >= 0x11 && panelData[6] <= 0x18) {
         alarmZonesStatusChanged = true;
         for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
@@ -425,7 +429,11 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
       if (decodeComplete) break;
 
       // Zone alarm, zones 1-32: panelData[6] 0x09-0x28
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]
+      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+      //   ...
+      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
       if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
         alarmZonesStatusChanged = true;
         for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
@@ -456,7 +464,11 @@ void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
       }
 
       // Zone alarm restored, zones 1-32
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]
+      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+      //   ...
+      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
       if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
         alarmZonesStatusChanged = true;
         for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {

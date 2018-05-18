@@ -150,6 +150,10 @@ void loop() {
     }
 
     // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+    //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+    //   ...
+    //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
@@ -170,6 +174,10 @@ void loop() {
     }
 
     // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+    //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+    //   ...
+    //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
       for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
