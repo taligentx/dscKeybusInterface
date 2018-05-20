@@ -78,7 +78,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 * Keypad: `0-9 * #`
 * Arm stay: `s`
 * Arm away: `w`
-* Arm with no entry delay: `n`
+* Arm with no entry delay (requires access code): `n`
 * Fire alarm: `f`
 * Auxiliary alarm: `a`
 * Panic alarm: `p`
@@ -87,6 +87,13 @@ DSC Aux(+) ---+--- Arduino Vin pin
 * Exit: `x`
 * Right arrow (unconfirmed): `>`
 * Left arrow (unconfirmed): `<`
+
+## DSC Configuration
+Panel options affecting this interface, configured by `*8 + installer code`:
+* Quick arm: section 015, option 4 on - enables arm stay and arm away without entering an access code for the virtual keypad `s` and `w` keys.
+* Swinger shutdown: section 370.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
+
+  This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
 
 ## Notes
 * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
