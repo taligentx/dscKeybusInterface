@@ -120,9 +120,9 @@ PubSubClient mqtt(wifiClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
-#define dscClockPin D1
-#define dscReadPin D2
-#define dscWritePin D8
+#define dscClockPin D1   // GPIO5
+#define dscReadPin D2    // GPIO4
+#define dscWritePin D8   // GPIO15
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

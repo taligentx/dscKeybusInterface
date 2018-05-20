@@ -43,9 +43,9 @@
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin 3  // Arduino Uno: 2,3  esp8266: D1, D2, D8
-#define dscReadPin 4   // Arduino Uno: 2-12  esp8266: D1, D2, D8
-#define dscWritePin 5  // Arduino Uno: 2-12  esp8266: D1, D2, D8
+#define dscClockPin 3  // Arduino Uno: 2,3  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin 4   // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscWritePin 5  // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

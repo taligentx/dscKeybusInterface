@@ -48,8 +48,8 @@ const char* pushToken = "";  // Set the access token generated in the Pushbullet
 WiFiClientSecure pushClient;
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1
-#define dscReadPin D2
+#define dscClockPin D1   // GPIO5
+#define dscReadPin D2    // GPIO4
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 
 

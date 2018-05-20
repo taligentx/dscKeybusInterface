@@ -1,9 +1,15 @@
 /*
- *  DSC Status (Arduino, esp8266)
+ *  DSC Status with Homey (esp8266)
  *
- *  Processes and prints the security system status to a serial interface, including reading from serial for the
- *  virtual keypad.  This demonstrates how to determine if the security system status has changed and what has
- *  changed, and how to take action based on those changes.
+ *  Processes the security system status and allows for control using Athom Homey.
+ *
+ *  Athom Homey: https://www.athom.com/en/
+ *  Arduino library for communicating with Homey: https://github.com/athombv/homey-arduino-library
+ *
+ *  The interface listens for commands in the functions armStay, armAway, disable, and publishes alarm states to the
+ *  configured Capabilities homealarm_state, alarm_tamper, alarm_fire (optional).
+ *
+ *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Wiring:
  *      DSC Aux(-) --- Arduino/esp8266 ground
@@ -36,16 +42,24 @@
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
  *
+ *  Many thanks to Magnus for contributing this example: https://github.com/MagnusPer
+ *
  *  This example code is in the public domain.
  */
 
+#include <ESP8266WiFi.h>
+#include <Homey.h>
 #include <dscKeybusInterface.h>
+
+const char* wifiSSID = "";
+const char* wifiPassword = "";
+const char* accessCode = "";  // An access code is required to disarm and night arm
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
-#define dscClockPin 3  // Arduino Uno: 2,3  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin 4   // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin 5  // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1   // GPIO5
+#define dscReadPin D2    // GPIO4
+#define dscWritePin D8   // GPIO15
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 
@@ -54,102 +68,65 @@ void setup() {
   Serial.println();
   Serial.println();
 
+  WiFi.begin(wifiSSID, wifiPassword);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.print("WiFi connected: ");
+  Serial.println(WiFi.localIP());
+
+  // Initiate and starts the Homey interface
+  Homey.begin("dscKeybus");
+  Homey.setClass("homealarm");
+  Homey.addCapability("homealarm_state");
+  Homey.addCapability("alarm_tamper");
+  Homey.addCapability("alarm_fire");
+  Homey.addAction("armStay", armStay);
+  Homey.addAction("armAway", armAway);
+  Homey.addAction("disarm", disarm);
+
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
+
+  // Set init value for tamper and fire alarm status
+  Homey.setCapabilityValue("alarm_tamper", false);
+  Homey.setCapabilityValue("alarm_fire", false);
 }
 
 
 void loop() {
-
-  // Reads from serial input and writes to the Keybus as a virtual keypad
-  if (Serial.available() > 0 && dsc.writeReady) {
-    dsc.write(Serial.read());
-  }
+  // Run the Homey loop
+  Homey.loop();
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                   // Resets the status flag
+    dsc.statusChanged = false;                   // Reset the status tracking flag
 
-    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
-
-    if (dsc.troubleStatusChanged) {
-      dsc.troubleStatusChanged = false;  // Resets the trouble status flag
-      if (dsc.troubleStatus) Serial.println(F("Trouble status on"));
-      else Serial.println(F("Trouble status restored"));
-    }
-
+    // Publish armed status
     if (dsc.partitionArmedChanged) {
       dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
       if (dsc.partitionArmed) {
-        Serial.print(F("Partition armed"));
-        if (dsc.partitionArmedAway) Serial.println(F(" away"));
-        if (dsc.partitionArmedStay) Serial.println(F(" stay"));
+        if (dsc.partitionArmedAway) Homey.setCapabilityValue("homealarm_state", "armed", true);
+        if (dsc.partitionArmedStay) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
       }
-      else Serial.println(F("Partition disarmed"));
+      else Homey.setCapabilityValue("homealarm_state", "disarmed", true);
     }
 
+    // Publish alarm status
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) {
-        Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
-        Serial.println(F(" | Partition in alarm"));
-      }
+      if (dsc.partitionAlarm) Homey.setCapabilityValue("alarm_tamper", true);
+      else Homey.setCapabilityValue("alarm_tamper", false);
     }
 
-    if (dsc.exitDelayChanged) {
-      dsc.exitDelayChanged = false;  // Resets the exit delay status flag
-      if (dsc.exitDelay) Serial.println(F("Exit delay in progress"));
-    }
-
-    if (dsc.entryDelayChanged) {
-      dsc.entryDelayChanged = false;  // Resets the entry delay status flag
-      if (dsc.entryDelay) Serial.println(F("Entry delay in progress"));
-    }
-
-    if (dsc.batteryTroubleChanged) {
-      dsc.batteryTroubleChanged = false;  // Resets the battery trouble status flag
-      Serial.print(dsc.dscTime);          // Messages in the 0xA5 panel command include a timestamp
-      if (dsc.batteryTrouble) Serial.println(F(" | Panel battery trouble"));
-      else Serial.println(F(" | Panel battery restored"));
-    }
-
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
-      Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
-      if (dsc.powerTrouble) Serial.println(F(" | Panel AC power trouble"));
-      else Serial.println(F(" | Panel AC power restored"));
-    }
-
+    // Publish fire alarm status
     if (dsc.fireStatusChanged) {
       dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Serial.println(F("Fire alarm on"));
-      else Serial.println(F("Fire alarm restored"));
+      if (dsc.fireStatus) Homey.setCapabilityValue("alarm_fire", true);
+      else Homey.setCapabilityValue("alarm_fire", false);
     }
 
-    if (dsc.keypadFireAlarm) {
-      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      Serial.print(dsc.dscTime);    // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad fire alarm"));
-    }
-
-    if (dsc.keypadAuxAlarm) {
-      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      Serial.print(dsc.dscTime);   // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad aux alarm"));
-    }
-
-    if (dsc.keypadPanicAlarm) {
-      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      Serial.print(dsc.dscTime);     // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad panic alarm"));
-    }
-
-    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    // Publish zones 1-64 status
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones:
     //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
     //   ...
@@ -161,18 +138,17 @@ void loop() {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
-              Serial.print(F("Zone open: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Homey.trigger("ZoneOpen", (zoneBit + 1 + (zoneGroup * 8)));
             }
             else {
-              Serial.print(F("Zone restored: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Homey.trigger("ZoneRestored", (zoneBit + 1 + (zoneGroup * 8)));
             }
           }
         }
       }
     }
 
+    // Publish alarm zones 1-64
     // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
@@ -185,18 +161,44 @@ void loop() {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
-              Serial.print(dsc.dscTime);
-              Serial.print(F(" | Zone alarm: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Homey.trigger("AlarmZoneOpen", (zoneBit + 1 + (zoneGroup * 8)));
             }
             else {
-              Serial.print(dsc.dscTime);
-              Serial.print(F(" | Zone alarm restored: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Homey.trigger("AlarmZoneRestored", (zoneBit + 1 + (zoneGroup * 8)));
             }
           }
         }
       }
     }
+  }
+}
+
+
+// Handles messages received from Homey
+
+// Stay Arm
+void armStay() {
+   if (Homey.value.toInt() == 1 && !dsc.partitionArmed && !dsc.exitDelay) {  // Read the argument sent from the homey flow
+     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+     dsc.write('s');  // Keypad stay arm
+
+  }
+}
+
+
+// Away arm
+void armAway() {
+   if (Homey.value.toInt() == 1 && !dsc.partitionArmed && !dsc.exitDelay) {  // Read the argument sent from the homey flow
+     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+     dsc.write('w');  // Keypad away arm
+  }
+}
+
+
+// Disarm
+void disarm() {
+   if (Homey.value.toInt() == 1 && (dsc.partitionArmed || dsc.exitDelay)) {
+    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.write(accessCode);
   }
 }
