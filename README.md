@@ -91,7 +91,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:
 * Quick arm: section 015, option 4 on - enables arm stay and arm away without entering an access code for the virtual keypad `s` and `w` keys.
-* Swinger shutdown: section 370.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
+* Swinger shutdown: PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
 
   This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
 
