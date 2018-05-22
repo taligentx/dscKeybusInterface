@@ -6,7 +6,7 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832).  Captured Keybus data is needed to verify functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832) on 1 partition up to 32 zones.  Captured Keybus data is needed to verify functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
 
 ## Usage
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, git clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
@@ -34,6 +34,8 @@ Download the repo and extract to the Arduino library directory or [install throu
 * Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states for the contactSensor objects.
 
 * Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, and the zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
+
+* Status-Homey: Processes the security system status and allows for control using [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, fire, and zone states.
 
 * Status-Pushbullet (esp8266-only):  Processes the security system status and demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
 
@@ -74,10 +76,12 @@ DSC Aux(+) ---+--- Arduino Vin pin
   * BC547, BC548, BC549
   * That random NPN at the bottom of your parts bin (my choice)
 
-## Virtual keypad keys
+## Virtual keypad
+This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.  The following keys can be sent to the panel (see the examples for usage):
+
 * Keypad: `0-9 * #`
-* Arm stay: `s`
-* Arm away: `w`
+* Arm stay (requires quick arm enabled): `s`
+* Arm away (requires quick arm enabled): `w`
 * Arm with no entry delay (requires access code): `n`
 * Fire alarm: `f`
 * Auxiliary alarm: `a`

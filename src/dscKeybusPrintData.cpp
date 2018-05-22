@@ -36,10 +36,12 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x3E: printPanel_0x3E(); return;  // Status with zones 25-32
     case 0x4C: printPanel_0x4C(); return;  // Unknown Keybus query
     case 0x58: printPanel_0x58(); return;  // Unknown Keybus query
-    case 0x5D: printPanel_0x5D(); return;  // Flash panel lights: status and zones 1-32
-    case 0x63: printPanel_0x63(); return;  // Flash panel lights: status and zones 33-64
-    case 0x64: printPanel_0x64(); return;  // Beep - one-time
-    case 0x75: printPanel_0x75(); return;  // Beep - repeated
+    case 0x5D: printPanel_0x5D(); return;  // Flash panel lights: status and zones 1-32, partition 1
+    case 0x63: printPanel_0x63(); return;  // Flash panel lights: status and zones 1-32, partition 2
+    case 0x64: printPanel_0x64(); return;  // Beep - one-time, partition 1
+    case 0x69: printPanel_0x69(); return;  // Beep - one-time, partition 2
+    case 0x75: printPanel_0x75(); return;  // Beep pattern - repeated, partition 1
+    case 0x7A: printPanel_0x7A(); return;  // Beep pattern - repeated, partition 2
     case 0x7F: printPanel_0x7F(); return;  // Beep - one-time long beep
     case 0x87: printPanel_0x87(); return;  // Panel outputs
     case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32
@@ -47,8 +49,9 @@ void dscKeybusInterface::printPanelMessage() {
     case 0xA5: printPanel_0xA5(); return;  // Date, time, system status messages
     case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
     case 0xBB: printPanel_0xBB(); return;  // Bell
-    case 0xC3: printPanel_0xC3(); return;  // Unknown
+    case 0xC3: printPanel_0xC3(); return;  // Unknown command
     case 0xD5: printPanel_0xD5(); return;  // Keypad zone query
+    case 0xE6: printPanel_0xE6(); return;  // Keypad zone query
     default: {
       stream->print(F("Unrecognized command "));
       if (!validCRC()) {
@@ -193,9 +196,12 @@ void dscKeybusInterface::printPanelStatus() {
  *  0x05: Status
  *  Interval: constant
  *  CRC: no
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4: TBD
  *  Byte 5: TBD
  *
+ *  // PC1555MX, PC5015
  *  00000101 0 10000001 00000001 10010001 11000111 [0x05] Status lights: Ready Backlight | Partition ready
  *  00000101 0 10010000 00000011 10010001 11000111 [0x05] Status lights: Trouble Backlight | Partition not ready
  *  00000101 0 10001010 00000100 10010001 11000111 [0x05] Status lights: Armed Bypass Backlight | Armed stay
@@ -216,6 +222,9 @@ void dscKeybusInterface::printPanelStatus() {
  *  00000101 0 10000000 00111101 10010001 11000111 [0x05] Status lights: Backlight   *  Disarmed after previous alarm tripped
  *  00000101 0 10000000 00100010 10010001 11000111 [0x05] Status lights: Backlight   *  Disarmed after previous alarm tripped +4s
  *  00000101 0 10000010 10100110 10010001 11000111 [0x05] Status lights: Armed Backlight   *  In *5 programming
+ *
+ *  // PC1832
+ *  00000101 0 10000000 00000011 10000010 00000101 10000010 00000101 00000000 11000111 [0x05] Status lights: Backlight | Zones open
  */
 void dscKeybusInterface::printPanel_0x05() {
   stream->print(F("Status lights: "));
@@ -228,7 +237,8 @@ void dscKeybusInterface::printPanel_0x05() {
  *  0x0A: Status in alarm, programming
  *  Interval: constant in *  programming
  *  CRC: yes
- *  Byte 3: matches 0x05 byte 3 and 0x27 byte 3, messages
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4-7: Zone lights
  *  Byte 8: Zone lights for *5 access codes 33,34,41,42
  *
@@ -289,18 +299,20 @@ void dscKeybusInterface::printPanel_0x11() {
  *  0x16: Zone wiring
  *  Interval: 4min
  *  CRC: yes
- *  Byte 2: TBD, identical with PC1555MX and PC5015
- *  Byte 3: TBD, different between PC1555MX and PC5015
+ *  Byte 2: TBD, identical with PC1555MX, PC5015, PC1832
+ *  Byte 3: TBD, different between PC1555MX, PC5015, PC1832
  *  Byte 4 bits 2-7: TBD, identical with PC1555MX and PC5015
  *
- *  00010110 0 00001110 00100011 11010001 00011001 [0x16] Zone wiring: NC | Exit *8 programming
- *  00010110 0 00001110 00100011 11010010 00011001 [0x16] Zone wiring: EOL | Exit *8 programming
- *  00010110 0 00001110 00100011 11010011 00011001 [0x16] Zone wiring: DEOL | Exit *8 programming
- *  00010110 0 00001110 00100011 11100001 00101000 [0x16] Zone wiring: NC | In *8
- *  00010110 0 00001110 00100011 11100110 00101101 [0x16] Zone wiring: EOL | Enter *8 programming
- *  00010110 0 00001110 00100011 11110010 00111001 [0x16] Zone wiring: EOL | Armed, Exit *8 +15s, Power-on +2m
- *  00010110 0 00001110 00100011 11110111 00111101 [0x16] Zone wiring: DEOL | Interval 4m
- *  00010110 0 00001110 00010000 11110011 00100111 [0x16]  // PC5015 - armed
+ *  00010110 0 00001110 00100011 11010001 00011001 [0x16] PC1555MX | Zone wiring: NC | Exit *8 programming
+ *  00010110 0 00001110 00100011 11010010 00011001 [0x16] PC1555MX | Zone wiring: EOL | Exit *8 programming
+ *  00010110 0 00001110 00100011 11010011 00011001 [0x16] PC1555MX | Zone wiring: DEOL | Exit *8 programming
+ *  00010110 0 00001110 00100011 11100001 00101000 [0x16] PC1555MX | Zone wiring: NC | In *8
+ *  00010110 0 00001110 00100011 11100110 00101101 [0x16] PC1555MX | Zone wiring: EOL | Enter *8 programming
+ *  00010110 0 00001110 00100011 11110010 00111001 [0x16] PC1555MX | Zone wiring: EOL | Armed, Exit *8 +15s, Power-on +2m
+ *  00010110 0 00001110 00100011 11110111 00111101 [0x16] PC1555MX | Zone wiring: DEOL | Interval 4m
+ *  00010110 0 00001110 00010000 11110011 00100111 [0x16] PC5015 | Zone wiring: DEOL | Armed, Exit *8 +15s, Power-on +2m
+ *  00010110 0 00001110 01000010 10110101 00011011 [0x16] PC1832 | Zone wiring: NC | Interval 4m
+ *  00010110 0 00001110 01000010 10110001 00010111 [0x16] PC1832 | Zone wiring: NC | Armed
  */
 void dscKeybusInterface::printPanel_0x16() {
   if (!validCRC()) {
@@ -313,6 +325,7 @@ void dscKeybusInterface::printPanel_0x16() {
     switch (panelData[3]) {
       case 0x10: stream->print(F("PC5015 ")); break;
       case 0x23: stream->print(F("PC1555MX ")); break;
+      case 0x42: stream->print(F("PC1832 ")); break;
       default: stream->print(F("Unknown panel ")); break;
     }
 
@@ -323,11 +336,13 @@ void dscKeybusInterface::printPanel_0x16() {
     }
 
     switch (panelData[4] >> 2) {
+      case 0x2C: stream->print(F("| Armed")); break;
+      case 0x2D: stream->print(F("| Interval 4m")); break;
       case 0x34: stream->print(F("| Exit *8 programming")); break;
       case 0x39: stream->print(F("| *8 programming")); break;
       case 0x3C: stream->print(F("| Armed, Exit *8 +15s, Power-on +2m")); break;
       case 0x3D: stream->print(F("| Interval 4m")); break;
-      default: stream->print(F("Unrecognized command: Add to 0x16")); break;
+      default: stream->print(F("| Unrecognized command: Add to 0x16")); break;
     }
   }
   else stream->print(F("Unrecognized command: Add to 0x16"));
@@ -352,24 +367,28 @@ void dscKeybusInterface::printPanel_0x1C() {
  *  0x27: Status with zones 1-8
  *  Interval: 4m
  *  CRC: yes
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4: TBD
  *  Byte 5: TBD
+ *  Byte 6: Zones 1-8
  *
- *  00100111 0 10000001 00000001 10010001 11000111 00000000 00000001 [0x27] Status lights: Ready Backlight | Zones lights: none   *  Unarmed, zones closed
- *  00100111 0 10000001 00000001 10010001 11000111 00000010 00000011 [0x27] Status lights: Ready Backlight | Zones lights: 2   *  Unarmed, zone 2 open
- *  00100111 0 10001010 00000100 10010001 11000111 00000000 00001101 [0x27] Status lights: Armed Bypass Backlight | Zones lights: none   *  Armed stay   *  Periodic while armed
- *  00100111 0 10001010 00000100 11111111 11111111 00000000 10110011 [0x27] Status lights: Armed Bypass Backlight | Zones lights: none  /Armed stay +1s
- *  00100111 0 10000010 00000101 10010001 11000111 00000000 00000110 [0x27] Status lights: Armed Backlight | Zones lights: none   *  Armed away   *  Periodic while armed
- *  00100111 0 10000010 00000101 11111111 11111111 00000000 10101100 [0x27] Status lights: Armed Backlight | Zones lights: none   *  Armed away +1s
- *  00100111 0 10000010 00001100 10010001 11000111 00000001 00001110 [0x27] Status lights: Armed Backlight | Zones lights: 1   *  Delay zone 1 tripped, entrance delay
- *  00100111 0 10000010 00010001 10010001 11000111 00000001 00010011 [0x27] Status lights: Armed Backlight | Zones lights: 1   *  Periodic after delay zone 1 tripped, alarm on   *  Periodic after fire alarm, alarm on
- *  00100111 0 10000010 00001101 10010001 11000111 00000001 00001111 [0x27] Status lights: Armed Backlight | Zones lights: 1   *  Immediate after delay zone 1 tripped after previous alarm tripped
- *  00100111 0 10000010 00010001 11011011 11111111 00000010 10010110 [0x27] Status lights: Armed Backlight | Zones lights: 2   *  Instant zone 2 tripped away
- *  00100111 0 00000001 00000001 11111111 11111111 00000000 00100111 [0x27] Status lights: Ready | Zones open 1-8: none   *  Immediate after power on after panel reset
- *  00100111 0 10010001 00000001 11111111 11111111 00000000 10110111 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none   *  +15s after exit *8
- *  00100111 0 10010001 00000001 10100000 00000000 00000000 01011001 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none   *  +33s after power on after panel reset
- *  00100111 0 10010000 00000011 11111111 11111111 00111111 11110111 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6   *  +122s after power on after panel reset
- *  00100111 0 10010000 00000011 10010001 11000111 00111111 01010001 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6   *  +181s after power on after panel reset
+ *  00100111 0 10000001 00000001 10010001 11000111 00000000 00000001 [0x27] Status lights: Ready Backlight | Zones lights: none   // Unarmed, zones closed
+ *  00100111 0 10000001 00000001 10010001 11000111 00000010 00000011 [0x27] Status lights: Ready Backlight | Zones lights: 2   // Unarmed, zone 2 open
+ *  00100111 0 10001010 00000100 10010001 11000111 00000000 00001101 [0x27] Status lights: Armed Bypass Backlight | Zones lights: none  // Armed stay  // Periodic while armed
+ *  00100111 0 10001010 00000100 11111111 11111111 00000000 10110011 [0x27] Status lights: Armed Bypass Backlight | Zones lights: none  // Armed stay +1s
+ *  00100111 0 10000010 00000101 10010001 11000111 00000000 00000110 [0x27] Status lights: Armed Backlight | Zones lights: none  // Armed away  // Periodic while armed
+ *  00100111 0 10000010 00000101 11111111 11111111 00000000 10101100 [0x27] Status lights: Armed Backlight | Zones lights: none  // Armed away +1s
+ *  00100111 0 10000010 00001100 10010001 11000111 00000001 00001110 [0x27] Status lights: Armed Backlight | Zones lights: 1  // Delay zone 1 tripped, entrance delay
+ *  00100111 0 10000010 00010001 10010001 11000111 00000001 00010011 [0x27] Status lights: Armed Backlight | Zones lights: 1  // Periodic after delay zone 1 tripped, alarm on   *  Periodic after fire alarm, alarm on
+ *  00100111 0 10000010 00001101 10010001 11000111 00000001 00001111 [0x27] Status lights: Armed Backlight | Zones lights: 1  // Immediate after delay zone 1 tripped after previous alarm tripped
+ *  00100111 0 10000010 00010001 11011011 11111111 00000010 10010110 [0x27] Status lights: Armed Backlight | Zones lights: 2  // Instant zone 2 tripped away
+ *  00100111 0 00000001 00000001 11111111 11111111 00000000 00100111 [0x27] Status lights: Ready | Zones open 1-8: none  // Immediate after power on after panel reset
+ *  00100111 0 10010001 00000001 11111111 11111111 00000000 10110111 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none  // +15s after exit *8
+ *  00100111 0 10010001 00000001 10100000 00000000 00000000 01011001 [0x27] Status lights: Ready Trouble Backlight | Zones open 1-8: none  // +33s after power on after panel reset
+ *  00100111 0 10010000 00000011 11111111 11111111 00111111 11110111 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6  // +122s after power on after panel reset
+ *  00100111 0 10010000 00000011 10010001 11000111 00111111 01010001 [0x27] Status lights: Trouble Backlight | Zones open: 1 2 3 4 5 6  // +181s after power on after panel reset
+ *  00100111 0 10000000 00000011 10000010 00000101 00011101 01001110 [0x27] Status lights: Backlight | Zones open | Zones 1-8 open: 1 3 4 5  // PC1832
  */
 void dscKeybusInterface::printPanel_0x27() {
   if (!validCRC()) {
@@ -414,10 +433,14 @@ void dscKeybusInterface::printPanel_0x28() {
  *  0x2D: Status with zones 9-16
  *  Interval: 4m
  *  CRC: yes
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4: TBD
  *  Byte 5: TBD
+ *  Byte 6: Zones 9-16
  *
  *  00101101 0 10000000 00000011 10000001 11000111 00000001 11111001 [0x2D] Status lights: Backlight | Partition not ready | Open zones: 9
+ *  00101101 0 10000000 00000011 10000010 00000101 00000000 00110111 [0x2D] Status lights: Backlight | Zones open | Zones 9-16 open: none  // PC1832
  */
 void dscKeybusInterface::printPanel_0x2D() {
   if (!validCRC()) {
@@ -448,8 +471,11 @@ void dscKeybusInterface::printPanel_0x2D() {
  *  0x34: Status with zones 17-24
  *  Interval: 4m
  *  CRC: yes
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4: TBD
  *  Byte 5: TBD
+ *  Byte 6: Zones 17-24
  */
 void dscKeybusInterface::printPanel_0x34() {
   if (!validCRC()) {
@@ -480,8 +506,11 @@ void dscKeybusInterface::printPanel_0x34() {
  *  0x3E: Status with zones 25-32
  *  Interval: 4m
  *  CRC: yes
+ *  Byte 2: Status lights
+ *  Byte 3: Status
  *  Byte 4: TBD
  *  Byte 5: TBD
+ *  Byte 6: Zones 25-32
  */
 void dscKeybusInterface::printPanel_0x3E() {
   if (!validCRC()) {
@@ -537,7 +566,7 @@ void dscKeybusInterface::printPanel_0x58() {
 
 
 /*
- *  0x5D: Flash panel lights: status and zones 1-32
+ *  0x5D: Flash panel lights: status and zones 1-32, partition 1
  *  Interval: 30s
  *  CRC: yes
  *  Byte 2: Status lights
@@ -546,11 +575,11 @@ void dscKeybusInterface::printPanel_0x58() {
  *  Byte 5: Zones 17-24
  *  Byte 6: Zones 25-32
  *
- *  01011101 0 00000000 00000000 00000000 00000000 00000000 01011101 [0x5D] Status lights flashing: none | Zones 1-32 flashing: none
- *  01011101 0 00100000 00000000 00000000 00000000 00000000 01111101 [0x5D] Status lights flashing: Program | Zones 1-32 flashing: none
- *  01011101 0 00000000 00100000 00000000 00000000 00000000 01111101 [0x5D] Status lights flashing: none  | Zones 1-32 flashing: none 6
- *  01011101 0 00000100 00100000 00000000 00000000 00000000 10000001 [0x5D] Status lights flashing: Memory | Zones 1-32 flashing: 6
- *  01011101 0 00000000 00000000 00000001 00000000 00000000 01011110 [0x5D] Status lights flashing: none | Zones flashing: 9
+ *  01011101 0 00000000 00000000 00000000 00000000 00000000 01011101 [0x5D] Partition 1 | Status lights flashing: none | Zones 1-32 flashing: none
+ *  01011101 0 00100000 00000000 00000000 00000000 00000000 01111101 [0x5D] Partition 1 | Status lights flashing: Program | Zones 1-32 flashing: none
+ *  01011101 0 00000000 00100000 00000000 00000000 00000000 01111101 [0x5D] Partition 1 | Status lights flashing: none  | Zones 1-32 flashing: none 6
+ *  01011101 0 00000100 00100000 00000000 00000000 00000000 10000001 [0x5D] Partition 1 | Status lights flashing: Memory | Zones 1-32 flashing: 6
+ *  01011101 0 00000000 00000000 00000001 00000000 00000000 01011110 [0x5D] Partition 1 | Status lights flashing: none | Zones flashing: 9
  */
 void dscKeybusInterface::printPanel_0x5D() {
   if (!validCRC()) {
@@ -558,7 +587,7 @@ void dscKeybusInterface::printPanel_0x5D() {
     return;
   }
 
-  stream->print(F("Status lights flashing: "));
+  stream->print(F("Partition 1 | Status lights flashing: "));
   printPanelLights();
 
   bool zoneLights = false;
@@ -579,16 +608,17 @@ void dscKeybusInterface::printPanel_0x5D() {
 
 
 /*
- *  0x63: Flash panel lights: status and zones 33-64 (unconfirmed)
+ *  0x63: Flash panel lights: status and zones 1-32, partition 2
  *  Interval: 30s
  *  CRC: yes
  *  Byte 2: Status lights
- *  Byte 3: Zones 33-40
- *  Byte 4: Zones 41-48
- *  Byte 5: Zones 49-56
- *  Byte 6: Zones 56-64
+ *  Byte 3: Zones 1-8
+ *  Byte 4: Zones 9-16
+ *  Byte 5: Zones 17-24
+ *  Byte 6: Zones 25-32
  *
- *  01100011 0 00000000 00000000 00000000 00000000 00000000 01100011 [0x63] Status lights flashing: none | Zones 33-64 flashing: none
+ *  01100011 0 00000000 00000000 00000000 00000000 00000000 01100011 [0x63] Partition 2 | Status lights flashing: none | Zones 1-32 flashing: none
+ *  01100011 0 00000100 10000000 00000000 00000000 00000000 11100111 [0x63] Partition 2 | Status lights flashing:Memory | Zones 1-32 flashing: 8
  */
 void dscKeybusInterface::printPanel_0x63() {
   if (!validCRC()) {
@@ -596,17 +626,17 @@ void dscKeybusInterface::printPanel_0x63() {
     return;
   }
 
-  stream->print(F("Status lights flashing:"));
+  stream->print(F("Partition 2 | Status lights flashing: "));
   printPanelLights();
 
   bool zoneLights = false;
-  stream->print(F("| Zones 33-64 flashing: "));
+  stream->print(F("| Zones 1-32 flashing: "));
   for (byte panelByte = 3; panelByte <= 6; panelByte++) {
     if (panelData[panelByte] != 0) {
       zoneLights = true;
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(panelData[panelByte],zoneBit)) {
-          stream->print((zoneBit + 33) + ((panelByte-3) *  8));
+          stream->print((zoneBit + 1) + ((panelByte-3) *  8));
           stream->print(" ");
         }
       }
@@ -617,17 +647,17 @@ void dscKeybusInterface::printPanel_0x63() {
 
 
 /*
- *  0x64: Beep - one-time
+ *  0x64: Beep - one-time, partition 1
  *  CRC: yes
  *
- *  01100100 0 00001100 01110000 [0x64] Beep: 6 beeps
+ *  01100100 0 00001100 01110000 [0x64] Partition 1 | Beep: 6 beeps
  */
 void dscKeybusInterface::printPanel_0x64() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
     return;
   }
-  stream->print(F("Beep: "));
+  stream->print(F("Partition 1 | Beep: "));
   switch (panelData[2]) {
     case 0x04: stream->print(F("2 beeps")); break;
     case 0x06: stream->print(F("3 beeps")); break;
@@ -639,18 +669,40 @@ void dscKeybusInterface::printPanel_0x64() {
 
 
 /*
- *  0x75: Beep pattern - repeated
+ *  0x69: Beep - one-time, partition 2
  *  CRC: yes
  *
- *  01110101 0 10000000 11110101 [0x75] Beep pattern: solid tone
- *  01110101 0 00000000 01110101 [0x75] Beep pattern: off
+ *  01101001 0 00001100 01110101 [0x69] Partition 2 | Beep: 6 beeps
+ */
+void dscKeybusInterface::printPanel_0x69() {
+  if (!validCRC()) {
+    stream->print(F("[CRC Error]"));
+    return;
+  }
+  stream->print(F("Partition 2 | Beep: "));
+  switch (panelData[2]) {
+    case 0x04: stream->print(F("2 beeps")); break;
+    case 0x06: stream->print(F("3 beeps")); break;
+    case 0x08: stream->print(F("4 beeps")); break;
+    case 0x0C: stream->print(F("6 beeps")); break;
+    default: stream->print(F("Unrecognized command: Add to 0x69")); break;
+  }
+}
+
+
+/*
+ *  0x75: Beep pattern - repeated, partition 1
+ *  CRC: yes
+ *
+ *  01110101 0 10000000 11110101 [0x75] Partition 1 | Beep pattern: solid tone
+ *  01110101 0 00000000 01110101 [0x75] Partition 1 | Beep pattern: off
  */
 void dscKeybusInterface::printPanel_0x75() {
   if (!validCRC()) {
     stream->print(F("[CRC Error]"));
     return;
   }
-  stream->print(F("Beep pattern: "));
+  stream->print(F("Partition 1 | Beep pattern: "));
   switch (panelData[2]) {
     case 0x00: stream->print(F("off")); break;
     case 0x11: stream->print(F("single beep (exit delay)")); break;
@@ -658,6 +710,29 @@ void dscKeybusInterface::printPanel_0x75() {
     case 0x80: stream->print(F("solid tone")); break;
     case 0xB1: stream->print(F("triple beep (entrance delay)")); break;
     default: stream->print(F("Unrecognized command: Add to 0x75")); break;
+  }
+}
+
+
+/*
+ *  0x7A: Beep pattern - repeated, partition 2
+ *  CRC: yes
+ *
+ *  01111010 0 00000000 01111010 [0x7A] Partition 2 | Beep pattern: off
+ */
+void dscKeybusInterface::printPanel_0x7A() {
+  if (!validCRC()) {
+    stream->print(F("[CRC Error]"));
+    return;
+  }
+  stream->print(F("Partition 2 | Beep pattern: "));
+  switch (panelData[2]) {
+    case 0x00: stream->print(F("off")); break;
+    case 0x11: stream->print(F("single beep (exit delay)")); break;
+    case 0x31: stream->print(F("triple beep (exit delay)")); break;
+    case 0x80: stream->print(F("solid tone")); break;
+    case 0xB1: stream->print(F("triple beep (entrance delay)")); break;
+    default: stream->print(F("Unrecognized command: Add to 0x7A")); break;
   }
 }
 
@@ -812,464 +887,371 @@ void dscKeybusInterface::printPanel_0xA5() {
     return;
   }
 
-  switch (panelData[7]) {
-    case 0: printPanel_0xA5_Byte7_0x00(); break;
-    case 0x09: printPanel_0xA5_Byte7_0x09(); break;
-    case 0xFF: printPanel_0xA5_Byte7_0xFF(); break;
+  switch (panelData[3] >> 6) {
+    case 0x01: stream->print(F(" | Partition 1")); break;
+    case 0x02: stream->print(F(" | Partition 2")); break;
+  }
+
+  switch (panelData[5] & 0x03) {
+    case 0x00: printPanel_0xA5_Byte5_0x00(); break;
+    case 0x01: printPanel_0xA5_Byte5_0x01(); break;
+    case 0x02: printPanel_0xA5_Byte5_0x02(); break;
+    case 0x03: printPanel_0xA5_Byte5_0x03(); break;
   }
 }
 
 
-void dscKeybusInterface::printPanel_0xA5_Byte7_0x00() {
-  bool decodeComplete = true;
-
-  // Process data based on byte 5, bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx00
-    case 0x00: {
-      decodeComplete = false;
-      break;
-    }
-
-    // Byte 5: xxxxxx01
-    case 0x01: {
-      switch (panelData[6]) {
-
-        /*
-         *  10100101 0 00010001 01101101 01100000 10101001 00100100 00000000 01010000 [0xA5] 11/11/2011 00:42 | Auto-arm cancelled by duress code 33
-         *  10100101 0 00010001 01101101 01100000 10110101 00100101 00000000 01011101 [0xA5] 11/11/2011 00:45 | Auto-arm cancelled by duress code 34
-         *  10100101 0 00010001 01101101 01100000 00101001 00100110 00000000 11010010 [0xA5] 11/11/2011 00:10 | Auto-arm cancelled by master code 40
-         *  10100101 0 00010001 01101101 01100000 10010001 00100111 00000000 00111011 [0xA5] 11/11/2011 00:36 | Auto-arm cancelled by supervisor code 41
-         *  10100101 0 00010001 01101101 01100000 10111001 00101000 00000000 01100100 [0xA5] 11/11/2011 00:46 | Auto-arm cancelled by supervisor code 42
-         *  10100101 0 00011000 01001111 10100000 10011101 00101011 00000000 01110100 [0xA5] 03/29/2018 00:39 | Armed by auto-arm
-         *  10100101 0 00011000 01001101 00001010 00001101 10101100 00000000 11001101 [0xA5] 03/08/2018 10:03 | Exit *8 programming
-         *  10100101 0 00011000 01001101 00001001 11100001 10101101 00000000 10100001 [0xA5] 03/08/2018 09:56 | Enter *8
-         *  10100101 0 00010001 01101101 01100010 11001101 11010000 00000000 00100010 [0xA5] 11/11/2011 02:51 | Command output 4
-         */
-        case 0x24: stream->print(F(" | Auto-arm cancelled by duress code 33")); break;
-        case 0x25: stream->print(F(" | Auto-arm cancelled by duress code 34")); break;
-        case 0x26: stream->print(F(" | Auto-arm cancelled by master code 40")); break;
-        case 0x27: stream->print(F(" | Auto-arm cancelled by supervisor code 41")); break;
-        case 0x28: stream->print(F(" | Auto-arm cancelled by supervisor code 42")); break;
-        case 0x2B: stream->print(F(" | Armed by auto-arm")); break;
-        case 0xAC: stream->print(F(" | Exit *8 programming")); break;
-        case 0xAD: stream->print(F(" | Enter *8 programming")); break;
-        //  0xB0 - 0xCF: Zones bypassed
-        case 0xD0: stream->print(F(" | Command output 4")); break;
-        default: decodeComplete = false;
-      }
-      if (decodeComplete) break;
-
-      /*
-       *  Zones bypassed
-       *
-       *  10100101 0 00011000 01001111 10110001 10101001 10110001 00000000 00010111 [0xA5] 03/29/2018 17:42 | Bypassed zone 2
-       *  10100101 0 00011000 01001111 10110001 11000001 10110101 00000000 00110011 [0xA5] 03/29/2018 17:48 | Bypassed zone 6
-       */
-      if (panelData[6] >= 0xB0 && panelData[6] <= 0xCF) {
-        stream->print(F(" | Zone bypassed: "));
-        stream->print(panelData[6] - 0xAF);
-        decodeComplete = true;
-        break;
-      }
-
-      decodeComplete = false;
-      break;
-    }
-
-    // Byte 5: xxxxxx10
-    case 0x02: {
-      switch (panelData[6]) {
-
-        /*
-         *  10100101 0 00011000 01001111 10101111 10000110 00101010 00000000 01101011 [0xA5] 03/29/2018 15:33 | Quick exit
-         *  10100101 0 00010001 01101101 01110101 00111010 01100011 00000000 00110101 [0xA5] 11/11/2011 21:14 | Keybus fault restored
-         *  10100101 0 00011000 01001111 11110111 01110110 01100110 00000000 11011111 [0xA5] 03/31/2018 23:29 | Enter *1 zone bypass programming
-         *  10100101 0 00010001 01101101 01100010 11001110 01101001 00000000 10111100 [0xA5] 11/11/2011 02:51 | Command output 3
-         *  10100101 0 00011000 01010000 01000000 00000010 10001100 00000000 11011011 [0xA5] 04/02/2018 00:00 | Loss of system time
-         *  10100101 0 00011000 01001111 10101110 00001110 10001101 00000000 01010101 [0xA5] 03/29/2018 14:03 | Power on
-         *  10100101 0 00011000 01010000 01000000 00000010 10001110 00000000 11011101 [0xA5] 04/02/2018 00:00 | Panel factory default
-         *  10100101 0 00011000 01001111 11101010 10111010 10010011 00000000 01000011 [0xA5] 03/31/2018 10:46 | Disarmed by keyswitch
-         *  10100101 0 00011000 01001111 11101010 10101110 10010110 00000000 00111010 [0xA5] 03/31/2018 10:43 | Armed by keyswitch
-         *  10100101 0 00011000 01001111 10100000 01100010 10011000 00000000 10100110 [0xA5] 03/29/2018 00:24 | Armed by quick-arm
-         *  10100101 0 00010001 01101101 01100000 00101110 10011001 00000000 01001010 [0xA5] 11/11/2011 00:11 | Activate stay/away zones
-         *  10100101 0 00011000 01001111 00101101 00011010 10011010 00000000 11101101 [0xA5] 03/25/2018 13:06 | Armed: stay
-         *  10100101 0 00011000 01001111 00101101 00010010 10011011 00000000 11100110 [0xA5] 03/25/2018 13:04 | Armed: away
-         *  10100101 0 00011000 01001111 00101101 10011010 10011100 00000000 01101111 [0xA5] 03/25/2018 13:38 | Armed without entry delay
-         *  10100101 0 00011000 01001111 00101100 11011110 11000011 00000000 11011001 [0xA5] 03/25/2018 12:55 | Enter *5 programming
-         *  10100101 0 00011000 01001111 00101110 00000010 11100110 00000000 00100010 [0xA5] 03/25/2018 14:00 | Enter *6 programming
-         */
-        case 0x2A: stream->print(F(" | Quick exit")); break;
-        case 0x63: stream->print(F(" | Keybus fault restored")); break;
-        case 0x66: stream->print(F(" | Enter *1 zone bypass programming")); break;
-        case 0x67: stream->print(F(" | Command output 1")); break;
-        case 0x68: stream->print(F(" | Command output 2")); break;
-        case 0x69: stream->print(F(" | Command output 3")); break;
-        case 0x8C: stream->print(F(" | Loss of system time")); break;
-        case 0x8D: stream->print(F(" | Power on")); break;
-        case 0x8E: stream->print(F(" | Panel factory default")); break;
-        case 0x93: stream->print(F(" | Disarmed by keyswitch")); break;
-        case 0x96: stream->print(F(" | Armed by keyswitch")); break;
-        case 0x97: stream->print(F(" | Armed by keypad away")); break;
-        case 0x98: stream->print(F(" | Armed by quick-arm")); break;
-        case 0x99: stream->print(F(" | Activate stay/away zones")); break;
-        case 0x9A: stream->print(F(" | Armed: stay")); break;
-        case 0x9B: stream->print(F(" | Armed: away")); break;
-        case 0x9C: stream->print(F(" | Armed without entry delay")); break;
-        case 0xC3: stream->print(F(" | Enter *5 programming")); break;
-        case 0xE6: stream->print(F(" | Enter *6 programming")); break;
-        default: decodeComplete = false;
-      }
-      if (decodeComplete) break;
-
-      /*
-       *  Auto-arm cancelled
-       *
-       *  10100101 0 00010001 01101101 01100000 00111110 11000110 00000000 10000111 [0xA5] 11/11/2011 00:15 | Auto-arm cancelled by user code 1
-       *  10100101 0 00010001 01101101 01100000 01111010 11100101 00000000 11100010 [0xA5] 11/11/2011 00:30 | Auto-arm cancelled by user code 32
-       */
-      if (panelData[6] >= 0xC6 && panelData[6] <= 0xE5) {
-        stream->print(F(" | Auto-arm cancelled by user code "));
-        stream->print(panelData[6] - 0xC5);
-        decodeComplete = true;
-        break;
-      }
-
-      break;
-    }
-
-    // Byte 5: xxxxxx11
-    case 0x03: {
-      decodeComplete = false;
-      break;
-    }
+void dscKeybusInterface::printPanel_0xA5_Byte5_0x00() {
+  switch (panelData[6]) {
+    /*
+     *  10100101 0 00011000 01001111 10110000 11101100 01001001 11111111 11110000 [0xA5] 03/29/2018 16:59 | Duress alarm
+     *  10100101 0 00011000 01001111 11001110 10111100 01001010 11111111 11011111 [0xA5] 03/30/2018 14:47 | Disarmed after alarm in memory
+     *  10100101 0 00011000 01001111 11001010 01000100 01001011 11111111 01100100 [0xA5] 03/30/2018 10:17 | Partition in alarm
+     *  10100101 0 00011000 01010000 01001001 10111000 01001100 11111111 01011001 [0xA5] 04/02/2018 09:46 | Zone expander supervisory alarm
+     *  10100101 0 00011000 01010000 01001010 00000000 01001101 11111111 10100011 [0xA5] 04/02/2018 10:00 | Zone expander supervisory restored
+     *  10100101 0 00011000 01001111 01110010 10011100 01001110 11111111 01100111 [0xA5] 03/27/2018 18:39 | Keypad Fire alarm
+     *  10100101 0 00011000 01001111 01110010 10010000 01001111 11111111 01011100 [0xA5] 03/27/2018 18:36 | Keypad Aux alarm
+     *  10100101 0 00011000 01001111 01110010 10001000 01010000 11111111 01010101 [0xA5] 03/27/2018 18:34 | Keypad Panic alarm
+     *  10100101 0 00010001 01101101 01100000 00000100 01010001 11111111 11010111 [0xA5] 11/11/2011 00:01 | Keypad status check?   // Power-on +124s, keypad sends status update immediately after this
+     *  10100101 0 00011000 01001111 01110010 10011100 01010010 11111111 01101011 [0xA5] 03/27/2018 18:39 | Keypad Fire alarm restored
+     *  10100101 0 00011000 01001111 01110010 10010000 01010011 11111111 01100000 [0xA5] 03/27/2018 18:36 | Keypad Aux alarm restored
+     *  10100101 0 00011000 01001111 01110010 10001000 01010100 11111111 01011001 [0xA5] 03/27/2018 18:34 | Keypad Panic alarm restored
+     *  10100101 0 00011000 01001111 11110110 00110100 10011000 11111111 11001101 [0xA5] 03/31/2018 22:13 | Keypad lockout
+     *  10100101 0 00011000 01001111 11101011 10100100 10111110 11111111 01011000 [0xA5] 03/31/2018 11:41 | Armed partial: Zones bypassed
+     *  10100101 0 00011000 01001111 11101011 00011000 10111111 11111111 11001101 [0xA5] 03/31/2018 11:06 | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS
+     *  10100101 0 00010001 01101101 01100000 00101000 11100101 11111111 10001111 [0xA5] 11/11/2011 00:10 | Auto-arm cancelled
+     *  10100101 0 00011000 01001111 11110111 01000000 11100110 11111111 00101000 [0xA5] 03/31/2018 23:16 | Disarmed special: keyswitch/wireless key/DLS
+     *  10100101 0 00011000 01001111 01101111 01011100 11100111 11111111 10111101 [0xA5] 03/27/2018 15:23 | Panel battery trouble
+     *  10100101 0 00011000 01001111 10110011 10011000 11101000 11111111 00111110 [0xA5] 03/29/2018 19:38 | AC power failure  // Sent after delay in *8 [370]
+     *  10100101 0 00011000 01001111 01110100 01010000 11101001 11111111 10111000 [0xA5] 03/27/2018 20:20 | Bell trouble
+     *  10100101 0 00011000 01001111 11000000 10001000 11101100 11111111 00111111 [0xA5] 03/30/2018 00:34 | Telephone line trouble
+     *  10100101 0 00011000 01001111 01101111 01110000 11101111 11111111 11011001 [0xA5] 03/27/2018 15:28 | Panel battery restored
+     *  10100101 0 00011000 01010000 00100000 01011000 11110000 11111111 01110100 [0xA5] 04/01/2018 00:22 | AC power restored  // Sent after delay in *8 [370]
+     *  10100101 0 00011000 01001111 01110100 01011000 11110001 11111111 11001000 [0xA5] 03/27/2018 20:22 | Bell restored
+     *  10100101 0 00011000 01001111 11000000 10001000 11110100 11111111 01000111 [0xA5] 03/30/2018 00:34 | Telephone line restored
+     *  10100101 0 00011000 01001111 11100001 01011000 11111111 11111111 01000011 [0xA5] 03/31/2018 01:22 | System test
+     */
+    // 0x09 - 0x28: Zone alarm, zones 1-32
+    // 0x29 - 0x48: Zone alarm restored, zones 1-32
+    case 0x49: stream->print(F(" | Duress alarm")); return;
+    case 0x4A: stream->print(F(" | Disarmed after alarm in memory")); return;
+    case 0x4B: stream->print(F(" | Partition in alarm")); return;
+    case 0x4C: stream->print(F(" | Zone expander supervisory alarm")); return;
+    case 0x4D: stream->print(F(" | Zone expander supervisory restored")); return;
+    case 0x4E: stream->print(F(" | Keypad Fire alarm")); return;
+    case 0x4F: stream->print(F(" | Keypad Aux alarm")); return;
+    case 0x50: stream->print(F(" | Keypad Panic alarm")); return;
+    case 0x51: stream->print(F(" | Keypad status check?")); return;
+    case 0x52: stream->print(F(" | Keypad Fire alarm restored")); return;
+    case 0x53: stream->print(F(" | Keypad Aux alarm restored")); return;
+    case 0x54: stream->print(F(" | Keypad Panic alarm restored")); return;
+    // 0x56 - 0x75: Zone tamper, zones 1-32
+    // 0x76 - 0x95: Zone tamper restored, zones 1-32
+    case 0x98: stream->print(F(" | Keypad lockout")); return;
+    // 0x99 - 0xBD: Armed by access code
+    case 0xBE: stream->print(F(" | Armed partial: Zones bypassed")); return;
+    case 0xBF: stream->print(F(" | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); return;
+    // 0xC0 - 0xE4: Disarmed by access code
+    case 0xE5: stream->print(F(" | Auto-arm cancelled")); return;
+    case 0xE6: stream->print(F(" | Disarmed special: keyswitch/wireless key/DLS")); return;
+    case 0xE7: stream->print(F(" | Panel battery trouble")); return;
+    case 0xE8: stream->print(F(" | Panel AC power failure")); return;
+    case 0xE9: stream->print(F(" | Bell trouble")); return;
+    case 0xEA: stream->print(F(" | Power on +16s")); return;
+    case 0xEC: stream->print(F(" | Telephone line trouble")); return;
+    case 0xEF: stream->print(F(" | Panel battery restored")); return;
+    case 0xF0: stream->print(F(" | Panel AC power restored")); return;
+    case 0xF1: stream->print(F(" | Bell restored")); return;
+    case 0xF4: stream->print(F(" | Telephone line restored")); return;
+    case 0xFF: stream->print(F(" | System test")); return;
   }
-  if (decodeComplete) return;
-  stream->print(F(" | Unrecognized data, add to 0xA5_Byte7_0x00, Byte 6: 0x"));
+
+  /*
+   *  Zone alarm, zones 1-32
+   *
+   *  10100101 0 00011000 01001111 01001001 11011000 00001001 11111111 00110101 [0xA5] 03/26/2018 09:54 | Zone alarm: 1
+   *  10100101 0 00011000 01001111 01001010 00100000 00001110 11111111 10000011 [0xA5] 03/26/2018 10:08 | Zone alarm: 6
+   *  10100101 0 00011000 01001111 10010100 11001000 00010000 11111111 01110111 [0xA5] 03/28/2018 20:50 | Zone alarm: 8
+   */
+  if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
+    stream->print(F(" | Zone alarm: "));
+    stream->print(panelData[6] - 0x08);
+    return;
+  }
+
+  /*
+   *  Zone alarm restored, zones 1-32
+   *
+   *  10100101 0 00011000 01001111 10010100 11001100 00101001 11111111 10010100 [0xA5] 03/28/2018 20:51 | Zone alarm restored: 1
+   *  10100101 0 00011000 01001111 10010100 11010100 00101110 11111111 10100001 [0xA5] 03/28/2018 20:53 | Zone alarm restored: 6
+   *  10100101 0 00011000 01001111 10010100 11010000 00110000 11111111 10011111 [0xA5] 03/28/2018 20:52 | Zone alarm restored: 8
+   */
+  if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
+    stream->print(F(" | Zone alarm restored: "));
+    stream->print(panelData[6] - 0x28);
+    return;
+  }
+
+  /*
+   *  Zone tamper, zones 1-32
+   *
+   *  10100101 0 00000001 01000100 00100010 01011100 01010110 11111111 10111101 [0xA5] 01/01/2001 02:23 | Zone tamper: 1
+   *  10100101 0 00000001 01000100 00100010 01011100 01010111 11111111 10111101 [0xA5] 01/01/2001 02:23 | Zone tamper: 2
+   *  10100101 0 00010001 01101101 01101011 10010000 01011011 11111111 01111000 [0xA5] 11/11/2011 11:36 | Zone tamper: 6
+   */
+  if (panelData[6] >= 0x56 && panelData[6] <= 0x75) {
+    stream->print(F(" | Zone tamper: "));
+    stream->print(panelData[6] - 0x55);
+    return;
+  }
+
+  /*
+   *  Zone tamper restored, zones 1-32
+   *
+   *  10100101 0 00000001 01000100 00100010 01011100 01110110 11111111 11011101 [0xA5] 01/01/2001 02:23 | Zone tamper restored: 1
+   *  10100101 0 00000001 01000100 00100010 01011100 01111000 11111111 11011101 [0xA5] 01/01/2001 02:23 | Zone tamper restored: 2
+   *  10100101 0 00010001 01101101 01101011 10010000 01111011 11111111 10011000 [0xA5] 11/11/2011 11:36 | Zone tamper restored: 6
+   */
+  if (panelData[6] >= 0x76 && panelData[6] <= 0x95) {
+    stream->print(F(" | Zone tamper restored: "));
+    stream->print(panelData[6] - 0x75);
+    return;
+  }
+
+  /*
+   *  Armed by access code
+   *
+   *  10100101 0 00011000 01001101 00001000 10010000 10011001 11111111 00111010 [0xA5] 03/08/2018 08:36 | Armed by user code 1
+   *  10100101 0 00011000 01001101 00001000 10111100 10111011 11111111 10001000 [0xA5] 03/08/2018 08:47 | Armed by master code 40
+   */
+  if (panelData[6] >= 0x99 && panelData[6] <= 0xBD) {
+    byte dscCode = panelData[6] - 0x98;
+    if (dscCode >= 35) dscCode += 5;
+    stream->print(F(" | Armed by "));
+    switch (dscCode) {
+      case 33: stream->print(F("duress ")); break;
+      case 34: stream->print(F("duress ")); break;
+      case 40: stream->print(F("master ")); break;
+      case 41: stream->print(F("supervisor ")); break;
+      case 42: stream->print(F("supervisor ")); break;
+      default: stream->print(F("user ")); break;
+    }
+    stream->print(F("code "));
+    stream->print(dscCode);
+    return;
+  }
+
+  /*
+   *  Disarmed by access code
+   *
+   *  10100101 0 00011000 01001101 00001000 11101100 11000000 11111111 10111101 [0xA5] 03/08/2018 08:59 | Disarmed by user code 1
+   *  10100101 0 00011000 01001101 00001000 10110100 11100010 11111111 10100111 [0xA5] 03/08/2018 08:45 | Disarmed by master code 40
+   */
+  if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
+    byte dscCode = panelData[6] - 0xBF;
+    if (dscCode >= 35) dscCode += 5;
+    stream->print(F(" | Disarmed by "));
+    switch (dscCode) {
+      case 33: stream->print(F("duress ")); break;
+      case 34: stream->print(F("duress ")); break;
+      case 40: stream->print(F("master ")); break;
+      case 41: stream->print(F("supervisor ")); break;
+      case 42: stream->print(F("supervisor ")); break;
+      default: stream->print(F("user ")); break;
+    }
+    stream->print(F("code "));
+    stream->print(dscCode);
+    return;
+  }
+
+  stream->print(F(" | Unrecognized data, add to 0xA5_Byte5_0x00, Byte 6: 0x"));
   if (panelData[6] < 10) stream->print(F("0"));
   stream->print(panelData[6], HEX);
 }
 
 
-void dscKeybusInterface::printPanel_0xA5_Byte7_0x09() {
-  bool decodeComplete = true;
-
-  // Process data separately based on byte 5 bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx00
-    case 0x00: {
-
-      /*
-       *  Zone expander alarm, zones 9-16
-       *
-       *  10100101 0 00011000 01010101 00110010 11010000 00010001 00001001 00101110 [0xA5] 05/09/2018 18:52 | Zone expander alarm: 9
-       */
-      if (panelData[6] >= 0x11 && panelData[6] <= 0x18) {
-        stream->print(F(" | Zone expander alarm: "));
-        stream->print(panelData[6] - 0x08);
-        decodeComplete = true;
-        break;
-      }
-
-      decodeComplete = false;
-      break;
-    }
+void dscKeybusInterface::printPanel_0xA5_Byte5_0x01() {
+  switch (panelData[6]) {
+    /*
+     *  10100101 0 00011000 01001111 11001010 10001001 00000011 11111111 01100001 [0xA5] 03/30/2018 10:34 | Cross zone alarm
+     *  10100101 0 00010001 01101101 01101010 00000001 00000100 11111111 10010001 [0xA5] 11/11/2011 10:00 | Delinquency alarm
+     *  10100101 0 00010001 01101101 01100000 10101001 00100100 00000000 01010000 [0xA5] 11/11/2011 00:42 | Auto-arm cancelled by duress code 33
+     *  10100101 0 00010001 01101101 01100000 10110101 00100101 00000000 01011101 [0xA5] 11/11/2011 00:45 | Auto-arm cancelled by duress code 34
+     *  10100101 0 00010001 01101101 01100000 00101001 00100110 00000000 11010010 [0xA5] 11/11/2011 00:10 | Auto-arm cancelled by master code 40
+     *  10100101 0 00010001 01101101 01100000 10010001 00100111 00000000 00111011 [0xA5] 11/11/2011 00:36 | Auto-arm cancelled by supervisor code 41
+     *  10100101 0 00010001 01101101 01100000 10111001 00101000 00000000 01100100 [0xA5] 11/11/2011 00:46 | Auto-arm cancelled by supervisor code 42
+     *  10100101 0 00011000 01001111 10100000 10011101 00101011 00000000 01110100 [0xA5] 03/29/2018 00:39 | Armed by auto-arm
+     *  10100101 0 00011000 01001101 00001010 00001101 10101100 00000000 11001101 [0xA5] 03/08/2018 10:03 | Exit *8 programming
+     *  10100101 0 00011000 01001101 00001001 11100001 10101101 00000000 10100001 [0xA5] 03/08/2018 09:56 | Enter *8
+     *  10100101 0 00010001 01101101 01100010 11001101 11010000 00000000 00100010 [0xA5] 11/11/2011 02:51 | Command output 4
+     */
+    case 0x03: stream->print(F(" | Cross zone alarm")); return;
+    case 0x04: stream->print(F(" | Delinquency alarm")); return;
+    case 0x24: stream->print(F(" | Auto-arm cancelled by duress code 33")); return;
+    case 0x25: stream->print(F(" | Auto-arm cancelled by duress code 34")); return;
+    case 0x26: stream->print(F(" | Auto-arm cancelled by master code 40")); return;
+    case 0x27: stream->print(F(" | Auto-arm cancelled by supervisor code 41")); return;
+    case 0x28: stream->print(F(" | Auto-arm cancelled by supervisor code 42")); return;
+    case 0x2B: stream->print(F(" | Armed by auto-arm")); return;
+    // 0x6C - 0x8B: Zone fault restored, zones 1-32
+    // 0x8C - 0xAB: Zone fault, zones 1-32
+    case 0xAC: stream->print(F(" | Exit *8 programming")); return;
+    case 0xAD: stream->print(F(" | Enter *8 programming")); return;
+    // 0xB0 - 0xCF: Zones bypassed, zones 1-32
+    case 0xD0: stream->print(F(" | Command output 4")); return;
   }
 
-  if (decodeComplete) return;
-  else {
-    stream->print(F(" | Unrecognized data, add to 0xA5_Byte7_0x09, Byte 6: 0x"));
-    if (panelData[6] < 10) stream->print(F("0"));
-    stream->print(panelData[6], HEX);
+  /*
+   *  Zone fault restored, zones 1-32
+   *
+   *  10100101 0 00010001 01101101 01101011 01000001 01101100 11111111 00111010 [0xA5] 11/11/2011 11:16 | Zone fault restored: 1
+   *  10100101 0 00010001 01101101 01101011 01010101 01101101 11111111 01001111 [0xA5] 11/11/2011 11:21 | Zone fault restored: 2
+   *  10100101 0 00010001 01101101 01101011 10000101 01101111 11111111 10000001 [0xA5] 11/11/2011 11:33 | Zone fault restored: 4
+   *  10100101 0 00010001 01101101 01101011 10001001 01110000 11111111 10000110 [0xA5] 11/11/2011 11:34 | Zone fault restored: 5
+   */
+  if (panelData[6] >= 0x6C && panelData[6] <= 0x8B) {
+    stream->print(F(" | Zone fault restored: "));
+    stream->print(panelData[6] - 0x6B);
+    return;
   }
+
+  /*
+   *  Zone fault, zones 1-32
+   *
+   *  10100101 0 00010001 01101101 01101011 00111101 10001100 11111111 01010110 [0xA5] 11/11/2011 11:15 | Zone fault: 1
+   *  10100101 0 00010001 01101101 01101011 01010101 10001101 11111111 01101111 [0xA5] 11/11/2011 11:21 | Zone fault: 2
+   *  10100101 0 00010001 01101101 01101011 10000001 10001111 11111111 10011101 [0xA5] 11/11/2011 11:32 | Zone fault: 3
+   *  10100101 0 00010001 01101101 01101011 10001001 10010000 11111111 10100110 [0xA5] 11/11/2011 11:34 | Zone fault: 4
+   */
+  if (panelData[6] >= 0x8C && panelData[6] <= 0xAB) {
+    stream->print(F(" | Zone fault: "));
+    stream->print(panelData[6] - 0x8B);
+    return;
+  }
+
+  /*
+   *  Zones bypassed, zones 1-32
+   *
+   *  10100101 0 00011000 01001111 10110001 10101001 10110001 00000000 00010111 [0xA5] 03/29/2018 17:42 | Bypassed zone 2
+   *  10100101 0 00011000 01001111 10110001 11000001 10110101 00000000 00110011 [0xA5] 03/29/2018 17:48 | Bypassed zone 6
+   */
+  if (panelData[6] >= 0xB0 && panelData[6] <= 0xCF) {
+    stream->print(F(" | Zone bypassed: "));
+    stream->print(panelData[6] - 0xAF);
+    return;
+  }
+
+  stream->print(F(" | Unrecognized data, add to 0xA5_Byte5_0x01, Byte 6: 0x"));
+  if (panelData[6] < 10) stream->print(F("0"));
+  stream->print(panelData[6], HEX);
 }
 
 
-void dscKeybusInterface::printPanel_0xA5_Byte7_0xFF() {
-  bool decodeComplete = true;
+void dscKeybusInterface::printPanel_0xA5_Byte5_0x02() {
+  switch (panelData[6]) {
 
-  // Process data separately based on byte 5 bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx00
-    case 0x00: {
-      switch (panelData[6]) {
-
-          /*
-           *  10100101 0 00011000 01001111 10110000 11101100 01001001 11111111 11110000 [0xA5] 03/29/2018 16:59 | Duress alarm
-           *  10100101 0 00011000 01001111 11001110 10111100 01001010 11111111 11011111 [0xA5] 03/30/2018 14:47 | Disarmed after alarm in memory
-           *  10100101 0 00011000 01001111 11001010 01000100 01001011 11111111 01100100 [0xA5] 03/30/2018 10:17 | Partition in alarm
-           *  10100101 0 00011000 01010000 01001001 10111000 01001100 11111111 01011001 [0xA5] 04/02/2018 09:46 | Zone expander supervisory alarm
-           *  10100101 0 00011000 01010000 01001010 00000000 01001101 11111111 10100011 [0xA5] 04/02/2018 10:00 | Zone expander supervisory restored
-           *  10100101 0 00011000 01001111 01110010 10011100 01001110 11111111 01100111 [0xA5] 03/27/2018 18:39 | Keypad Fire alarm
-           *  10100101 0 00011000 01001111 01110010 10010000 01001111 11111111 01011100 [0xA5] 03/27/2018 18:36 | Keypad Aux alarm
-           *  10100101 0 00011000 01001111 01110010 10001000 01010000 11111111 01010101 [0xA5] 03/27/2018 18:34 | Keypad Panic alarm
-           *  10100101 0 00010001 01101101 01100000 00000100 01010001 11111111 11010111 [0xA5] 11/11/2011 00:01 | Keypad status check?   // Power-on +124s, keypad sends status update immediately after this
-           *  10100101 0 00011000 01001111 01110010 10011100 01010010 11111111 01101011 [0xA5] 03/27/2018 18:39 | Keypad Fire alarm restored
-           *  10100101 0 00011000 01001111 01110010 10010000 01010011 11111111 01100000 [0xA5] 03/27/2018 18:36 | Keypad Aux alarm restored
-           *  10100101 0 00011000 01001111 01110010 10001000 01010100 11111111 01011001 [0xA5] 03/27/2018 18:34 | Keypad Panic alarm restored
-           *  10100101 0 00011000 01001111 11110110 00110100 10011000 11111111 11001101 [0xA5] 03/31/2018 22:13 | Keypad lockout
-           *  10100101 0 00011000 01001111 11101011 10100100 10111110 11111111 01011000 [0xA5] 03/31/2018 11:41 | Armed partial: Zones bypassed
-           *  10100101 0 00011000 01001111 11101011 00011000 10111111 11111111 11001101 [0xA5] 03/31/2018 11:06 | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS
-           *  10100101 0 00010001 01101101 01100000 00101000 11100101 11111111 10001111 [0xA5] 11/11/2011 00:10 | Auto-arm cancelled
-           *  10100101 0 00011000 01001111 11110111 01000000 11100110 11111111 00101000 [0xA5] 03/31/2018 23:16 | Disarmed special: keyswitch/wireless key/DLS
-           *  10100101 0 00011000 01001111 01101111 01011100 11100111 11111111 10111101 [0xA5] 03/27/2018 15:23 | Panel battery trouble
-           *  10100101 0 00011000 01001111 10110011 10011000 11101000 11111111 00111110 [0xA5] 03/29/2018 19:38 | AC power failure  // Sent after delay in *8 [370]
-           *  10100101 0 00011000 01001111 01110100 01010000 11101001 11111111 10111000 [0xA5] 03/27/2018 20:20 | Bell trouble
-           *  10100101 0 00011000 01001111 11000000 10001000 11101100 11111111 00111111 [0xA5] 03/30/2018 00:34 | Telephone line trouble
-           *  10100101 0 00011000 01001111 01101111 01110000 11101111 11111111 11011001 [0xA5] 03/27/2018 15:28 | Panel battery restored
-           *  10100101 0 00011000 01010000 00100000 01011000 11110000 11111111 01110100 [0xA5] 04/01/2018 00:22 | AC power restored  // Sent after delay in *8 [370]
-           *  10100101 0 00011000 01001111 01110100 01011000 11110001 11111111 11001000 [0xA5] 03/27/2018 20:22 | Bell restored
-           *  10100101 0 00011000 01001111 11000000 10001000 11110100 11111111 01000111 [0xA5] 03/30/2018 00:34 | Telephone line restored
-           *  10100101 0 00011000 01001111 11100001 01011000 11111111 11111111 01000011 [0xA5] 03/31/2018 01:22 | System test
-           */
-          case 0x49: stream->print(F(" | Duress alarm")); break;
-          case 0x4A: stream->print(F(" | Disarmed after alarm in memory")); break;
-          case 0x4B: stream->print(F(" | Partition in alarm")); break;
-          case 0x4C: stream->print(F(" | Zone expander supervisory alarm")); break;
-          case 0x4D: stream->print(F(" | Zone expander supervisory restored")); break;
-          case 0x4E: stream->print(F(" | Keypad Fire alarm")); break;
-          case 0x4F: stream->print(F(" | Keypad Aux alarm")); break;
-          case 0x50: stream->print(F(" | Keypad Panic alarm")); break;
-          case 0x51: stream->print(F(" | Keypad status check?")); break;
-          case 0x52: stream->print(F(" | Keypad Fire alarm restored")); break;
-          case 0x53: stream->print(F(" | Keypad Aux alarm restored")); break;
-          case 0x54: stream->print(F(" | Keypad Panic alarm restored")); break;
-          case 0x98: stream->print(F(" | Keypad lockout")); break;
-          case 0xBE: stream->print(F(" | Armed partial: Zones bypassed")); break;
-          case 0xBF: stream->print(F(" | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); break;
-          case 0xE5: stream->print(F(" | Auto-arm cancelled")); break;
-          case 0xE6: stream->print(F(" | Disarmed special: keyswitch/wireless key/DLS")); break;
-          case 0xE7: stream->print(F(" | Panel battery trouble")); break;
-          case 0xE8: stream->print(F(" | Panel AC power failure")); break;
-          case 0xE9: stream->print(F(" | Bell trouble")); break;
-          case 0xEA: stream->print(F(" | Power on +16s")); break;
-          case 0xEC: stream->print(F(" | Telephone line trouble")); break;
-          case 0xEF: stream->print(F(" | Panel battery restored")); break;
-          case 0xF0: stream->print(F(" | Panel AC power restored")); break;
-          case 0xF1: stream->print(F(" | Bell restored")); break;
-          case 0xF4: stream->print(F(" | Telephone line restored")); break;
-          case 0xFF: stream->print(F(" | System test")); break;
-          default: decodeComplete = false;
-      }
-
-      if (decodeComplete) break;
-
-      /*
-       *  Zone alarm, zones 1-32
-       *
-       *  10100101 0 00011000 01001111 01001001 11011000 00001001 11111111 00110101 [0xA5] 03/26/2018 09:54 | Zone alarm: 1
-       *  10100101 0 00011000 01001111 01001010 00100000 00001110 11111111 10000011 [0xA5] 03/26/2018 10:08 | Zone alarm: 6
-       *  10100101 0 00011000 01001111 10010100 11001000 00010000 11111111 01110111 [0xA5] 03/28/2018 20:50 | Zone alarm: 8
-       */
-      if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
-        stream->print(F(" | Zone alarm: "));
-        stream->print(panelData[6] - 0x08);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Zone alarm restored, zones 1-32
-       *
-       *  10100101 0 00011000 01001111 10010100 11001100 00101001 11111111 10010100 [0xA5] 03/28/2018 20:51 | Zone alarm restored: 1
-       *  10100101 0 00011000 01001111 10010100 11010100 00101110 11111111 10100001 [0xA5] 03/28/2018 20:53 | Zone alarm restored: 6
-       *  10100101 0 00011000 01001111 10010100 11010000 00110000 11111111 10011111 [0xA5] 03/28/2018 20:52 | Zone alarm restored: 8
-       */
-      if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
-        stream->print(F(" | Zone alarm restored: "));
-        stream->print(panelData[6] - 0x28);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Zone tamper, zones 1-32
-       *
-       *  10100101 0 00000001 01000100 00100010 01011100 01010110 11111111 10111101 [0xA5] 01/01/2001 02:23 | Zone tamper: 1
-       *  10100101 0 00000001 01000100 00100010 01011100 01010111 11111111 10111101 [0xA5] 01/01/2001 02:23 | Zone tamper: 2
-       *  10100101 0 00010001 01101101 01101011 10010000 01011011 11111111 01111000 [0xA5] 11/11/2011 11:36 | Zone tamper: 6
-       */
-      if (panelData[6] >= 0x56 && panelData[6] <= 0x75) {
-        stream->print(F(" | Zone tamper: "));
-        stream->print(panelData[6] - 0x55);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Zone tamper restored, zones 1-32
-       *
-       *  10100101 0 00000001 01000100 00100010 01011100 01110110 11111111 11011101 [0xA5] 01/01/2001 02:23 | Zone tamper restored: 1
-       *  10100101 0 00000001 01000100 00100010 01011100 01111000 11111111 11011101 [0xA5] 01/01/2001 02:23 | Zone tamper restored: 2
-       *  10100101 0 00010001 01101101 01101011 10010000 01111011 11111111 10011000 [0xA5] 11/11/2011 11:36 | Zone tamper restored: 6
-       */
-      if (panelData[6] >= 0x76 && panelData[6] <= 0x95) {
-        stream->print(F(" | Zone tamper restored: "));
-        stream->print(panelData[6] - 0x75);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Armed by access code
-       *
-       *  10100101 0 00011000 01001101 00001000 10010000 10011001 11111111 00111010 [0xA5] 03/08/2018 08:36 | Armed by user code 1
-       *  10100101 0 00011000 01001101 00001000 10111100 10111011 11111111 10001000 [0xA5] 03/08/2018 08:47 | Armed by master code 40
-       */
-      if (panelData[6] >= 0x99 && panelData[6] <= 0xBD) {
-        byte dscCode = panelData[6] - 0x98;
-        if (dscCode >= 35) dscCode += 5;
-        stream->print(F(" | Armed by "));
-        switch (dscCode) {
-          case 33: stream->print(F("duress ")); break;
-          case 34: stream->print(F("duress ")); break;
-          case 40: stream->print(F("master ")); break;
-          case 41: stream->print(F("supervisor ")); break;
-          case 42: stream->print(F("supervisor ")); break;
-          default: stream->print(F("user ")); break;
-        }
-        stream->print(F("code "));
-        stream->print(dscCode);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Disarmed by access code
-       *
-       *  10100101 0 00011000 01001101 00001000 11101100 11000000 11111111 10111101 [0xA5] 03/08/2018 08:59 | Disarmed by user code 1
-       *  10100101 0 00011000 01001101 00001000 10110100 11100010 11111111 10100111 [0xA5] 03/08/2018 08:45 | Disarmed by master code 40
-       */
-      if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
-        byte dscCode = panelData[6] - 0xBF;
-        if (dscCode >= 35) dscCode += 5;
-        stream->print(F(" | Disarmed by "));
-        switch (dscCode) {
-          case 33: stream->print(F("duress ")); break;
-          case 34: stream->print(F("duress ")); break;
-          case 40: stream->print(F("master ")); break;
-          case 41: stream->print(F("supervisor ")); break;
-          case 42: stream->print(F("supervisor ")); break;
-          default: stream->print(F("user ")); break;
-        }
-        stream->print(F("code "));
-        stream->print(dscCode);
-        decodeComplete = true;
-        break;
-      }
-
-      decodeComplete = false;
-      break;
-    }
-
-    // Byte 5: xxxxxx01
-    case 0x01: {
-      /*
-       *  10100101 0 00011000 01001111 11001010 10001001 00000011 11111111 01100001 [0xA5] 03/30/2018 10:34 | Cross zone alarm
-       *  10100101 0 00010001 01101101 01101010 00000001 00000100 11111111 10010001 [0xA5] 11/11/2011 10:00 | Delinquency alarm
-       */
-      switch (panelData[6]) {
-        case 0x03: stream->print(F(" | Cross zone alarm")); break;
-        case 0x04: stream->print(F(" | Delinquency alarm")); break;
-        default: decodeComplete = false;
-      }
-      if (decodeComplete) break;
-
-      /*
-       *  Zone fault restored, zones 1-32
-       *
-       *  10100101 0 00010001 01101101 01101011 01000001 01101100 11111111 00111010 [0xA5] 11/11/2011 11:16 | Zone fault restored: 1
-       *  10100101 0 00010001 01101101 01101011 01010101 01101101 11111111 01001111 [0xA5] 11/11/2011 11:21 | Zone fault restored: 2
-       *  10100101 0 00010001 01101101 01101011 10000101 01101111 11111111 10000001 [0xA5] 11/11/2011 11:33 | Zone fault restored: 4
-       *  10100101 0 00010001 01101101 01101011 10001001 01110000 11111111 10000110 [0xA5] 11/11/2011 11:34 | Zone fault restored: 5
-       */
-      if (panelData[6] >= 0x6C && panelData[6] <= 0x8B) {
-        stream->print(F(" | Zone fault restored: "));
-        stream->print(panelData[6] - 0x6B);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Zone fault, zones 1-32
-       *
-       *  10100101 0 00010001 01101101 01101011 00111101 10001100 11111111 01010110 [0xA5] 11/11/2011 11:15 | Zone fault: 1
-       *  10100101 0 00010001 01101101 01101011 01010101 10001101 11111111 01101111 [0xA5] 11/11/2011 11:21 | Zone fault: 2
-       *  10100101 0 00010001 01101101 01101011 10000001 10001111 11111111 10011101 [0xA5] 11/11/2011 11:32 | Zone fault: 3
-       *  10100101 0 00010001 01101101 01101011 10001001 10010000 11111111 10100110 [0xA5] 11/11/2011 11:34 | Zone fault: 4
-       */
-      if (panelData[6] >= 0x8C && panelData[6] <= 0xAB) {
-        stream->print(F(" | Zone fault: "));
-        stream->print(panelData[6] - 0x8B);
-        decodeComplete = true;
-        break;
-      }
-
-      decodeComplete = false;
-      break;
-    }
-
-    // Byte 5: xxxxxx10
-    case 0x02: {
-
-      /*
-       *  Supervisory trouble, keypad slots 1-8
-       *
-       *  10100101 0 00010001 01101101 01110100 10000110 11110001 11111111 00001101 [0xA5] 11/11/2011 20:33 | Supervisory - module trouble: Keypad slot 1
-       *  10100101 0 00010001 01101101 01110100 00101110 11111000 11111111 10111100 [0xA5] 11/11/2011 20:11 | Supervisory - module trouble: Keypad slot 8
-       */
-      if (panelData[6] >= 0xF1 && panelData[6] <= 0xF8) {
-        stream->print(F(" | Supervisory - module trouble: Keypad slot "));
-        stream->print(panelData[6] - 0xF0);
-        decodeComplete = true;
-        break;
-      }
-
-      /*
-       *  Supervisory restored, keypad slots 1-8
-       *
-       *  10100101 0 00010001 01101101 01110100 10001110 11101001 11111111 00001101 [0xA5] 11/11/2011 20:35 | Supervisory - module detected: Keypad slot 1
-       *  10100101 0 00010001 01101101 01110100 00110010 11110000 11111111 10111000 [0xA5] 11/11/2011 20:12 | Supervisory - module detected: Keypad slot 8
-       */
-      if (panelData[6] >= 0xE9 && panelData[6] <= 0xF0) {
-        stream->print(F(" | Supervisory - module detected: Keypad slot "));
-        stream->print(panelData[6] - 0xE8);
-        decodeComplete = true;
-        break;
-      }
-
-      decodeComplete = false;
-      break;
-    }
-
-    // Byte 5: xxxxxx11
-    case 0x03: {
-      decodeComplete = false;
-      break;
-    }
+    /*
+     *  10100101 0 00011000 01001111 10101111 10000110 00101010 00000000 01101011 [0xA5] 03/29/2018 15:33 | Quick exit
+     *  10100101 0 00010001 01101101 01110101 00111010 01100011 00000000 00110101 [0xA5] 11/11/2011 21:14 | Keybus fault restored
+     *  10100101 0 00011000 01001111 11110111 01110110 01100110 00000000 11011111 [0xA5] 03/31/2018 23:29 | Enter *1 zone bypass programming
+     *  10100101 0 00010001 01101101 01100010 11001110 01101001 00000000 10111100 [0xA5] 11/11/2011 02:51 | Command output 3
+     *  10100101 0 00011000 01010000 01000000 00000010 10001100 00000000 11011011 [0xA5] 04/02/2018 00:00 | Loss of system time
+     *  10100101 0 00011000 01001111 10101110 00001110 10001101 00000000 01010101 [0xA5] 03/29/2018 14:03 | Power on
+     *  10100101 0 00011000 01010000 01000000 00000010 10001110 00000000 11011101 [0xA5] 04/02/2018 00:00 | Panel factory default
+     *  10100101 0 00011000 01001111 11101010 10111010 10010011 00000000 01000011 [0xA5] 03/31/2018 10:46 | Disarmed by keyswitch
+     *  10100101 0 00011000 01001111 11101010 10101110 10010110 00000000 00111010 [0xA5] 03/31/2018 10:43 | Armed by keyswitch
+     *  10100101 0 00011000 01001111 10100000 01100010 10011000 00000000 10100110 [0xA5] 03/29/2018 00:24 | Armed by quick-arm
+     *  10100101 0 00010001 01101101 01100000 00101110 10011001 00000000 01001010 [0xA5] 11/11/2011 00:11 | Activate stay/away zones
+     *  10100101 0 00011000 01001111 00101101 00011010 10011010 00000000 11101101 [0xA5] 03/25/2018 13:06 | Armed: stay
+     *  10100101 0 00011000 01001111 00101101 00010010 10011011 00000000 11100110 [0xA5] 03/25/2018 13:04 | Armed: away
+     *  10100101 0 00011000 01001111 00101101 10011010 10011100 00000000 01101111 [0xA5] 03/25/2018 13:38 | Armed without entry delay
+     *  10100101 0 00011000 01001111 00101100 11011110 11000011 00000000 11011001 [0xA5] 03/25/2018 12:55 | Enter *5 programming
+     *  10100101 0 00011000 01001111 00101110 00000010 11100110 00000000 00100010 [0xA5] 03/25/2018 14:00 | Enter *6 programming
+     */
+    case 0x2A: stream->print(F(" | Quick exit")); return;
+    case 0x63: stream->print(F(" | Keybus fault restored")); return;
+    case 0x66: stream->print(F(" | Enter *1 zone bypass programming")); return;
+    case 0x67: stream->print(F(" | Command output 1")); return;
+    case 0x68: stream->print(F(" | Command output 2")); return;
+    case 0x69: stream->print(F(" | Command output 3")); return;
+    case 0x8C: stream->print(F(" | Loss of system time")); return;
+    case 0x8D: stream->print(F(" | Power on")); return;
+    case 0x8E: stream->print(F(" | Panel factory default")); return;
+    case 0x93: stream->print(F(" | Disarmed by keyswitch")); return;
+    case 0x96: stream->print(F(" | Armed by keyswitch")); return;
+    case 0x97: stream->print(F(" | Armed by keypad away")); return;
+    case 0x98: stream->print(F(" | Armed by quick-arm")); return;
+    case 0x99: stream->print(F(" | Activate stay/away zones")); return;
+    case 0x9A: stream->print(F(" | Armed: stay")); return;
+    case 0x9B: stream->print(F(" | Armed: away")); return;
+    case 0x9C: stream->print(F(" | Armed without entry delay")); return;
+    case 0xC3: stream->print(F(" | Enter *5 programming")); return;
+    // 0xC6 - 0xE5: Auto-arm cancelled by user code
+    case 0xE6: stream->print(F(" | Enter *6 programming")); return;
+    // 0xE9 - 0xF0: Supervisory restored, keypad slots 1-8
+    // 0xF1 - 0xF8: Supervisory trouble, keypad slots 1-8
   }
 
-  if (decodeComplete) return;
-  else {
-    stream->print(F(" | Unrecognized data, add to 0xA5_Byte7_0xFF, Byte 6: 0x"));
-    if (panelData[6] < 10) stream->print(F("0"));
-    stream->print(panelData[6], HEX);
+  /*
+   *  Auto-arm cancelled by user code
+   *
+   *  10100101 0 00010001 01101101 01100000 00111110 11000110 00000000 10000111 [0xA5] 11/11/2011 00:15 | Auto-arm cancelled by user code 1
+   *  10100101 0 00010001 01101101 01100000 01111010 11100101 00000000 11100010 [0xA5] 11/11/2011 00:30 | Auto-arm cancelled by user code 32
+   */
+  if (panelData[6] >= 0xC6 && panelData[6] <= 0xE5) {
+    stream->print(F(" | Auto-arm cancelled by user code "));
+    stream->print(panelData[6] - 0xC5);
+    return;
   }
+
+  /*
+   *  Supervisory restored, keypad slots 1-8
+   *
+   *  10100101 0 00010001 01101101 01110100 10001110 11101001 11111111 00001101 [0xA5] 11/11/2011 20:35 | Supervisory - module detected: Keypad slot 1
+   *  10100101 0 00010001 01101101 01110100 00110010 11110000 11111111 10111000 [0xA5] 11/11/2011 20:12 | Supervisory - module detected: Keypad slot 8
+   */
+  if (panelData[6] >= 0xE9 && panelData[6] <= 0xF0) {
+    stream->print(F(" | Supervisory - module detected: Keypad slot "));
+    stream->print(panelData[6] - 0xE8);
+    return;
+  }
+
+  /*
+   *  Supervisory trouble, keypad slots 1-8
+   *
+   *  10100101 0 00010001 01101101 01110100 10000110 11110001 11111111 00001101 [0xA5] 11/11/2011 20:33 | Supervisory - module trouble: Keypad slot 1
+   *  10100101 0 00010001 01101101 01110100 00101110 11111000 11111111 10111100 [0xA5] 11/11/2011 20:11 | Supervisory - module trouble: Keypad slot 8
+   */
+  if (panelData[6] >= 0xF1 && panelData[6] <= 0xF8) {
+    stream->print(F(" | Supervisory - module trouble: Keypad slot "));
+    stream->print(panelData[6] - 0xF0);
+    return;
+  }
+
+  stream->print(F(" | Unrecognized data, add to 0xA5_Byte5_0x02, Byte 6: 0x"));
+  if (panelData[6] < 10) stream->print(F("0"));
+  stream->print(panelData[6], HEX);
+}
+
+
+void dscKeybusInterface::printPanel_0xA5_Byte5_0x03() {
+  stream->print(F(" | Unrecognized data, add to 0xA5_Byte5_0x03, Byte 6: 0x"));
+  if (panelData[6] < 10) stream->print(F("0"));
+  stream->print(panelData[6], HEX);
 }
 
 
 /*
- *  0xB1: Enabled zones 1-32
- *  Configuration: *8 [202]-[205]
+ *  0xB1: Enabled zones 1-32, partitions 1,2
  *  Interval: 4m
  *  CRC: yes
+ *  Bytes 2-5: partition 1
+ *  Bytes 6-9: partition 2
  *
- *  10110001 0 11111111 00000000 00000000 00000000 00000000 00000000 00000000 00000000 10110000 [0xB1] Enabled zones: 1 2 3 4 5 6 7 8
- *  10110001 0 10010001 10001010 01000001 10100100 00000000 00000000 00000000 00000000 10110001 [0xB1] Enabled zones: 1 5 8 10 12 16 17 23 27 30 32
- *  10110001 0 11111111 00000000 00000000 11111111 00000000 00000000 00000000 00000000 10101111 [0xB1] Enabled zones: 1 2 3 4 5 6 7 8 25 26 27 28 29 30 31 32
+ *  10110001 0 11111111 00000000 00000000 00000000 00000000 00000000 00000000 00000000 10110000 [0xB1] Enabled zones - Partition 1: 1 2 3 4 5 6 7 8 | Partition 2: none
+ *  10110001 0 10010001 10001010 01000001 10100100 00000000 00000000 00000000 00000000 10110001 [0xB1] Enabled zones - Partition 1: 1 5 8 10 12 16 17 23 27 30 32 | Partition 2: none
+ *  10110001 0 11111111 00000000 00000000 11111111 00000000 00000000 00000000 00000000 10101111 [0xB1] Enabled zones - Partition 1: 1 2 3 4 5 6 7 8 25 26 27 28 29 30 31 32 | Partition 2: none
+ *  10110001 0 01111111 11111111 00000000 00000000 10000000 00000000 00000000 00000000 10101111 [0xB1] Enabled zones - Partition 1: 1 2 3 4 5 6 7 9 10 11 12 13 14 15 16 | Partition 2: 8
  */
 void dscKeybusInterface::printPanel_0xB1() {
   if (!validCRC()) {
@@ -1277,13 +1259,28 @@ void dscKeybusInterface::printPanel_0xB1() {
     return;
   }
   bool enabledZones = false;
-  stream->print(F("Enabled zones: "));
-  for (byte panelByte = 2; panelByte < 10; panelByte++) {
+  stream->print(F("Enabled zones - Partition 1: "));
+  for (byte panelByte = 2; panelByte <= 5; panelByte++) {
     if (panelData[panelByte] != 0) {
       enabledZones = true;
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(panelData[panelByte],zoneBit)) {
-          stream->print((zoneBit + 1) + ((panelByte-2) *  8));
+          stream->print((zoneBit + 1) + ((panelByte - 2) * 8));
+          stream->print(" ");
+        }
+      }
+    }
+  }
+  if (!enabledZones) stream->print(F("none "));
+
+  enabledZones = false;
+  stream->print(F("| Partition 2: "));
+  for (byte panelByte = 6; panelByte <= 9; panelByte++) {
+    if (panelData[panelByte] != 0) {
+      enabledZones = true;
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        if (bitRead(panelData[panelByte],zoneBit)) {
+          stream->print((zoneBit + 1) + ((panelByte - 6) * 8));
           stream->print(" ");
         }
       }
@@ -1313,7 +1310,7 @@ void dscKeybusInterface::printPanel_0xBB() {
 
 
 /*
- *  0xC3: ???
+ *  0xC3: Unknown command
  *  CRC: yes
  *
  *  11000011 0 00010000 11111111 11010010 [0xC3] Unknown command 1: Power-on +33s
@@ -1345,6 +1342,19 @@ void dscKeybusInterface::printPanel_0xC3() {
  */
 void dscKeybusInterface::printPanel_0xD5() {
   stream->print(F("Keypad zone query"));
+}
+
+
+/*
+ *  0xE6: Unknown command
+ *  Interval: 60s
+ *  CRC: yes
+ *
+ *  11100110 0 00001101 00000000 11110011 [0xE6] Unrecognized command
+ *  11100110 0 00101100 00010000 00000000 00000000 00000000 00000000 00100010 [0xE6] Unrecognized command
+ */
+void dscKeybusInterface::printPanel_0xE6() {
+  stream->print(F("Unknown command"));
 }
 
 

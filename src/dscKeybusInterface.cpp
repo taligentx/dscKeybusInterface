@@ -134,6 +134,7 @@ bool dscKeybusInterface::handlePanel() {
     static byte previousCmd5D[dscReadSize];
     static byte previousCmd63[dscReadSize];
     static byte previousCmdB1[dscReadSize];
+    static byte previousCmdE6[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
         if (redundantPanelData(previousCmd11, panelData)) return false;
@@ -169,6 +170,10 @@ bool dscKeybusInterface::handlePanel() {
 
       case 0xB1:  // Enabled zones 1-32
         if (redundantPanelData(previousCmdB1, panelData)) return false;
+        break;
+
+      case 0xE6:  // Unknown command
+        if (redundantPanelData(previousCmdE6, panelData)) return false;
         break;
     }
   }
@@ -297,10 +302,8 @@ void dscKeybusInterface::write(const char receivedKey) {
 }
 
 
-bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[]) {
+bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
   bool redundantData = true;
-  byte checkedBytes = dscReadSize;
-  if (currentCmd[0] == 0x05) checkedBytes = 6;  // Excludes the trailing bit for 0x05 that frequently flips
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
       redundantData = false;
@@ -391,7 +394,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
         }
       }
 
-      // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a 0x11, 0xD5, or 0x4C query
+      // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
       else if (!writeReady && !wroteAsterisk && isrPanelByteCount == 2 && !queryCmd) {
 
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
@@ -445,17 +448,17 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       dataOverflow = true;
     }
 
-    // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
     else {
       if (isrPanelBitCount < 8) {
+        // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
         isrPanelData[isrPanelByteCount] <<= 1;
         if (digitalRead(dscReadPin) == HIGH) {
           isrPanelData[isrPanelByteCount] |= 1;
         }
       }
 
-      // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
       if (isrPanelBitTotal == 8) {
+        // Tests for a query command, used in dscClockInterrupt() to ensure keys are not written during a query
         switch (isrPanelData[0]) {
           case 0x11:
           case 0x4C:
@@ -463,6 +466,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
           case 0xD5: queryCmd = true; break;
           default: queryCmd = false; break;
         }
+
+        // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
         isrPanelBitCount = 0;
         isrPanelByteCount++;
       }
@@ -529,7 +534,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd0A[dscReadSize];
         case 0x05:  // Status
-          if (redundantPanelData(previousCmd05, isrPanelData)) skipData = true;
+          if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
           break;
 
         case 0x0A:  // Status in alarm, * programming

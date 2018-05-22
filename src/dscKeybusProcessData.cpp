@@ -253,31 +253,13 @@ void dscKeybusInterface::processPanel_0xA5() {
 
   byte dscYear3 = panelData[2] >> 4;
   byte dscYear4 = panelData[2] & 0x0F;
-  year = 2000 + (dscYear3 * 10) + dscYear4;
+  year = (dscYear3 * 10) + dscYear4;
   month = panelData[3] << 2; month >>= 4;
   byte dscDay1 = panelData[3] << 6; dscDay1 >>= 3;
   byte dscDay2 = panelData[4] >> 5;
   day = dscDay1 | dscDay2;
   hour = panelData[4] & 0x1F;
   minute = panelData[5] >> 2;
-
-  dscTime[0] = '0' + month / 10;
-  dscTime[1] = '0' + month % 10;
-  dscTime[2] = '/';
-  dscTime[3] = '0' + day / 10;
-  dscTime[4] = '0' + day % 10;
-  dscTime[5] = '/';
-  dscTime[6] = '0' + year / 1000;
-  dscTime[7] = '0' + ((year / 100) % 10);
-  dscTime[8] = '0' + ((year / 10) % 10);
-  dscTime[9] = '0' + year % 10;
-  dscTime[10] = ' ';
-  dscTime[11] = '0' + hour / 10;
-  dscTime[12] = '0' + hour % 10;
-  dscTime[13] = ':';
-  dscTime[14] = '0' + minute / 10;
-  dscTime[15] = '0' + minute % 10;
-  dscTime[16] = '\0';
 
   // Timestamp
   if (panelData[6] == 0 && panelData[7] == 0) {
@@ -286,231 +268,199 @@ void dscKeybusInterface::processPanel_0xA5() {
     return;
   }
 
-  switch (panelData[7]) {
-    case 0x00: processPanel_0xA5_Byte7_0x00(); break;
-    case 0x09: processPanel_0xA5_Byte7_0x09(); break;
-    case 0xFF: processPanel_0xA5_Byte7_0xFF(); break;
+  switch (panelData[5] & 0x03) {
+    case 0x00: processPanel_0xA5_Byte5_0x00(); break;
+    case 0x02: processPanel_0xA5_Byte5_0x02(); break;
   }
 }
 
 
-void dscKeybusInterface::processPanel_0xA5_Byte7_0x00() {
+void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
+  switch (panelData[6]) {
+    case 0x4A: {       // Disarmed after alarm in memory
+      partitionAlarm = false;
+      partitionAlarmChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0x4B: {       // Partition in alarm
+      partitionAlarm = true;
+      partitionAlarmChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0x4E: {       // Keypad Fire alarm
+      keypadFireAlarm = true;
+      statusChanged = true;
+      return;
+    }
+    case 0x4F: {       // Keypad Aux alarm
+      keypadAuxAlarm = true;
+      statusChanged = true;
+      return;
+    }
+    case 0x50: {       // Keypad Panic alarm
+      keypadPanicAlarm = true;
+      statusChanged =true;
+      return;
+    }
+    case 0xE6: {       // Disarmed special: keyswitch/wireless key/DLS
+      partitionArmed = false;
+      partitionArmedAway = false;
+      partitionArmedStay = false;
+      previousPartitionArmed = false;
+      armedNoEntryDelay = false;
+      partitionArmedChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0xE7: {       // Panel battery trouble
+      batteryTrouble = true;
+      batteryTroubleChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0xE8: {       // Panel AC power failure
+      powerTrouble = true;
+      powerTroubleChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0xEF: {       // Panel battery restored
+      batteryTrouble = false;
+      batteryTroubleChanged = true;
+      statusChanged = true;
+      return;
+    }
+    case 0xF0: {       // Panel AC power restored
+      powerTrouble = false;
+      powerTroubleChanged = true;
+      statusChanged = true;
+      return;
+    }
+  }
 
-  // Process data based on byte 5, bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx10
-    case 0x02: {
-      switch (panelData[6]) {
-        case 0x99: {       // Activate stay/away zones
-          partitionArmed = true;
-          partitionArmedStay = false;
-          partitionArmedAway = true;
-          partitionArmedChanged = true;
+  // Zone alarm, zones 1-32: panelData[6] 0x09-0x28
+  // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+  //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+  //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+  //   ...
+  //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+  if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
+    alarmZonesStatusChanged = true;
+    for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
+      if (panelData[6] == 0x09 + zoneCount) {
+        if (zoneCount < 8) {
+          bitWrite(alarmZones[0], zoneCount, 1);
+          bitWrite(alarmZonesChanged[0], zoneCount, 1);
           statusChanged = true;
-          break;
         }
-        case 0x9A: break;  // Armed: stay
-        case 0x9B: break;  // Armed: away
-        case 0x9C: {       // Armed without entry delay
-          armedNoEntryDelay = true;
-          break;
+        else if (zoneCount >= 8 && zoneCount < 16) {
+          bitWrite(alarmZones[1], (zoneCount - 8), 1);
+          bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 16 && zoneCount < 24) {
+          bitWrite(alarmZones[2], (zoneCount - 16), 1);
+          bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 24 && zoneCount < 32) {
+          bitWrite(alarmZones[3], (zoneCount - 24), 1);
+          bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
+          statusChanged = true;
         }
       }
-      break;
     }
+    return;
+  }
+
+  // Zone alarm restored, zones 1-32
+  // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+  //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+  //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+  //   ...
+  //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+  if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
+    alarmZonesStatusChanged = true;
+    for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
+      if (panelData[6] == 0x29 + zoneCount) {
+        if (zoneCount < 8) {
+          bitWrite(alarmZones[0], zoneCount, 0);
+          bitWrite(alarmZonesChanged[0], zoneCount, 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 8 && zoneCount < 16) {
+          bitWrite(alarmZones[1], (zoneCount - 8), 0);
+          bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 16 && zoneCount < 24) {
+          bitWrite(alarmZones[2], (zoneCount - 16), 0);
+          bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 24 && zoneCount < 32) {
+          bitWrite(alarmZones[3], (zoneCount - 24), 0);
+          bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
+          statusChanged = true;
+        }
+      }
+    }
+    return;
+  }
+
+  // Disarmed by access code
+  if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
+    partitionArmed = false;
+    partitionArmedAway = false;
+    partitionArmedStay = false;
+    previousPartitionArmed = false;
+    armedNoEntryDelay = false;
+    partitionArmedChanged = true;
+    statusChanged = true;
+    return;
   }
 }
 
 
-void dscKeybusInterface::processPanel_0xA5_Byte7_0x09() {
-
-  // Process data based on byte 5 bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx00
-    case 0x00: {
-
-      // Zone expander alarm, zones 9-16: panelData[6] 0x11-0x18
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
-      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
-      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
-      //   ...
-      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-      if (panelData[6] >= 0x11 && panelData[6] <= 0x18) {
-        alarmZonesStatusChanged = true;
-        for (byte zoneCount = 0; zoneCount < 8; zoneCount++) {
-          if (panelData[6] == 0x11 + zoneCount) {
-            bitWrite(alarmZones[1], zoneCount, 1);
-            bitWrite(alarmZonesChanged[1], zoneCount, 1);
-            statusChanged = true;
-          }
-        }
-      }
-      break;
+void dscKeybusInterface::processPanel_0xA5_Byte5_0x02() {
+  switch (panelData[6]) {
+    case 0x99: {        // Activate stay/away zones
+      partitionArmed = true;
+      partitionArmedStay = false;
+      partitionArmedAway = true;
+      partitionArmedChanged = true;
+      statusChanged = true;
+      return;
     }
-  }
-}
-
-
-void dscKeybusInterface::processPanel_0xA5_Byte7_0xFF() {
-  bool decodeComplete = true;
-
-  // Process data based on byte 5 bits 0 and 1
-  switch (panelData[5] & 0x03) {
-
-    // Byte 5: xxxxxx00
-    case 0x00: {
-      switch (panelData[6]) {
-          case 0x4A: {       // Disarmed after alarm in memory
-            partitionAlarm = false;
-            partitionAlarmChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0x4B: {       // Partition in alarm
-            partitionAlarm = true;
-            partitionAlarmChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0x4E: {       // Keypad Fire alarm
-            keypadFireAlarm = true;
-            statusChanged = true;
-            break;
-          }
-          case 0x4F: {       // Keypad Aux alarm
-            keypadAuxAlarm = true;
-            statusChanged = true;
-            break;
-          }
-          case 0x50: {       // Keypad Panic alarm
-            keypadPanicAlarm = true;
-            statusChanged =true;
-            break;
-          }
-          case 0xE6: {       // Disarmed special: keyswitch/wireless key/DLS
-            partitionArmed = false;
-            partitionArmedAway = false;
-            partitionArmedStay = false;
-            previousPartitionArmed = false;
-            armedNoEntryDelay = false;
-            partitionArmedChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0xE7: {       // Panel battery trouble
-            batteryTrouble = true;
-            batteryTroubleChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0xE8: {       // Panel AC power failure
-            powerTrouble = true;
-            powerTroubleChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0xEF: {       // Panel battery restored
-            batteryTrouble = false;
-            batteryTroubleChanged = true;
-            statusChanged = true;
-            break;
-          }
-          case 0xF0: {       // Panel AC power restored
-            powerTrouble = false;
-            powerTroubleChanged = true;
-            statusChanged = true;
-            break;
-          }
-          default: decodeComplete = false;
-      }
-
-      if (decodeComplete) break;
-
-      // Zone alarm, zones 1-32: panelData[6] 0x09-0x28
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
-      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
-      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
-      //   ...
-      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-      if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
-        alarmZonesStatusChanged = true;
-        for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
-          if (panelData[6] == 0x09 + zoneCount) {
-            if (zoneCount < 8) {
-              bitWrite(alarmZones[0], zoneCount, 1);
-              bitWrite(alarmZonesChanged[0], zoneCount, 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 8 && zoneCount < 16) {
-              bitWrite(alarmZones[1], (zoneCount - 8), 1);
-              bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 16 && zoneCount < 24) {
-              bitWrite(alarmZones[2], (zoneCount - 16), 1);
-              bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 24 && zoneCount < 32) {
-              bitWrite(alarmZones[3], (zoneCount - 24), 1);
-              bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
-              statusChanged = true;
-            }
-          }
-        }
-        break;
-      }
-
-      // Zone alarm restored, zones 1-32
-      // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
-      //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
-      //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
-      //   ...
-      //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-      if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
-        alarmZonesStatusChanged = true;
-        for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
-          if (panelData[6] == 0x29 + zoneCount) {
-            if (zoneCount < 8) {
-              bitWrite(alarmZones[0], zoneCount, 0);
-              bitWrite(alarmZonesChanged[0], zoneCount, 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 8 && zoneCount < 16) {
-              bitWrite(alarmZones[1], (zoneCount - 8), 0);
-              bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 16 && zoneCount < 24) {
-              bitWrite(alarmZones[2], (zoneCount - 16), 0);
-              bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
-              statusChanged = true;
-            }
-            else if (zoneCount >= 24 && zoneCount < 32) {
-              bitWrite(alarmZones[3], (zoneCount - 24), 0);
-              bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
-              statusChanged = true;
-            }
-          }
-        }
-        break;
-      }
-
-      // Disarmed by access code
-      if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
-        partitionArmed = false;
-        partitionArmedAway = false;
-        partitionArmedStay = false;
-        previousPartitionArmed = false;
-        armedNoEntryDelay = false;
+    case 0x9A: {        // Armed: stay
+      partitionArmed = true;
+      partitionArmedStay = true;
+      partitionArmedAway = false;
+      exitDelay = false;
+      if (partitionArmed != previousPartitionArmed) {
+        previousPartitionArmed = partitionArmed;
         partitionArmedChanged = true;
         statusChanged = true;
-        decodeComplete = true;
-        break;
       }
-      break;
+      return;
+    }
+    case 0x9B: {        // Armed: away
+      partitionArmed = true;
+      partitionArmedStay = false;
+      partitionArmedAway = true;
+      exitDelay = false;
+      if (partitionArmed != previousPartitionArmed) {
+        previousPartitionArmed = partitionArmed;
+        partitionArmedChanged = true;
+        statusChanged = true;
+      }
+      return;
+    }
+    case 0x9C: {        // Armed without entry delay
+      armedNoEntryDelay = true;
+      return;
     }
   }
 }

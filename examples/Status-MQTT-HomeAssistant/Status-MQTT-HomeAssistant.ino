@@ -100,9 +100,10 @@ const char* accessCode = "";  // An access code is required to disarm and night 
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPublishTopic = "dsc/Get";    // Provides status updates
+const char* mqttPublishTopic = "dsc/Get";    // Provides partition armed and alarm status
 const char* mqttSubscribeTopic = "dsc/Set";  // Writes to the panel
-const char* mqttZoneTopic = "dsc/Get/Zone";  // Zone number will be appended to this topic name: dsc/Get/Zone1, dsc/Get/Zone64
+const char* mqttZoneTopic = "dsc/Get/Zone";  // Provides zone status, the zone number will be appended to this topic name: dsc/Get/Zone1, dsc/Get/Zone64
+const char* mqttFireTopic = "dsc/Get/Fire";  // Provides fire alarm status
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;

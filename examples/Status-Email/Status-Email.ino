@@ -88,35 +88,35 @@ void loop() {
 
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) sendEmail("Security system in alarm", dsc.dscTime);
-      else sendEmail("Security system disarmed after alarm", dsc.dscTime);
+      if (dsc.partitionAlarm) sendEmail("Security system in alarm", "");
+      else sendEmail("Security system disarmed after alarm", "");
     }
 
     if (dsc.fireStatusChanged) {
       dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) sendEmail("Security system fire alarm on", dsc.dscTime);
-      else sendEmail("Security system fire alarm restored", dsc.dscTime);
+      if (dsc.fireStatus) sendEmail("Security system fire alarm on", "");
+      else sendEmail("Security system fire alarm restored", "");
     }
 
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      sendEmail("Security system fire alarm button pressed", dsc.dscTime);
+      sendEmail("Security system fire alarm button pressed", "");
     }
 
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      sendEmail("Security system aux alarm button pressed", dsc.dscTime);
+      sendEmail("Security system aux alarm button pressed", "");
     }
 
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      sendEmail("Security system panic alarm button pressed", dsc.dscTime);
+      sendEmail("Security system panic alarm button pressed", "");
     }
 
     if (dsc.powerTroubleChanged) {
       dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
-      if (dsc.powerTrouble) sendEmail("Security system AC power trouble", dsc.dscTime);
-      else sendEmail("Security system AC power restored", dsc.dscTime);
+      if (dsc.powerTrouble) sendEmail("Security system AC power trouble", "");
+      else sendEmail("Security system AC power restored", "");
     }
   }
 }

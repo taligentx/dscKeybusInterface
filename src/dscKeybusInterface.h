@@ -20,16 +20,16 @@
 
 #include <Arduino.h>
 
-// Maximum size of a Keybus command - post an issue if this needs to be increased for a panel model:
-// https://github.com/taligentx/dscKeybusInterface
-const byte dscReadSize = 13;
+const byte dscReadSize = 13;   // Maximum size of a Keybus command
+const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 5 bytes of memory per zone group
 
-// Number of commands to buffer if the sketch is busy, requires dscReadSize + 2 bytes of memory per command
+// Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 #if defined(__AVR__)
 const byte dscBufferSize = 10;
 #elif defined(ESP8266)
 const byte dscBufferSize = 50;
 #endif
+
 
 class dscKeybusInterface {
 
@@ -58,7 +58,6 @@ class dscKeybusInterface {
 
     // Panel time
     bool timeAvailable;             // True after the panel sends the first timestamp message
-    char dscTime[17];               // Panel time in MM/DD/YYYY HH:MM format
     byte hour, minute, day, month;
     int year;
 
@@ -74,9 +73,9 @@ class dscKeybusInterface {
     bool batteryTrouble, batteryTroubleChanged;
     bool powerTrouble, powerTroubleChanged;
     bool openZonesStatusChanged;
-    byte openZones[8], openZonesChanged[8];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
+    byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
-    byte alarmZones[8], alarmZonesChanged[8];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
+    byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
 
     // Panel and keypad data is stored in an array: command [0], stop bit by itself [1], followed by the remaining
     // data.  panelData[] and keypadData[] can be accessed directly within the sketch.
@@ -102,9 +101,8 @@ class dscKeybusInterface {
     void processPanel_0x34();
     void processPanel_0x3E();
     void processPanel_0xA5();
-    void processPanel_0xA5_Byte7_0x00();
-    void processPanel_0xA5_Byte7_0x09();
-    void processPanel_0xA5_Byte7_0xFF();
+    void processPanel_0xA5_Byte5_0x00();
+    void processPanel_0xA5_Byte5_0x02();
 
     void printPanelLights();
     void printPanelStatus();
@@ -123,19 +121,23 @@ class dscKeybusInterface {
     void printPanel_0x5D();
     void printPanel_0x63();
     void printPanel_0x64();
+    void printPanel_0x69();
     void printPanel_0x75();
+    void printPanel_0x7A();
     void printPanel_0x7F();
     void printPanel_0x87();
     void printPanel_0x8D();
     void printPanel_0x94();
     void printPanel_0xA5();
-    void printPanel_0xA5_Byte7_0x00();
-    void printPanel_0xA5_Byte7_0x09();
-    void printPanel_0xA5_Byte7_0xFF();
+    void printPanel_0xA5_Byte5_0x00();
+    void printPanel_0xA5_Byte5_0x01();
+    void printPanel_0xA5_Byte5_0x02();
+    void printPanel_0xA5_Byte5_0x03();
     void printPanel_0xB1();
     void printPanel_0xBB();
     void printPanel_0xC3();
     void printPanel_0xD5();
+    void printPanel_0xE6();
 
     void printKeybus_0x77();
     void printKeybus_0xBB();
@@ -149,14 +151,14 @@ class dscKeybusInterface {
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     static void dscClockInterrupt();
-    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[]);
+    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
     bool queryResponse;
     bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
-    byte previousOpenZones[8];
+    byte previousOpenZones[dscZones];
 
     static byte dscClockPin;
     static byte dscReadPin;

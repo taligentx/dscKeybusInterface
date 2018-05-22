@@ -95,10 +95,7 @@ void loop() {
 
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) {
-        Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
-        Serial.println(F(" | Partition in alarm"));
-      }
+      if (dsc.partitionAlarm) Serial.println(F("Partition in alarm"));
     }
 
     if (dsc.exitDelayChanged) {
@@ -113,16 +110,14 @@ void loop() {
 
     if (dsc.batteryTroubleChanged) {
       dsc.batteryTroubleChanged = false;  // Resets the battery trouble status flag
-      Serial.print(dsc.dscTime);          // Messages in the 0xA5 panel command include a timestamp
-      if (dsc.batteryTrouble) Serial.println(F(" | Panel battery trouble"));
-      else Serial.println(F(" | Panel battery restored"));
+      if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
+      else Serial.println(F("Panel battery restored"));
     }
 
     if (dsc.powerTroubleChanged) {
       dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
-      Serial.print(dsc.dscTime);        // Messages in the 0xA5 panel command include a timestamp
-      if (dsc.powerTrouble) Serial.println(F(" | Panel AC power trouble"));
-      else Serial.println(F(" | Panel AC power restored"));
+      if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
+      else Serial.println(F("Panel AC power restored"));
     }
 
     if (dsc.fireStatusChanged) {
@@ -133,20 +128,17 @@ void loop() {
 
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      Serial.print(dsc.dscTime);    // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad fire alarm"));
+      Serial.println(F("Keypad fire alarm"));
     }
 
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      Serial.print(dsc.dscTime);   // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad aux alarm"));
+      Serial.println(F("Keypad aux alarm"));
     }
 
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      Serial.print(dsc.dscTime);     // Messages in the 0xA5 panel command include a timestamp
-      Serial.println(F(" | Keypad panic alarm"));
+      Serial.println(F("Keypad panic alarm"));
     }
 
     // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
@@ -185,13 +177,11 @@ void loop() {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
-              Serial.print(dsc.dscTime);
-              Serial.print(F(" | Zone alarm: "));
+              Serial.print(F("Zone alarm: "));
               Serial.println(zoneBit + 1 + (zoneGroup * 8));
             }
             else {
-              Serial.print(dsc.dscTime);
-              Serial.print(F(" | Zone alarm restored: "));
+              Serial.print(F("Zone alarm restored: "));
               Serial.println(zoneBit + 1 + (zoneGroup * 8));
             }
           }
