@@ -3,8 +3,8 @@
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
- *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states
- *  for the contactSensor objects.
+ *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states
+ *  for the contactSensor objects, and fire alarm states for the smokeSensor object.
  *
  *  Homebridge: https://github.com/nfarina/homebridge
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
@@ -64,6 +64,17 @@
                 "getContactSensorState": "dsc/Get/Zone8"
             },
             "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "smokeSensor",
+            "name": "Smoke Alarm",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getSmokeDetected": "dsc/Get/Fire"
+            },
+            "integerValue": "true"
         }
 
  *  Wiring:
@@ -110,9 +121,10 @@ const char* accessCode = "";  // An access code is required to disarm and night 
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPublishTopic = "dsc/Get";    // Provides status updates
-const char* mqttSubscribeTopic = "dsc/Set";  // Writes to the panel
-const char* mqttZoneTopic = "dsc/Get/Zone";  // Zone number will be appended to this topic name: dsc/Get/Zone1, dsc/Get/Zone64
+const char* mqttPublishTopic = "dsc/Get";    // Sends partition armed and alarm status
+const char* mqttSubscribeTopic = "dsc/Set";  // Receives messages to write to the panel
+const char* mqttZoneTopic = "dsc/Get/Zone";  // Sends zone status - the zone number will be appended to this topic name: dsc/Get/Zone1 ... dsc/Get/Zone64
+const char* mqttFireTopic = "dsc/Get/Fire";  // Sends fire status
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
@@ -176,6 +188,13 @@ void loop() {
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;                                  // Resets the partition alarm status flag
       if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T", true);  // Alarm tripped
+    }
+
+    // Publishes the fire alarm status
+    if (dsc.fireStatusChanged) {
+      dsc.fireStatusChanged = false;                         // Resets the fire alarm status flag
+      if (dsc.fireStatus) mqtt.publish(mqttFireTopic, "1");  // Fire alarm tripped
+      else mqtt.publish(mqttFireTopic, "0");                 // Fire alarm restored
     }
 
     // Publishes zones 1-64 status in a separate topic per zone

@@ -55,6 +55,12 @@
           device_class: "window"
           payload_on: "1"
           payload_off: "0"
+        - platform: mqtt
+          name: "Smoke Alarm"
+          state_topic: "dsc/Get/Fire"
+          device_class: "smoke"
+          payload_on: "1"
+          payload_off: "0"
 
  *  Wiring:
  *      DSC Aux(-) --- Arduino/esp8266 ground
@@ -100,10 +106,10 @@ const char* accessCode = "";  // An access code is required to disarm and night 
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPublishTopic = "dsc/Get";    // Provides partition armed and alarm status
-const char* mqttSubscribeTopic = "dsc/Set";  // Writes to the panel
-const char* mqttZoneTopic = "dsc/Get/Zone";  // Provides zone status, the zone number will be appended to this topic name: dsc/Get/Zone1, dsc/Get/Zone64
-const char* mqttFireTopic = "dsc/Get/Fire";  // Provides fire alarm status
+const char* mqttPublishTopic = "dsc/Get";    // Sends partition armed and alarm status
+const char* mqttSubscribeTopic = "dsc/Set";  // Receives messages to write to the panel
+const char* mqttZoneTopic = "dsc/Get/Zone";  // Sends zone status - the zone number will be appended to this topic name: dsc/Get/Zone1 ... dsc/Get/Zone64
+const char* mqttFireTopic = "dsc/Get/Fire";  // Sends fire status
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
@@ -171,6 +177,13 @@ void loop() {
     if (dsc.partitionAlarmChanged) {
       dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
       if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "triggered", true);
+    }
+
+    // Publishes the fire alarm status
+    if (dsc.fireStatusChanged) {
+      dsc.fireStatusChanged = false;                         // Resets the fire alarm status flag
+      if (dsc.fireStatus) mqtt.publish(mqttFireTopic, "1");  // Fire alarm tripped
+      else mqtt.publish(mqttFireTopic, "0");                 // Fire alarm restored
     }
 
     // Publishes zones 1-64 status in a separate topic per zone
