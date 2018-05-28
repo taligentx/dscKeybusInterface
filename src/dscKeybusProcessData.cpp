@@ -62,34 +62,25 @@ void dscKeybusInterface::processPanel_0x05() {
 
   // Messages
   switch (panelData[3]) {
-    case 0x01: {       // Partition ready
+    case 0x01:         // Partition ready
+    case 0x02:         // Stay/away zones open
+    case 0x03:         // Zones open
+    case 0x04:         // Armed stay
+    case 0x05:         // Armed away
+    case 0x11:         // Partition in alarm
+    case 0x3E: {       // Partition disarmed
       exitDelay = false;
       previousExitDelay = false;
       entryDelay = false;
       previousEntryDelay = false;
+
+      partitionsExitDelay[0] = false;
+      previousPartitionsExitDelay[0] = false;
+      partitionsEntryDelay[0] = false;
+      previousPartitionsEntryDelay[0] = false;
       break;
     }
-    case 0x03: {       // Partition not ready
-      exitDelay = false;
-      previousExitDelay = false;
-      entryDelay = false;
-      previousEntryDelay = false;
-      break;
-    }
-    case 0x04: {       // Armed stay
-      exitDelay = false;
-      previousExitDelay = false;
-      entryDelay = false;
-      previousEntryDelay = false;
-      break;
-    }
-    case 0x05: {       // Armed away
-      exitDelay = false;
-      previousExitDelay = false;
-      entryDelay = false;
-      previousEntryDelay = false;
-      break;
-    }
+
     case 0x08: {       // Exit delay in progress
       exitDelay = true;
       if (exitDelay != previousExitDelay) {
@@ -97,8 +88,16 @@ void dscKeybusInterface::processPanel_0x05() {
         exitDelayChanged = true;
         statusChanged = true;
       }
+
+      partitionsExitDelay[0] = true;
+      if (partitionsExitDelay[0] != previousPartitionsExitDelay[0]) {
+        previousPartitionsExitDelay[0] = partitionsExitDelay[0];
+        partitionsExitDelayChanged[0] = true;
+        statusChanged = true;
+      }
       break;
     }
+
     case 0x0C: {       // Entry delay in progress
       entryDelay = true;
       if (entryDelay != previousEntryDelay) {
@@ -106,22 +105,16 @@ void dscKeybusInterface::processPanel_0x05() {
         entryDelayChanged = true;
         statusChanged = true;
       }
+
+      partitionsEntryDelay[0] = true;
+      if (partitionsEntryDelay[0] != previousPartitionsEntryDelay[0]) {
+        previousPartitionsEntryDelay[0] = partitionsEntryDelay[0];
+        partitionsEntryDelayChanged[0] = true;
+        statusChanged = true;
+      }
       break;
     }
-    case 0x11: {       // Partition in alarm
-      entryDelay = false;
-      previousEntryDelay = false;
-      entryDelay = false;
-      previousEntryDelay = false;
-      break;
-    }
-    case 0x3E: {       // Partition disarmed
-      exitDelay = false;
-      previousExitDelay = false;
-      entryDelay = false;
-      previousEntryDelay = false;
-      break;
-    }
+
     case 0x9E: {       // '*' pressed
       wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
       writeAsterisk = false;
@@ -147,6 +140,16 @@ void dscKeybusInterface::processPanel_0x27() {
         partitionArmedChanged = true;
         statusChanged = true;
       }
+
+      partitionsArmed[0] = true;
+      partitionsArmedStay[0] = true;
+      partitionsArmedAway[0] = false;
+      partitionsExitDelay[0] = false;
+      if (partitionsArmed[0] != previousPartitionsArmed[0]) {
+        previousPartitionsArmed[0] = partitionsArmed[0];
+        partitionsArmedChanged[0] = true;
+        statusChanged = true;
+      }
       break;
     }
     case 0x05: {       // Armed away
@@ -157,6 +160,16 @@ void dscKeybusInterface::processPanel_0x27() {
       if (partitionArmed != previousPartitionArmed) {
         previousPartitionArmed = partitionArmed;
         partitionArmedChanged = true;
+        statusChanged = true;
+      }
+
+      partitionsArmed[0] = true;
+      partitionsArmedStay[0] = false;
+      partitionsArmedAway[0] = true;
+      partitionsExitDelay[0] = false;
+      if (partitionsArmed[0] != previousPartitionsArmed[0]) {
+        previousPartitionsArmed[0] = partitionsArmed[0];
+        partitionsArmedChanged[0] = true;
         statusChanged = true;
       }
       break;
@@ -276,16 +289,23 @@ void dscKeybusInterface::processPanel_0xA5() {
 
 
 void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
+  byte partition = panelData[3] >> 6;
   switch (panelData[6]) {
     case 0x4A: {       // Disarmed after alarm in memory
       partitionAlarm = false;
       partitionAlarmChanged = true;
+
+      partitionsAlarm[partition] = false;
+      partitionsAlarmChanged[partition] = true;
       statusChanged = true;
       return;
     }
     case 0x4B: {       // Partition in alarm
       partitionAlarm = true;
       partitionAlarmChanged = true;
+
+      partitionsAlarm[partition] = true;
+      partitionsAlarmChanged[partition] = true;
       statusChanged = true;
       return;
     }
@@ -311,6 +331,13 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
       previousPartitionArmed = false;
       armedNoEntryDelay = false;
       partitionArmedChanged = true;
+
+      partitionsArmed[partition] = false;
+      partitionsArmedAway[partition] = false;
+      partitionsArmedStay[partition] = false;
+      previousPartitionsArmed[partition] = false;
+      partitionsNoEntryDelay[partition] = false;
+      partitionsArmedChanged[partition] = true;
       statusChanged = true;
       return;
     }
@@ -418,6 +445,13 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
     previousPartitionArmed = false;
     armedNoEntryDelay = false;
     partitionArmedChanged = true;
+
+    partitionsArmed[partition] = false;
+    partitionsArmedAway[partition] = false;
+    partitionsArmedStay[partition] = false;
+    previousPartitionsArmed[partition] = false;
+    partitionsNoEntryDelay[partition] = false;
+    partitionsArmedChanged[partition] = true;
     statusChanged = true;
     return;
   }
@@ -425,12 +459,18 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
 
 
 void dscKeybusInterface::processPanel_0xA5_Byte5_0x02() {
+  byte partition = panelData[3] >> 6;
   switch (panelData[6]) {
     case 0x99: {        // Activate stay/away zones
       partitionArmed = true;
       partitionArmedStay = false;
       partitionArmedAway = true;
       partitionArmedChanged = true;
+
+      partitionsArmed[partition] = true;
+      partitionsArmedAway[partition] = true;
+      partitionsArmedStay[partition] = false;
+      partitionsArmedChanged[partition] = true;
       statusChanged = true;
       return;
     }
@@ -442,6 +482,16 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x02() {
       if (partitionArmed != previousPartitionArmed) {
         previousPartitionArmed = partitionArmed;
         partitionArmedChanged = true;
+        statusChanged = true;
+      }
+
+      partitionsArmed[partition] = true;
+      partitionsArmedStay[partition] = true;
+      partitionsArmedAway[partition] = false;
+      partitionsExitDelay[partition] = false;
+      if (partitionsArmed[partition] != previousPartitionsArmed[partition]) {
+        previousPartitionsArmed[partition] = partitionsArmed[partition];
+        partitionsArmedChanged[partition] = true;
         statusChanged = true;
       }
       return;
@@ -456,10 +506,21 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x02() {
         partitionArmedChanged = true;
         statusChanged = true;
       }
+
+      partitionsArmed[partition] = true;
+      partitionsArmedStay[partition] = false;
+      partitionsArmedAway[partition] = true;
+      partitionsExitDelay[partition] = false;
+      if (partitionsArmed[partition] != previousPartitionsArmed[partition]) {
+        previousPartitionsArmed[partition] = partitionsArmed[partition];
+        partitionsArmedChanged[partition] = true;
+        statusChanged = true;
+      }
       return;
     }
     case 0x9C: {        // Armed without entry delay
       armedNoEntryDelay = true;
+      partitionsNoEntryDelay[partition] = true;
       return;
     }
   }

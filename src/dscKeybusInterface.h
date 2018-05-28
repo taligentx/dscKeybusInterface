@@ -22,6 +22,7 @@
 
 const byte dscReadSize = 13;   // Maximum size of a Keybus command
 const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 5 bytes of memory per zone group
+const byte dscPartitions = 7;  // Maximum number of partitions - requires 14 bytes of memory per partition
 
 // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 #if defined(__AVR__)
@@ -65,11 +66,16 @@ class dscKeybusInterface {
     bool statusChanged;             // True after any status change
     bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
     bool partitionAlarm, partitionAlarmChanged;
+    bool partitionsArmed[dscPartitions], partitionsArmedAway[dscPartitions], partitionsArmedStay[dscPartitions];
+    bool partitionsNoEntryDelay[dscPartitions], partitionsArmedChanged[dscPartitions];
+    bool partitionsAlarm[dscPartitions], partitionsAlarmChanged[dscPartitions];
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
     bool fireStatus, fireStatusChanged;
     bool troubleStatus, troubleStatusChanged;
     bool exitDelay, exitDelayChanged;
+    bool partitionsExitDelay[dscPartitions], partitionsExitDelayChanged[dscPartitions];
     bool entryDelay, entryDelayChanged;
+    bool partitionsEntryDelay[dscPartitions], partitionsEntryDelayChanged[dscPartitions];
     bool batteryTrouble, batteryTroubleChanged;
     bool powerTrouble, powerTroubleChanged;
     bool openZonesStatusChanged;
@@ -158,6 +164,7 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool queryResponse;
     bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
+    bool previousPartitionsExitDelay[dscPartitions], previousPartitionsEntryDelay[dscPartitions], previousPartitionsArmed[dscPartitions];
     byte previousOpenZones[dscZones];
 
     static byte dscClockPin;

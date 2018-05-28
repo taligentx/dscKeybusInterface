@@ -56,3 +56,4 @@ dscClockPin	LITERAL1
 dscReadPin	LITERAL1
 dscWritePin	LITERAL1
 dscZones	LITERAL1
+dscPartitions	LITERAL1
