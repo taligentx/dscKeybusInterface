@@ -33,7 +33,7 @@
 
       # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
       alarm_control_panel:
-        - platform: manual_mqtt
+        - platform: mqtt
           name: "Security System"
           state_topic: "dsc/Get"
           command_topic: "dsc/Set"
