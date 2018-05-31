@@ -20,7 +20,7 @@
 
 #include <Arduino.h>
 
-const byte dscReadSize = 13;   // Maximum size of a Keybus command
+const byte dscReadSize = 16;   // Maximum size of a Keybus command
 const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 5 bytes of memory per zone group
 
 // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
@@ -63,6 +63,7 @@ class dscKeybusInterface {
 
     // Status tracking
     bool statusChanged;             // True after any status change
+    bool accessCodePrompt;
     bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
     bool partitionAlarm, partitionAlarmChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
@@ -78,7 +79,7 @@ class dscKeybusInterface {
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
 
     // Panel and keypad data is stored in an array: command [0], stop bit by itself [1], followed by the remaining
-    // data.  panelData[] and keypadData[] can be accessed directly within the sketch.
+    // data.  panelData[] and keybusData[] can be accessed directly within the sketch.
     //
     // panelData[] example:
     //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
@@ -104,8 +105,8 @@ class dscKeybusInterface {
     void processPanel_0xA5_Byte5_0x00();
     void processPanel_0xA5_Byte5_0x02();
 
-    void printPanelLights();
-    void printPanelStatus();
+    void printPanelLights(byte panelByte);
+    void printPanelStatus(byte panelByte);
     void printPanel_0x05();
     void printPanel_0x0A();
     void printPanel_0x11();
@@ -156,8 +157,10 @@ class dscKeybusInterface {
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
+    bool writeArm;
     bool queryResponse;
-    bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay, previousPartitionArmed;
+    bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay;
+    bool previousPartitionArmed, previousPartitionAlarm;
     byte previousOpenZones[dscZones];
 
     static byte dscClockPin;

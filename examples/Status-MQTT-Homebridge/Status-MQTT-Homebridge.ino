@@ -117,7 +117,7 @@
 
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";  // An access code is required to disarm and night arm
+const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
@@ -171,6 +171,12 @@ void loop() {
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
+
+    // Sends the access code when needed by the panel for arming
+    if (dsc.accessCodePrompt && dsc.writeReady) {
+      dsc.accessCodePrompt = false;
+      dsc.write(accessCode);
+    }
 
     // Publishes armed status
     if (dsc.partitionArmedChanged) {
@@ -254,8 +260,6 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   else if (payload[0] == 'N' && !dsc.partitionArmed && !dsc.exitDelay) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.write('n');  // Keypad arm with no entry delay
-    while (!dsc.writeReady) dsc.handlePanel();
-    dsc.write(accessCode);
   }
 
   // homebridge-mqttthing DISARM

@@ -82,8 +82,8 @@ DSC Aux(+) ---+--- Arduino Vin pin
 This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.  The following keys can be sent to the panel (see the examples for usage):
 
 * Keypad: `0-9 * #`
-* Arm stay (requires quick arm enabled): `s`
-* Arm away (requires quick arm enabled): `w`
+* Arm stay (requires access code if quick arm is disabled): `s`
+* Arm away (requires access code if quick arm is disabled): `w`
 * Arm with no entry delay (requires access code): `n`
 * Fire alarm: `f`
 * Auxiliary alarm: `a`
@@ -96,7 +96,6 @@ This allows a sketch to send keys to the DSC panel to emulate the physical DSC k
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:
-* Quick arm: section 015, option 4 on - enables arm stay and arm away without entering an access code for the virtual keypad `s` and `w` keys.
 * Swinger shutdown: PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
 
   This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  

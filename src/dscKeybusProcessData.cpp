@@ -20,43 +20,39 @@
 
 void dscKeybusInterface::processPanel_0x05() {
 
-  // Status lights
-  if (panelData[2] != 0) {
+  // Trouble status
+  if (bitRead(panelData[2],4)) {
+    troubleStatus = true;
+    if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
+      previousTroubleStatus = troubleStatus;
+      troubleStatusChanged = true;
+      statusChanged = true;
+    }
+  }
+  else {
+    troubleStatus = false;
+    if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
+      previousTroubleStatus = troubleStatus;
+      troubleStatusChanged = true;
+      statusChanged = true;
+    }
+  }
 
-    // Trouble status
-    if (bitRead(panelData[2],4)) {
-      troubleStatus = true;
-      if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
-        previousTroubleStatus = troubleStatus;
-        troubleStatusChanged = true;
-        statusChanged = true;
-      }
+  // Fire status
+  if (bitRead(panelData[2],6)) {
+    fireStatus = true;
+    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+      previousFireStatus = fireStatus;
+      fireStatusChanged = true;
+      statusChanged = true;
     }
-    else {
-      troubleStatus = false;
-      if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
-        previousTroubleStatus = troubleStatus;
-        troubleStatusChanged = true;
-        statusChanged = true;
-      }
-    }
-
-    // Fire status
-    if (bitRead(panelData[2],6)) {
-      fireStatus = true;
-      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-        previousFireStatus = fireStatus;
-        fireStatusChanged = true;
-        statusChanged = true;
-      }
-    }
-    else {
-      fireStatus = false;
-      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-        previousFireStatus = fireStatus;
-        fireStatusChanged = true;
-        statusChanged = true;
-      }
+  }
+  else {
+    fireStatus = false;
+    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+      previousFireStatus = fireStatus;
+      fireStatusChanged = true;
+      statusChanged = true;
     }
   }
 
@@ -81,6 +77,7 @@ void dscKeybusInterface::processPanel_0x05() {
       previousExitDelay = false;
       entryDelay = false;
       previousEntryDelay = false;
+      writeArm = false;
       break;
     }
     case 0x05: {       // Armed away
@@ -88,10 +85,12 @@ void dscKeybusInterface::processPanel_0x05() {
       previousExitDelay = false;
       entryDelay = false;
       previousEntryDelay = false;
+      writeArm = false;
       break;
     }
     case 0x08: {       // Exit delay in progress
       exitDelay = true;
+      writeArm = false;
       if (exitDelay != previousExitDelay) {
         previousExitDelay = exitDelay;
         exitDelayChanged = true;
@@ -109,10 +108,17 @@ void dscKeybusInterface::processPanel_0x05() {
       break;
     }
     case 0x11: {       // Partition in alarm
+      partitionAlarm = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
       entryDelay = false;
       previousEntryDelay = false;
       entryDelay = false;
       previousEntryDelay = false;
+      partitionAlarm = true;
       break;
     }
     case 0x3E: {       // Partition disarmed
@@ -122,10 +128,17 @@ void dscKeybusInterface::processPanel_0x05() {
       previousEntryDelay = false;
       break;
     }
-    case 0x9E: {       // '*' pressed
+    case 0x9E: {       // Enter * function code
       wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
       writeAsterisk = false;
       writeReady = true;
+      break;
+    }
+    case 0x9F: {
+      if (writeArm) {  // Ensures access codes are only sent when an arm command is sent through this interface
+        accessCodePrompt = true;
+        statusChanged = true;
+      }
       break;
     }
   }
@@ -279,14 +292,20 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   switch (panelData[6]) {
     case 0x4A: {       // Disarmed after alarm in memory
       partitionAlarm = false;
-      partitionAlarmChanged = true;
-      statusChanged = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
       return;
     }
     case 0x4B: {       // Partition in alarm
       partitionAlarm = true;
-      partitionAlarmChanged = true;
-      statusChanged = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
       return;
     }
     case 0x4E: {       // Keypad Fire alarm
@@ -306,6 +325,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
     }
     case 0xE6: {       // Disarmed special: keyswitch/wireless key/DLS
       partitionArmed = false;
+      partitionAlarm = false;
       partitionArmedAway = false;
       partitionArmedStay = false;
       previousPartitionArmed = false;
@@ -347,6 +367,12 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   //   ...
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
   if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
+    partitionAlarm = true;
+    if (partitionAlarm != previousPartitionAlarm) {
+      previousPartitionAlarm = partitionAlarm;
+      partitionAlarmChanged = true;
+      statusChanged = true;
+    }
     alarmZonesStatusChanged = true;
     for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
       if (panelData[6] == 0x09 + zoneCount) {
@@ -413,6 +439,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   // Disarmed by access code
   if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
     partitionArmed = false;
+    partitionAlarm = false;
     partitionArmedAway = false;
     partitionArmedStay = false;
     previousPartitionArmed = false;
