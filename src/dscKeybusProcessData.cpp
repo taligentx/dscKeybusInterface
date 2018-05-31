@@ -20,47 +20,106 @@
 
 void dscKeybusInterface::processPanel_0x05() {
 
-  // Status lights
-  if (panelData[2] != 0) {
+  // Trouble status
+  if (bitRead(panelData[2],4)) {
+    troubleStatus = true;
+    if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
+      previousTroubleStatus = troubleStatus;
+      troubleStatusChanged = true;
+      statusChanged = true;
+    }
+  }
+  else {
+    troubleStatus = false;
+    if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
+      previousTroubleStatus = troubleStatus;
+      troubleStatusChanged = true;
+      statusChanged = true;
+    }
+  }
 
-    // Trouble status
-    if (bitRead(panelData[2],4)) {
-      troubleStatus = true;
-      if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
-        previousTroubleStatus = troubleStatus;
-        troubleStatusChanged = true;
-        statusChanged = true;
-      }
+  // Fire status
+  if (bitRead(panelData[2],6)) {
+    fireStatus = true;
+    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+      previousFireStatus = fireStatus;
+      fireStatusChanged = true;
+      statusChanged = true;
     }
-    else {
-      troubleStatus = false;
-      if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
-        previousTroubleStatus = troubleStatus;
-        troubleStatusChanged = true;
-        statusChanged = true;
-      }
-    }
-
-    // Fire status
-    if (bitRead(panelData[2],6)) {
-      fireStatus = true;
-      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-        previousFireStatus = fireStatus;
-        fireStatusChanged = true;
-        statusChanged = true;
-      }
-    }
-    else {
-      fireStatus = false;
-      if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-        previousFireStatus = fireStatus;
-        fireStatusChanged = true;
-        statusChanged = true;
-      }
+  }
+  else {
+    fireStatus = false;
+    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
+      previousFireStatus = fireStatus;
+      fireStatusChanged = true;
+      statusChanged = true;
     }
   }
 
   // Messages
+  switch (panelData[3]) {
+    case 0x04:
+    case 0x05: {
+      writeArm = false;
+      break;
+    }
+    case 0x08: {       // Exit delay in progress
+      exitDelay = true;
+      writeArm = false;
+      if (exitDelay != previousExitDelay) {
+        previousExitDelay = exitDelay;
+        exitDelayChanged = true;
+        statusChanged = true;
+      }
+
+      partitionsExitDelay[0] = true;
+      if (partitionsExitDelay[0] != previousPartitionsExitDelay[0]) {
+        previousPartitionsExitDelay[0] = partitionsExitDelay[0];
+        partitionsExitDelayChanged[0] = true;
+        statusChanged = true;
+      }
+      break;
+    }
+    case 0x0C: {       // Entry delay in progress
+      entryDelay = true;
+      if (entryDelay != previousEntryDelay) {
+        previousEntryDelay = entryDelay;
+        entryDelayChanged = true;
+        statusChanged = true;
+      }
+
+      partitionsEntryDelay[0] = true;
+      if (partitionsEntryDelay[0] != previousPartitionsEntryDelay[0]) {
+        previousPartitionsEntryDelay[0] = partitionsEntryDelay[0];
+        partitionsEntryDelayChanged[0] = true;
+        statusChanged = true;
+      }
+      break;
+    }
+    case 0x11: {
+      partitionAlarm = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
+      break;
+    }
+    case 0x9E: {       // Enter * function code
+      wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+      writeAsterisk = false;
+      writeReady = true;
+      break;
+    }
+    case 0x9F: {
+      if (writeArm) {  // Ensures access codes are only sent when an arm command is sent through this interface
+        accessCodePrompt = true;
+        statusChanged = true;
+      }
+      break;
+    }
+  }
+
   switch (panelData[3]) {
     case 0x01:         // Partition ready
     case 0x02:         // Stay/away zones open
@@ -78,47 +137,6 @@ void dscKeybusInterface::processPanel_0x05() {
       previousPartitionsExitDelay[0] = false;
       partitionsEntryDelay[0] = false;
       previousPartitionsEntryDelay[0] = false;
-      break;
-    }
-
-    case 0x08: {       // Exit delay in progress
-      exitDelay = true;
-      if (exitDelay != previousExitDelay) {
-        previousExitDelay = exitDelay;
-        exitDelayChanged = true;
-        statusChanged = true;
-      }
-
-      partitionsExitDelay[0] = true;
-      if (partitionsExitDelay[0] != previousPartitionsExitDelay[0]) {
-        previousPartitionsExitDelay[0] = partitionsExitDelay[0];
-        partitionsExitDelayChanged[0] = true;
-        statusChanged = true;
-      }
-      break;
-    }
-
-    case 0x0C: {       // Entry delay in progress
-      entryDelay = true;
-      if (entryDelay != previousEntryDelay) {
-        previousEntryDelay = entryDelay;
-        entryDelayChanged = true;
-        statusChanged = true;
-      }
-
-      partitionsEntryDelay[0] = true;
-      if (partitionsEntryDelay[0] != previousPartitionsEntryDelay[0]) {
-        previousPartitionsEntryDelay[0] = partitionsEntryDelay[0];
-        partitionsEntryDelayChanged[0] = true;
-        statusChanged = true;
-      }
-      break;
-    }
-
-    case 0x9E: {       // '*' pressed
-      wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
-      writeAsterisk = false;
-      writeReady = true;
       break;
     }
   }
@@ -294,6 +312,11 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
     case 0x4A: {       // Disarmed after alarm in memory
       partitionAlarm = false;
       partitionAlarmChanged = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
 
       partitionsAlarm[partition] = false;
       partitionsAlarmChanged[partition] = true;
@@ -303,6 +326,11 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
     case 0x4B: {       // Partition in alarm
       partitionAlarm = true;
       partitionAlarmChanged = true;
+      if (partitionAlarm != previousPartitionAlarm) {
+        previousPartitionAlarm = partitionAlarm;
+        partitionAlarmChanged = true;
+        statusChanged = true;
+      }
 
       partitionsAlarm[partition] = true;
       partitionsAlarmChanged[partition] = true;
@@ -326,6 +354,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
     }
     case 0xE6: {       // Disarmed special: keyswitch/wireless key/DLS
       partitionArmed = false;
+      partitionAlarm = false;
       partitionArmedAway = false;
       partitionArmedStay = false;
       previousPartitionArmed = false;
@@ -374,6 +403,12 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   //   ...
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
   if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
+    partitionAlarm = true;
+    if (partitionAlarm != previousPartitionAlarm) {
+      previousPartitionAlarm = partitionAlarm;
+      partitionAlarmChanged = true;
+      statusChanged = true;
+    }
     alarmZonesStatusChanged = true;
     for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
       if (panelData[6] == 0x09 + zoneCount) {
@@ -440,6 +475,7 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   // Disarmed by access code
   if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
     partitionArmed = false;
+    partitionAlarm = false;
     partitionArmedAway = false;
     partitionArmedStay = false;
     previousPartitionArmed = false;

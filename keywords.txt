@@ -19,6 +19,7 @@ displayTrailingBits	KEYWORD2
 processKeypadData	KEYWORD2
 
 statusChanged	KEYWORD2
+accessCodePrompt	KEYWORD2
 timeAvailable	KEYWORD2
 exitDelay	KEYWORD2
 exitDelayChanged	KEYWORD2

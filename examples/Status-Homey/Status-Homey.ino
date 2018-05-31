@@ -53,7 +53,7 @@
 
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";  // An access code is required to disarm and night arm
+const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
@@ -100,6 +100,12 @@ void loop() {
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Reset the status tracking flag
+
+    // Sends the access code when needed by the panel for arming
+    if (dsc.accessCodePrompt && dsc.writeReady) {
+      dsc.accessCodePrompt = false;
+      dsc.write(accessCode);
+    }
 
     // Publish armed status
     if (dsc.partitionArmedChanged) {

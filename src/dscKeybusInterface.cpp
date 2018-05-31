@@ -115,7 +115,7 @@ bool dscKeybusInterface::handlePanel() {
   }
   interrupts();
 
-  // Waits at startup for the 0x05 status command or a command with a valid CRC data to eliminate spurious data.
+  // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
   static bool firstClockCycle = true;
   if (firstClockCycle) {
     if (validCRC() || panelData[0] == 0x05) firstClockCycle = false;
@@ -134,6 +134,7 @@ bool dscKeybusInterface::handlePanel() {
     static byte previousCmd5D[dscReadSize];
     static byte previousCmd63[dscReadSize];
     static byte previousCmdB1[dscReadSize];
+    static byte previousCmdC3[dscReadSize];
     static byte previousCmdE6[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
@@ -170,6 +171,10 @@ bool dscKeybusInterface::handlePanel() {
 
       case 0xB1:  // Enabled zones 1-32
         if (redundantPanelData(previousCmdB1, panelData)) return false;
+        break;
+
+      case 0xC3:  // Unknown command
+        if (redundantPanelData(previousCmdC3, panelData)) return false;
         break;
 
       case 0xE6:  // Unknown command
@@ -274,11 +279,11 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;  // Keypad fire alarm
       case 's':
-      case 'S': writeKey = 0xAF; break;                     // Arm stay
+      case 'S': writeKey = 0xAF; writeArm = true; break;    // Arm stay
       case 'w':
-      case 'W': writeKey = 0xB1; break;                     // Arm away
+      case 'W': writeKey = 0xB1; writeArm = true; break;    // Arm away
       case 'n':
-      case 'N': writeKey = 0xB6; break;                     // Arm with no entry delay
+      case 'N': writeKey = 0xB6; writeArm = true; break;    // Arm with no entry delay (night arm)
       case 'A':
       case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
       case 'c':

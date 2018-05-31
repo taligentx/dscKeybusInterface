@@ -31,9 +31,11 @@ Download the repo and extract to the Arduino library directory or [install throu
   * Panel battery
   * Panel trouble
 
-* Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, as well as the zone states for the contactSensor objects.
+* Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 
-* Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, and the zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
+  Note: homebridge-mqttthing seems to have a bug for the smokeSensor object, for now I've issued a fix:  [taligentx/homebridge-mqttthing](https://github.com/taligentx/homebridge-mqttthing)
+
+* Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as fire alarm and zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
 * Status-Homey: Processes the security system status and allows for control using [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, fire, and zone states.
 
@@ -80,8 +82,8 @@ DSC Aux(+) ---+--- Arduino Vin pin
 This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.  The following keys can be sent to the panel (see the examples for usage):
 
 * Keypad: `0-9 * #`
-* Arm stay (requires quick arm enabled): `s`
-* Arm away (requires quick arm enabled): `w`
+* Arm stay (requires access code if quick arm is disabled): `s`
+* Arm away (requires access code if quick arm is disabled): `w`
 * Arm with no entry delay (requires access code): `n`
 * Fire alarm: `f`
 * Auxiliary alarm: `a`
@@ -94,7 +96,6 @@ This allows a sketch to send keys to the DSC panel to emulate the physical DSC k
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:
-* Quick arm: section 015, option 4 on - enables arm stay and arm away without entering an access code for the virtual keypad `s` and `w` keys.
 * Swinger shutdown: PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
 
   This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
