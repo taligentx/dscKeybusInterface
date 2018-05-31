@@ -290,8 +290,9 @@ void dscKeybusInterface::printPanel_0x0A() {
     return;
   }
 
-  stream->print(F("Status lights: "));
+  stream->print(F("Partition 1 | Lights: "));
   printPanelLights(2);
+  stream->print(F("| "));
   printPanelStatus(3);
 
   bool zoneLights = false;
