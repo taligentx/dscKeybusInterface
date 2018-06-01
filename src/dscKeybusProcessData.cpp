@@ -58,11 +58,36 @@ void dscKeybusInterface::processPanel_0x05() {
 
   // Messages
   switch (panelData[3]) {
+    case 0x01:         // Partition ready
+    case 0x02:         // Stay/away zones open
+    case 0x03: {       // Zones open
+      exitDelay = false;
+      previousExitDelay = false;
+      entryDelay = false;
+      previousEntryDelay = false;
+
+      partitionsExitDelay[0] = false;
+      previousPartitionsExitDelay[0] = false;
+      partitionsEntryDelay[0] = false;
+      previousPartitionsEntryDelay[0] = false;
+      break;
+    }
+
     case 0x04:
     case 0x05: {
       writeArm = false;
+      exitDelay = false;
+      previousExitDelay = false;
+      entryDelay = false;
+      previousEntryDelay = false;
+
+      partitionsExitDelay[0] = false;
+      previousPartitionsExitDelay[0] = false;
+      partitionsEntryDelay[0] = false;
+      previousPartitionsEntryDelay[0] = false;
       break;
     }
+
     case 0x08: {       // Exit delay in progress
       exitDelay = true;
       writeArm = false;
@@ -80,6 +105,7 @@ void dscKeybusInterface::processPanel_0x05() {
       }
       break;
     }
+
     case 0x0C: {       // Entry delay in progress
       entryDelay = true;
       if (entryDelay != previousEntryDelay) {
@@ -96,6 +122,7 @@ void dscKeybusInterface::processPanel_0x05() {
       }
       break;
     }
+
     case 0x11: {
       partitionAlarm = true;
       if (partitionAlarm != previousPartitionAlarm) {
@@ -103,30 +130,18 @@ void dscKeybusInterface::processPanel_0x05() {
         partitionAlarmChanged = true;
         statusChanged = true;
       }
-      break;
-    }
-    case 0x9E: {       // Enter * function code
-      wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
-      writeAsterisk = false;
-      writeReady = true;
-      break;
-    }
-    case 0x9F: {
-      if (writeArm) {  // Ensures access codes are only sent when an arm command is sent through this interface
-        accessCodePrompt = true;
-        statusChanged = true;
-      }
-      break;
-    }
-  }
+      exitDelay = false;
+      previousExitDelay = false;
+      entryDelay = false;
+      previousEntryDelay = false;
 
-  switch (panelData[3]) {
-    case 0x01:         // Partition ready
-    case 0x02:         // Stay/away zones open
-    case 0x03:         // Zones open
-    case 0x04:         // Armed stay
-    case 0x05:         // Armed away
-    case 0x11:         // Partition in alarm
+      partitionsExitDelay[0] = false;
+      previousPartitionsExitDelay[0] = false;
+      partitionsEntryDelay[0] = false;
+      previousPartitionsEntryDelay[0] = false;
+      break;
+    }
+
     case 0x3E: {       // Partition disarmed
       exitDelay = false;
       previousExitDelay = false;
@@ -137,6 +152,21 @@ void dscKeybusInterface::processPanel_0x05() {
       previousPartitionsExitDelay[0] = false;
       partitionsEntryDelay[0] = false;
       previousPartitionsEntryDelay[0] = false;
+      break;
+    }
+
+    case 0x9E: {       // Enter * function code
+      wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+      writeAsterisk = false;
+      writeReady = true;
+      break;
+    }
+
+    case 0x9F: {
+      if (writeArm) {  // Ensures access codes are only sent when an arm command is sent through this interface
+        accessCodePrompt = true;
+        statusChanged = true;
+      }
       break;
     }
   }
