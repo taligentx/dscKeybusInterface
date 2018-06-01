@@ -112,7 +112,7 @@ IPAddress ip(169, 254, 254, 254);
 const char* mqttServer = "";
 const char* mqttUsername = "";
 const char* mqttPassword = "";
-const char* accessCode = "";  // An access code is required to disarm and night arm
+const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPublishTopic = "dsc/Get";    // Sends partition armed and alarm status
@@ -150,6 +150,7 @@ void setup() {
   mqtt.setClient(ethClient);
   mqtt.setServer(mqttServer, 1883);
   mqtt.setCallback(mqttCallback);
+  
   if (mqttConnect()) mqttPreviousTime = millis();
   else mqttPreviousTime = 0;
 
@@ -166,7 +167,13 @@ void loop() {
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Reset the status tracking flag
-
+    
+    // Sends the access code when needed by the panel for arming
+    if (dsc.accessCodePrompt && dsc.writeReady) {
+       dsc.accessCodePrompt = false;
+       dsc.write(accessCode);
+    }
+    
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
