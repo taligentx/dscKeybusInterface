@@ -233,18 +233,18 @@ void dscKeybusInterface::printPanelStatus(byte panelByte) {
  *  00000101 0 10000000 00000011 10000010 00000101 10000010 00000101 00000000 11000111 [0x05] Status lights: Backlight | Zones open
  */
 void dscKeybusInterface::printPanel_0x05() {
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
   }
   else {
-    stream->print(F(" | Partition 2 | Lights: "));
+    stream->print(F(" | Partition 2: "));
     printPanelLights(4);
-    stream->print(F("| "));
+    stream->print(F("- "));
     printPanelStatus(5);
   }
 
@@ -253,9 +253,9 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 3: disabled"));
     }
     else {
-      stream->print(F(" | Partition 3 | Lights: "));
+      stream->print(F(" | Partition 3: "));
       printPanelLights(6);
-      stream->print(F("| "));
+      stream->print(F("- "));
       printPanelStatus(7);
     }
 
@@ -263,9 +263,9 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 4: disabled"));
     }
     else {
-      stream->print(F(" | Partition 4 | Lights: "));
+      stream->print(F(" | Partition 4: "));
       printPanelLights(8);
-      stream->print(F("| "));
+      stream->print(F("- "));
       printPanelStatus(9);
     }
   }
@@ -290,9 +290,9 @@ void dscKeybusInterface::printPanel_0x0A() {
     return;
   }
 
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   bool zoneLights = false;
@@ -436,18 +436,18 @@ void dscKeybusInterface::printPanel_0x27() {
     return;
   }
 
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
   }
   else if (panelData[5] != 0xFF) {
-    stream->print(F(" | Partition 2 | Lights: "));
+    stream->print(F(" | Partition 2: "));
     printPanelLights(4);
-    stream->print(F("| "));
+    stream->print(F("- "));
     printPanelStatus(5);
   }
 
@@ -499,18 +499,18 @@ void dscKeybusInterface::printPanel_0x2D() {
     return;
   }
 
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
   }
   else if (panelData[5] != 0xFF) {
-    stream->print(F(" | Partition 2 | Lights: "));
+    stream->print(F(" | Partition 2: "));
     printPanelLights(4);
-    stream->print(F("| "));
+    stream->print(F("- "));
     printPanelStatus(5);
   }
 
@@ -545,18 +545,18 @@ void dscKeybusInterface::printPanel_0x34() {
     return;
   }
 
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
   }
   else if (panelData[5] != 0xFF) {
-    stream->print(F(" | Partition 2 | Lights: "));
+    stream->print(F(" | Partition 2: "));
     printPanelLights(4);
-    stream->print(F("| "));
+    stream->print(F("- "));
     printPanelStatus(5);
   }
 
@@ -591,18 +591,18 @@ void dscKeybusInterface::printPanel_0x3E() {
     return;
   }
 
-  stream->print(F("Partition 1 | Lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
-  stream->print(F("| "));
+  stream->print(F("- "));
   printPanelStatus(3);
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
   }
   else if (panelData[5] != 0xFF) {
-    stream->print(F(" | Partition 2 | Lights: "));
+    stream->print(F(" | Partition 2: "));
     printPanelLights(4);
-    stream->print(F("| "));
+    stream->print(F("- "));
     printPanelStatus(5);
   }
 
@@ -1047,6 +1047,7 @@ void dscKeybusInterface::printPanel_0xA5_Byte5_0x00() {
     case 0xF0: stream->print(F(" | Panel AC power restored")); return;
     case 0xF1: stream->print(F(" | Bell restored")); return;
     case 0xF4: stream->print(F(" | Telephone line restored")); return;
+    case 0xFB: stream->print(F(" | DLS disconnected")); return;
     case 0xFF: stream->print(F(" | System test")); return;
   }
 
