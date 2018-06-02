@@ -73,8 +73,13 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
+  // Arduino Leonardo Timer4 calls ISR(TIMER4_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
+  #if defined(__AVR_ATmega32U4__)
+  TCCR4A = 0;
+  TCCR4B = 0;
+  TIMSK4 |= (1 << TOIE4);
   // Arduino Timer2 calls ISR(TIMER2_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
-  #if defined(__AVR__)
+  #elif defined(__AVR__)
   TCCR2A = 0;
   TCCR2B = 0;
   TIMSK2 |= (1 << TOIE2);
@@ -346,8 +351,13 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   // The following sets up a timer for both Arduino/AVR and Arduino/esp8266 that will call dscDataInterrupt() in
   // 250us to read the data line.
 
-  // AVR Timer2 calls dscDataInterrupt() via ISR(TIMER2_OVF_vect) when the Timer2 counter overflows
-  #if defined(__AVR__)
+  // Arduino Leonardo Timer4 calls dscDataInterrupt() via ISR(TIMER4_OVF_vect) when the Timer4 counter overflows
+  #if defined(__AVR_ATmega32U4__)
+  TCNT4=0x82;             // Timer4 counter start value, overflows at 0xFF in 250us
+  TCCR4B |= (1 << CS40);  // Setting CS40 and CS41 sets the pre-scaler to 32
+  TCCR4B |= (1 << CS41);
+  // Arduino Timer2 calls dscDataInterrupt() via ISR(TIMER2_OVF_vect) when the Timer2 counter overflows
+  #elif defined(__AVR__)
   TCNT2=0x82;             // Timer2 counter start value, overflows at 0xFF in 250us
   TCCR2B |= (1 << CS20);  // Setting CS20 and CS21 sets the pre-scaler to 32
   TCCR2B |= (1 << CS21);
@@ -425,9 +435,14 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 }
 
 
-// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer2, disables the timer and calls
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer2/4, disables the timer and calls
 // dscDataInterrupt() to read the data line
-#if defined(__AVR__)
+#if defined(__AVR_ATmega32U4__)
+ISR(TIMER4_OVF_vect) {
+  TCCR4B = 0; // Disables Timer4
+  dscKeybusInterface::dscDataInterrupt();
+}
+#elif defined(__AVR__)
 ISR(TIMER2_OVF_vect) {
   TCCR2B = 0;  // Disables Timer2
   dscKeybusInterface::dscDataInterrupt();
@@ -435,7 +450,7 @@ ISR(TIMER2_OVF_vect) {
 #endif
 
 
-// Interrupt function called by AVR Timer2 and esp8266 timer1 after 250us to read the data line
+// Interrupt function called by AVR Timer2/4 and esp8266 timer1 after 250us to read the data line
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
