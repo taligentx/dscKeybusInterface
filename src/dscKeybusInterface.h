@@ -72,6 +72,7 @@ class dscKeybusInterface {
     bool partitionsAlarm[dscPartitions], partitionsAlarmChanged[dscPartitions];
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
     bool fireStatus, fireStatusChanged;
+    bool partitionsFire[dscPartitions], partitionsFireChanged[dscPartitions];
     bool troubleStatus, troubleStatusChanged;
     bool exitDelay, exitDelayChanged;
     bool partitionsExitDelay[dscPartitions], partitionsExitDelayChanged[dscPartitions];
@@ -112,11 +113,17 @@ class dscKeybusInterface {
     void processPanel_0xA5_Byte5_0x02();
 
     void printPanelLights(byte panelByte);
-    void printPanelStatus(byte panelByte);
+    void printPanelMessages(byte panelByte);
+    void printPanelStatus0(byte panelByte);
+    void printPanelStatus1(byte panelByte);
+    void printPanelStatus2(byte panelByte);
+    void printPanelStatus3(byte panelByte);
+    void printPanelStatus4(byte panelByte);
     void printPanel_0x05();
     void printPanel_0x0A();
     void printPanel_0x11();
     void printPanel_0x16();
+    void printPanel_0x1B();
     void printPanel_0x1C();
     void printPanel_0x27();
     void printPanel_0x28();
@@ -136,15 +143,25 @@ class dscKeybusInterface {
     void printPanel_0x8D();
     void printPanel_0x94();
     void printPanel_0xA5();
-    void printPanel_0xA5_Byte5_0x00();
-    void printPanel_0xA5_Byte5_0x01();
-    void printPanel_0xA5_Byte5_0x02();
-    void printPanel_0xA5_Byte5_0x03();
     void printPanel_0xB1();
     void printPanel_0xBB();
     void printPanel_0xC3();
+    void printPanel_0xCE();
     void printPanel_0xD5();
     void printPanel_0xE6();
+    void printPanel_0xE6_0x09();
+    void printPanel_0xE6_0x0B();
+    void printPanel_0xE6_0x0D();
+    void printPanel_0xE6_0x0F();
+    void printPanel_0xE6_0x17();
+    void printPanel_0xE6_0x18();
+    void printPanel_0xE6_0x1A();
+    void printPanel_0xE6_0x1D();
+    void printPanel_0xE6_0x20();
+    void printPanel_0xE6_0x2B();
+    void printPanel_0xE6_0x2C();
+    void printPanel_0xE6_0x41();
+    void printPanel_0xEB();
 
     void printKeybus_0x77();
     void printKeybus_0xBB();
@@ -169,6 +186,7 @@ class dscKeybusInterface {
     bool previousPartitionArmed, previousPartitionAlarm;
     bool previousPartitionsExitDelay[dscPartitions], previousPartitionsEntryDelay[dscPartitions];
     bool previousPartitionsArmed[dscPartitions], previousPartitionsAlarm[dscPartitions];
+    bool previousPartitionsFire[dscPartitions];
     byte previousOpenZones[dscZones];
 
     static byte dscClockPin;
@@ -176,6 +194,7 @@ class dscKeybusInterface {
     static byte dscWritePin;
     static bool virtualKeypad;
     static char writeKey;
+    static byte writePartition;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool keybusDataCaptured;
@@ -184,7 +203,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBitCountBuffer[dscBufferSize], panelByteCountBuffer[dscBufferSize];
     static volatile byte keybusBitCount, keybusByteCount;
-    static volatile byte currentCmd, queryCmd;
+    static volatile byte currentCmd, statusCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrKeybusData[dscReadSize], isrKeybusBitTotal, isrKeybusBitCount, isrKeybusByteCount;
 };

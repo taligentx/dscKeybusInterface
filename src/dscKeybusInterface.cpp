@@ -21,6 +21,7 @@ byte dscKeybusInterface::dscClockPin;
 byte dscKeybusInterface::dscReadPin;
 byte dscKeybusInterface::dscWritePin;
 char dscKeybusInterface::writeKey;
+byte dscKeybusInterface::writePartition;
 bool dscKeybusInterface::virtualKeypad;
 bool dscKeybusInterface::processKeypadData;
 byte dscKeybusInterface::panelData[dscReadSize];
@@ -49,7 +50,7 @@ volatile byte dscKeybusInterface::isrKeybusByteCount;
 volatile byte dscKeybusInterface::isrKeybusBitCount;
 volatile byte dscKeybusInterface::isrKeybusBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::queryCmd;
+volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 
 
@@ -62,6 +63,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processRedundantData = false;
   displayTrailingBits = false;
   processKeypadData = false;
+  writePartition = 1;
 }
 
 
@@ -122,6 +124,18 @@ bool dscKeybusInterface::handlePanel() {
     else return false;
   }
 
+  static byte previousCmd0A[dscReadSize];
+  static byte previousCmdE6_20[dscReadSize];
+  switch (panelData[0]) {
+    case 0x0A:  // Status in programming
+      if (redundantPanelData(previousCmd0A, panelData)) return false;
+      break;
+
+    case 0xE6:  // Status in programming, zone lights 33-64
+      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;
+      break;
+  }
+
   // Skips redundant data from periodic commands sent at regular intervals, skipping is a configurable
   // option and the default behavior to help see new Keybus data when decoding the protocol
   if (!processRedundantData) {
@@ -135,7 +149,6 @@ bool dscKeybusInterface::handlePanel() {
     static byte previousCmd63[dscReadSize];
     static byte previousCmdB1[dscReadSize];
     static byte previousCmdC3[dscReadSize];
-    static byte previousCmdE6[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
         if (redundantPanelData(previousCmd11, panelData)) return false;
@@ -175,10 +188,6 @@ bool dscKeybusInterface::handlePanel() {
 
       case 0xC3:  // Unknown command
         if (redundantPanelData(previousCmdC3, panelData)) return false;
-        break;
-
-      case 0xE6:  // Unknown command
-        if (redundantPanelData(previousCmdE6, panelData)) return false;
         break;
     }
   }
@@ -261,12 +270,30 @@ void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
 // to resolve errors when additional keys are sent immediately after alarm keys.
 void dscKeybusInterface::write(const char receivedKey) {
   static unsigned long previousTime;
+  static bool setPartition;
   if (writeReady && millis() - previousTime > 500) {
     bool validKey = true;
     switch (receivedKey) {
+      case '/': setPartition = true; validKey = false; break;
       case '0': writeKey = 0x00; break;
-      case '1': writeKey = 0x05; break;
-      case '2': writeKey = 0x0A; break;
+      case '1': {
+        if (setPartition) {
+          writePartition = 1;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x05;
+        break;
+      }
+      case '2': {
+        if (setPartition) {
+          writePartition = 2;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x0A;
+        break;
+      }
       case '3': writeKey = 0x0F; break;
       case '4': writeKey = 0x11; break;
       case '5': writeKey = 0x16; break;
@@ -400,20 +427,19 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == 2 && !queryCmd) {
-
+      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == (writePartition + 1) && statusCmd) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == 9) {
+        if (isrPanelBitTotal == (writePartition * 8) + 1) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
         // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal > 9 && isrPanelBitTotal <= 16) {
+        else if (writeStart && isrPanelBitTotal > (writePartition * 8) + 1 && isrPanelBitTotal <= (writePartition * 8) + 8) {
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
           // Resets counters when the write is complete
-          if (isrPanelBitTotal == 16) {
+          if (isrPanelBitTotal == (writePartition * 8) + 8) {
             if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
             else writeReady = true;
             writeStart = false;
@@ -463,13 +489,12 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
 
       if (isrPanelBitTotal == 8) {
-        // Tests for a query command, used in dscClockInterrupt() to ensure keys are not written during a query
+        // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
-          case 0x11:
-          case 0x4C:
-          case 0x28:
-          case 0xD5: queryCmd = true; break;
-          default: queryCmd = false; break;
+          case 0x05:
+          case 0x0A:
+          case 0x1B: statusCmd = true; break;
+          default: statusCmd = false; break;
         }
 
         // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
@@ -537,13 +562,13 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (isrPanelBitTotal < 8) skipData = true;
       else switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
-        static byte previousCmd0A[dscReadSize];
-        case 0x05:  // Status
+        static byte previousCmd1B[dscReadSize];
+        case 0x05:  // Status: partitions 1-4
           if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
           break;
 
-        case 0x0A:  // Status in alarm, * programming
-          if (redundantPanelData(previousCmd0A, isrPanelData)) skipData = true;
+        case 0x1B:  // Status: partitions 5-8
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData = true;
           break;
       }
 

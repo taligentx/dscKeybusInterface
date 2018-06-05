@@ -77,75 +77,65 @@ void loop() {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
-    for (byte partition = 0; partition < dscPartitions; partition++) {
+    // Checks status per partition
+    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
-      if (dsc.partitionsArmedChanged[partition]) {
-        dsc.partitionsArmedChanged[partition] = false;  // Resets the partition armed status flag
-        if (dsc.partitionsArmed[partition]) {
+      if (dsc.partitionsArmedChanged[partitionIndex]) {
+        dsc.partitionsArmedChanged[partitionIndex] = false;  // Resets the partition armed status flag
+        if (dsc.partitionsArmed[partitionIndex]) {
           Serial.print(F("Partition "));
-          Serial.print(partition + 1);
+          Serial.print(partitionIndex + 1);
           Serial.print(F(" armed"));
-          if (dsc.partitionsArmedAway[partition]) Serial.println(F(" away"));
-          if (dsc.partitionsArmedStay[partition]) Serial.println(F(" stay"));
+          if (dsc.partitionsArmedAway[partitionIndex]) Serial.println(F(" away"));
+          if (dsc.partitionsArmedStay[partitionIndex]) Serial.println(F(" stay"));
         }
         else {
           Serial.print(F("Partition "));
-          Serial.print(partition + 1);
+          Serial.print(partitionIndex + 1);
           Serial.println(F(" disarmed"));
         }
       }
 
-      if (dsc.partitionsAlarmChanged[partition]) {
-        dsc.partitionsAlarmChanged[partition] = false;  // Resets the partition alarm status flag
-        if (dsc.partitionsAlarm[partition]) {
+      if (dsc.partitionsAlarmChanged[partitionIndex]) {
+        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+        if (dsc.partitionsAlarm[partitionIndex]) {
           Serial.print(F("Partition "));
-          Serial.print(partition + 1);
+          Serial.print(partitionIndex + 1);
           Serial.println(F(" in alarm"));
         }
       }
 
-      if (dsc.partitionsExitDelayChanged[partition]) {
-        dsc.partitionsExitDelayChanged[partition] = false;  // Resets the exit delay status flag
-        if (dsc.partitionsExitDelay[partition]) {
+      if (dsc.partitionsExitDelayChanged[partitionIndex]) {
+        dsc.partitionsExitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.partitionsExitDelay[partitionIndex]) {
           Serial.print(F("Partition "));
-          Serial.print(partition + 1);
+          Serial.print(partitionIndex + 1);
           Serial.println(F(" exit delay in progress"));
         }
       }
 
-      if (dsc.partitionsEntryDelayChanged[partition]) {
-        dsc.partitionsEntryDelayChanged[partition] = false;  // Resets the exit delay status flag
-        if (dsc.partitionsEntryDelay[partition]) {
+      if (dsc.partitionsEntryDelayChanged[partitionIndex]) {
+        dsc.partitionsEntryDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.partitionsEntryDelay[partitionIndex]) {
           Serial.print(F("Partition "));
-          Serial.print(partition + 1);
+          Serial.print(partitionIndex + 1);
           Serial.println(F(" entry delay in progress"));
         }
       }
-    }
 
-    if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
-      if (dsc.partitionArmed) {
-        Serial.print(F("Partition armed"));
-        if (dsc.partitionArmedAway) Serial.println(F(" away"));
-        if (dsc.partitionArmedStay) Serial.println(F(" stay"));
+      if (dsc.partitionsFireChanged[partitionIndex]) {
+        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
+        if (dsc.partitionsFire[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" fire alarm on"));
+        }
+        else {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" fire alarm restored"));
+        }
       }
-      else Serial.println(F("Partition disarmed"));
-    }
-
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) Serial.println(F("Partition in alarm"));
-    }
-
-    if (dsc.exitDelayChanged) {
-      dsc.exitDelayChanged = false;  // Resets the exit delay status flag
-      if (dsc.exitDelay) Serial.println(F("Exit delay in progress"));
-    }
-
-    if (dsc.entryDelayChanged) {
-      dsc.entryDelayChanged = false;  // Resets the entry delay status flag
-      if (dsc.entryDelay) Serial.println(F("Entry delay in progress"));
     }
 
     // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
@@ -194,12 +184,6 @@ void loop() {
           }
         }
       }
-    }
-
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Serial.println(F("Fire alarm on"));
-      else Serial.println(F("Fire alarm restored"));
     }
 
     if (dsc.troubleStatusChanged) {

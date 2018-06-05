@@ -16,8 +16,8 @@
  *    Night arm (arm without an entry delay): "N"
  *    Disarm: "D"
  *
- *  The interface listens for commands in the configured mqttSubscibeTopic, and publishes alarm states to the
- *  configured mqttPublishTopic:
+ *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
+ *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
  *    Stay arm: "SA"
  *    Away arm: "AA"
  *    Night arm: "NA"
@@ -29,6 +29,11 @@
  *    "0": closed
  *    "1": open
  *
+ *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
+ *  partition number.  The fire state is published as an integer:
+ *    "0": fire alarm restored
+ *    "1": fire alarm tripped
+ *
  *  Example Homebridge config.json "accessories" configuration:
 
         {
@@ -38,7 +43,7 @@
             "url": "http://127.0.0.1:1883",
             "topics":
             {
-                "getCurrentState":    "dsc/Get",
+                "getCurrentState":    "dsc/Get/Partition1",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["S", "A", "N", "D"]
@@ -72,7 +77,7 @@
             "url": "http://127.0.0.1:1883",
             "topics":
             {
-                "getSmokeDetected": "dsc/Get/Fire"
+                "getSmokeDetected": "dsc/Get/Fire1"
             },
             "integerValue": "true"
         }
@@ -121,10 +126,10 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 const char* mqttServer = "";
 
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPublishTopic = "dsc/Get";    // Sends partition armed and alarm status
-const char* mqttSubscribeTopic = "dsc/Set";  // Receives messages to write to the panel
-const char* mqttZoneTopic = "dsc/Get/Zone";  // Sends zone status - the zone number will be appended to this topic name: dsc/Get/Zone1 ... dsc/Get/Zone64
-const char* mqttFireTopic = "dsc/Get/Fire";  // Sends fire status
+const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
+const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
+const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
@@ -178,29 +183,56 @@ void loop() {
       dsc.write(accessCode);
     }
 
-    // Publishes armed status
-    if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
-      if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA", true);       // Night armed
-        else if (dsc.partitionArmedAway) mqtt.publish(mqttPublishTopic, "AA", true);                           // Away armed
-        else if (dsc.partitionArmedStay && dsc.armedNoEntryDelay) mqtt.publish(mqttPublishTopic, "NA", true);  // Night armed
-        else if (dsc.partitionArmedStay) mqtt.publish(mqttPublishTopic, "SA", true);                           // Stay armed
+    // Publishes status per partition
+    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+
+      if (dsc.partitionsArmedChanged[partitionIndex]) {
+        dsc.partitionsArmedChanged[partitionIndex] = false;  // Resets the partition armed status flag
+
+        // Appends the mqttPartitionTopic with the partition number
+        char partitionPublishTopic[strlen(mqttPartitionTopic) + 1];
+        char partition[2];
+        strcpy(partitionPublishTopic, mqttPartitionTopic);
+        itoa(partitionIndex + 1, partition, 10);
+        strcat(partitionPublishTopic, partition);
+
+        if (dsc.partitionsArmed[partitionIndex]) {
+          if (dsc.partitionsArmedAway[partitionIndex] && dsc.partitionsNoEntryDelay[partitionIndex]) mqtt.publish(partitionPublishTopic, "NA", true);       // Night armed
+          else if (dsc.partitionsArmedAway[partitionIndex]) mqtt.publish(partitionPublishTopic, "AA", true);                                                // Away armed
+          else if (dsc.partitionsArmedStay[partitionIndex] && dsc.partitionsNoEntryDelay[partitionIndex]) mqtt.publish(partitionPublishTopic, "NA", true);  // Night armed
+          else if (dsc.partitionsArmedStay[partitionIndex]) mqtt.publish(partitionPublishTopic, "SA", true);                                                // Stay armed
+        }
+        else mqtt.publish(partitionPublishTopic, "D", true);  // Disarmed
       }
-      else mqtt.publish(mqttPublishTopic, "D", true);                                                          // Disarmed
-    }
 
-    // Publishes alarm status
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;                                  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) mqtt.publish(mqttPublishTopic, "T", true);  // Alarm tripped
-    }
+      if (dsc.partitionsAlarmChanged[partitionIndex]) {
+        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+        if (dsc.partitionsAlarm[partitionIndex]) {
 
-    // Publishes the fire alarm status
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;                         // Resets the fire alarm status flag
-      if (dsc.fireStatus) mqtt.publish(mqttFireTopic, "1");  // Fire alarm tripped
-      else mqtt.publish(mqttFireTopic, "0");                 // Fire alarm restored
+          // Appends the mqttPartitionTopic with the partition number
+          char partitionPublishTopic[strlen(mqttPartitionTopic) + 1];
+          char partition[2];
+          strcpy(partitionPublishTopic, mqttPartitionTopic);
+          itoa(partitionIndex + 1, partition, 10);
+          strcat(partitionPublishTopic, partition);
+
+          mqtt.publish(partitionPublishTopic, "T", true);  // Alarm tripped
+        }
+      }
+
+      if (dsc.partitionsFireChanged[partitionIndex]) {
+        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
+
+        // Appends the mqttFireTopic with the partition number
+        char firePublishTopic[strlen(mqttFireTopic) + 1];
+        char partition[2];
+        strcpy(firePublishTopic, mqttFireTopic);
+        itoa(partitionIndex + 1, partition, 10);
+        strcat(firePublishTopic, partition);
+
+        if (dsc.partitionsFire[partitionIndex]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
+        else mqtt.publish(firePublishTopic, "0");                                     // Fire alarm restored
+      }
     }
 
     // Publishes zones 1-64 status in a separate topic per zone
