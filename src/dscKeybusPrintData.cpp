@@ -617,7 +617,11 @@ void dscKeybusInterface::printPanel_0x05() {
   stream->print(F("Partition 1: "));
   printPanelLights(2);
   stream->print(F("- "));
+<<<<<<< HEAD
   printPanelMessages(3);
+=======
+  printPanelStatus(3);
+>>>>>>> master
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
@@ -626,7 +630,11 @@ void dscKeybusInterface::printPanel_0x05() {
     stream->print(F(" | Partition 2: "));
     printPanelLights(4);
     stream->print(F("- "));
+<<<<<<< HEAD
     printPanelMessages(5);
+=======
+    printPanelStatus(5);
+>>>>>>> master
   }
 
   if (panelByteCount > 9) {
@@ -637,7 +645,11 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 3: "));
       printPanelLights(6);
       stream->print(F("- "));
+<<<<<<< HEAD
       printPanelMessages(7);
+=======
+      printPanelStatus(7);
+>>>>>>> master
     }
 
     if (panelData[9] == 0xC7) {
@@ -647,7 +659,11 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 4: "));
       printPanelLights(8);
       stream->print(F("- "));
+<<<<<<< HEAD
       printPanelMessages(9);
+=======
+      printPanelStatus(9);
+>>>>>>> master
     }
   }
 }
@@ -671,10 +687,14 @@ void dscKeybusInterface::printPanel_0x0A() {
     return;
   }
 
-  stream->print(F("Status lights: "));
+  stream->print(F("Partition 1: "));
   printPanelLights(2);
   stream->print(F("- "));
+<<<<<<< HEAD
   printPanelMessages(3);
+=======
+  printPanelStatus(3);
+>>>>>>> master
 
   bool zoneLights = false;
   stream->print(F(" | Zone lights: "));
