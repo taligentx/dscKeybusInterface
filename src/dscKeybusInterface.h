@@ -141,6 +141,7 @@ class dscKeybusInterface {
     void printPanel_0x75();
     void printPanel_0x7A();
     void printPanel_0x7F();
+    void printPanel_0x82();
     void printPanel_0x87();
     void printPanel_0x8D();
     void printPanel_0x94();

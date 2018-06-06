@@ -441,8 +441,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
           // Resets counters when the write is complete
           if (isrPanelBitTotal == (writePartition * 8) + 8) {
-            if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
-            else writeReady = true;
+            //if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
+            //else writeReady = true;
             writeStart = false;
           }
         }
@@ -557,6 +557,9 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
+      // Resets counters when the write is complete
+      if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
+      else writeReady = true;
 
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.

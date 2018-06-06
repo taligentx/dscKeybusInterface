@@ -43,7 +43,8 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x69: printPanel_0x69(); return;  // Beep - one-time, partition 2
     case 0x75: printPanel_0x75(); return;  // Beep pattern - repeated, partition 1
     case 0x7A: printPanel_0x7A(); return;  // Beep pattern - repeated, partition 2
-    case 0x7F: printPanel_0x7F(); return;  // Beep - one-time long beep
+    case 0x7F: printPanel_0x7F(); return;  // Beep - one-time long beep, partition 1
+    case 0x82: printPanel_0x82(); return;  // Beep - one-time long beep, partition 1
     case 0x87: printPanel_0x87(); return;  // Panel outputs
     case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32
     case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming
@@ -1284,10 +1285,32 @@ void dscKeybusInterface::printPanel_0x7F() {
     return;
   }
 
+  stream->print(F("Partition 1 | "));
   switch (panelData[2]) {
     case 0x01: stream->print(F("Beep: long beep")); break;
     case 0x02: stream->print(F("Beep: long beep | Failed to arm")); break;
     default: stream->print(F("Unrecognized command: Add to 0x7F")); break;
+  }
+}
+
+
+/*
+ *  0x82: Beep - one-time
+ *  CRC: yes
+ *
+ *  01111111 0 00000001 10000000 [0x82] Beep: long beep
+ */
+void dscKeybusInterface::printPanel_0x82() {
+  if (!validCRC()) {
+    stream->print(F("[CRC Error]"));
+    return;
+  }
+
+  stream->print(F("Partition 2 | "));
+  switch (panelData[2]) {
+    case 0x01: stream->print(F("Beep: long beep")); break;
+    case 0x02: stream->print(F("Beep: long beep | Failed to arm")); break;
+    default: stream->print(F("Unrecognized command: Add to 0x82")); break;
   }
 }
 
@@ -1527,9 +1550,10 @@ void dscKeybusInterface::printPanel_0xC3() {
 
   if (panelData[3] == 0xFF) {
     switch (panelData[2]) {
-      case 0x00: stream->print(F("Interval 30s")); break;
+      case 0x00: stream->print(F("Keypad ready")); break;
       case 0x10: stream->print(F("Unknown command 1: Power-on +33s")); break;
-      case 0x30: stream->print(F("Keypad lockout")); break;
+      case 0x30:
+      case 0x40: stream->print(F("Keypad lockout")); break;
       default: stream->print(F("Unrecognized data, add to 0xC3")); break;
     }
   }
