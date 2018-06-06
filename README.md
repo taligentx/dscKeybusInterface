@@ -1,3 +1,5 @@
+_**Note**: This is a development branch supporting DSC PowerSeries up to 8 partitions and up to 64 zones.  The library methods have changed to accommodate multiple partitions and the previous methods have been deprecated - see the examples sketches for usage.  This branch is not yet optimized for program space or memory usage - for example, the KeybusReader sketch currently requires the Arduino Mega or esp8266._
+
 # DSC Keybus Interface
 This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant and Apple HomeKit using MQTT, sending push notifications/email, and reading/decoding Keybus data.
 
@@ -5,16 +7,21 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
-## Status
-This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832) on 1 partition up to 32 zones.  Captured Keybus data is needed to verify functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+## Features
+* Partitions: 1-8
+* Zones: 1-64
+* Virtual keypad: supports sending keys to the panel
+* Data buffering: helps prevent missing Keybus data when the sketch is busy
+* Non-blocking code: allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
+* Tested panels: PC1555MX, PC5015, PC1616, PC1832, PC1864
 
 ## Usage
-Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, git clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
+Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, `git clone` the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
 
-  This is primarily to help decode the Keybus protocol - for the PC1555MX, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat, smoke alarm, and wireless commands as I do not have these modules.
+  This is primarily to help decode the Keybus protocol - at this point, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat and wireless commands as I do not have these modules.
 
   See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
@@ -70,7 +77,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 ```
 
 ## Wiring Notes
-* The DSC Keybus operates at 12v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.
+* The DSC Keybus operates at 13.6v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.
 * Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 and 3.  The DSC Green (Data) line can be connected to the remaining digital pins 2-12.
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
 * Virtual keypad uses an NPN transistor and a resistor to write to the Keybus.  Most small signal NPN transistors should be suitable, for example:
@@ -91,8 +98,6 @@ This allows a sketch to send keys to the DSC panel to emulate the physical DSC k
 * Door chime: `c`
 * Reset: `r`
 * Exit: `x`
-* Right arrow (unconfirmed): `>`
-* Left arrow (unconfirmed): `<`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:

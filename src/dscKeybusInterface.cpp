@@ -60,7 +60,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   dscWritePin = setWritePin;
   if (dscWritePin != 255) virtualKeypad = true;
   writeReady = true;
-  processRedundantData = false;
+  processRedundantData = true;
   displayTrailingBits = false;
   processKeypadData = false;
   writePartition = 1;
@@ -194,12 +194,15 @@ bool dscKeybusInterface::handlePanel() {
 
   // Processes valid panel data
   switch (panelData[0]) {
-    case 0x05: processPanel_0x05(); break;
+    case 0x05:
+    case 0x1B: processPanelStatus(); break;
     case 0x27: processPanel_0x27(); break;
     case 0x2D: processPanel_0x2D(); break;
     case 0x34: processPanel_0x34(); break;
     case 0x3E: processPanel_0x3E(); break;
     case 0xA5: processPanel_0xA5(); break;
+    case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
+    case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;
   }
 
   return true;
@@ -321,8 +324,6 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'p': writeKey = 0xDD; writeAlarm = true; break;  // Keypad panic alarm
       case 'x':
       case 'X': writeKey = 0xE1; break;                     // Exit
-      case '>': writeKey = 0xF2; break;                     // Right arrow (unconfirmed)
-      case '<': writeKey = 0xF7; break;                     // Left arrow (unconfirmed)
       default: {
         validKey = false;
         break;

@@ -21,8 +21,8 @@
 #include <Arduino.h>
 
 const byte dscReadSize = 16;   // Maximum size of a Keybus command
-const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 5 bytes of memory per zone group
-const byte dscPartitions = 7;  // Maximum number of partitions - requires 14 bytes of memory per partition
+const byte dscZones = 1;       // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
+const byte dscPartitions = 8;  // Maximum number of partitions - requires 18 bytes of memory per partition
 
 // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 #if defined(__AVR__)
@@ -58,28 +58,23 @@ class dscKeybusInterface {
     bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
     // Panel time
-    bool timeAvailable;             // True after the panel sends the first timestamp message
+    bool timeAvailable;             // True after the panel sends the first timestamped message
     byte hour, minute, day, month;
     int year;
 
     // Status tracking
     bool statusChanged;             // True after any status change
     bool accessCodePrompt;
-    bool partitionArmed, partitionArmedAway, partitionArmedStay, armedNoEntryDelay, partitionArmedChanged;
-    bool partitionAlarm, partitionAlarmChanged;
+    bool troubleStatus, troubleStatusChanged;
+    bool powerTrouble, powerTroubleChanged;
+    bool batteryTrouble, batteryTroubleChanged;
+    bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
     bool partitionsArmed[dscPartitions], partitionsArmedAway[dscPartitions], partitionsArmedStay[dscPartitions];
     bool partitionsNoEntryDelay[dscPartitions], partitionsArmedChanged[dscPartitions];
     bool partitionsAlarm[dscPartitions], partitionsAlarmChanged[dscPartitions];
-    bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
-    bool fireStatus, fireStatusChanged;
-    bool partitionsFire[dscPartitions], partitionsFireChanged[dscPartitions];
-    bool troubleStatus, troubleStatusChanged;
-    bool exitDelay, exitDelayChanged;
     bool partitionsExitDelay[dscPartitions], partitionsExitDelayChanged[dscPartitions];
-    bool entryDelay, entryDelayChanged;
     bool partitionsEntryDelay[dscPartitions], partitionsEntryDelayChanged[dscPartitions];
-    bool batteryTrouble, batteryTroubleChanged;
-    bool powerTrouble, powerTroubleChanged;
+    bool partitionsFire[dscPartitions], partitionsFireChanged[dscPartitions];
     bool openZonesStatusChanged;
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
@@ -103,14 +98,21 @@ class dscKeybusInterface {
 
   private:
 
-    void processPanel_0x05();
+    void processPanelStatus();
+    void processPanelStatus0(byte partition, byte panelByte);
+    void processPanelStatus2(byte partition, byte panelByte);
+    void processPanelStatus4(byte partition, byte panelByte);
     void processPanel_0x27();
     void processPanel_0x2D();
     void processPanel_0x34();
     void processPanel_0x3E();
     void processPanel_0xA5();
-    void processPanel_0xA5_Byte5_0x00();
-    void processPanel_0xA5_Byte5_0x02();
+    void processPanel_0xE6();
+    void processPanel_0xE6_0x09();
+    void processPanel_0xE6_0x0B();
+    void processPanel_0xE6_0x0D();
+    void processPanel_0xE6_0x0F();
+    void processPanel_0xEB();
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
@@ -155,6 +157,7 @@ class dscKeybusInterface {
     void printPanel_0xE6_0x0F();
     void printPanel_0xE6_0x17();
     void printPanel_0xE6_0x18();
+    void printPanel_0xE6_0x19();
     void printPanel_0xE6_0x1A();
     void printPanel_0xE6_0x1D();
     void printPanel_0xE6_0x20();
@@ -182,12 +185,11 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool writeArm;
     bool queryResponse;
-    bool previousTroubleStatus, previousFireStatus, previousExitDelay, previousEntryDelay;
-    bool previousPartitionArmed, previousPartitionAlarm;
+    bool previousTroubleStatus;
     bool previousPartitionsExitDelay[dscPartitions], previousPartitionsEntryDelay[dscPartitions];
     bool previousPartitionsArmed[dscPartitions], previousPartitionsAlarm[dscPartitions];
     bool previousPartitionsFire[dscPartitions];
-    byte previousOpenZones[dscZones];
+    byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
 
     static byte dscClockPin;
     static byte dscReadPin;

@@ -589,7 +589,7 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
  *  Byte 4: Partition 2 lights
  *  Byte 5: Partition 2 status
  *
- *  PC1616/PC1832/PC1864:
+ *  PC5020/PC1616/PC1832/PC1864:
  *  Byte 6: Partition 3 lights
  *  Byte 7: Partition 3 status
  *  Byte 8: Partition 4 lights
@@ -662,7 +662,7 @@ void dscKeybusInterface::printPanel_0x05() {
 
 /*
  *  0x0A: Status in alarm, programming
- *  Interval: constant in *  programming
+ *  Interval: constant in *8 programming
  *  CRC: yes
  *  Byte 2: Partition 1 lights
  *  Byte 3: Partition 1 status
@@ -1236,7 +1236,7 @@ void dscKeybusInterface::printPanel_0x75() {
     return;
   }
 
-  stream->print(F("Beep pattern | Partition 1: "));
+  stream->print(F("Partition 1 | Beep pattern: "));
   switch (panelData[2]) {
     case 0x00: stream->print(F("off")); break;
     case 0x11: stream->print(F("single beep (exit delay)")); break;
@@ -1260,7 +1260,7 @@ void dscKeybusInterface::printPanel_0x7A() {
     return;
   }
 
-  stream->print(F("Beep pattern | Partition 2: "));
+  stream->print(F("Partition 2 | Beep pattern: "));
   switch (panelData[2]) {
     case 0x00: stream->print(F("off")); break;
     case 0x11: stream->print(F("single beep (exit delay)")); break;
@@ -1583,8 +1583,9 @@ void dscKeybusInterface::printPanel_0xD5() {
 
 
 /*
- *  0xE6: Extended status, PC1616/PC1832/PC1864
+ *  0xE6: Status, partitions 1-8
  *  CRC: yes
+ *  Panels: PC5020, PC1616, PC1832, PC1864
  */
 void dscKeybusInterface::printPanel_0xE6() {
   if (!validCRC()) {
@@ -1599,6 +1600,7 @@ void dscKeybusInterface::printPanel_0xE6() {
     case 0x0F: printPanel_0xE6_0x0F(); return;  // Zones 57-64 status
     case 0x17: printPanel_0xE6_0x17(); return;  // Flash panel lights: status and zones 1-32, partitions 1-8
     case 0x18: printPanel_0xE6_0x18(); return;  // Flash panel lights: status and zones 33-64, partitions 1-8
+    case 0x19: printPanel_0xE6_0x19(); return;  // Beep - one-time, partitions 3-8
     case 0x1A: printPanel_0xE6_0x1A(); return;  // Unknown command
     case 0x1D: printPanel_0xE6_0x1D(); return;  // Beep pattern, partitions 3-8
     case 0x20: printPanel_0xE6_0x20(); return;  // Status in programming, zone lights 33-64
@@ -1762,6 +1764,34 @@ void dscKeybusInterface::printPanel_0xE6_0x18() {
     }
   }
   if (!zoneLights) stream->print(F("none"));
+}
+
+
+/*
+ *  0xE6_0x19: Beep - one time, partitions 3-8
+ */
+void dscKeybusInterface::printPanel_0xE6_0x19() {
+  stream->print(F("Partition "));
+  if (panelData[3] == 0) stream->print(F("none"));
+  else {
+    if (bitRead(panelData[3],0)) stream->print(F("1"));
+    if (bitRead(panelData[3],1)) stream->print(F("2"));
+    if (bitRead(panelData[3],2)) stream->print(F("3"));
+    if (bitRead(panelData[3],3)) stream->print(F("4"));
+    if (bitRead(panelData[3],4)) stream->print(F("5"));
+    if (bitRead(panelData[3],5)) stream->print(F("6"));
+    if (bitRead(panelData[3],6)) stream->print(F("7"));
+    if (bitRead(panelData[3],7)) stream->print(F("8"));
+  }
+
+  stream->print(F(" | Beep: "));
+  switch (panelData[4]) {
+    case 0x04: stream->print(F("2 beeps")); break;
+    case 0x06: stream->print(F("3 beeps")); break;
+    case 0x08: stream->print(F("4 beeps")); break;
+    case 0x0C: stream->print(F("6 beeps")); break;
+    default: stream->print(F("Unrecognized command: Add to 0xE6_0x19")); break;
+  }
 }
 
 

@@ -18,40 +18,41 @@
 #include "dscKeybusInterface.h"
 
 
-void dscKeybusInterface::processPanel_0x05() {
+// Processes 0x05 and 0x1B commands
+void dscKeybusInterface::processPanelStatus() {
 
   // Trouble status
   if (bitRead(panelData[2],4)) troubleStatus = true;
   else troubleStatus = false;
-  if (troubleStatus != previousTroubleStatus && panelData[3] < 0x05) {  // Ignores trouble light status in intermittent states
+  if (troubleStatus != previousTroubleStatus && (panelData[3] < 0x05 || panelData[3] == 0xC7)) {  // Ignores trouble light status in intermittent states
     previousTroubleStatus = troubleStatus;
     troubleStatusChanged = true;
     statusChanged = true;
   }
 
-  // Fire status
-  if (bitRead(panelData[2],6)) {
-    fireStatus = true;
-    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-      previousFireStatus = fireStatus;
-      fireStatusChanged = true;
-      statusChanged = true;
-    }
+  byte partitionStart = 0;
+  byte partitionCount = 0;
+  if (panelData[0] == 0x05) {
+    partitionStart = 0;
+    if (panelByteCount < 9) partitionCount = 2;
+    else partitionCount = 4;
+    if (dscPartitions < partitionCount) partitionCount = dscPartitions;
   }
-  else {
-    fireStatus = false;
-    if (fireStatus != previousFireStatus && panelData[3] < 0x12) {  // Ignores fire light status in intermittent states
-      previousFireStatus = fireStatus;
-      fireStatusChanged = true;
-      statusChanged = true;
-    }
+  else if (dscPartitions > 4 && panelData[0] == 0x1B) {
+    partitionStart = 4;
+    partitionCount = 8;
   }
 
-  byte partitionCount = 2;
-  if (panelByteCount > 9) partitionCount = 4;
-  for (byte partitionIndex = 0; partitionIndex < partitionCount; partitionIndex++) {
-    byte statusByte = (partitionIndex * 2) + 2;
-    byte messageByte = (partitionIndex * 2) + 3;
+  for (byte partitionIndex = partitionStart; partitionIndex < partitionCount; partitionIndex++) {
+    byte statusByte, messageByte;
+    if (partitionIndex < 4) {
+      statusByte = (partitionIndex * 2) + 2;
+      messageByte = (partitionIndex * 2) + 3;
+    }
+    else {
+      statusByte = ((partitionIndex - 4) * 2) + 2;
+      messageByte = ((partitionIndex - 4) * 2) + 3;
+    }
 
     // Fire status
     if (bitRead(panelData[statusByte],6)) partitionsFire[partitionIndex] = true;
@@ -68,11 +69,6 @@ void dscKeybusInterface::processPanel_0x05() {
       case 0x01:         // Partition ready
       case 0x02:         // Stay/away zones open
       case 0x03: {       // Zones open
-        exitDelay = false;
-        previousExitDelay = false;
-        entryDelay = false;
-        previousEntryDelay = false;
-
         partitionsExitDelay[partitionIndex] = false;
         previousPartitionsExitDelay[partitionIndex] = false;
         partitionsEntryDelay[partitionIndex] = false;
@@ -83,11 +79,6 @@ void dscKeybusInterface::processPanel_0x05() {
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
         writeArm = false;
-        exitDelay = false;
-        previousExitDelay = false;
-        entryDelay = false;
-        previousEntryDelay = false;
-
         partitionsExitDelay[partitionIndex] = false;
         previousPartitionsExitDelay[partitionIndex] = false;
         partitionsEntryDelay[partitionIndex] = false;
@@ -96,14 +87,7 @@ void dscKeybusInterface::processPanel_0x05() {
       }
 
       case 0x08: {       // Exit delay in progress
-        exitDelay = true;
         writeArm = false;
-        if (exitDelay != previousExitDelay) {
-          previousExitDelay = exitDelay;
-          exitDelayChanged = true;
-          statusChanged = true;
-        }
-
         partitionsExitDelay[partitionIndex] = true;
         if (partitionsExitDelay[partitionIndex] != previousPartitionsExitDelay[partitionIndex]) {
           previousPartitionsExitDelay[partitionIndex] = partitionsExitDelay[partitionIndex];
@@ -114,13 +98,6 @@ void dscKeybusInterface::processPanel_0x05() {
       }
 
       case 0x0C: {       // Entry delay in progress
-        entryDelay = true;
-        if (entryDelay != previousEntryDelay) {
-          previousEntryDelay = entryDelay;
-          entryDelayChanged = true;
-          statusChanged = true;
-        }
-
         partitionsEntryDelay[partitionIndex] = true;
         if (partitionsEntryDelay[partitionIndex] != previousPartitionsEntryDelay[partitionIndex]) {
           previousPartitionsEntryDelay[partitionIndex] = partitionsEntryDelay[partitionIndex];
@@ -130,18 +107,7 @@ void dscKeybusInterface::processPanel_0x05() {
         break;
       }
 
-      case 0x11: {
-        partitionAlarm = true;
-        if (partitionAlarm != previousPartitionAlarm) {
-          previousPartitionAlarm = partitionAlarm;
-          partitionAlarmChanged = true;
-          statusChanged = true;
-        }
-        exitDelay = false;
-        previousExitDelay = false;
-        entryDelay = false;
-        previousEntryDelay = false;
-
+      case 0x11: {       // Partition in alarm
         partitionsExitDelay[partitionIndex] = false;
         previousPartitionsExitDelay[partitionIndex] = false;
         partitionsEntryDelay[partitionIndex] = false;
@@ -150,11 +116,6 @@ void dscKeybusInterface::processPanel_0x05() {
       }
 
       case 0x3E: {       // Partition disarmed
-        exitDelay = false;
-        previousExitDelay = false;
-        entryDelay = false;
-        previousEntryDelay = false;
-
         partitionsExitDelay[partitionIndex] = false;
         previousPartitionsExitDelay[partitionIndex] = false;
         partitionsEntryDelay[partitionIndex] = false;
@@ -184,51 +145,27 @@ void dscKeybusInterface::processPanel_0x05() {
 void dscKeybusInterface::processPanel_0x27() {
   if (!validCRC()) return;
 
-  // Messages
-  switch (panelData[3]) {
-    case 0x04: {       // Armed stay
-      partitionArmed = true;
-      partitionArmedStay = true;
-      partitionArmedAway = false;
-      exitDelay = false;
-      if (partitionArmed != previousPartitionArmed) {
-        previousPartitionArmed = partitionArmed;
-        partitionArmedChanged = true;
-        statusChanged = true;
+  for (byte partitionIndex = 0; partitionIndex < 2; partitionIndex++) {
+    byte messageByte = (partitionIndex * 2) + 3;
+
+    // Messages
+    if (panelData[messageByte] == 0x04 || panelData[messageByte] == 0x05) {
+      if (panelData[messageByte] == 0x04) {
+        partitionsArmedStay[partitionIndex] = true;
+        partitionsArmedAway[partitionIndex] = false;
+      }
+      else if (panelData[messageByte] == 0x05) {
+        partitionsArmedStay[partitionIndex] = false;
+        partitionsArmedAway[partitionIndex] = true;
       }
 
-      partitionsArmed[0] = true;
-      partitionsArmedStay[0] = true;
-      partitionsArmedAway[0] = false;
-      partitionsExitDelay[0] = false;
-      if (partitionsArmed[0] != previousPartitionsArmed[0]) {
-        previousPartitionsArmed[0] = partitionsArmed[0];
-        partitionsArmedChanged[0] = true;
+      partitionsExitDelay[partitionIndex] = false;
+      partitionsArmed[partitionIndex] = true;
+      if (previousPartitionsArmed[partitionIndex] != true) {
+        previousPartitionsArmed[partitionIndex] = true;
+        partitionsArmedChanged[partitionIndex] = true;
         statusChanged = true;
       }
-      break;
-    }
-    case 0x05: {       // Armed away
-      partitionArmed = true;
-      partitionArmedStay = false;
-      partitionArmedAway = true;
-      exitDelay = false;
-      if (partitionArmed != previousPartitionArmed) {
-        previousPartitionArmed = partitionArmed;
-        partitionArmedChanged = true;
-        statusChanged = true;
-      }
-
-      partitionsArmed[0] = true;
-      partitionsArmedStay[0] = false;
-      partitionsArmedAway[0] = true;
-      partitionsExitDelay[0] = false;
-      if (partitionsArmed[0] != previousPartitionsArmed[0]) {
-        previousPartitionsArmed[0] = partitionsArmed[0];
-        partitionsArmedChanged[0] = true;
-        statusChanged = true;
-      }
-      break;
     }
   }
 
@@ -253,6 +190,7 @@ void dscKeybusInterface::processPanel_0x27() {
 
 void dscKeybusInterface::processPanel_0x2D() {
   if (!validCRC()) return;
+  if (dscZones < 2) return;
 
   // Open zones 9-16 status is stored in openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
   openZones[1] = panelData[6];
@@ -275,6 +213,7 @@ void dscKeybusInterface::processPanel_0x2D() {
 
 void dscKeybusInterface::processPanel_0x34() {
   if (!validCRC()) return;
+  if (dscZones < 3) return;
 
   // Open zones 17-24 status is stored in openZones[2] and openZonesChanged[2]: Bit 0 = Zone 17 ... Bit 7 = Zone 24
   openZones[1] = panelData[6];
@@ -297,6 +236,7 @@ void dscKeybusInterface::processPanel_0x34() {
 
 void dscKeybusInterface::processPanel_0x3E() {
   if (!validCRC()) return;
+  if (dscZones < 4) return;
 
   // Open zones 25-32 status is stored in openZones[3] and openZonesChanged[3]: Bit 0 = Zone 25 ... Bit 7 = Zone 32
   openZones[1] = panelData[6];
@@ -337,139 +277,189 @@ void dscKeybusInterface::processPanel_0xA5() {
     return;
   }
 
+  byte partition = panelData[3] >> 6;
   switch (panelData[5] & 0x03) {
-    case 0x00: processPanel_0xA5_Byte5_0x00(); break;
-    case 0x02: processPanel_0xA5_Byte5_0x02(); break;
+    case 0x00: processPanelStatus0(partition, 6); break;
+    case 0x02: processPanelStatus2(partition, 6); break;
   }
 }
 
 
-void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
-  byte partitionIndex = (panelData[3] >> 6) - 1;
+void dscKeybusInterface::processPanel_0xEB() {
+  if (!validCRC()) return;
+  if (dscPartitions < 3) return;
 
-  switch (panelData[6]) {
-    case 0x4A: {       // Disarmed after alarm in memory
-      partitionAlarm = false;
-      partitionAlarmChanged = true;
-      if (partitionAlarm != previousPartitionAlarm) {
-        previousPartitionAlarm = partitionAlarm;
-        partitionAlarmChanged = true;
+  byte dscYear3 = panelData[3] >> 4;
+  byte dscYear4 = panelData[3] & 0x0F;
+  year = (dscYear3 * 10) + dscYear4;
+  month = panelData[4] << 2; month >>=4;
+  byte dscDay1 = panelData[4] << 6; dscDay1 >>= 3;
+  byte dscDay2 = panelData[5] >> 5;
+  day = dscDay1 | dscDay2;
+  hour = panelData[5] & 0x1F;
+  minute = panelData[6] >> 2;
+
+  byte partition;
+  switch (panelData[2]) {
+    case 0x01: partition = 1; break;
+    case 0x02: partition = 2; break;
+    case 0x04: partition = 3; break;
+    case 0x08: partition = 4; break;
+    case 0x10: partition = 5; break;
+    case 0x20: partition = 6; break;
+    case 0x40: partition = 7; break;
+    case 0x80: partition = 8; break;
+    default: partition = 0; break;
+  }
+
+  switch (panelData[7] & 0x07) {
+    case 0x00: processPanelStatus0(partition, 8); break;
+    case 0x02: processPanelStatus2(partition, 8); break;
+    case 0x04: processPanelStatus4(partition, 8); break;
+  }
+}
+
+
+
+void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
+
+  // Processes status messages that are not partition-specific
+  if (partition == 0 && panelData[0] == 0xA5) {
+    switch (panelData[panelByte]) {
+      case 0x4E: {       // Keypad Fire alarm
+        keypadFireAlarm = true;
         statusChanged = true;
+        return;
       }
-
-      partitionsAlarm[partitionIndex] = false;
-      partitionsAlarmChanged[partitionIndex] = true;
-      statusChanged = true;
-      return;
-    }
-    case 0x4B: {       // Partition in alarm
-      partitionAlarm = true;
-      partitionAlarmChanged = true;
-      if (partitionAlarm != previousPartitionAlarm) {
-        previousPartitionAlarm = partitionAlarm;
-        partitionAlarmChanged = true;
+      case 0x4F: {       // Keypad Aux alarm
+        keypadAuxAlarm = true;
         statusChanged = true;
+        return;
       }
-
-      partitionsAlarm[partitionIndex] = true;
-      partitionsAlarmChanged[partitionIndex] = true;
-      statusChanged = true;
-      return;
-    }
-    case 0x4E: {       // Keypad Fire alarm
-      keypadFireAlarm = true;
-      statusChanged = true;
-      return;
-    }
-    case 0x4F: {       // Keypad Aux alarm
-      keypadAuxAlarm = true;
-      statusChanged = true;
-      return;
-    }
-    case 0x50: {       // Keypad Panic alarm
-      keypadPanicAlarm = true;
-      statusChanged =true;
-      return;
-    }
-    case 0xE6: {       // Disarmed special: keyswitch/wireless key/DLS
-      partitionArmed = false;
-      partitionAlarm = false;
-      partitionArmedAway = false;
-      partitionArmedStay = false;
-      previousPartitionArmed = false;
-      armedNoEntryDelay = false;
-      partitionArmedChanged = true;
-
-      partitionsArmed[partitionIndex] = false;
-      partitionsArmedAway[partitionIndex] = false;
-      partitionsArmedStay[partitionIndex] = false;
-      previousPartitionsArmed[partitionIndex] = false;
-      partitionsNoEntryDelay[partitionIndex] = false;
-      partitionsArmedChanged[partitionIndex] = true;
-      statusChanged = true;
-      return;
-    }
-    case 0xE7: {       // Panel battery trouble
-      batteryTrouble = true;
-      batteryTroubleChanged = true;
-      statusChanged = true;
-      return;
-    }
-    case 0xE8: {       // Panel AC power failure
-      powerTrouble = true;
-      powerTroubleChanged = true;
-      statusChanged = true;
-      return;
-    }
-    case 0xEF: {       // Panel battery restored
-      batteryTrouble = false;
-      batteryTroubleChanged = true;
-      statusChanged = true;
-      return;
-    }
-    case 0xF0: {       // Panel AC power restored
-      powerTrouble = false;
-      powerTroubleChanged = true;
-      statusChanged = true;
-      return;
+      case 0x50: {       // Keypad Panic alarm
+        keypadPanicAlarm = true;
+        statusChanged =true;
+        return;
+      }
+      case 0xE7: {       // Panel battery trouble
+        batteryTrouble = true;
+        batteryTroubleChanged = true;
+        statusChanged = true;
+        return;
+      }
+      case 0xE8: {       // Panel AC power failure
+        powerTrouble = true;
+        powerTroubleChanged = true;
+        statusChanged = true;
+        return;
+      }
+      case 0xEF: {       // Panel battery restored
+        batteryTrouble = false;
+        batteryTroubleChanged = true;
+        statusChanged = true;
+        return;
+      }
+      case 0xF0: {       // Panel AC power restored
+        powerTrouble = false;
+        powerTroubleChanged = true;
+        statusChanged = true;
+        return;
+      }
+      default: return;
     }
   }
 
-  // Zone alarm, zones 1-32: panelData[6] 0x09-0x28
+  // Processes partition-specific status
+  if (partition > dscPartitions) return;  // Ensures that only the configured number of partitions are processed
+  byte partitionIndex = partition - 1;
+
+  if (panelData[panelByte] == 0x4A ||                                    // Disarmed after alarm in memory
+      panelData[panelByte] == 0xE6 ||                                    // Disarmed special: keyswitch/wireless key/DLS
+      (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4)) {  // Disarmed by access code
+
+    partitionsArmed[partitionIndex] = false;
+    partitionsArmedAway[partitionIndex] = false;
+    partitionsArmedStay[partitionIndex] = false;
+    partitionsNoEntryDelay[partitionIndex] = false;
+    partitionsAlarm[partitionIndex] = false;
+
+    if (previousPartitionsAlarm[partitionIndex] != false) {
+      previousPartitionsAlarm[partitionIndex] = false;
+      partitionsAlarmChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
+
+    if (previousPartitionsArmed[partitionIndex] != false) {
+      previousPartitionsArmed[partitionIndex] = false;
+      partitionsArmedChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
+    return;
+  }
+
+  if (panelData[panelByte] == 0x4B) {  // Partition in alarm
+    partitionsAlarm[partitionIndex] = true;
+    if (previousPartitionsAlarm[partitionIndex] != true) {
+      previousPartitionsAlarm[partitionIndex] = true;
+      partitionsAlarmChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
+    return;
+  }
+
+  // Zone alarm, zones 1-32
   // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
   //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
   //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
   //   ...
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-  if (panelData[6] >= 0x09 && panelData[6] <= 0x28) {
-    partitionAlarm = true;
-    if (partitionAlarm != previousPartitionAlarm) {
-      previousPartitionAlarm = partitionAlarm;
-      partitionAlarmChanged = true;
+  if (panelData[panelByte] >= 0x09 && panelData[panelByte] <= 0x28) {
+    partitionsAlarm[partitionIndex] = true;
+    if (previousPartitionsAlarm[partitionIndex] != true) {
+      previousPartitionsAlarm[partitionIndex] = true;
+      partitionsAlarmChanged[partitionIndex] = true;
       statusChanged = true;
     }
-    alarmZonesStatusChanged = true;
-    for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
-      if (panelData[6] == 0x09 + zoneCount) {
+
+    byte maxZones = dscZones * 8;
+    if (maxZones > 32) maxZones = 32;
+    for (byte zoneCount = 0; zoneCount < maxZones; zoneCount++) {
+      if (panelData[panelByte] == 0x09 + zoneCount) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[0], zoneCount, 1);
-          bitWrite(alarmZonesChanged[0], zoneCount, 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[0], zoneCount) != 1) {
+            bitWrite(previousAlarmZones[0], zoneCount, 1);
+            bitWrite(alarmZonesChanged[0], zoneCount, 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[1], (zoneCount - 8), 1);
-          bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[1], (zoneCount - 8)) != 1) {
+            bitWrite(previousAlarmZones[1], (zoneCount - 8), 1);
+            bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[2], (zoneCount - 16), 1);
-          bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[2], (zoneCount - 16)) != 1) {
+            bitWrite(previousAlarmZones[2], (zoneCount - 16), 1);
+            bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[3], (zoneCount - 24), 1);
-          bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[3], (zoneCount - 24)) != 1) {
+            bitWrite(previousAlarmZones[3], (zoneCount - 24), 1);
+            bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
       }
     }
@@ -482,121 +472,277 @@ void dscKeybusInterface::processPanel_0xA5_Byte5_0x00() {
   //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
   //   ...
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
-  if (panelData[6] >= 0x29 && panelData[6] <= 0x48) {
-    alarmZonesStatusChanged = true;
-    for (byte zoneCount = 0; zoneCount < 32; zoneCount++) {
-      if (panelData[6] == 0x29 + zoneCount) {
+  if (panelData[panelByte] >= 0x29 && panelData[panelByte] <= 0x48) {
+
+    byte maxZones = dscZones * 8;
+    if (maxZones > 32) maxZones = 32;
+    for (byte zoneCount = 0; zoneCount < maxZones; zoneCount++) {
+      if (panelData[panelByte] == 0x29 + zoneCount) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[0], zoneCount, 0);
-          bitWrite(alarmZonesChanged[0], zoneCount, 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[0], zoneCount) != 0) {
+            bitWrite(previousAlarmZones[0], zoneCount, 0);
+            bitWrite(alarmZonesChanged[0], zoneCount, 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[1], (zoneCount - 8), 0);
-          bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[1], (zoneCount - 8)) != 0) {
+            bitWrite(previousAlarmZones[1], (zoneCount - 8), 0);
+            bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[2], (zoneCount - 16), 0);
-          bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[2], (zoneCount - 16)) != 0) {
+            bitWrite(previousAlarmZones[2], (zoneCount - 16), 0);
+            bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[3], (zoneCount - 24), 0);
-          bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
-          statusChanged = true;
+          if (bitRead(previousAlarmZones[3], (zoneCount - 24)) != 0) {
+            bitWrite(previousAlarmZones[3], (zoneCount - 24), 0);
+            bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
+            alarmZonesStatusChanged = true;
+            statusChanged = true;
+          }
         }
       }
     }
-    return;
-  }
-
-  // Disarmed by access code
-  if (panelData[6] >= 0xC0 && panelData[6] <= 0xE4) {
-    partitionArmed = false;
-    partitionAlarm = false;
-    partitionArmedAway = false;
-    partitionArmedStay = false;
-    previousPartitionArmed = false;
-    armedNoEntryDelay = false;
-    partitionArmedChanged = true;
-
-    partitionsArmed[partitionIndex] = false;
-    partitionsArmedAway[partitionIndex] = false;
-    partitionsArmedStay[partitionIndex] = false;
-    previousPartitionsArmed[partitionIndex] = false;
-    partitionsNoEntryDelay[partitionIndex] = false;
-    partitionsArmedChanged[partitionIndex] = true;
-    statusChanged = true;
-    return;
   }
 }
 
 
-void dscKeybusInterface::processPanel_0xA5_Byte5_0x02() {
-  byte partitionIndex = (panelData[3] >> 6) - 1;
-  switch (panelData[6]) {
-    case 0x99: {        // Activate stay/away zones
-      partitionArmed = true;
-      partitionArmedStay = false;
-      partitionArmedAway = true;
-      partitionArmedChanged = true;
+void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
+  if (partition == 0 || partition > dscPartitions) return;
+  byte partitionIndex = partition - 1;
 
-      partitionsArmed[partitionIndex] = true;
-      partitionsArmedAway[partitionIndex] = true;
-      partitionsArmedStay[partitionIndex] = false;
-      partitionsArmedChanged[partitionIndex] = true;
-      statusChanged = true;
-      return;
-    }
-    case 0x9A: {        // Armed: stay
-      partitionArmed = true;
-      partitionArmedStay = true;
-      partitionArmedAway = false;
-      exitDelay = false;
-      if (partitionArmed != previousPartitionArmed) {
-        previousPartitionArmed = partitionArmed;
-        partitionArmedChanged = true;
-        statusChanged = true;
-      }
-
-      partitionsArmed[partitionIndex] = true;
+  // Armed: stay and Armed: away
+  if (panelData[panelByte] == 0x9A || panelData[panelByte] == 0x9B) {
+    if (panelData[panelByte] == 0x9A) {
       partitionsArmedStay[partitionIndex] = true;
       partitionsArmedAway[partitionIndex] = false;
-      partitionsExitDelay[partitionIndex] = false;
-      if (partitionsArmed[partitionIndex] != previousPartitionsArmed[partitionIndex]) {
-        previousPartitionsArmed[partitionIndex] = partitionsArmed[partitionIndex];
-        partitionsArmedChanged[partitionIndex] = true;
-        statusChanged = true;
-      }
-      return;
     }
-    case 0x9B: {        // Armed: away
-      partitionArmed = true;
-      partitionArmedStay = false;
-      partitionArmedAway = true;
-      exitDelay = false;
-      if (partitionArmed != previousPartitionArmed) {
-        previousPartitionArmed = partitionArmed;
-        partitionArmedChanged = true;
-        statusChanged = true;
-      }
-
-      partitionsArmed[partitionIndex] = true;
+    else if (panelData[panelByte] == 0x9B) {
       partitionsArmedStay[partitionIndex] = false;
       partitionsArmedAway[partitionIndex] = true;
-      partitionsExitDelay[partitionIndex] = false;
-      if (partitionsArmed[partitionIndex] != previousPartitionsArmed[partitionIndex]) {
-        previousPartitionsArmed[partitionIndex] = partitionsArmed[partitionIndex];
+    }
+
+    partitionsArmed[partitionIndex] = true;
+    partitionsExitDelay[partitionIndex] = false;
+    if (previousPartitionsArmed[partitionIndex] != true) {
+      previousPartitionsArmed[partitionIndex] = true;
+      partitionsArmedChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
+    return;
+  }
+
+  if (panelData[panelByte] == 0xA5) {
+    switch (panelData[panelByte]) {
+      case 0x99: {        // Activate stay/away zones
+        partitionsArmed[partitionIndex] = true;
+        partitionsArmedAway[partitionIndex] = true;
+        partitionsArmedStay[partitionIndex] = false;
         partitionsArmedChanged[partitionIndex] = true;
         statusChanged = true;
+        return;
       }
-      return;
+      case 0x9C: {        // Armed without entry delay
+        partitionsNoEntryDelay[partitionIndex] = true;
+        return;
+      }
     }
-    case 0x9C: {        // Armed without entry delay
-      armedNoEntryDelay = true;
-      partitionsNoEntryDelay[partitionIndex] = true;
-      return;
+  }
+}
+
+
+void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
+  if (partition == 0 || partition > dscPartitions) return;
+  byte partitionIndex = partition - 1;
+
+  // Zone alarm, zones 33-64
+  // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+  //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+  //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+  //   ...
+  //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+  if (panelData[panelByte] <= 0x1F) {
+    alarmZonesStatusChanged = true;
+    partitionsAlarm[partitionIndex] = true;
+    if (previousPartitionsAlarm[partitionIndex] != true) {
+      previousPartitionsAlarm[partitionIndex] = true;
+      partitionsAlarmChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
+
+    byte maxZones = dscZones * 8;
+    if (maxZones > 32) maxZones -= 32;
+    else return;
+    for (byte zoneCount = 0; zoneCount < maxZones; zoneCount++) {
+      if (panelData[panelByte] == zoneCount) {
+        if (zoneCount < 8) {
+          bitWrite(alarmZones[4], zoneCount, 1);
+          bitWrite(alarmZonesChanged[4], zoneCount, 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 8 && zoneCount < 16) {
+          bitWrite(alarmZones[5], (zoneCount - 8), 1);
+          bitWrite(alarmZonesChanged[5], (zoneCount - 8), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 16 && zoneCount < 24) {
+          bitWrite(alarmZones[6], (zoneCount - 16), 1);
+          bitWrite(alarmZonesChanged[6], (zoneCount - 16), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 24 && zoneCount < 32) {
+          bitWrite(alarmZones[7], (zoneCount - 24), 1);
+          bitWrite(alarmZonesChanged[7], (zoneCount - 24), 1);
+          statusChanged = true;
+        }
+      }
+    }
+    return;
+  }
+
+  // Zone alarm restored, zones 33-64
+  // Zone alarm status is stored using 1 bit per zone in alarmZones[] and alarmZonesChanged[]:
+  //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+  //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+  //   ...
+  //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+  if (panelData[panelByte] >= 0x20 && panelData[panelByte] <= 0x3F) {
+    alarmZonesStatusChanged = true;
+
+    byte maxZones = dscZones * 8;
+    if (maxZones > 32) maxZones -= 32;
+    else return;
+    for (byte zoneCount = 0; zoneCount < maxZones; zoneCount++) {
+      if (panelData[panelByte] == 0x20 + zoneCount) {
+        if (zoneCount < 8) {
+          bitWrite(alarmZones[4], zoneCount, 0);
+          bitWrite(alarmZonesChanged[4], zoneCount, 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 8 && zoneCount < 16) {
+          bitWrite(alarmZones[5], (zoneCount - 8), 0);
+          bitWrite(alarmZonesChanged[5], (zoneCount - 8), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 16 && zoneCount < 24) {
+          bitWrite(alarmZones[6], (zoneCount - 16), 0);
+          bitWrite(alarmZonesChanged[6], (zoneCount - 16), 1);
+          statusChanged = true;
+        }
+        else if (zoneCount >= 24 && zoneCount < 32) {
+          bitWrite(alarmZones[7], (zoneCount - 24), 0);
+          bitWrite(alarmZonesChanged[7], (zoneCount - 24), 1);
+          statusChanged = true;
+        }
+      }
+    }
+    return;
+  }
+
+}
+
+
+// Processes zones 33-64 status
+void dscKeybusInterface::processPanel_0xE6() {
+  if (!validCRC()) return;
+
+  switch (panelData[2]) {
+    case 0x09: if (dscZones > 4) processPanel_0xE6_0x09(); return;
+    case 0x0B: if (dscZones > 5) processPanel_0xE6_0x0B(); return;
+    case 0x0D: if (dscZones > 6) processPanel_0xE6_0x0D(); return;
+    case 0x0F: if (dscZones > 7) processPanel_0xE6_0x0F(); return;
+  }
+}
+
+
+// Open zones 33-40 status is stored in openZones[4] and openZonesChanged[4]: Bit 0 = Zone 33 ... Bit 7 = Zone 40
+void dscKeybusInterface::processPanel_0xE6_0x09() {
+  openZones[4] = panelData[3];
+  byte zonesChanged = openZones[4] ^ previousOpenZones[4];
+  if (zonesChanged != 0) {
+    previousOpenZones[4] = openZones[4];
+    openZonesStatusChanged = true;
+    statusChanged = true;
+
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      if (bitRead(zonesChanged, zoneBit)) {
+        bitWrite(openZonesChanged[4], zoneBit, 1);
+        if (bitRead(panelData[3], zoneBit)) bitWrite(openZones[4], zoneBit, 1);
+        else bitWrite(openZones[4], zoneBit, 0);
+      }
+    }
+  }
+}
+
+
+// Open zones 41-48 status is stored in openZones[5] and openZonesChanged[5]: Bit 0 = Zone 41 ... Bit 7 = Zone 48
+void dscKeybusInterface::processPanel_0xE6_0x0B() {
+  openZones[5] = panelData[3];
+  byte zonesChanged = openZones[5] ^ previousOpenZones[5];
+  if (zonesChanged != 0) {
+    previousOpenZones[5] = openZones[5];
+    openZonesStatusChanged = true;
+    statusChanged = true;
+
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      if (bitRead(zonesChanged, zoneBit)) {
+        bitWrite(openZonesChanged[5], zoneBit, 1);
+        if (bitRead(panelData[3], zoneBit)) bitWrite(openZones[5], zoneBit, 1);
+        else bitWrite(openZones[5], zoneBit, 0);
+      }
+    }
+  }
+}
+
+
+// Open zones 49-56 status is stored in openZones[6] and openZonesChanged[6]: Bit 0 = Zone 49 ... Bit 7 = Zone 56
+void dscKeybusInterface::processPanel_0xE6_0x0D() {
+  openZones[6] = panelData[3];
+  byte zonesChanged = openZones[6] ^ previousOpenZones[6];
+  if (zonesChanged != 0) {
+    previousOpenZones[6] = openZones[6];
+    openZonesStatusChanged = true;
+    statusChanged = true;
+
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      if (bitRead(zonesChanged, zoneBit)) {
+        bitWrite(openZonesChanged[6], zoneBit, 1);
+        if (bitRead(panelData[3], zoneBit)) bitWrite(openZones[6], zoneBit, 1);
+        else bitWrite(openZones[6], zoneBit, 0);
+      }
+    }
+  }
+}
+
+
+// Open zones 57-64 status is stored in openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+void dscKeybusInterface::processPanel_0xE6_0x0F() {
+  openZones[7] = panelData[3];
+  byte zonesChanged = openZones[7] ^ previousOpenZones[7];
+  if (zonesChanged != 0) {
+    previousOpenZones[7] = openZones[7];
+    openZonesStatusChanged = true;
+    statusChanged = true;
+
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      if (bitRead(zonesChanged, zoneBit)) {
+        bitWrite(openZonesChanged[7], zoneBit, 1);
+        if (bitRead(panelData[3], zoneBit)) bitWrite(openZones[7], zoneBit, 1);
+        else bitWrite(openZones[7], zoneBit, 0);
+      }
     }
   }
 }
