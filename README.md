@@ -1,4 +1,4 @@
-_**Note**: This is a development branch supporting DSC PowerSeries up to 8 partitions and up to 64 zones.  The library methods have changed to accommodate multiple partitions and the previous methods have been deprecated - see the examples sketches for usage.  This branch is not yet optimized for program space or memory usage - for example, the KeybusReader sketch currently requires the Arduino Mega or esp8266._
+_**Note**: This is a development branch for testing: partitions 2-8, zones 33-64, virtual keypad partitions 1 & 2.  The library methods have changed to accommodate multiple partitions and the previous methods have been removed - see the examples sketches for usage.  The new methods should not change in the future and can be considered stable (in theory!)._
 
 # DSC Keybus Interface
 This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant and Apple HomeKit using MQTT, sending push notifications/email, and reading/decoding Keybus data.
@@ -8,9 +8,8 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Features
-* Partitions: 1-8
-* Zones: 1-64
-* Virtual keypad: supports sending keys to the panel
+* Partitions: 1-8, zones: 1-64
+* Virtual keypad: supports sending keys to the panel for partitions 1 and 2
 * Data buffering: helps prevent missing Keybus data when the sketch is busy
 * Non-blocking code: allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
 * Tested panels: PC1555MX, PC5015, PC1616, PC1832, PC1864
@@ -86,7 +85,9 @@ DSC Aux(+) ---+--- Arduino Vin pin
   * That random NPN at the bottom of your parts bin (my choice)
 
 ## Virtual keypad
-This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.  The following keys can be sent to the panel (see the examples for usage):
+This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.
+
+Keys are sent to partition 1 by default and can be changed to a different partition.  The following keys can be sent to the panel (see the examples for usage):
 
 * Keypad: `0-9 * #`
 * Arm stay (requires access code if quick arm is disabled): `s`
@@ -98,6 +99,10 @@ This allows a sketch to send keys to the DSC panel to emulate the physical DSC k
 * Door chime: `c`
 * Reset: `r`
 * Exit: `x`
+* Change partition: `/` + `partition number`
+  Examples:
+  * Switch to partition 2 and send keys: `/2` + `1234`
+  * Switch back to partition 1: `/1`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:

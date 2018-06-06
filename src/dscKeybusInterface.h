@@ -21,7 +21,7 @@
 #include <Arduino.h>
 
 const byte dscReadSize = 16;   // Maximum size of a Keybus command
-const byte dscZones = 1;       // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
+const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
 const byte dscPartitions = 8;  // Maximum number of partitions - requires 18 bytes of memory per partition
 
 // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
@@ -116,6 +116,7 @@ class dscKeybusInterface {
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
+    void printPanelBitNumbers(byte panelByte, byte startNumber);
     void printPanelStatus0(byte panelByte);
     void printPanelStatus1(byte panelByte);
     void printPanelStatus2(byte panelByte);
@@ -171,7 +172,6 @@ class dscKeybusInterface {
     void printKeybus_0xBB();
     void printKeybus_0xDD();
     void printKeybus_Panel_0x11();
-    void printKeybus_Panel_0x28();
     void printKeybus_Panel_0xD5();
     void printKeybus_Notification();
     void printKeybus_Keys();

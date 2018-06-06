@@ -108,26 +108,26 @@ void loop() {
     }
 
     // Publish armed status
-    if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
-      if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway) Homey.setCapabilityValue("homealarm_state", "armed", true);
-        if (dsc.partitionArmedStay) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
+    if (dsc.partitionsArmedChanged[0]) {
+      dsc.partitionsArmedChanged[0] = false;  // Resets the partition armed status flag
+      if (dsc.partitionsArmed[0]) {
+        if (dsc.partitionsArmedAway[0]) Homey.setCapabilityValue("homealarm_state", "armed", true);
+        if (dsc.partitionsArmedStay[0]) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
       }
       else Homey.setCapabilityValue("homealarm_state", "disarmed", true);
     }
 
     // Publish alarm status
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) Homey.setCapabilityValue("alarm_tamper", true);
+    if (dsc.partitionsAlarmChanged[0]) {
+      dsc.partitionsAlarmChanged[0] = false;  // Resets the partition alarm status flag
+      if (dsc.partitionsAlarm[0]) Homey.setCapabilityValue("alarm_tamper", true);
       else Homey.setCapabilityValue("alarm_tamper", false);
     }
 
     // Publish fire alarm status
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Homey.setCapabilityValue("alarm_fire", true);
+    if (dsc.partitionsFireChanged[0]) {
+      dsc.partitionsFireChanged[0] = false;  // Resets the fire status flag
+      if (dsc.partitionsFire[0]) Homey.setCapabilityValue("alarm_fire", true);
       else Homey.setCapabilityValue("alarm_fire", false);
     }
 
@@ -139,7 +139,7 @@ void loop() {
     //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
@@ -162,7 +162,7 @@ void loop() {
     //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag

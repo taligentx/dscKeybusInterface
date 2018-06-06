@@ -2,7 +2,7 @@
  *  DSC Status (Arduino, esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
- *  virtual keypad.  This demonstrates how to determine if the security system status has changed and what has
+ *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Wiring:
