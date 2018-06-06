@@ -98,17 +98,6 @@ void dscKeybusInterface::printKeybusMessage() {
  */
 
 
-// Prints individual bits as a number for partitions and zones
-void dscKeybusInterface::printPanelBitNumbers(byte panelByte, byte startNumber) {
-  for (byte bit = 0; bit < 8; bit++) {
-    if (bitRead(panelData[panelByte],bit)) {
-      stream->print(startNumber + bit);
-      stream->print(F(" "));
-    }
-  }
-}
-
-
  // Keypad lights for commands 0x05, 0x0A, 0x1B, 0x27, 0x2D, 0x34, 0x3E, 0x5D
  void dscKeybusInterface::printPanelLights(byte panelByte) {
   if (panelData[panelByte] == 0) stream->print(F("none "));
@@ -123,6 +112,7 @@ void dscKeybusInterface::printPanelBitNumbers(byte panelByte, byte startNumber) 
     if (bitRead(panelData[panelByte],7)) stream->print(F("Backlight "));
   }
  }
+
 
 // Messages for commands 0x05, 0x0A, 0x1B, 0x27, 0x2D, 0x34, 0x3E
 void dscKeybusInterface::printPanelMessages(byte panelByte) {
@@ -573,6 +563,17 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
 }
 
 
+// Prints individual bits as a number for partitions and zones
+void dscKeybusInterface::printPanelBitNumbers(byte panelByte, byte startNumber) {
+  for (byte bit = 0; bit < 8; bit++) {
+    if (bitRead(panelData[panelByte],bit)) {
+      stream->print(startNumber + bit);
+      stream->print(F(" "));
+    }
+  }
+}
+
+
 /*
  *  0x05: Status - partitions 1-4
  *  Interval: constant
@@ -617,11 +618,7 @@ void dscKeybusInterface::printPanel_0x05() {
   stream->print(F("Partition 1: "));
   printPanelLights(2);
   stream->print(F("- "));
-<<<<<<< HEAD
   printPanelMessages(3);
-=======
-  printPanelStatus(3);
->>>>>>> master
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));
@@ -630,11 +627,7 @@ void dscKeybusInterface::printPanel_0x05() {
     stream->print(F(" | Partition 2: "));
     printPanelLights(4);
     stream->print(F("- "));
-<<<<<<< HEAD
     printPanelMessages(5);
-=======
-    printPanelStatus(5);
->>>>>>> master
   }
 
   if (panelByteCount > 9) {
@@ -645,11 +638,7 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 3: "));
       printPanelLights(6);
       stream->print(F("- "));
-<<<<<<< HEAD
       printPanelMessages(7);
-=======
-      printPanelStatus(7);
->>>>>>> master
     }
 
     if (panelData[9] == 0xC7) {
@@ -659,11 +648,7 @@ void dscKeybusInterface::printPanel_0x05() {
       stream->print(F(" | Partition 4: "));
       printPanelLights(8);
       stream->print(F("- "));
-<<<<<<< HEAD
       printPanelMessages(9);
-=======
-      printPanelStatus(9);
->>>>>>> master
     }
   }
 }
@@ -690,11 +675,7 @@ void dscKeybusInterface::printPanel_0x0A() {
   stream->print(F("Partition 1: "));
   printPanelLights(2);
   stream->print(F("- "));
-<<<<<<< HEAD
   printPanelMessages(3);
-=======
-  printPanelStatus(3);
->>>>>>> master
 
   bool zoneLights = false;
   stream->print(F(" | Zone lights: "));
