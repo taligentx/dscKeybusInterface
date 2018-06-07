@@ -70,24 +70,40 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x02:         // Stay/away zones open
       case 0x03: {       // Zones open
         exitDelay[partitionIndex] = false;
-        previousExitDelay[partitionIndex] = false;
+        if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+          previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+          exitDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         entryDelay[partitionIndex] = false;
-        previousEntryDelay[partitionIndex] = false;
+        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
+          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
+          entryDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         break;
       }
 
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
-        writeArm = false;
+        writeArm[partitionIndex] = false;
         exitDelay[partitionIndex] = false;
-        previousExitDelay[partitionIndex] = false;
+        if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+          previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+          exitDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         entryDelay[partitionIndex] = false;
-        previousEntryDelay[partitionIndex] = false;
+        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
+          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
+          entryDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         break;
       }
 
       case 0x08: {       // Exit delay in progress
-        writeArm = false;
+        writeArm[partitionIndex] = false;
         exitDelay[partitionIndex] = true;
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
@@ -109,17 +125,33 @@ void dscKeybusInterface::processPanelStatus() {
 
       case 0x11: {       // Partition in alarm
         exitDelay[partitionIndex] = false;
-        previousExitDelay[partitionIndex] = false;
+        if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+          previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+          exitDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         entryDelay[partitionIndex] = false;
-        previousEntryDelay[partitionIndex] = false;
+        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
+          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
+          entryDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         break;
       }
 
       case 0x3E: {       // Partition disarmed
         exitDelay[partitionIndex] = false;
-        previousExitDelay[partitionIndex] = false;
+        if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+          previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+          exitDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         entryDelay[partitionIndex] = false;
-        previousEntryDelay[partitionIndex] = false;
+        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
+          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
+          entryDelayChanged[partitionIndex] = true;
+          statusChanged = true;
+        }
         break;
       }
 
@@ -131,7 +163,7 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       case 0x9F: {
-        if (writeArm) {  // Ensures access codes are only sent when an arm command is sent through this interface
+        if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
           accessCodePrompt = true;
           statusChanged = true;
         }
@@ -160,6 +192,11 @@ void dscKeybusInterface::processPanel_0x27() {
       }
 
       exitDelay[partitionIndex] = false;
+      if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+        previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+        exitDelayChanged[partitionIndex] = true;
+        statusChanged = true;
+      }
       armed[partitionIndex] = true;
       if (previousArmed[partitionIndex] != true) {
         previousArmed[partitionIndex] = true;
@@ -537,6 +574,11 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
 
     armed[partitionIndex] = true;
     exitDelay[partitionIndex] = false;
+    if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+      previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+      exitDelayChanged[partitionIndex] = true;
+      statusChanged = true;
+    }
     if (previousArmed[partitionIndex] != true) {
       previousArmed[partitionIndex] = true;
       armedChanged[partitionIndex] = true;

@@ -38,8 +38,8 @@ volatile bool dscKeybusInterface::wroteAsterisk;
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
-volatile byte dscKeybusInterface::panelBitCountBuffer[dscBufferSize];
-volatile byte dscKeybusInterface::panelByteCountBuffer[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
@@ -104,8 +104,8 @@ bool dscKeybusInterface::handlePanel() {
   static byte panelBufferIndex = 1;
   byte dataIndex = panelBufferIndex - 1;
   for (byte i = 0; i < dscReadSize; i++) panelData[i] = panelBuffer[dataIndex][i];
-  panelBitCount = panelBitCountBuffer[dataIndex];
-  panelByteCount = panelByteCountBuffer[dataIndex];
+  panelBitCount = panelBufferBitCount[dataIndex];
+  panelByteCount = panelBufferByteCount[dataIndex];
   panelBufferIndex++;
 
   // Resets counters when the buffer is cleared
@@ -308,11 +308,11 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;  // Keypad fire alarm
       case 's':
-      case 'S': writeKey = 0xAF; writeArm = true; break;    // Arm stay
+      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;    // Arm stay
       case 'w':
-      case 'W': writeKey = 0xB1; writeArm = true; break;    // Arm away
+      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;    // Arm away
       case 'n':
-      case 'N': writeKey = 0xB6; writeArm = true; break;    // Arm with no entry delay (night arm)
+      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;    // Arm with no entry delay (night arm)
       case 'A':
       case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
       case 'c':
@@ -575,8 +575,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
-        panelBitCountBuffer[panelBufferLength] = isrPanelBitTotal;
-        panelByteCountBuffer[panelBufferLength] = isrPanelByteCount;
+        panelBufferBitCount[panelBufferLength] = isrPanelBitTotal;
+        panelBufferByteCount[panelBufferLength] = isrPanelByteCount;
         panelBufferLength++;
       }
 

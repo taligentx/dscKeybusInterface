@@ -20,16 +20,18 @@
 
 #include <Arduino.h>
 
-const byte dscReadSize = 16;   // Maximum size of a Keybus command
-const byte dscZones = 8;       // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscPartitions = 8;  // Maximum number of partitions - requires 18 bytes of memory per partition
 
-// Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 #if defined(__AVR__)
-const byte dscBufferSize = 10;
+const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
+const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
+const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
 #elif defined(ESP8266)
+const byte dscPartitions = 8;
+const byte dscZones = 8;
 const byte dscBufferSize = 50;
 #endif
+
+const byte dscReadSize = 16;   // Maximum size of a Keybus command
 
 
 class dscKeybusInterface {
@@ -187,7 +189,7 @@ class dscKeybusInterface {
     Stream* stream;
     const char* writeKeysArray;
     bool writeKeysPending;
-    bool writeArm;
+    bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
@@ -206,7 +208,7 @@ class dscKeybusInterface {
     static volatile unsigned long clockHighTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
-    static volatile byte panelBitCountBuffer[dscBufferSize], panelByteCountBuffer[dscBufferSize];
+    static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte keybusBitCount, keybusByteCount;
     static volatile byte currentCmd, statusCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;

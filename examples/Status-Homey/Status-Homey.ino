@@ -1,7 +1,7 @@
 /*
  *  DSC Status with Homey (esp8266)
  *
- *  Processes the security system status and allows for control using Athom Homey.
+ *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
  *  Athom Homey: https://www.athom.com/en/
  *  Arduino library for communicating with Homey: https://github.com/athombv/homey-arduino-library

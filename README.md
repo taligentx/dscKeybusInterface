@@ -39,7 +39,7 @@ Download the repo and extract to the Arduino library directory or [install throu
 
 * Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 
-  Note: homebridge-mqttthing seems to have a bug for the smokeSensor object, for now I've issued a fix:  [taligentx/homebridge-mqttthing](https://github.com/taligentx/homebridge-mqttthing)
+  Note: homebridge-mqttthing seems to have a bug for the smokeSensor object, I've fixed the bug and forked the repo until upstream is patched:  [taligentx/homebridge-mqttthing](https://github.com/taligentx/homebridge-mqttthing)
 
 * Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as fire alarm and zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
@@ -87,7 +87,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 ## Virtual keypad
 This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.
 
-Keys are sent to partition 1 by default and can be changed to a different partition.  The following keys can be sent to the panel (see the examples for usage):
+Keys are sent to partition 1 by default and can be changed to a different partition (currently supports partitions 1 and 2).  The following keys can be sent to the panel - see the examples for usage:
 
 * Keypad: `0-9 * #`
 * Arm stay (requires access code if quick arm is disabled): `s`
@@ -112,6 +112,7 @@ Panel options affecting this interface, configured by `*8 + installer code`:
   This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
 
 ## Notes
+* Memory usage can be reduced by lowering the number of partitions and zones specified in `src/dscKeybusInterface.h`.  By default, Arduino monitors up to 4 partitions/32 zones and esp8266 monitors up to 8 partitions/64 zones.
 * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
 ## References
