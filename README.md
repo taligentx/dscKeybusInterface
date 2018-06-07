@@ -6,7 +6,7 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Status
-This is an early release and tested with the DSC PC1555MX (PowerSeries 632) and PC5015 (PowerSeries 832) on 1 partition up to 32 zones.  Captured Keybus data is needed to verify functionality for the PC1616/PC1832/PC1864 series, feel free to [add logs of data](https://github.com/taligentx/dscKeybusInterface/issues/2) from these panels using the KeybusReader example.
+This master branch is an earlier release supporting 1 partition up to 32 zones and will soon be replaced (after additional feedback and testing) by the develop branch supporting partitions 1-8 and zones 1-64 .  As the library methods have changed, I recommend using the develop branch for new sketches.
 
 ## Usage
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, git clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
