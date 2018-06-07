@@ -8,11 +8,11 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 ## Features
+* Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864
 * Partitions: 1-8, zones: 1-64
 * Virtual keypad: supports sending keys to the panel for partitions 1 and 2
 * Data buffering: helps prevent missing Keybus data when the sketch is busy
 * Non-blocking code: allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
-* Tested panels: PC1555MX, PC5015, PC1616, PC1832, PC1864
 
 ## Usage
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, `git clone` the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
@@ -99,10 +99,11 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 * Door chime: `c`
 * Reset: `r`
 * Exit: `x`
-* Change partition: `/` + `partition number`
+* Change partition: `/` + `partition number` or set `writePartition` to the partition number
   Examples:
   * Switch to partition 2 and send keys: `/2` + `1234`
   * Switch back to partition 1: `/1`
+  * Set directly in sketch: `dsc.writePartition = 1`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:

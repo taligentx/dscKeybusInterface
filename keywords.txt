@@ -20,6 +20,7 @@ processKeypadData	KEYWORD2
 
 statusChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
+writePartition	KEYWORD2
 timeAvailable	KEYWORD2
 partitionsExitDelay	KEYWORD2
 partitionsExitDelayChanged	KEYWORD2

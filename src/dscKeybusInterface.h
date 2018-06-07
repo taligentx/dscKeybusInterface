@@ -51,6 +51,9 @@ class dscKeybusInterface {
     void printKeybusBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printKeybusMessage();                        // Prints the decoded keypad or module message
 
+    // Sets the partition for virtual keypad
+    static byte writePartition;
+
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
     bool processRedundantData;      // Controls if repeated periodic commands are processed and displayed (default: false)
@@ -197,7 +200,6 @@ class dscKeybusInterface {
     static byte dscWritePin;
     static bool virtualKeypad;
     static char writeKey;
-    static byte writePartition;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool keybusDataCaptured;

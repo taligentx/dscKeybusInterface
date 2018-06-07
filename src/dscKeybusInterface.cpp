@@ -395,6 +395,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   else {
     clockHighTime = micros() - previousClockHighTime;  // Tracks the clock high time to find the reset between commands
+    if (writePartition == 0 || writePartition > 2) writePartition = 1;  // Limits writing to partitions 1 and 2
 
     // Virtual keypad
     if (virtualKeypad) {

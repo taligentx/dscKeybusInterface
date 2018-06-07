@@ -275,21 +275,33 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   (void)topic;
   (void)length;
 
+  byte partitionIndex = 0;
+  byte payloadIndex = 0;
+
+  // Checks if a partition number 1-8 has been sent and sets the second character as the payload
+  if (payload[0] >= 0x31 && payload[0] <= 0x38) {
+    partitionIndex = payload[0] - 49;
+    payloadIndex = 1;
+  }
+
   // Arm stay
-  if (payload[0] == 'S' && !dsc.partitionArmed && !dsc.exitDelay) {
+  if (payload[payloadIndex] == 'S' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.writePartition = partitionIndex + 1;
     dsc.write('s');  // Virtual keypad arm stay
   }
 
   // Arm away
-  else if (payload[0] == 'A' && !dsc.partitionArmed && !dsc.exitDelay) {
+  else if (payload[payloadIndex] == 'A' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
     while (!dsc.writeReady) dsc.handlePanel();
+    dsc.writePartition = partitionIndex + 1;
     dsc.write('w');  // Virtual keypad arm away
   }
 
   // Disarm
-  else if (payload[0] == 'D' && (dsc.partitionArmed || dsc.exitDelay)) {
+  else if (payload[payloadIndex] == 'D' && (dsc.partitionsArmed[partitionIndex] || dsc.partitionsExitDelay[partitionIndex])) {
     while (!dsc.writeReady) dsc.handlePanel();
+    dsc.writePartition = partitionIndex + 1;
     dsc.write(accessCode);
   }
 }

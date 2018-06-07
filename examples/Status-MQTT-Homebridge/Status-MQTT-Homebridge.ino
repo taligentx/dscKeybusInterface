@@ -10,11 +10,17 @@
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
- *  In this example, the commands to set the alarm state are setup in Homebridge as:
+ *  For a single partition, the commands to set the alarm state are setup in Homebridge as:
  *    Stay arm: "S"
  *    Away arm: "A"
  *    Night arm (arm without an entry delay): "N"
  *    Disarm: "D"
+ *
+ *  For multiple partitions, add the partition number as a prefix to the command:
+ *    Partition 1 stay arm: "1S"
+ *    Partition 1 away arm: "1A"
+ *    Partition 2 night arm (arm without an entry delay): "2N"
+ *    Partition 2 disarm: "2D"
  *
  *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
  *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
@@ -34,7 +40,7 @@
  *    "0": fire alarm restored
  *    "1": fire alarm tripped
  *
- *  Example Homebridge config.json "accessories" configuration:
+ *  Example Homebridge config.json "accessories" configuration for a single partition:
 
         {
             "accessory": "mqttthing",
@@ -78,6 +84,77 @@
             "topics":
             {
                 "getSmokeDetected": "dsc/Get/Fire1"
+            },
+            "integerValue": "true"
+        }
+
+ *  Example Homebridge config.json "accessories" configuration for multiple partitions:
+
+        {
+            "accessory": "mqttthing",
+            "type": "securitySystem",
+            "name": "Security System Partition 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getCurrentState":    "dsc/Get/Partition1",
+                "setTargetState":     "dsc/Set"
+            },
+            "targetStateValues": ["1S", "1A", "1N", "1D"]
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "securitySystem",
+            "name": "Security System Partition 2",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getCurrentState":    "dsc/Get/Partition2",
+                "setTargetState":     "dsc/Set"
+            },
+            "targetStateValues": ["2S", "2A", "2N", "2D"]
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "Zone 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/Zone1"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "Zone 8",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/Zone8"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "smokeSensor",
+            "name": "Smoke Alarm Partition 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getSmokeDetected": "dsc/Get/Fire1"
+            },
+            "integerValue": "true"
+        }
+        {
+            "accessory": "mqttthing",
+            "type": "smokeSensor",
+            "name": "Smoke Alarm Partition 2",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getSmokeDetected": "dsc/Get/Fire2"
             },
             "integerValue": "true"
         }
@@ -268,7 +345,6 @@ void loop() {
   }
 }
 
-
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
@@ -276,27 +352,40 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   (void)topic;
   (void)length;
 
+  byte partitionIndex = 0;
+  byte payloadIndex = 0;
+
+  // Checks if a partition number 1-8 has been sent and sets the second character as the payload
+  if (payload[0] >= 0x31 && payload[0] <= 0x38) {
+    partitionIndex = payload[0] - 49;
+    payloadIndex = 1;
+  }
+
   // homebridge-mqttthing STAY_ARM
-  if (payload[0] == 'S' && !dsc.partitionArmed && !dsc.exitDelay) {
+  if (payload[payloadIndex] == 'S' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.writePartition = partitionIndex + 1;
     dsc.write('s');  // Keypad stay arm
   }
 
   // homebridge-mqttthing AWAY_ARM
-  else if (payload[0] == 'A' && !dsc.partitionArmed && !dsc.exitDelay) {
-    while (!dsc.writeReady) dsc.handlePanel();
+  else if (payload[payloadIndex] == 'A' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
+    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.writePartition = partitionIndex + 1;
     dsc.write('w');  // Keypad away arm
   }
 
   // homebridge-mqttthing NIGHT_ARM
-  else if (payload[0] == 'N' && !dsc.partitionArmed && !dsc.exitDelay) {
-    while (!dsc.writeReady) dsc.handlePanel();
+  else if (payload[payloadIndex] == 'N' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
+    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.writePartition = partitionIndex + 1;
     dsc.write('n');  // Keypad arm with no entry delay
   }
 
   // homebridge-mqttthing DISARM
-  else if (payload[0] == 'D' && (dsc.partitionArmed || dsc.exitDelay)) {
-    while (!dsc.writeReady) dsc.handlePanel();
+  else if (payload[payloadIndex] == 'D' && (dsc.partitionsArmed[partitionIndex] || dsc.partitionsExitDelay[partitionIndex])) {
+    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+    dsc.writePartition = partitionIndex + 1;
     dsc.write(accessCode);
   }
 }
