@@ -101,8 +101,8 @@ void loop() {
       sendEmail("Security system panic alarm button pressed", "");
     }
 
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) sendEmail("Security system AC power trouble", "");
       else sendEmail("Security system AC power restored", "");
     }
@@ -110,27 +110,27 @@ void loop() {
     // Checks status per partition
     for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
-      if (dsc.partitionsAlarmChanged[partitionIndex]) {
-        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
 
         char emailBody[12] = "Partition ";
         char partition[2];
         itoa(partitionIndex + 1, partition, 10);
         strcat(emailBody, partition);
 
-        if (dsc.partitionsAlarm[partitionIndex]) sendEmail("Security system in alarm", emailBody);
+        if (dsc.alarm[partitionIndex]) sendEmail("Security system in alarm", emailBody);
         else sendEmail("Security system disarmed after alarm", emailBody);
       }
 
-      if (dsc.partitionsFireChanged[partitionIndex]) {
-        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
 
         char emailBody[12] = "Partition ";
         char partition[2];
         itoa(partitionIndex + 1, partition, 10);
         strcat(emailBody, partition);
 
-        if (dsc.partitionsFire[partitionIndex]) sendEmail("Security system fire alarm", emailBody);
+        if (dsc.fire[partitionIndex]) sendEmail("Security system fire alarm", emailBody);
         else sendEmail("Security system fire alarm restored", emailBody);
       }
     }

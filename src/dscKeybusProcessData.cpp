@@ -22,11 +22,11 @@
 void dscKeybusInterface::processPanelStatus() {
 
   // Trouble status
-  if (bitRead(panelData[2],4)) troubleStatus = true;
-  else troubleStatus = false;
-  if (troubleStatus != previousTroubleStatus && (panelData[3] < 0x05 || panelData[3] == 0xC7)) {  // Ignores trouble light status in intermittent states
-    previousTroubleStatus = troubleStatus;
-    troubleStatusChanged = true;
+  if (bitRead(panelData[2],4)) trouble = true;
+  else trouble = false;
+  if (trouble != previousTrouble && (panelData[3] < 0x05 || panelData[3] == 0xC7)) {  // Ignores trouble light status in intermittent states
+    previousTrouble = trouble;
+    troubleChanged = true;
     statusChanged = true;
   }
 
@@ -55,11 +55,11 @@ void dscKeybusInterface::processPanelStatus() {
     }
 
     // Fire status
-    if (bitRead(panelData[statusByte],6)) partitionsFire[partitionIndex] = true;
-    else partitionsFire[partitionIndex] = false;
-    if (partitionsFire[partitionIndex] != previousPartitionsFire[partitionIndex] && panelData[messageByte] < 0x12) {  // Ignores fire light status in intermittent states
-      previousPartitionsFire[partitionIndex] = partitionsFire[partitionIndex];
-      partitionsFireChanged[partitionIndex] = true;
+    if (bitRead(panelData[statusByte],6)) fire[partitionIndex] = true;
+    else fire[partitionIndex] = false;
+    if (fire[partitionIndex] != previousFire[partitionIndex] && panelData[messageByte] < 0x12) {  // Ignores fire light status in intermittent states
+      previousFire[partitionIndex] = fire[partitionIndex];
+      fireChanged[partitionIndex] = true;
       statusChanged = true;
     }
 
@@ -69,57 +69,57 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x01:         // Partition ready
       case 0x02:         // Stay/away zones open
       case 0x03: {       // Zones open
-        partitionsExitDelay[partitionIndex] = false;
-        previousPartitionsExitDelay[partitionIndex] = false;
-        partitionsEntryDelay[partitionIndex] = false;
-        previousPartitionsEntryDelay[partitionIndex] = false;
+        exitDelay[partitionIndex] = false;
+        previousExitDelay[partitionIndex] = false;
+        entryDelay[partitionIndex] = false;
+        previousEntryDelay[partitionIndex] = false;
         break;
       }
 
       case 0x04:         // Armed stay
       case 0x05: {       // Armed away
         writeArm = false;
-        partitionsExitDelay[partitionIndex] = false;
-        previousPartitionsExitDelay[partitionIndex] = false;
-        partitionsEntryDelay[partitionIndex] = false;
-        previousPartitionsEntryDelay[partitionIndex] = false;
+        exitDelay[partitionIndex] = false;
+        previousExitDelay[partitionIndex] = false;
+        entryDelay[partitionIndex] = false;
+        previousEntryDelay[partitionIndex] = false;
         break;
       }
 
       case 0x08: {       // Exit delay in progress
         writeArm = false;
-        partitionsExitDelay[partitionIndex] = true;
-        if (partitionsExitDelay[partitionIndex] != previousPartitionsExitDelay[partitionIndex]) {
-          previousPartitionsExitDelay[partitionIndex] = partitionsExitDelay[partitionIndex];
-          partitionsExitDelayChanged[partitionIndex] = true;
+        exitDelay[partitionIndex] = true;
+        if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+          previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+          exitDelayChanged[partitionIndex] = true;
           statusChanged = true;
         }
         break;
       }
 
       case 0x0C: {       // Entry delay in progress
-        partitionsEntryDelay[partitionIndex] = true;
-        if (partitionsEntryDelay[partitionIndex] != previousPartitionsEntryDelay[partitionIndex]) {
-          previousPartitionsEntryDelay[partitionIndex] = partitionsEntryDelay[partitionIndex];
-          partitionsEntryDelayChanged[partitionIndex] = true;
+        entryDelay[partitionIndex] = true;
+        if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
+          previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
+          entryDelayChanged[partitionIndex] = true;
           statusChanged = true;
         }
         break;
       }
 
       case 0x11: {       // Partition in alarm
-        partitionsExitDelay[partitionIndex] = false;
-        previousPartitionsExitDelay[partitionIndex] = false;
-        partitionsEntryDelay[partitionIndex] = false;
-        previousPartitionsEntryDelay[partitionIndex] = false;
+        exitDelay[partitionIndex] = false;
+        previousExitDelay[partitionIndex] = false;
+        entryDelay[partitionIndex] = false;
+        previousEntryDelay[partitionIndex] = false;
         break;
       }
 
       case 0x3E: {       // Partition disarmed
-        partitionsExitDelay[partitionIndex] = false;
-        previousPartitionsExitDelay[partitionIndex] = false;
-        partitionsEntryDelay[partitionIndex] = false;
-        previousPartitionsEntryDelay[partitionIndex] = false;
+        exitDelay[partitionIndex] = false;
+        previousExitDelay[partitionIndex] = false;
+        entryDelay[partitionIndex] = false;
+        previousEntryDelay[partitionIndex] = false;
         break;
       }
 
@@ -151,19 +151,19 @@ void dscKeybusInterface::processPanel_0x27() {
     // Messages
     if (panelData[messageByte] == 0x04 || panelData[messageByte] == 0x05) {
       if (panelData[messageByte] == 0x04) {
-        partitionsArmedStay[partitionIndex] = true;
-        partitionsArmedAway[partitionIndex] = false;
+        armedStay[partitionIndex] = true;
+        armedAway[partitionIndex] = false;
       }
       else if (panelData[messageByte] == 0x05) {
-        partitionsArmedStay[partitionIndex] = false;
-        partitionsArmedAway[partitionIndex] = true;
+        armedStay[partitionIndex] = false;
+        armedAway[partitionIndex] = true;
       }
 
-      partitionsExitDelay[partitionIndex] = false;
-      partitionsArmed[partitionIndex] = true;
-      if (previousPartitionsArmed[partitionIndex] != true) {
-        previousPartitionsArmed[partitionIndex] = true;
-        partitionsArmedChanged[partitionIndex] = true;
+      exitDelay[partitionIndex] = false;
+      armed[partitionIndex] = true;
+      if (previousArmed[partitionIndex] != true) {
+        previousArmed[partitionIndex] = true;
+        armedChanged[partitionIndex] = true;
         statusChanged = true;
       }
     }
@@ -343,25 +343,25 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
       }
       case 0xE7: {       // Panel battery trouble
         batteryTrouble = true;
-        batteryTroubleChanged = true;
+        batteryChanged = true;
         statusChanged = true;
         return;
       }
       case 0xE8: {       // Panel AC power failure
         powerTrouble = true;
-        powerTroubleChanged = true;
+        powerChanged = true;
         statusChanged = true;
         return;
       }
       case 0xEF: {       // Panel battery restored
         batteryTrouble = false;
-        batteryTroubleChanged = true;
+        batteryChanged = true;
         statusChanged = true;
         return;
       }
       case 0xF0: {       // Panel AC power restored
         powerTrouble = false;
-        powerTroubleChanged = true;
+        powerChanged = true;
         statusChanged = true;
         return;
       }
@@ -377,31 +377,31 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
       panelData[panelByte] == 0xE6 ||                                    // Disarmed special: keyswitch/wireless key/DLS
       (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4)) {  // Disarmed by access code
 
-    partitionsArmed[partitionIndex] = false;
-    partitionsArmedAway[partitionIndex] = false;
-    partitionsArmedStay[partitionIndex] = false;
-    partitionsNoEntryDelay[partitionIndex] = false;
-    partitionsAlarm[partitionIndex] = false;
+    armed[partitionIndex] = false;
+    armedAway[partitionIndex] = false;
+    armedStay[partitionIndex] = false;
+    noEntryDelay[partitionIndex] = false;
+    alarm[partitionIndex] = false;
 
-    if (previousPartitionsAlarm[partitionIndex] != false) {
-      previousPartitionsAlarm[partitionIndex] = false;
-      partitionsAlarmChanged[partitionIndex] = true;
+    if (previousAlarm[partitionIndex] != false) {
+      previousAlarm[partitionIndex] = false;
+      alarmChanged[partitionIndex] = true;
       statusChanged = true;
     }
 
-    if (previousPartitionsArmed[partitionIndex] != false) {
-      previousPartitionsArmed[partitionIndex] = false;
-      partitionsArmedChanged[partitionIndex] = true;
+    if (previousArmed[partitionIndex] != false) {
+      previousArmed[partitionIndex] = false;
+      armedChanged[partitionIndex] = true;
       statusChanged = true;
     }
     return;
   }
 
   if (panelData[panelByte] == 0x4B) {  // Partition in alarm
-    partitionsAlarm[partitionIndex] = true;
-    if (previousPartitionsAlarm[partitionIndex] != true) {
-      previousPartitionsAlarm[partitionIndex] = true;
-      partitionsAlarmChanged[partitionIndex] = true;
+    alarm[partitionIndex] = true;
+    if (previousAlarm[partitionIndex] != true) {
+      previousAlarm[partitionIndex] = true;
+      alarmChanged[partitionIndex] = true;
       statusChanged = true;
     }
     return;
@@ -414,10 +414,10 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
   //   ...
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
   if (panelData[panelByte] >= 0x09 && panelData[panelByte] <= 0x28) {
-    partitionsAlarm[partitionIndex] = true;
-    if (previousPartitionsAlarm[partitionIndex] != true) {
-      previousPartitionsAlarm[partitionIndex] = true;
-      partitionsAlarmChanged[partitionIndex] = true;
+    alarm[partitionIndex] = true;
+    if (previousAlarm[partitionIndex] != true) {
+      previousAlarm[partitionIndex] = true;
+      alarmChanged[partitionIndex] = true;
       statusChanged = true;
     }
 
@@ -527,19 +527,19 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
   // Armed: stay and Armed: away
   if (panelData[panelByte] == 0x9A || panelData[panelByte] == 0x9B) {
     if (panelData[panelByte] == 0x9A) {
-      partitionsArmedStay[partitionIndex] = true;
-      partitionsArmedAway[partitionIndex] = false;
+      armedStay[partitionIndex] = true;
+      armedAway[partitionIndex] = false;
     }
     else if (panelData[panelByte] == 0x9B) {
-      partitionsArmedStay[partitionIndex] = false;
-      partitionsArmedAway[partitionIndex] = true;
+      armedStay[partitionIndex] = false;
+      armedAway[partitionIndex] = true;
     }
 
-    partitionsArmed[partitionIndex] = true;
-    partitionsExitDelay[partitionIndex] = false;
-    if (previousPartitionsArmed[partitionIndex] != true) {
-      previousPartitionsArmed[partitionIndex] = true;
-      partitionsArmedChanged[partitionIndex] = true;
+    armed[partitionIndex] = true;
+    exitDelay[partitionIndex] = false;
+    if (previousArmed[partitionIndex] != true) {
+      previousArmed[partitionIndex] = true;
+      armedChanged[partitionIndex] = true;
       statusChanged = true;
     }
     return;
@@ -548,15 +548,15 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
   if (panelData[panelByte] == 0xA5) {
     switch (panelData[panelByte]) {
       case 0x99: {        // Activate stay/away zones
-        partitionsArmed[partitionIndex] = true;
-        partitionsArmedAway[partitionIndex] = true;
-        partitionsArmedStay[partitionIndex] = false;
-        partitionsArmedChanged[partitionIndex] = true;
+        armed[partitionIndex] = true;
+        armedAway[partitionIndex] = true;
+        armedStay[partitionIndex] = false;
+        armedChanged[partitionIndex] = true;
         statusChanged = true;
         return;
       }
       case 0x9C: {        // Armed without entry delay
-        partitionsNoEntryDelay[partitionIndex] = true;
+        noEntryDelay[partitionIndex] = true;
         return;
       }
     }
@@ -576,10 +576,10 @@ void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
   if (panelData[panelByte] <= 0x1F) {
     alarmZonesStatusChanged = true;
-    partitionsAlarm[partitionIndex] = true;
-    if (previousPartitionsAlarm[partitionIndex] != true) {
-      previousPartitionsAlarm[partitionIndex] = true;
-      partitionsAlarmChanged[partitionIndex] = true;
+    alarm[partitionIndex] = true;
+    if (previousAlarm[partitionIndex] != true) {
+      previousAlarm[partitionIndex] = true;
+      alarmChanged[partitionIndex] = true;
       statusChanged = true;
     }
 

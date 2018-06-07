@@ -51,7 +51,7 @@ class dscKeybusInterface {
     void printKeybusBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printKeybusMessage();                        // Prints the decoded keypad or module message
 
-    // Sets the partition for virtual keypad
+    // Set to a partition number for virtual keypad - currently supports partitions 1 and 2
     static byte writePartition;
 
     // These can be configured in the sketch setup() before begin()
@@ -68,16 +68,16 @@ class dscKeybusInterface {
     // Status tracking
     bool statusChanged;             // True after any status change
     bool accessCodePrompt;
-    bool troubleStatus, troubleStatusChanged;
-    bool powerTrouble, powerTroubleChanged;
-    bool batteryTrouble, batteryTroubleChanged;
+    bool trouble, troubleChanged;
+    bool powerTrouble, powerChanged;
+    bool batteryTrouble, batteryChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
-    bool partitionsArmed[dscPartitions], partitionsArmedAway[dscPartitions], partitionsArmedStay[dscPartitions];
-    bool partitionsNoEntryDelay[dscPartitions], partitionsArmedChanged[dscPartitions];
-    bool partitionsAlarm[dscPartitions], partitionsAlarmChanged[dscPartitions];
-    bool partitionsExitDelay[dscPartitions], partitionsExitDelayChanged[dscPartitions];
-    bool partitionsEntryDelay[dscPartitions], partitionsEntryDelayChanged[dscPartitions];
-    bool partitionsFire[dscPartitions], partitionsFireChanged[dscPartitions];
+    bool armed[dscPartitions], armedAway[dscPartitions], armedStay[dscPartitions];
+    bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];
+    bool alarm[dscPartitions], alarmChanged[dscPartitions];
+    bool exitDelay[dscPartitions], exitDelayChanged[dscPartitions];
+    bool entryDelay[dscPartitions], entryDelayChanged[dscPartitions];
+    bool fire[dscPartitions], fireChanged[dscPartitions];
     bool openZonesStatusChanged;
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
@@ -93,8 +93,8 @@ class dscKeybusInterface {
     static byte panelData[dscReadSize];
     static volatile byte keybusData[dscReadSize];
 
-    // True if dscReadSize or dscBufferSize needs to be increased
-    static volatile bool dataOverflow, bufferOverflow;
+    // True if dscBufferSize needs to be increased
+    static volatile bool bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
@@ -189,10 +189,10 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool writeArm;
     bool queryResponse;
-    bool previousTroubleStatus;
-    bool previousPartitionsExitDelay[dscPartitions], previousPartitionsEntryDelay[dscPartitions];
-    bool previousPartitionsArmed[dscPartitions], previousPartitionsAlarm[dscPartitions];
-    bool previousPartitionsFire[dscPartitions];
+    bool previousTrouble;
+    bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
+    bool previousArmed[dscPartitions], previousAlarm[dscPartitions];
+    bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
 
     static byte dscClockPin;

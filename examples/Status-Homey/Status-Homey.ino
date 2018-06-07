@@ -108,26 +108,26 @@ void loop() {
     }
 
     // Publish armed status
-    if (dsc.partitionsArmedChanged[0]) {
-      dsc.partitionsArmedChanged[0] = false;  // Resets the partition armed status flag
-      if (dsc.partitionsArmed[0]) {
-        if (dsc.partitionsArmedAway[0]) Homey.setCapabilityValue("homealarm_state", "armed", true);
-        if (dsc.partitionsArmedStay[0]) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
+    if (dsc.armedChanged[0]) {
+      dsc.armedChanged[0] = false;  // Resets the partition armed status flag
+      if (dsc.armed[0]) {
+        if (dsc.armedAway[0]) Homey.setCapabilityValue("homealarm_state", "armed", true);
+        if (dsc.armedStay[0]) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
       }
       else Homey.setCapabilityValue("homealarm_state", "disarmed", true);
     }
 
     // Publish alarm status
-    if (dsc.partitionsAlarmChanged[0]) {
-      dsc.partitionsAlarmChanged[0] = false;  // Resets the partition alarm status flag
-      if (dsc.partitionsAlarm[0]) Homey.setCapabilityValue("alarm_tamper", true);
+    if (dsc.alarmChanged[0]) {
+      dsc.alarmChanged[0] = false;  // Resets the partition alarm status flag
+      if (dsc.alarm[0]) Homey.setCapabilityValue("alarm_tamper", true);
       else Homey.setCapabilityValue("alarm_tamper", false);
     }
 
     // Publish fire alarm status
-    if (dsc.partitionsFireChanged[0]) {
-      dsc.partitionsFireChanged[0] = false;  // Resets the fire status flag
-      if (dsc.partitionsFire[0]) Homey.setCapabilityValue("alarm_fire", true);
+    if (dsc.fireChanged[0]) {
+      dsc.fireChanged[0] = false;  // Resets the fire status flag
+      if (dsc.fire[0]) Homey.setCapabilityValue("alarm_fire", true);
       else Homey.setCapabilityValue("alarm_fire", false);
     }
 

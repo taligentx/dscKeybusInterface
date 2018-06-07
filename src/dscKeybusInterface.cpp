@@ -28,7 +28,6 @@ byte dscKeybusInterface::panelData[dscReadSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
 volatile bool dscKeybusInterface::writeReady;
-volatile bool dscKeybusInterface::dataOverflow;
 volatile byte dscKeybusInterface::keybusData[dscReadSize];
 volatile bool dscKeybusInterface::keybusDataCaptured;
 volatile byte dscKeybusInterface::keybusByteCount;
@@ -476,10 +475,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   if (digitalRead(dscClockPin) == HIGH) {
 
     // Stops processing Keybus data at the dscReadSize limit
-    if (isrPanelByteCount >= dscReadSize) {
-      skipData = true;
-      dataOverflow = true;
-    }
+    if (isrPanelByteCount >= dscReadSize) skipData = true;
 
     else {
       if (isrPanelBitCount < 8) {

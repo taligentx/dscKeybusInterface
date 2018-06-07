@@ -172,8 +172,8 @@ void loop() {
     for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
       // Publishes exit delay status
-      if (dsc.partitionsExitDelayChanged[partitionIndex]) {
-        dsc.partitionsExitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+      if (dsc.exitDelayChanged[partitionIndex]) {
+        dsc.exitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
 
         // Appends the mqttPartitionTopic with the partition number
         char partitionPublishTopic[strlen(mqttPartitionTopic) + 1];
@@ -182,12 +182,12 @@ void loop() {
         itoa(partitionIndex + 1, partition, 10);
         strcat(partitionPublishTopic, partition);
 
-        if (dsc.partitionsExitDelay[partitionIndex]) mqtt.publish(partitionPublishTopic, "pending", true);  // Publish as a retained message
+        if (dsc.exitDelay[partitionIndex]) mqtt.publish(partitionPublishTopic, "pending", true);  // Publish as a retained message
       }
 
       // Publishes armed status
-      if (dsc.partitionsArmedChanged[partitionIndex]) {
-        dsc.partitionsArmedChanged[partitionIndex] = false;  // Resets the partition armed status flag
+      if (dsc.armedChanged[partitionIndex]) {
+        dsc.armedChanged[partitionIndex] = false;  // Resets the partition armed status flag
 
         // Appends the mqttPartitionTopic with the partition number
         char partitionPublishTopic[strlen(mqttPartitionTopic) + 1];
@@ -196,17 +196,17 @@ void loop() {
         itoa(partitionIndex + 1, partition, 10);
         strcat(partitionPublishTopic, partition);
 
-        if (dsc.partitionsArmed[partitionIndex]) {
-          if (dsc.partitionsArmedAway[partitionIndex]) mqtt.publish(partitionPublishTopic, "armed_away", true);
-          else if (dsc.partitionsArmedStay[partitionIndex]) mqtt.publish(partitionPublishTopic, "armed_home", true);
+        if (dsc.armed[partitionIndex]) {
+          if (dsc.armedAway[partitionIndex]) mqtt.publish(partitionPublishTopic, "armed_away", true);
+          else if (dsc.armedStay[partitionIndex]) mqtt.publish(partitionPublishTopic, "armed_home", true);
         }
         else mqtt.publish(partitionPublishTopic, "disarmed", true);
       }
 
       // Publishes alarm status
-      if (dsc.partitionsAlarmChanged[partitionIndex]) {
-        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
-        if (dsc.partitionsAlarm[partitionIndex]) {
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+        if (dsc.alarm[partitionIndex]) {
 
           // Appends the mqttPartitionTopic with the partition number
           char partitionPublishTopic[strlen(mqttPartitionTopic) + 1];
@@ -219,8 +219,8 @@ void loop() {
         }
       }
 
-      if (dsc.partitionsFireChanged[partitionIndex]) {
-        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
 
         // Appends the mqttFireTopic with the partition number
         char firePublishTopic[strlen(mqttFireTopic) + 1];
@@ -229,7 +229,7 @@ void loop() {
         itoa(partitionIndex + 1, partition, 10);
         strcat(firePublishTopic, partition);
 
-        if (dsc.partitionsFire[partitionIndex]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
+        if (dsc.fire[partitionIndex]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
         else mqtt.publish(firePublishTopic, "0");                                     // Fire alarm restored
       }
     }
@@ -285,21 +285,21 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Arm stay
-  if (payload[payloadIndex] == 'S' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
+  if (payload[payloadIndex] == 'S' && !dsc.armed[partitionIndex] && !dsc.exitDelay[partitionIndex]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partitionIndex + 1;
     dsc.write('s');  // Virtual keypad arm stay
   }
 
   // Arm away
-  else if (payload[payloadIndex] == 'A' && !dsc.partitionsArmed[partitionIndex] && !dsc.partitionsExitDelay[partitionIndex]) {
+  else if (payload[payloadIndex] == 'A' && !dsc.armed[partitionIndex] && !dsc.exitDelay[partitionIndex]) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.writePartition = partitionIndex + 1;
     dsc.write('w');  // Virtual keypad arm away
   }
 
   // Disarm
-  else if (payload[payloadIndex] == 'D' && (dsc.partitionsArmed[partitionIndex] || dsc.partitionsExitDelay[partitionIndex])) {
+  else if (payload[payloadIndex] == 'D' && (dsc.armed[partitionIndex] || dsc.exitDelay[partitionIndex])) {
     while (!dsc.writeReady) dsc.handlePanel();
     dsc.writePartition = partitionIndex + 1;
     dsc.write(accessCode);

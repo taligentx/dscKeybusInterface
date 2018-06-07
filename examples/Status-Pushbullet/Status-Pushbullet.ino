@@ -98,8 +98,8 @@ void loop() {
       sendPush("Security system panic alarm button pressed");
     }
 
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the battery trouble status flag
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the battery trouble status flag
       if (dsc.powerTrouble) sendPush("Security system AC power trouble");
       else sendPush("Security system AC power restored");
     }
@@ -107,27 +107,27 @@ void loop() {
     // Checks status per partition
     for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
-      if (dsc.partitionsAlarmChanged[partitionIndex]) {
-        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
 
         char pushMessage[38] = "Security system in alarm, partition ";
         char partition[2];
         itoa(partitionIndex + 1, partition, 10);
         strcat(pushMessage, partition);
 
-        if (dsc.partitionsAlarm[partitionIndex]) sendPush(pushMessage);
+        if (dsc.alarm[partitionIndex]) sendPush(pushMessage);
         else sendPush("Security system disarmed after alarm");
       }
 
-      if (dsc.partitionsFireChanged[partitionIndex]) {
-        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
 
         char pushMessage[40] = "Security system fire alarm, partition ";
         char partition[2];
         itoa(partitionIndex + 1, partition, 10);
         strcat(pushMessage, partition);
 
-        if (dsc.partitionsFire[partitionIndex]) sendPush(pushMessage);
+        if (dsc.fire[partitionIndex]) sendPush(pushMessage);
         else sendPush("Security system fire alarm restored");
       }
     }

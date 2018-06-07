@@ -80,14 +80,14 @@ void loop() {
     // Checks status per partition
     for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
-      if (dsc.partitionsArmedChanged[partitionIndex]) {
-        dsc.partitionsArmedChanged[partitionIndex] = false;  // Resets the partition armed status flag
-        if (dsc.partitionsArmed[partitionIndex]) {
+      if (dsc.armedChanged[partitionIndex]) {
+        dsc.armedChanged[partitionIndex] = false;  // Resets the partition armed status flag
+        if (dsc.armed[partitionIndex]) {
           Serial.print(F("Partition "));
           Serial.print(partitionIndex + 1);
           Serial.print(F(" armed"));
-          if (dsc.partitionsArmedAway[partitionIndex]) Serial.println(F(" away"));
-          if (dsc.partitionsArmedStay[partitionIndex]) Serial.println(F(" stay"));
+          if (dsc.armedAway[partitionIndex]) Serial.println(F(" away"));
+          if (dsc.armedStay[partitionIndex]) Serial.println(F(" stay"));
         }
         else {
           Serial.print(F("Partition "));
@@ -96,36 +96,36 @@ void loop() {
         }
       }
 
-      if (dsc.partitionsAlarmChanged[partitionIndex]) {
-        dsc.partitionsAlarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
-        if (dsc.partitionsAlarm[partitionIndex]) {
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+        if (dsc.alarm[partitionIndex]) {
           Serial.print(F("Partition "));
           Serial.print(partitionIndex + 1);
           Serial.println(F(" in alarm"));
         }
       }
 
-      if (dsc.partitionsExitDelayChanged[partitionIndex]) {
-        dsc.partitionsExitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
-        if (dsc.partitionsExitDelay[partitionIndex]) {
+      if (dsc.exitDelayChanged[partitionIndex]) {
+        dsc.exitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.exitDelay[partitionIndex]) {
           Serial.print(F("Partition "));
           Serial.print(partitionIndex + 1);
           Serial.println(F(" exit delay in progress"));
         }
       }
 
-      if (dsc.partitionsEntryDelayChanged[partitionIndex]) {
-        dsc.partitionsEntryDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
-        if (dsc.partitionsEntryDelay[partitionIndex]) {
+      if (dsc.entryDelayChanged[partitionIndex]) {
+        dsc.entryDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.entryDelay[partitionIndex]) {
           Serial.print(F("Partition "));
           Serial.print(partitionIndex + 1);
           Serial.println(F(" entry delay in progress"));
         }
       }
 
-      if (dsc.partitionsFireChanged[partitionIndex]) {
-        dsc.partitionsFireChanged[partitionIndex] = false;  // Resets the fire status flag
-        if (dsc.partitionsFire[partitionIndex]) {
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
+        if (dsc.fire[partitionIndex]) {
           Serial.print(F("Partition "));
           Serial.print(partitionIndex + 1);
           Serial.println(F(" fire alarm on"));
@@ -186,20 +186,20 @@ void loop() {
       }
     }
 
-    if (dsc.troubleStatusChanged) {
-      dsc.troubleStatusChanged = false;  // Resets the trouble status flag
-      if (dsc.troubleStatus) Serial.println(F("Trouble status on"));
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) Serial.println(F("Trouble status on"));
       else Serial.println(F("Trouble status restored"));
     }
 
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
       else Serial.println(F("Panel AC power restored"));
     }
 
-    if (dsc.batteryTroubleChanged) {
-      dsc.batteryTroubleChanged = false;  // Resets the battery trouble status flag
+    if (dsc.batteryChanged) {
+      dsc.batteryChanged = false;  // Resets the battery trouble status flag
       if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
       else Serial.println(F("Panel battery restored"));
     }
