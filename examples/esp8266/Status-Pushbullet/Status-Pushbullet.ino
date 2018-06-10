@@ -83,18 +83,6 @@ void loop() {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) sendPush("Security system in alarm");
-      else sendPush("Security system disarmed after alarm");
-    }
-
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) sendPush("Security system fire alarm on");
-      else sendPush("Security system fire alarm restored");
-    }
-
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
       sendPush("Security system fire alarm button pressed");
@@ -110,10 +98,38 @@ void loop() {
       sendPush("Security system panic alarm button pressed");
     }
 
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the battery trouble status flag
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the battery trouble status flag
       if (dsc.powerTrouble) sendPush("Security system AC power trouble");
       else sendPush("Security system AC power restored");
+    }
+
+    // Checks status per partition
+    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+
+        char pushMessage[38] = "Security system in alarm, partition ";
+        char partition[2];
+        itoa(partitionIndex + 1, partition, 10);
+        strcat(pushMessage, partition);
+
+        if (dsc.alarm[partitionIndex]) sendPush(pushMessage);
+        else sendPush("Security system disarmed after alarm");
+      }
+
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
+
+        char pushMessage[40] = "Security system fire alarm, partition ";
+        char partition[2];
+        itoa(partitionIndex + 1, partition, 10);
+        strcat(pushMessage, partition);
+
+        if (dsc.fire[partitionIndex]) sendPush(pushMessage);
+        else sendPush("Security system fire alarm restored");
+      }
     }
   }
 }

@@ -21,35 +21,35 @@ byte dscKeybusInterface::dscClockPin;
 byte dscKeybusInterface::dscReadPin;
 byte dscKeybusInterface::dscWritePin;
 char dscKeybusInterface::writeKey;
+byte dscKeybusInterface::writePartition;
 bool dscKeybusInterface::virtualKeypad;
-bool dscKeybusInterface::processKeypadData;
+bool dscKeybusInterface::processModuleData;
 byte dscKeybusInterface::panelData[dscReadSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
 volatile bool dscKeybusInterface::writeReady;
-volatile bool dscKeybusInterface::dataOverflow;
-volatile byte dscKeybusInterface::keybusData[dscReadSize];
-volatile bool dscKeybusInterface::keybusDataCaptured;
-volatile byte dscKeybusInterface::keybusByteCount;
-volatile byte dscKeybusInterface::keybusBitCount;
+volatile byte dscKeybusInterface::moduleData[dscReadSize];
+volatile bool dscKeybusInterface::moduleDataCaptured;
+volatile byte dscKeybusInterface::moduleByteCount;
+volatile byte dscKeybusInterface::moduleBitCount;
 volatile bool dscKeybusInterface::writeAlarm;
 volatile bool dscKeybusInterface::writeAsterisk;
 volatile bool dscKeybusInterface::wroteAsterisk;
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
-volatile byte dscKeybusInterface::panelBitCountBuffer[dscBufferSize];
-volatile byte dscKeybusInterface::panelByteCountBuffer[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
 volatile byte dscKeybusInterface::isrPanelBitTotal;
-volatile byte dscKeybusInterface::isrKeybusData[dscReadSize];
-volatile byte dscKeybusInterface::isrKeybusByteCount;
-volatile byte dscKeybusInterface::isrKeybusBitCount;
-volatile byte dscKeybusInterface::isrKeybusBitTotal;
+volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
+volatile byte dscKeybusInterface::isrModuleByteCount;
+volatile byte dscKeybusInterface::isrModuleBitCount;
+volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::queryCmd;
+volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 
 
@@ -59,9 +59,10 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   dscWritePin = setWritePin;
   if (dscWritePin != 255) virtualKeypad = true;
   writeReady = true;
-  processRedundantData = false;
+  processRedundantData = true;
   displayTrailingBits = false;
-  processKeypadData = false;
+  processModuleData = false;
+  writePartition = 1;
 }
 
 
@@ -103,8 +104,8 @@ bool dscKeybusInterface::handlePanel() {
   static byte panelBufferIndex = 1;
   byte dataIndex = panelBufferIndex - 1;
   for (byte i = 0; i < dscReadSize; i++) panelData[i] = panelBuffer[dataIndex][i];
-  panelBitCount = panelBitCountBuffer[dataIndex];
-  panelByteCount = panelByteCountBuffer[dataIndex];
+  panelBitCount = panelBufferBitCount[dataIndex];
+  panelByteCount = panelBufferByteCount[dataIndex];
   panelBufferIndex++;
 
   // Resets counters when the buffer is cleared
@@ -122,6 +123,18 @@ bool dscKeybusInterface::handlePanel() {
     else return false;
   }
 
+  static byte previousCmd0A[dscReadSize];
+  static byte previousCmdE6_20[dscReadSize];
+  switch (panelData[0]) {
+    case 0x0A:  // Status in programming
+      if (redundantPanelData(previousCmd0A, panelData)) return false;
+      break;
+
+    case 0xE6:  // Status in programming, zone lights 33-64
+      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;
+      break;
+  }
+
   // Skips redundant data from periodic commands sent at regular intervals, skipping is a configurable
   // option and the default behavior to help see new Keybus data when decoding the protocol
   if (!processRedundantData) {
@@ -135,7 +148,6 @@ bool dscKeybusInterface::handlePanel() {
     static byte previousCmd63[dscReadSize];
     static byte previousCmdB1[dscReadSize];
     static byte previousCmdC3[dscReadSize];
-    static byte previousCmdE6[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
         if (redundantPanelData(previousCmd11, panelData)) return false;
@@ -176,32 +188,31 @@ bool dscKeybusInterface::handlePanel() {
       case 0xC3:  // Unknown command
         if (redundantPanelData(previousCmdC3, panelData)) return false;
         break;
-
-      case 0xE6:  // Unknown command
-        if (redundantPanelData(previousCmdE6, panelData)) return false;
-        break;
     }
   }
 
   // Processes valid panel data
   switch (panelData[0]) {
-    case 0x05: processPanel_0x05(); break;
+    case 0x05:
+    case 0x1B: processPanelStatus(); break;
     case 0x27: processPanel_0x27(); break;
     case 0x2D: processPanel_0x2D(); break;
     case 0x34: processPanel_0x34(); break;
     case 0x3E: processPanel_0x3E(); break;
     case 0xA5: processPanel_0xA5(); break;
+    case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
+    case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;
   }
 
   return true;
 }
 
 
-bool dscKeybusInterface::handleKeybus() {
-  if (!keybusDataCaptured) return false;
-  keybusDataCaptured = false;
+bool dscKeybusInterface::handleModule() {
+  if (!moduleDataCaptured) return false;
+  moduleDataCaptured = false;
 
-  if (keybusBitCount < 8) return false;
+  if (moduleBitCount < 8) return false;
 
   // Skips periodic keypad slot query responses
   if (!processRedundantData && currentCmd == 0x11) {
@@ -209,14 +220,14 @@ bool dscKeybusInterface::handleKeybus() {
     byte checkedBytes = dscReadSize;
     static byte previousSlotData[dscReadSize];
     for (byte i = 0; i < checkedBytes; i++) {
-      if (previousSlotData[i] != keybusData[i]) {
+      if (previousSlotData[i] != moduleData[i]) {
         redundantData = false;
         break;
       }
     }
     if (redundantData) return false;
     else {
-      for (byte i = 0; i < dscReadSize; i++) previousSlotData[i] = keybusData[i];
+      for (byte i = 0; i < dscReadSize; i++) previousSlotData[i] = moduleData[i];
       return true;
     }
   }
@@ -261,12 +272,30 @@ void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
 // to resolve errors when additional keys are sent immediately after alarm keys.
 void dscKeybusInterface::write(const char receivedKey) {
   static unsigned long previousTime;
+  static bool setPartition;
   if (writeReady && millis() - previousTime > 500) {
     bool validKey = true;
     switch (receivedKey) {
+      case '/': setPartition = true; validKey = false; break;
       case '0': writeKey = 0x00; break;
-      case '1': writeKey = 0x05; break;
-      case '2': writeKey = 0x0A; break;
+      case '1': {
+        if (setPartition) {
+          writePartition = 1;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x05;
+        break;
+      }
+      case '2': {
+        if (setPartition) {
+          writePartition = 2;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x0A;
+        break;
+      }
       case '3': writeKey = 0x0F; break;
       case '4': writeKey = 0x11; break;
       case '5': writeKey = 0x16; break;
@@ -279,11 +308,11 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;  // Keypad fire alarm
       case 's':
-      case 'S': writeKey = 0xAF; writeArm = true; break;    // Arm stay
+      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;    // Arm stay
       case 'w':
-      case 'W': writeKey = 0xB1; writeArm = true; break;    // Arm away
+      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;    // Arm away
       case 'n':
-      case 'N': writeKey = 0xB6; writeArm = true; break;    // Arm with no entry delay (night arm)
+      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;    // Arm with no entry delay (night arm)
       case 'A':
       case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
       case 'c':
@@ -294,8 +323,6 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'p': writeKey = 0xDD; writeAlarm = true; break;  // Keypad panic alarm
       case 'x':
       case 'X': writeKey = 0xE1; break;                     // Exit
-      case '>': writeKey = 0xF2; break;                     // Right arrow (unconfirmed)
-      case '<': writeKey = 0xF7; break;                     // Left arrow (unconfirmed)
       default: {
         validKey = false;
         break;
@@ -367,6 +394,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   else {
     clockHighTime = micros() - previousClockHighTime;  // Tracks the clock high time to find the reset between commands
+    if (writePartition == 0 || writePartition > 2) writePartition = 1;  // Limits writing to partitions 1 and 2
 
     // Virtual keypad
     if (virtualKeypad) {
@@ -377,17 +405,17 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       if ((writeAlarm && !writeReady) || writeRepeat) {
 
         // Writes the first bit by shifting the alarm key data right 7 bits and checking bit 0
-        if (isrKeybusBitTotal == 0) {
+        if (isrModuleBitTotal == 0) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
         // Writes the remaining alarm key data
-        else if (writeStart && isrKeybusBitTotal > 0 && isrKeybusBitTotal <= 7) {
-          if (!((writeKey >> (7 - isrKeybusBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
+        else if (writeStart && isrModuleBitTotal > 0 && isrModuleBitTotal <= 7) {
+          if (!((writeKey >> (7 - isrModuleBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
           // Resets counters when the write is complete
-          if (isrKeybusBitTotal == 7) {
+          if (isrModuleBitTotal == 7) {
             writeReady = true;
             writeStart = false;
             writeAlarm = false;
@@ -400,20 +428,19 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == 2 && !queryCmd) {
-
+      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == (writePartition + 1) && statusCmd) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == 9) {
+        if (isrPanelBitTotal == (writePartition * 8) + 1) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
         // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal > 9 && isrPanelBitTotal <= 16) {
+        else if (writeStart && isrPanelBitTotal > (writePartition * 8) + 1 && isrPanelBitTotal <= (writePartition * 8) + 8) {
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
           // Resets counters when the write is complete
-          if (isrPanelBitTotal == 16) {
+          if (isrPanelBitTotal == (writePartition * 8) + 8) {
             if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
             else writeReady = true;
             writeStart = false;
@@ -448,10 +475,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   if (digitalRead(dscClockPin) == HIGH) {
 
     // Stops processing Keybus data at the dscReadSize limit
-    if (isrPanelByteCount >= dscReadSize) {
-      skipData = true;
-      dataOverflow = true;
-    }
+    if (isrPanelByteCount >= dscReadSize) skipData = true;
 
     else {
       if (isrPanelBitCount < 8) {
@@ -463,13 +487,12 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
 
       if (isrPanelBitTotal == 8) {
-        // Tests for a query command, used in dscClockInterrupt() to ensure keys are not written during a query
+        // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
-          case 0x11:
-          case 0x4C:
-          case 0x28:
-          case 0xD5: queryCmd = true; break;
-          default: queryCmd = false; break;
+          case 0x05:
+          case 0x0A:
+          case 0x1B: statusCmd = true; break;
+          default: statusCmd = false; break;
         }
 
         // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
@@ -494,39 +517,39 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
   // Keypads and modules send data while the clock is low
   else {
-    static bool keybusDataDetected = false;
+    static bool moduleDataDetected = false;
 
     // Keypad and module data is not buffered and skipped if the panel data buffer is filling
-    if (processKeypadData && isrKeybusByteCount < dscReadSize && panelBufferLength <= 1) {
+    if (processModuleData && isrModuleByteCount < dscReadSize && panelBufferLength <= 1) {
 
       // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
-      if (isrKeybusBitCount < 8) {
-        isrKeybusData[isrKeybusByteCount] <<= 1;
+      if (isrModuleBitCount < 8) {
+        isrModuleData[isrModuleByteCount] <<= 1;
         if (digitalRead(dscReadPin) == HIGH) {
-          isrKeybusData[isrKeybusByteCount] |= 1;
+          isrModuleData[isrModuleByteCount] |= 1;
         }
-        else keybusDataDetected = true;  // Keypads and modules send data by pulling the data line low
+        else moduleDataDetected = true;  // Keypads and modules send data by pulling the data line low
       }
 
-      // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with keybusData[] bytes
-      if (isrKeybusBitTotal == 7) {
-        isrKeybusData[1] = 1;  // Sets the stop bit manually to 1 in byte 1
-        isrKeybusBitCount = 0;
-        isrKeybusByteCount += 2;
+      // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with moduleData[] bytes
+      if (isrModuleBitTotal == 7) {
+        isrModuleData[1] = 1;  // Sets the stop bit manually to 1 in byte 1
+        isrModuleBitCount = 0;
+        isrModuleByteCount += 2;
       }
 
       // Increments the bit counter if the byte is incomplete
-      else if (isrKeybusBitCount < 7) {
-        isrKeybusBitCount++;
+      else if (isrModuleBitCount < 7) {
+        isrModuleBitCount++;
       }
 
       // Byte is complete, set the counters for the next byte
       else {
-        isrKeybusBitCount = 0;
-        isrKeybusByteCount++;
+        isrModuleBitCount = 0;
+        isrModuleByteCount++;
       }
 
-      isrKeybusBitTotal++;
+      isrModuleBitTotal++;
     }
 
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
@@ -537,13 +560,13 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (isrPanelBitTotal < 8) skipData = true;
       else switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
-        static byte previousCmd0A[dscReadSize];
-        case 0x05:  // Status
+        static byte previousCmd1B[dscReadSize];
+        case 0x05:  // Status: partitions 1-4
           if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
           break;
 
-        case 0x0A:  // Status in alarm, * programming
-          if (redundantPanelData(previousCmd0A, isrPanelData)) skipData = true;
+        case 0x1B:  // Status: partitions 5-8
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData = true;
           break;
       }
 
@@ -552,8 +575,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
-        panelBitCountBuffer[panelBufferLength] = isrPanelBitTotal;
-        panelByteCountBuffer[panelBufferLength] = isrPanelByteCount;
+        panelBufferBitCount[panelBufferLength] = isrPanelBitTotal;
+        panelBufferByteCount[panelBufferLength] = isrPanelByteCount;
         panelBufferLength++;
       }
 
@@ -564,22 +587,22 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       isrPanelByteCount = 0;
       skipData = false;
 
-      if (processKeypadData) {
+      if (processModuleData) {
 
         // Stores new keypad and module data - this data is not buffered
-        if (keybusDataDetected) {
-          keybusDataDetected = false;
-          keybusDataCaptured = true;  // Sets a flag for handleKeybus()
-          for (byte i = 0; i < dscReadSize; i++) keybusData[i] = isrKeybusData[i];
-          keybusBitCount = isrKeybusBitTotal;
-          keybusByteCount = isrKeybusByteCount;
+        if (moduleDataDetected) {
+          moduleDataDetected = false;
+          moduleDataCaptured = true;  // Sets a flag for handleModules()
+          for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+          moduleBitCount = isrModuleBitTotal;
+          moduleByteCount = isrModuleByteCount;
         }
 
-        // Resets the keybus capture data and counters
-        for (byte i = 0; i < dscReadSize; i++) isrKeybusData[i] = 0;
-        isrKeybusBitTotal = 0;
-        isrKeybusBitCount = 0;
-        isrKeybusByteCount = 0;
+        // Resets the keypad and module capture data and counters
+        for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+        isrModuleBitTotal = 0;
+        isrModuleBitCount = 0;
+        isrModuleByteCount = 0;
       }
     }
   }

@@ -2,7 +2,7 @@
  *  DSC Status (Arduino, esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
- *  virtual keypad.  This demonstrates how to determine if the security system status has changed and what has
+ *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Wiring:
@@ -77,68 +77,65 @@ void loop() {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
-    if (dsc.troubleStatusChanged) {
-      dsc.troubleStatusChanged = false;  // Resets the trouble status flag
-      if (dsc.troubleStatus) Serial.println(F("Trouble status on"));
-      else Serial.println(F("Trouble status restored"));
-    }
+    // Checks status per partition
+    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
 
-    if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
-      if (dsc.partitionArmed) {
-        Serial.print(F("Partition armed"));
-        if (dsc.partitionArmedAway) Serial.println(F(" away"));
-        if (dsc.partitionArmedStay) Serial.println(F(" stay"));
+      if (dsc.armedChanged[partitionIndex]) {
+        dsc.armedChanged[partitionIndex] = false;  // Resets the partition armed status flag
+        if (dsc.armed[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.print(F(" armed"));
+          if (dsc.armedAway[partitionIndex]) Serial.println(F(" away"));
+          if (dsc.armedStay[partitionIndex]) Serial.println(F(" stay"));
+        }
+        else {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" disarmed"));
+        }
       }
-      else Serial.println(F("Partition disarmed"));
-    }
 
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) Serial.println(F("Partition in alarm"));
-    }
+      if (dsc.alarmChanged[partitionIndex]) {
+        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+        if (dsc.alarm[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" in alarm"));
+        }
+      }
 
-    if (dsc.exitDelayChanged) {
-      dsc.exitDelayChanged = false;  // Resets the exit delay status flag
-      if (dsc.exitDelay) Serial.println(F("Exit delay in progress"));
-    }
+      if (dsc.exitDelayChanged[partitionIndex]) {
+        dsc.exitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.exitDelay[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" exit delay in progress"));
+        }
+      }
 
-    if (dsc.entryDelayChanged) {
-      dsc.entryDelayChanged = false;  // Resets the entry delay status flag
-      if (dsc.entryDelay) Serial.println(F("Entry delay in progress"));
-    }
+      if (dsc.entryDelayChanged[partitionIndex]) {
+        dsc.entryDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
+        if (dsc.entryDelay[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" entry delay in progress"));
+        }
+      }
 
-    if (dsc.batteryTroubleChanged) {
-      dsc.batteryTroubleChanged = false;  // Resets the battery trouble status flag
-      if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
-      else Serial.println(F("Panel battery restored"));
-    }
-
-    if (dsc.powerTroubleChanged) {
-      dsc.powerTroubleChanged = false;  // Resets the power trouble status flag
-      if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
-      else Serial.println(F("Panel AC power restored"));
-    }
-
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Serial.println(F("Fire alarm on"));
-      else Serial.println(F("Fire alarm restored"));
-    }
-
-    if (dsc.keypadFireAlarm) {
-      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      Serial.println(F("Keypad fire alarm"));
-    }
-
-    if (dsc.keypadAuxAlarm) {
-      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      Serial.println(F("Keypad aux alarm"));
-    }
-
-    if (dsc.keypadPanicAlarm) {
-      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      Serial.println(F("Keypad panic alarm"));
+      if (dsc.fireChanged[partitionIndex]) {
+        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
+        if (dsc.fire[partitionIndex]) {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" fire alarm on"));
+        }
+        else {
+          Serial.print(F("Partition "));
+          Serial.print(partitionIndex + 1);
+          Serial.println(F(" fire alarm restored"));
+        }
+      }
     }
 
     // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
@@ -148,7 +145,7 @@ void loop() {
     //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
@@ -172,7 +169,7 @@ void loop() {
     //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
@@ -187,6 +184,39 @@ void loop() {
           }
         }
       }
+    }
+
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) Serial.println(F("Trouble status on"));
+      else Serial.println(F("Trouble status restored"));
+    }
+
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the power trouble status flag
+      if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
+      else Serial.println(F("Panel AC power restored"));
+    }
+
+    if (dsc.batteryChanged) {
+      dsc.batteryChanged = false;  // Resets the battery trouble status flag
+      if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
+      else Serial.println(F("Panel battery restored"));
+    }
+
+    if (dsc.keypadFireAlarm) {
+      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
+      Serial.println(F("Keypad fire alarm"));
+    }
+
+    if (dsc.keypadAuxAlarm) {
+      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
+      Serial.println(F("Keypad aux alarm"));
+    }
+
+    if (dsc.keypadPanicAlarm) {
+      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
+      Serial.println(F("Keypad panic alarm"));
     }
   }
 }

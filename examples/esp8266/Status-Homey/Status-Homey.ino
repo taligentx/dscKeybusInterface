@@ -1,7 +1,7 @@
 /*
  *  DSC Status with Homey (esp8266)
  *
- *  Processes the security system status and allows for control using Athom Homey.
+ *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
  *  Athom Homey: https://www.athom.com/en/
  *  Arduino library for communicating with Homey: https://github.com/athombv/homey-arduino-library
@@ -108,26 +108,26 @@ void loop() {
     }
 
     // Publish armed status
-    if (dsc.partitionArmedChanged) {
-      dsc.partitionArmedChanged = false;  // Resets the partition armed status flag
-      if (dsc.partitionArmed) {
-        if (dsc.partitionArmedAway) Homey.setCapabilityValue("homealarm_state", "armed", true);
-        if (dsc.partitionArmedStay) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
+    if (dsc.armedChanged[0]) {
+      dsc.armedChanged[0] = false;  // Resets the partition armed status flag
+      if (dsc.armed[0]) {
+        if (dsc.armedAway[0]) Homey.setCapabilityValue("homealarm_state", "armed", true);
+        if (dsc.armedStay[0]) Homey.setCapabilityValue("homealarm_state", "partially_armed", true);
       }
       else Homey.setCapabilityValue("homealarm_state", "disarmed", true);
     }
 
     // Publish alarm status
-    if (dsc.partitionAlarmChanged) {
-      dsc.partitionAlarmChanged = false;  // Resets the partition alarm status flag
-      if (dsc.partitionAlarm) Homey.setCapabilityValue("alarm_tamper", true);
+    if (dsc.alarmChanged[0]) {
+      dsc.alarmChanged[0] = false;  // Resets the partition alarm status flag
+      if (dsc.alarm[0]) Homey.setCapabilityValue("alarm_tamper", true);
       else Homey.setCapabilityValue("alarm_tamper", false);
     }
 
     // Publish fire alarm status
-    if (dsc.fireStatusChanged) {
-      dsc.fireStatusChanged = false;  // Resets the fire status flag
-      if (dsc.fireStatus) Homey.setCapabilityValue("alarm_fire", true);
+    if (dsc.fireChanged[0]) {
+      dsc.fireChanged[0] = false;  // Resets the fire status flag
+      if (dsc.fire[0]) Homey.setCapabilityValue("alarm_fire", true);
       else Homey.setCapabilityValue("alarm_fire", false);
     }
 
@@ -139,7 +139,7 @@ void loop() {
     //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged) {
       dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
@@ -162,7 +162,7 @@ void loop() {
     //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
-      for (byte zoneGroup = 0; zoneGroup < 8; zoneGroup++) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag

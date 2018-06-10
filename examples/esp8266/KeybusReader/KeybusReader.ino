@@ -43,9 +43,9 @@
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin 3  // Arduino Uno: 2,3  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin 4   // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin 5  // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // Arduino Uno: 2,3  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin D2   // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscWritePin D8  // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 
@@ -56,8 +56,8 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: false)
-  dsc.processKeypadData = true;      // Controls if keypad and module data is processed and displayed (default: false)
+  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: true)
+  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
   // Starts the Keybus interface and optionally specifies how to print data.
@@ -77,11 +77,6 @@ void loop() {
 
   if (dsc.handlePanel()) {
 
-    // If the Keybus data size limit is exceeded on this panel, post an issue with the panel model:
-    // https://github.com/taligentx/dscKeybusInterface
-    if (dsc.dataOverflow) Serial.println(F("Keybus data overflow"));
-    dsc.dataOverflow = false;
-
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
@@ -98,23 +93,23 @@ void loop() {
     Serial.println();
 
     // Prints keypad and module data when valid panel data is printed
-    if (dsc.handleKeybus()) {
+    if (dsc.handleModule()) {
       printTimestamp();
       Serial.print(" ");
-      dsc.printKeybusBinary();   // Optionally prints without spaces: printKeybusBinary(false);
+      dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
       Serial.print(" ");
-      dsc.printKeybusMessage();  // Prints the decoded message
+      dsc.printModuleMessage();  // Prints the decoded message
       Serial.println();
     }
   }
 
   // Prints keypad and module data when valid panel data is not available
-  else if (dsc.handleKeybus()) {
+  else if (dsc.handleModule()) {
     printTimestamp();
     Serial.print(" ");
-    dsc.printKeybusBinary();  // Optionally prints without spaces: printKeybusBinary(false);
+    dsc.printModuleBinary();  // Optionally prints without spaces: printKeybusBinary(false);
     Serial.print(" ");
-    dsc.printKeybusMessage();
+    dsc.printModuleMessage();
     Serial.println();
   }
 }

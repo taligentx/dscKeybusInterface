@@ -1,3 +1,5 @@
+_**Note**: This is a development branch for testing: partitions 2-8, zones 33-64, virtual keypad partitions 1 & 2.  The library methods have changed to accommodate multiple partitions and the previous methods have been removed - see the examples sketches for usage.  The new methods should not change in the future and can be considered stable (in theory!)._
+
 # DSC Keybus Interface
 This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant and Apple HomeKit using MQTT, sending push notifications/email, and reading/decoding Keybus data.
 
@@ -5,16 +7,20 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 
 ![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
-## Status
-This master branch is an earlier release supporting 1 partition up to 32 zones and will soon be replaced (after additional feedback and testing) by the develop branch supporting partitions 1-8 and zones 1-64 .  As the library methods have changed, I recommend using the develop branch for new sketches.
+## Features
+* Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864
+* Partitions: 1-8, zones: 1-64
+* Virtual keypad: supports sending keys to the panel for partitions 1 and 2
+* Data buffering: helps prevent missing Keybus data when the sketch is busy
+* Non-blocking code: allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
 
 ## Usage
-Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, git clone the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
+Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, `git clone` the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
 
-  This is primarily to help decode the Keybus protocol - for the PC1555MX, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat, smoke alarm, and wireless commands as I do not have these modules.
+  This is primarily to help decode the Keybus protocol - at this point, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat and wireless commands as I do not have these modules.
 
   See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
@@ -33,7 +39,7 @@ Download the repo and extract to the Arduino library directory or [install throu
 
 * Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 
-  Note: homebridge-mqttthing seems to have a bug for the smokeSensor object, for now I've issued a fix:  [taligentx/homebridge-mqttthing](https://github.com/taligentx/homebridge-mqttthing)
+  Note: homebridge-mqttthing seems to have a bug for the smokeSensor object, I've fixed the bug and forked the repo until upstream is patched:  [taligentx/homebridge-mqttthing](https://github.com/taligentx/homebridge-mqttthing)
 
 * Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as fire alarm and zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
@@ -70,7 +76,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 ```
 
 ## Wiring Notes
-* The DSC Keybus operates at 12v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.
+* The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.
 * Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 and 3.  The DSC Green (Data) line can be connected to the remaining digital pins 2-12.
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
 * Virtual keypad uses an NPN transistor and a resistor to write to the Keybus.  Most small signal NPN transistors should be suitable, for example:
@@ -79,7 +85,9 @@ DSC Aux(+) ---+--- Arduino Vin pin
   * That random NPN at the bottom of your parts bin (my choice)
 
 ## Virtual keypad
-This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.  The following keys can be sent to the panel (see the examples for usage):
+This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.
+
+Keys are sent to partition 1 by default and can be changed to a different partition (currently supports partitions 1 and 2).  The following keys can be sent to the panel - see the examples for usage:
 
 * Keypad: `0-9 * #`
 * Arm stay (requires access code if quick arm is disabled): `s`
@@ -91,8 +99,11 @@ This allows a sketch to send keys to the DSC panel to emulate the physical DSC k
 * Door chime: `c`
 * Reset: `r`
 * Exit: `x`
-* Right arrow (unconfirmed): `>`
-* Left arrow (unconfirmed): `<`
+* Change partition: `/` + `partition number` or set `writePartition` to the partition number
+  Examples:
+  * Switch to partition 2 and send keys: `/2` + `1234`
+  * Switch back to partition 1: `/1`
+  * Set directly in sketch: `dsc.writePartition = 1`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:
@@ -101,6 +112,7 @@ Panel options affecting this interface, configured by `*8 + installer code`:
   This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
 
 ## Notes
+* Memory usage can be reduced by lowering the number of partitions and zones specified in `src/dscKeybusInterface.h`.  By default, Arduino monitors up to 4 partitions/32 zones and esp8266 monitors up to 8 partitions/64 zones.
 * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I observed keypad data delayed up to 160us after the clock falls.
 
 ## References
