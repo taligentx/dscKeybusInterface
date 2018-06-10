@@ -5,18 +5,18 @@ begin	KEYWORD2
 write	KEYWORD2
 writeReady	KEYWORD2
 handlePanel	KEYWORD2
-handleKeybus	KEYWORD2
+handleModule	KEYWORD2
 
 printPanelBinary	KEYWORD2
 printPanelCommand	KEYWORD2
 printPanelMessage	KEYWORD2
-printKeybusBinary	KEYWORD2
-printKeybusMessage	KEYWORD2
+printModuleBinary	KEYWORD2
+printModuleMessage	KEYWORD2
 
 hideKeypadDigits	KEYWORD2
 processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
-processKeypadData	KEYWORD2
+processModuleData	KEYWORD2
 
 statusChanged	KEYWORD2
 accessCodePrompt	KEYWORD2

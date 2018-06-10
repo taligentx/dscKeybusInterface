@@ -69,27 +69,27 @@ void dscKeybusInterface::printPanelMessage() {
 }
 
 
-void dscKeybusInterface::printKeybusMessage() {
-  switch (keybusData[0]) {
-    case 0x77: printKeybus_0x77(); return;  // Keypad fire alarm
-    case 0xBB: printKeybus_0xBB(); return;  // Keypad auxiliary alarm
-    case 0xDD: printKeybus_0xDD(); return;  // Keypad panic alarm
+void dscKeybusInterface::printModuleMessage() {
+  switch (moduleData[0]) {
+    case 0x77: printModule_0x77(); return;  // Keypad fire alarm
+    case 0xBB: printModule_0xBB(); return;  // Keypad auxiliary alarm
+    case 0xDD: printModule_0xDD(); return;  // Keypad panic alarm
   }
 
   // Keypad and module responses to panel queries
   switch (currentCmd) {
-    case 0x11: printKeybus_Panel_0x11(); return;  // Keypad slot query response
-    case 0xD5: printKeybus_Panel_0xD5(); return;  // Keypad zone query response
+    case 0x11: printModule_Panel_0x11(); return;  // Keypad slot query response
+    case 0xD5: printModule_Panel_0xD5(); return;  // Keypad zone query response
   }
 
   // Keypad and module status update notifications
-  if (keybusData[4] != 0xFF || keybusData[5] != 0xFF) {
-    printKeybus_Notification();
+  if (moduleData[4] != 0xFF || moduleData[5] != 0xFF) {
+    printModule_Notification();
     return;
   }
 
   // Keypad keys
-  printKeybus_Keys();
+  printModule_Keys();
 }
 
 
@@ -1805,7 +1805,7 @@ void dscKeybusInterface::printPanel_0xE6_0x2B() {
   }
 
   bool enabledZones = false;
-  stream->print(F(" | Enabled zones  1-32: "));
+  stream->print(F("| Enabled zones  1-32: "));
   for (byte panelByte = 4; panelByte <= 7; panelByte++) {
     if (panelData[panelByte] != 0) {
       enabledZones = true;
@@ -1832,7 +1832,7 @@ void dscKeybusInterface::printPanel_0xE6_0x2C() {
   }
 
   bool enabledZones = false;
-  stream->print(F(" | Enabled zones 33-64: "));
+  stream->print(F("| Enabled zones 33-64: "));
   for (byte panelByte = 4; panelByte <= 7; panelByte++) {
     if (panelData[panelByte] != 0) {
       enabledZones = true;
@@ -1946,7 +1946,7 @@ void dscKeybusInterface::printPanel_0xEB() {
  *
  *  01110111 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
  */
-void dscKeybusInterface::printKeybus_0x77() {
+void dscKeybusInterface::printModule_0x77() {
   stream->print(F("[Keypad] Fire alarm"));
 }
 
@@ -1956,7 +1956,7 @@ void dscKeybusInterface::printKeybus_0x77() {
  *
  *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
  */
-void dscKeybusInterface::printKeybus_0xBB() {
+void dscKeybusInterface::printModule_0xBB() {
   stream->print(F("[Keypad] Auxiliary alarm"));
 }
 
@@ -1966,7 +1966,7 @@ void dscKeybusInterface::printKeybus_0xBB() {
  *
  *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
  */
-void dscKeybusInterface::printKeybus_0xDD() {
+void dscKeybusInterface::printModule_0xDD() {
   stream->print(F("[Keypad] Panic alarm"));
 }
 
@@ -1975,8 +1975,8 @@ void dscKeybusInterface::printKeybus_0xDD() {
  *  Keybus status notifications
  */
 
-void dscKeybusInterface::printKeybus_Notification() {
-  switch (keybusData[4]) {
+void dscKeybusInterface::printModule_Notification() {
+  switch (moduleData[4]) {
     // Zone expander: status update notification, panel responds with 0x28
     // 11111111 1 11111111 11111111 10111111 11111111 [Zone Expander] Status notification
     // 00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query
@@ -1992,7 +1992,7 @@ void dscKeybusInterface::printKeybus_Notification() {
       break;
   }
 
-  switch (keybusData[5]) {
+  switch (moduleData[5]) {
     // Keypad: zone status update notification, panel responds with 0xD5 query
     // 11111111 1 11111111 11111111 11111111 11111011 [Keypad] Zone status notification
     // 11010101 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0xD5] Keypad zone query
@@ -2009,16 +2009,16 @@ void dscKeybusInterface::printKeybus_Notification() {
  *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Keypad slot query
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slots active: 1
  */
-void dscKeybusInterface::printKeybus_Panel_0x11() {
+void dscKeybusInterface::printModule_Panel_0x11() {
   stream->print(F("[Keypad] Slots active: "));
-  if ((keybusData[2] & 0xC0) == 0) stream->print(F("1 "));
-  if ((keybusData[2] & 0x30) == 0) stream->print(F("2 "));
-  if ((keybusData[2] & 0x0C) == 0) stream->print(F("3 "));
-  if ((keybusData[2] & 0x03) == 0) stream->print(F("4 "));
-  if ((keybusData[3] & 0xC0) == 0) stream->print(F("5 "));
-  if ((keybusData[3] & 0x30) == 0) stream->print(F("6 "));
-  if ((keybusData[3] & 0x0C) == 0) stream->print(F("7 "));
-  if ((keybusData[3] & 0x03) == 0) stream->print(F("8 "));
+  if ((moduleData[2] & 0xC0) == 0) stream->print(F("1 "));
+  if ((moduleData[2] & 0x30) == 0) stream->print(F("2 "));
+  if ((moduleData[2] & 0x0C) == 0) stream->print(F("3 "));
+  if ((moduleData[2] & 0x03) == 0) stream->print(F("4 "));
+  if ((moduleData[3] & 0xC0) == 0) stream->print(F("5 "));
+  if ((moduleData[3] & 0x30) == 0) stream->print(F("6 "));
+  if ((moduleData[3] & 0x0C) == 0) stream->print(F("7 "));
+  if ((moduleData[3] & 0x03) == 0) stream->print(F("8 "));
 }
 
 
@@ -2040,15 +2040,15 @@ void dscKeybusInterface::printKeybus_Panel_0x11() {
  *  11111111 1 00110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone closed // NC
  *  11111111 1 00111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1 | Zone closed  //After exiting *8 programming after NC
  */
-void dscKeybusInterface::printKeybus_Panel_0xD5() {
+void dscKeybusInterface::printModule_Panel_0xD5() {
   stream->print(F("[Keypad] "));
   bool firstData = true;
-  for (byte keybusByte = 2; keybusByte <= 9; keybusByte++) {
-    byte slotData = keybusData[keybusByte];
+  for (byte moduleByte = 2; moduleByte <= 9; moduleByte++) {
+    byte slotData = moduleData[moduleByte];
     if (slotData < 0xFF) {
       if (firstData) stream->print(F("Slot "));
       else stream->print(F(" | Slot "));
-      stream->print(keybusByte - 1);
+      stream->print(moduleByte - 1);
       if ((slotData & 0x03) == 0x03 && (slotData & 0x30) == 0) stream->print(F(" zone open"));
       if ((slotData & 0x03) == 0 && (slotData & 0x30) == 0x30) stream->print(F(" zone closed"));
       firstData = false;
@@ -2060,30 +2060,27 @@ void dscKeybusInterface::printKeybus_Panel_0xD5() {
 /*
  *  Keypad: keys
  *
- *  The panel rejects unknown keypad data - all keys that are accepted by
- *  the panel are included here.
- *
  *  11111111 1 00000101 11111111 11111111 11111111 [Keypad] 1
  *  11111111 1 00101101 11111111 11111111 11111111 [Keypad] #
  */
-void dscKeybusInterface::printKeybus_Keys() {
+void dscKeybusInterface::printModule_Keys() {
   stream->print(F("[Keypad] "));
 
   byte keyByte = 2;
-  if (keybusData[2] != 0xFF && keybusData[3] == 0xFF) {
+  if (moduleData[2] != 0xFF && moduleData[3] == 0xFF) {
     stream->print(F("Partition 1 | Key: "));
   }
-  else if (keybusData[2] == 0xFF && keybusData[3] != 0xFF) {
+  else if (moduleData[2] == 0xFF && moduleData[3] != 0xFF) {
     stream->print(F("Partition 2 | Key: "));
     keyByte = 3;
   }
 
-  if (hideKeypadDigits && (keybusData[2] <= 0x27 || keybusData[3] <= 0x27)) {
+  if (hideKeypadDigits && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27)) {
     stream->print(F("[Digit]"));
     return;
   }
 
-  switch (keybusData[keyByte]) {
+  switch (moduleData[keyByte]) {
     case 0x00: stream->print(F("0")); break;
     case 0x05: stream->print(F("1")); break;
     case 0x0A: stream->print(F("2")); break;
@@ -2118,7 +2115,7 @@ void dscKeybusInterface::printKeybus_Keys() {
     case 0xF7: stream->print(F("Left/right arrow")); break;
     default:
       stream->print(F("Unrecognized key: 0x"));
-      stream->print(keybusData[keyByte], HEX);
+      stream->print(moduleData[keyByte], HEX);
       break;
   }
 }
@@ -2151,24 +2148,24 @@ void dscKeybusInterface::printPanelBinary(bool printSpaces) {
 }
 
 
-void dscKeybusInterface::printKeybusBinary(bool printSpaces) {
-  for (byte keybusByte = 0; keybusByte < keybusByteCount; keybusByte++) {
-    if (keybusByte == 1) stream->print(keybusData[keybusByte]);  // Prints the stop bit
-    else if (hideKeypadDigits && (keybusByte == 2 || keybusByte == 3) && (keybusData[2] <= 0x27 || keybusData[3] <= 0x27) && !queryResponse) stream->print(F("........"));  // Hides keypad digits
+void dscKeybusInterface::printModuleBinary(bool printSpaces) {
+  for (byte moduleByte = 0; moduleByte < moduleByteCount; moduleByte++) {
+    if (moduleByte == 1) stream->print(moduleData[moduleByte]);  // Prints the stop bit
+    else if (hideKeypadDigits && (moduleByte == 2 || moduleByte == 3) && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27) && !queryResponse) stream->print(F("........"));  // Hides keypad digits
     else {
       for (byte mask = 0x80; mask; mask >>= 1) {
-        if (mask & keybusData[keybusByte]) stream->print("1");
+        if (mask & moduleData[moduleByte]) stream->print("1");
         else stream->print("0");
       }
     }
-    if (printSpaces && (keybusByte != keybusByteCount - 1 || displayTrailingBits)) stream->print(" ");
+    if (printSpaces && (moduleByte != moduleByteCount - 1 || displayTrailingBits)) stream->print(" ");
   }
 
   if (displayTrailingBits) {
-    byte trailingBits = (keybusBitCount - 1) % 8;
+    byte trailingBits = (moduleBitCount - 1) % 8;
     if (trailingBits > 0) {
       for (int i = trailingBits - 1; i >= 0; i--) {
-        stream->print(bitRead(keybusData[keybusByteCount], i));
+        stream->print(bitRead(moduleData[moduleByteCount], i));
       }
     }
   }

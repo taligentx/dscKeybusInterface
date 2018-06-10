@@ -57,7 +57,7 @@ void setup() {
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
   dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: true)
-  dsc.processKeypadData = true;      // Controls if keypad and module data is processed and displayed (default: false)
+  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
   // Starts the Keybus interface and optionally specifies how to print data.
@@ -93,23 +93,23 @@ void loop() {
     Serial.println();
 
     // Prints keypad and module data when valid panel data is printed
-    if (dsc.handleKeybus()) {
+    if (dsc.handleModule()) {
       printTimestamp();
       Serial.print(" ");
-      dsc.printKeybusBinary();   // Optionally prints without spaces: printKeybusBinary(false);
+      dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
       Serial.print(" ");
-      dsc.printKeybusMessage();  // Prints the decoded message
+      dsc.printModuleMessage();  // Prints the decoded message
       Serial.println();
     }
   }
 
   // Prints keypad and module data when valid panel data is not available
-  else if (dsc.handleKeybus()) {
+  else if (dsc.handleModule()) {
     printTimestamp();
     Serial.print(" ");
-    dsc.printKeybusBinary();  // Optionally prints without spaces: printKeybusBinary(false);
+    dsc.printModuleBinary();  // Optionally prints without spaces: printKeybusBinary(false);
     Serial.print(" ");
-    dsc.printKeybusMessage();
+    dsc.printModuleMessage();
     Serial.println();
   }
 }

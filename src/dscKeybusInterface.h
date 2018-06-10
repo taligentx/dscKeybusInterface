@@ -43,15 +43,15 @@ class dscKeybusInterface {
 
     void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
     bool handlePanel();                               // Returns true if valid panel data is available
-    bool handleKeybus();                              // Returns true if valid keypad or module data is available
+    bool handleModule();                              // Returns true if valid keypad or module data is available
     static volatile bool writeReady;                  // True if the library is ready to write a key
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
     void printPanelCommand();                         // Prints the panel command as hex
     void printPanelMessage();                         // Prints the decoded panel message
-    void printKeybusBinary(bool printSpaces = true);  // Includes spaces between bytes by default
-    void printKeybusMessage();                        // Prints the decoded keypad or module message
+    void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
+    void printModuleMessage();                        // Prints the decoded keypad or module message
 
     // Set to a partition number for virtual keypad - currently supports partitions 1 and 2
     static byte writePartition;
@@ -59,7 +59,7 @@ class dscKeybusInterface {
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
     bool processRedundantData;      // Controls if repeated periodic commands are processed and displayed (default: false)
-    static bool processKeypadData;  // Controls if keypad and module data is processed and displayed (default: false)
+    static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)
     bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
     // Panel time
@@ -86,14 +86,14 @@ class dscKeybusInterface {
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
 
     // Panel and keypad data is stored in an array: command [0], stop bit by itself [1], followed by the remaining
-    // data.  panelData[] and keybusData[] can be accessed directly within the sketch.
+    // data.  panelData[] and moduleData[] can be accessed directly within the sketch.
     //
     // panelData[] example:
     //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
     //   00000101 0 10000001 00000001 10010001 11000111 [0x05] Status lights: Ready Backlight | Partition ready
     //            ^ Byte 1 (stop bit)
     static byte panelData[dscReadSize];
-    static volatile byte keybusData[dscReadSize];
+    static volatile byte moduleData[dscReadSize];
 
     // True if dscBufferSize needs to be increased
     static volatile bool bufferOverflow;
@@ -173,13 +173,13 @@ class dscKeybusInterface {
     void printPanel_0xE6_0x41();
     void printPanel_0xEB();
 
-    void printKeybus_0x77();
-    void printKeybus_0xBB();
-    void printKeybus_0xDD();
-    void printKeybus_Panel_0x11();
-    void printKeybus_Panel_0xD5();
-    void printKeybus_Notification();
-    void printKeybus_Keys();
+    void printModule_0x77();
+    void printModule_0xBB();
+    void printModule_0xDD();
+    void printModule_Panel_0x11();
+    void printModule_Panel_0xD5();
+    void printModule_Notification();
+    void printModule_Keys();
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
@@ -204,15 +204,15 @@ class dscKeybusInterface {
     static char writeKey;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
-    static volatile bool keybusDataCaptured;
+    static volatile bool moduleDataCaptured;
     static volatile unsigned long clockHighTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
-    static volatile byte keybusBitCount, keybusByteCount;
+    static volatile byte moduleBitCount, moduleByteCount;
     static volatile byte currentCmd, statusCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrKeybusData[dscReadSize], isrKeybusBitTotal, isrKeybusBitCount, isrKeybusByteCount;
+    static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
 
 #endif  // dscKeybusInterface_h
