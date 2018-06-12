@@ -1,4 +1,4 @@
-#### Simple Single Sided PCB
+## Simple Single Sided PCB
 
 ![simple single sided pcb](pcb_screenshot.png "Simple Single Sided PCB")
 
