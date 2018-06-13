@@ -78,61 +78,61 @@ void loop() {
     dsc.bufferOverflow = false;
 
     // Checks status per partition
-    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      if (dsc.armedChanged[partitionIndex]) {
-        dsc.armedChanged[partitionIndex] = false;  // Resets the partition armed status flag
-        if (dsc.armed[partitionIndex]) {
+      if (dsc.armedChanged[partition]) {
+        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
+        if (dsc.armed[partition]) {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.print(F(" armed"));
-          if (dsc.armedAway[partitionIndex]) Serial.println(F(" away"));
-          if (dsc.armedStay[partitionIndex]) Serial.println(F(" stay"));
+          if (dsc.armedAway[partition]) Serial.println(F(" away"));
+          if (dsc.armedStay[partition]) Serial.println(F(" stay"));
         }
         else {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" disarmed"));
         }
       }
 
-      if (dsc.alarmChanged[partitionIndex]) {
-        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
-        if (dsc.alarm[partitionIndex]) {
+      if (dsc.alarmChanged[partition]) {
+        dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
+        if (dsc.alarm[partition]) {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" in alarm"));
         }
       }
 
-      if (dsc.exitDelayChanged[partitionIndex]) {
-        dsc.exitDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
-        if (dsc.exitDelay[partitionIndex]) {
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+        if (dsc.exitDelay[partition]) {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" exit delay in progress"));
         }
       }
 
-      if (dsc.entryDelayChanged[partitionIndex]) {
-        dsc.entryDelayChanged[partitionIndex] = false;  // Resets the exit delay status flag
-        if (dsc.entryDelay[partitionIndex]) {
+      if (dsc.entryDelayChanged[partition]) {
+        dsc.entryDelayChanged[partition] = false;  // Resets the exit delay status flag
+        if (dsc.entryDelay[partition]) {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" entry delay in progress"));
         }
       }
 
-      if (dsc.fireChanged[partitionIndex]) {
-        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
-        if (dsc.fire[partitionIndex]) {
+      if (dsc.fireChanged[partition]) {
+        dsc.fireChanged[partition] = false;  // Resets the fire status flag
+        if (dsc.fire[partition]) {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" fire alarm on"));
         }
         else {
           Serial.print(F("Partition "));
-          Serial.print(partitionIndex + 1);
+          Serial.print(partition + 1);
           Serial.println(F(" fire alarm restored"));
         }
       }
@@ -149,13 +149,13 @@ void loop() {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
-            if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
+            if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {       // Zone open
               Serial.print(F("Zone open: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));        // Determines the zone number
             }
-            else {
+            else {                                                  // Zone closed
               Serial.print(F("Zone restored: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));        // Determines the zone number
             }
           }
         }
@@ -173,13 +173,13 @@ void loop() {
         for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
-            if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
+            if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {       // Zone alarm
               Serial.print(F("Zone alarm: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));         // Determines the zone number
             }
             else {
               Serial.print(F("Zone alarm restored: "));
-              Serial.println(zoneBit + 1 + (zoneGroup * 8));
+              Serial.println(zoneBit + 1 + (zoneGroup * 8));         // Determines the zone number
             }
           }
         }

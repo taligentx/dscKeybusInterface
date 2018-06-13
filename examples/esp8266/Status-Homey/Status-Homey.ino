@@ -182,9 +182,9 @@ void loop() {
 
 // Handles messages received from Homey
 
-// Stay Arm
+// Arm stay
 void armStay() {
-   if (Homey.value.toInt() == 1 && !dsc.partitionArmed && !dsc.exitDelay) {  // Read the argument sent from the homey flow
+   if (Homey.value.toInt() == 1 && !dsc.armed[0] && !dsc.exitDelay[0]) {  // Read the argument sent from the homey flow
      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
      dsc.write('s');  // Keypad stay arm
 
@@ -192,9 +192,9 @@ void armStay() {
 }
 
 
-// Away arm
+// Arm away
 void armAway() {
-   if (Homey.value.toInt() == 1 && !dsc.partitionArmed && !dsc.exitDelay) {  // Read the argument sent from the homey flow
+   if (Homey.value.toInt() == 1 && !dsc.armed[0] && !dsc.exitDelay[0]) {  // Read the argument sent from the homey flow
      while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
      dsc.write('w');  // Keypad away arm
   }
@@ -203,7 +203,7 @@ void armAway() {
 
 // Disarm
 void disarm() {
-   if (Homey.value.toInt() == 1 && (dsc.partitionArmed || dsc.exitDelay)) {
+   if (Homey.value.toInt() == 1 && (dsc.armed[0] || dsc.exitDelay[0])) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.write(accessCode);
   }

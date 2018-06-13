@@ -108,29 +108,29 @@ void loop() {
     }
 
     // Checks status per partition
-    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      if (dsc.alarmChanged[partitionIndex]) {
-        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+      if (dsc.alarmChanged[partition]) {
+        dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char emailBody[12] = "Partition ";
-        char partition[2];
-        itoa(partitionIndex + 1, partition, 10);
-        strcat(emailBody, partition);
+        char partitionNumber[2];
+        itoa(partition + 1, partitionNumber, 10);
+        strcat(emailBody, partitionNumber);
 
-        if (dsc.alarm[partitionIndex]) sendEmail("Security system in alarm", emailBody);
+        if (dsc.alarm[partition]) sendEmail("Security system in alarm", emailBody);
         else sendEmail("Security system disarmed after alarm", emailBody);
       }
 
-      if (dsc.fireChanged[partitionIndex]) {
-        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
+      if (dsc.fireChanged[partition]) {
+        dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char emailBody[12] = "Partition ";
-        char partition[2];
-        itoa(partitionIndex + 1, partition, 10);
-        strcat(emailBody, partition);
+        char partitionNumber[2];
+        itoa(partition + 1, partitionNumber, 10);
+        strcat(emailBody, partitionNumber);
 
-        if (dsc.fire[partitionIndex]) sendEmail("Security system fire alarm", emailBody);
+        if (dsc.fire[partition]) sendEmail("Security system fire alarm", emailBody);
         else sendEmail("Security system fire alarm restored", emailBody);
       }
     }

@@ -105,29 +105,29 @@ void loop() {
     }
 
     // Checks status per partition
-    for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      if (dsc.alarmChanged[partitionIndex]) {
-        dsc.alarmChanged[partitionIndex] = false;  // Resets the partition alarm status flag
+      if (dsc.alarmChanged[partition]) {
+        dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char pushMessage[38] = "Security system in alarm, partition ";
         char partition[2];
-        itoa(partitionIndex + 1, partition, 10);
+        itoa(partition + 1, partition, 10);
         strcat(pushMessage, partition);
 
-        if (dsc.alarm[partitionIndex]) sendPush(pushMessage);
+        if (dsc.alarm[partition]) sendPush(pushMessage);
         else sendPush("Security system disarmed after alarm");
       }
 
-      if (dsc.fireChanged[partitionIndex]) {
-        dsc.fireChanged[partitionIndex] = false;  // Resets the fire status flag
+      if (dsc.fireChanged[partition]) {
+        dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char pushMessage[40] = "Security system fire alarm, partition ";
         char partition[2];
-        itoa(partitionIndex + 1, partition, 10);
+        itoa(partition + 1, partition, 10);
         strcat(pushMessage, partition);
 
-        if (dsc.fire[partitionIndex]) sendPush(pushMessage);
+        if (dsc.fire[partition]) sendPush(pushMessage);
         else sendPush("Security system fire alarm restored");
       }
     }
