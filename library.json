@@ -1,7 +1,7 @@
 {
   "name": "dscKeybusInterface",
   "keywords": "home-security, home-automation, homekit, homebridge, home-assistant",
-  "description": "This library directly interfaces Arduino and esp8266 microcontrollers to DSC PowerSeries security systems for integration with home automation (including Home Assistant and Apple HomeKit), notifications on system events, and writing as a virtual keypad.",
+  "description": "This library directly interfaces Arduino and esp8266 microcontrollers to DSC PowerSeries security systems for integration with home automation (Home Assistant, Apple HomeKit, Homey), notifications on system events, and writing as a virtual keypad.",
   "repository":
   {
     "type": "git",

@@ -11,3 +11,5 @@
 |2|15kΩ Resistor|resistance 15kΩ|
 |2|10kΩ Resistor|resistance 10kΩ|
 |1|1kΩ Resistor|resistance 1kΩ|
+
+Thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!

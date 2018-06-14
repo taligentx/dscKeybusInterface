@@ -12,25 +12,23 @@
  *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Wiring:
- *      DSC Aux(-) --- Arduino/esp8266 ground
+ *      DSC Aux(-) --- esp8266 ground
  *
- *                                         +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+ *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                         +--- dscReadPin (esp8266: D1, D2, D8)
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
  *
  *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- Arduino Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *                    |
  *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
@@ -55,11 +53,11 @@ const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 
-// Configures the Keybus interface with the specified pins - dscWritePin is
-// optional, leaving it out disables the virtual keypad
-#define dscClockPin D1   // GPIO5
-#define dscReadPin D2    // GPIO4
-#define dscWritePin D8   // GPIO15
+// Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
+// virtual keypad.
+#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

@@ -14,3 +14,5 @@
 |2|10kΩ Resistor|resistance 10kΩ|
 |1|1kΩ Resistor|resistance 1kΩ|
 |1|NodeMCU V3.0|chip ESP8266|
+
+Thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!

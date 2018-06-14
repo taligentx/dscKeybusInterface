@@ -1,32 +1,28 @@
 /*
- *  DSC Status (Arduino, esp8266)
+ *  DSC Status (Arduino)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Wiring:
- *      DSC Aux(-) --- Arduino/esp8266 ground
+ *      DSC Aux(-) --- Arduino ground
  *
- *                                         +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+ *                                         +--- dscClockPin (Arduino Uno: 2,3)
  *      DSC Yellow --- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                         +--- dscReadPin (Arduino Uno: 2-12)
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
  *
  *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- Arduino Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
+ *      DSC Aux(+) --- Arduino Vin pin
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -41,11 +37,11 @@
 
 #include <dscKeybusInterface.h>
 
-// Configures the Keybus interface with the specified pins - dscWritePin is
-// optional, leaving it out disables the virtual keypad
-#define dscClockPin 3  // Arduino Uno: 2,3  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin 4   // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin 5  // Arduino Uno: 2-12  esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+// Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
+// virtual keypad.
+#define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscReadPin 5   // Arduino Uno: 2-12
+#define dscWritePin 6  // Arduino Uno: 2-12
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

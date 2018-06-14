@@ -1,5 +1,5 @@
 /*
- *  DSC Status with MQTT (Arduino, esp8266)
+ *  DSC Status with MQTT (esp8266)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -160,25 +160,23 @@
         }
 
  *  Wiring:
- *      DSC Aux(-) --- Arduino/esp8266 ground
+ *      DSC Aux(-) --- esp8266 ground
  *
- *                                         +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+ *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                         +--- dscReadPin (esp8266: D1, D2, D8)
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
  *
  *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- Arduino Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *                    |
  *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
@@ -200,8 +198,11 @@
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
-const char* mqttServer = "";
 
+const char* mqttServer = "";    // MQTT server domain name or IP address
+const int mqttPort = 1883;      // MQTT server port
+const char* mqttUsername = "";  // Optional, leave blank if not required
+const char* mqttPassword = "";  // Optional, leave blank if not required
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
@@ -210,13 +211,13 @@ const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to w
 unsigned long mqttPreviousTime;
 
 WiFiClient wifiClient;
-PubSubClient mqtt(wifiClient);
+PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
 
-// Configures the Keybus interface with the specified pins - dscWritePin is
-// optional, leaving it out disables the virtual keypad
-#define dscClockPin D1   // GPIO5
-#define dscReadPin D2    // GPIO4
-#define dscWritePin D8   // GPIO15
+// Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
+// virtual keypad.
+#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 
@@ -230,7 +231,6 @@ void setup() {
   Serial.print("WiFi connected: ");
   Serial.println(WiFi.localIP());
 
-  mqtt.setServer(mqttServer, 1883);
   mqtt.setCallback(mqttCallback);
   if (mqttConnect()) mqttPreviousTime = millis();
   else mqttPreviousTime = 0;
@@ -424,7 +424,7 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
-  if (mqtt.connect(mqttClientName)) {
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
     mqtt.subscribe(mqttSubscribeTopic);

@@ -1,29 +1,27 @@
 /*
- *  DSC Status with push notification (esp8266 only, requires SSL)
+ *  DSC Status with push notification (esp8266)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com
  *
  *  Wiring:
- *      DSC Aux(-) --- Arduino/esp8266 ground
+ *      DSC Aux(-) --- esp8266 ground
  *
- *                                         +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+ *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                         +--- dscReadPin (esp8266: D1, D2, D8)
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
  *
  *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- Arduino Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *                    |
  *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
@@ -47,9 +45,9 @@ const char* pushToken = "";  // Set the access token generated in the Pushbullet
 
 WiFiClientSecure pushClient;
 
-// Configures the Keybus interface with the specified pins
-#define dscClockPin D1   // GPIO5
-#define dscReadPin D2    // GPIO4
+// Configures the Keybus interface with the specified pins.
+#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 
 
@@ -111,9 +109,9 @@ void loop() {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char pushMessage[38] = "Security system in alarm, partition ";
-        char partition[2];
-        itoa(partition + 1, partition, 10);
-        strcat(pushMessage, partition);
+        char partitionNumber[2];
+        itoa(partition + 1, partitionNumber, 10);
+        strcat(pushMessage, partitionNumber);
 
         if (dsc.alarm[partition]) sendPush(pushMessage);
         else sendPush("Security system disarmed after alarm");
@@ -123,9 +121,9 @@ void loop() {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char pushMessage[40] = "Security system fire alarm, partition ";
-        char partition[2];
-        itoa(partition + 1, partition, 10);
-        strcat(pushMessage, partition);
+        char partitionNumber[2];
+        itoa(partition + 1, partitionNumber, 10);
+        strcat(pushMessage, partitionNumber);
 
         if (dsc.fire[partition]) sendPush(pushMessage);
         else sendPush("Security system fire alarm restored");
