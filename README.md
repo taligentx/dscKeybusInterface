@@ -22,6 +22,7 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
   - New: Configurable number of partitions and zones to customize memory usage: `dscPartitions` and `dscZones` in `dscKeybusInterface.h`
   - New: KeybusReader decoding of commands `0xE6` and `0xEB` 
   - Changed: Split examples by platform
+  - Changed: Arduino sketches no longer use pin 4 to avoid a conflict with the SD card on Ethernet shields. 
   - Changed: MQTT examples updated with username and password fields
   - Changed: `processRedundantData` now true by default to prevent storing repetitive data, reduces memory usage.
   - Note: This release changes the library methods to accomodate multiple partitions, existing sketches will need to be updated to match the new example sketches.
