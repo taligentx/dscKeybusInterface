@@ -20,7 +20,7 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ## Release notes
 * 0.4-develop
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
-  - New: Support ATmega32U4-based Arduino boards ()
+  - New: Support ATmega32U4-based Arduino boards, switched to AVR Timer1
   - Bugfix: Virtual keypad writes with partitions 5-8 enabled
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
