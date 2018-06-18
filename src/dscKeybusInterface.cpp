@@ -76,11 +76,11 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
-  // Arduino Timer2 calls ISR(TIMER2_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
+  // Arduino Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
   #if defined(__AVR__)
-  TCCR2A = 0;
-  TCCR2B = 0;
-  TIMSK2 |= (1 << TOIE2);
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TIMSK1 |= (1 << TOIE1);
 
   // esp8266 timer1 calls dscDataInterrupt() from dscClockInterrupt() as a one-shot timer
   #elif defined(ESP8266)
@@ -308,7 +308,7 @@ void dscKeybusInterface::write(const char receivedKey) {
       case '*': writeKey = 0x28; writeAsterisk = true; break;
       case '#': writeKey = 0x2D; break;
       case 'F':
-      case 'f': writeKey = 0x77; writeAlarm = true; break;  // Keypad fire alarm
+      case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
       case 's':
       case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
       case 'w':
@@ -316,15 +316,15 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'n':
       case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
       case 'A':
-      case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
+      case 'a': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad auxiliary alarm
       case 'c':
-      case 'C': writeKey = 0xBB; break;  // Door chime
+      case 'C': writeKey = 0xBB; break;                                       // Door chime
       case 'r':
-      case 'R': writeKey = 0xDA; break; // Reset
+      case 'R': writeKey = 0xDA; break;                                       // Reset
       case 'P':
-      case 'p': writeKey = 0xDD; writeAlarm = true; break;  // Keypad panic alarm
+      case 'p': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad panic alarm
       case 'x':
-      case 'X': writeKey = 0xE1; break;  // Exit
+      case 'X': writeKey = 0xE1; break;                                       // Exit
       default: {
         validKey = false;
         break;
@@ -410,11 +410,10 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   // The following sets up a timer for both Arduino/AVR and Arduino/esp8266 that will call dscDataInterrupt() in
   // 250us to read the data line.
 
-  // AVR Timer2 calls dscDataInterrupt() via ISR(TIMER2_OVF_vect) when the Timer2 counter overflows
+  // AVR Timer1 calls dscDataInterrupt() via ISR(TIMER1_OVF_vect) when the Timer1 counter overflows
   #if defined(__AVR__)
-  TCNT2=0x82;             // Timer2 counter start value, overflows at 0xFF in 250us
-  TCCR2B |= (1 << CS20);  // Setting CS20 and CS21 sets the pre-scaler to 32
-  TCCR2B |= (1 << CS21);
+  TCNT1=61535;            // Timer1 counter start value, overflows at 65535 in 250us
+  TCCR1B |= (1 << CS10);  // Sets the prescaler to 1
 
   // esp8266 timer1 calls dscDataInterrupt() directly as set in begin()
   #elif defined(ESP8266)
@@ -493,11 +492,11 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 }
 
 
-// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer2, disables the timer and calls
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
 // dscDataInterrupt() to read the data line
 #if defined(__AVR__)
-ISR(TIMER2_OVF_vect) {
-  TCCR2B = 0;  // Disables Timer2
+ISR(TIMER1_OVF_vect) {
+  TCCR1B = 0;  // Disables Timer1
   dscKeybusInterface::dscDataInterrupt();
 }
 #endif

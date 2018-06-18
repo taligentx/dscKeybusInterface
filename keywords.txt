@@ -22,6 +22,8 @@ statusChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
 writePartition	KEYWORD2
 timeAvailable	KEYWORD2
+ready	KEYWORD2
+readyChanged	KEYWORD2
 exitDelay	KEYWORD2
 exitDelayChanged	KEYWORD2
 entryDelay	KEYWORD2
