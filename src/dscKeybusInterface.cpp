@@ -22,6 +22,8 @@ byte dscKeybusInterface::dscReadPin;
 byte dscKeybusInterface::dscWritePin;
 char dscKeybusInterface::writeKey;
 byte dscKeybusInterface::writePartition;
+byte dscKeybusInterface::writeByte;
+byte dscKeybusInterface::writeBit;
 bool dscKeybusInterface::virtualKeypad;
 bool dscKeybusInterface::processModuleData;
 byte dscKeybusInterface::panelData[dscReadSize];
@@ -296,8 +298,24 @@ void dscKeybusInterface::write(const char receivedKey) {
         else writeKey = 0x0A;
         break;
       }
-      case '3': writeKey = 0x0F; break;
-      case '4': writeKey = 0x11; break;
+      case '3': {
+        if (setPartition) {
+          writePartition = 3;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x0F;
+        break;
+      }
+      case '4': {
+        if (setPartition) {
+          writePartition = 4;
+          setPartition = false;
+          validKey = false;
+        }
+        else writeKey = 0x11;
+        break;
+      }
       case '5': writeKey = 0x16; break;
       case '6': writeKey = 0x1B; break;
       case '7': writeKey = 0x1C; break;
@@ -308,11 +326,11 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'F':
       case 'f': writeKey = 0x77; writeAlarm = true; break;  // Keypad fire alarm
       case 's':
-      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;    // Arm stay
+      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
       case 'w':
-      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;    // Arm away
+      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;  // Arm away
       case 'n':
-      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;    // Arm with no entry delay (night arm)
+      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
       case 'A':
       case 'a': writeKey = 0xBB; writeAlarm = true; break;  // Keypad auxiliary alarm
       case 'c':
@@ -325,6 +343,35 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'X': writeKey = 0xE1; break;                     // Exit
       default: {
         validKey = false;
+        break;
+      }
+    }
+
+    // Sets the writing position based on the set partition
+    switch (writePartition) {
+      case 1: {
+        writeByte = 2;
+        writeBit = 9;
+        break;
+      }
+      case 2: {
+        writeByte = 3;
+        writeBit = 17;
+        break;
+      }
+      case 3: {
+        writeByte = 8;
+        writeBit = 57;
+        break;
+      }
+      case 4: {
+        writeByte = 9;
+        writeBit = 65;
+        break;
+      }
+      default: {
+        writeByte = 2;
+        writeBit = 9;
         break;
       }
     }
@@ -394,7 +441,6 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   else {
     clockHighTime = micros() - previousClockHighTime;  // Tracks the clock high time to find the reset between commands
-    if (writePartition == 0 || writePartition > 2) writePartition = 1;  // Limits writing to partitions 1 and 2
 
     // Virtual keypad
     if (virtualKeypad) {
@@ -428,19 +474,19 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == (writePartition + 1) && statusCmd) {
+      else if (!writeReady && !wroteAsterisk && isrPanelByteCount == writeByte && statusCmd == 0x05) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == (writePartition * 8) + 1) {
+        if (isrPanelBitTotal == writeBit) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
         // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal > (writePartition * 8) + 1 && isrPanelBitTotal <= (writePartition * 8) + 8) {
+        else if (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7) {
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
           // Resets counters when the write is complete
-          if (isrPanelBitTotal == (writePartition * 8) + 8) {
+          if (isrPanelBitTotal == writeBit + 7) {
             if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
             else writeReady = true;
             writeStart = false;
@@ -490,9 +536,9 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
           case 0x05:
-          case 0x0A:
-          case 0x1B: statusCmd = true; break;
-          default: statusCmd = false; break;
+          case 0x0A: statusCmd = 0x05; break;
+          case 0x1B: statusCmd = 0x1B; break;
+          default: statusCmd = 0; break;
         }
 
         // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
