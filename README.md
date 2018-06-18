@@ -12,10 +12,15 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 * Data buffering: Helps prevent missing Keybus data when the sketch is busy
 * Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
 * Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864.  All PowerSeries panels are supported, post an issue if you have a different panel (PC5020, etc) and have tested the interface to update this list.
+* Supported boards:
+  - Arduino: ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz
+    - Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
+  - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
 * 0.4-develop
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
+  - New: Support ATmega32U4-based Arduino boards ()
   - Bugfix: Virtual keypad writes with partitions 5-8 enabled
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
