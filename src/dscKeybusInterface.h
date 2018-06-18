@@ -53,7 +53,7 @@ class dscKeybusInterface {
     void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printModuleMessage();                        // Prints the decoded keypad or module message
 
-    // Set to a partition number for virtual keypad - currently supports partitions 1 and 2
+    // Set to a partition number for virtual keypad
     static byte writePartition;
 
     // These can be configured in the sketch setup() before begin()
@@ -160,6 +160,7 @@ class dscKeybusInterface {
     void printPanel_0xCE();
     void printPanel_0xD5();
     void printPanel_0xE6();
+    void printPanel_0xE6_0x03();
     void printPanel_0xE6_0x09();
     void printPanel_0xE6_0x0B();
     void printPanel_0xE6_0x0D();

@@ -8,12 +8,15 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
 * Status tracking of zones 1-64
-* Virtual keypad: Enables writing keys to the panel for partitions 1 and 2
+* Virtual keypad: Enables writing keys to the panel for partitions 1-8
 * Data buffering: Helps prevent missing Keybus data when the sketch is busy
 * Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
 * Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864.  All PowerSeries panels are supported, post an issue if you have a different panel (PC5020, etc) and have tested the interface to update this list.
 
 ## Release notes
+* 0.4-develop
+  - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
+  - Bugfix: Virtual keypad writes with partitions 5-8 enabled
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
   - New: Virtual keypad support for partition 2
@@ -103,7 +106,7 @@ DSC Aux(+) ---+--- Arduino Vin pin
 ## Virtual keypad
 This allows a sketch to send keys to the DSC panel to emulate the physical DSC keypads and enables full control of the panel from the sketch or other software.
 
-Keys are sent to partition 1 by default and can be changed to a different partition (currently supports partitions 1 and 2).  The following keys can be sent to the panel - see the examples for usage:
+Keys are sent to partition 1 by default and can be changed to a different partition.  The following keys can be sent to the panel - see the examples for usage:
 
 * Keypad: `0-9 * #`
 * Arm stay (requires access code if quick arm is disabled): `s`
@@ -119,7 +122,7 @@ Keys are sent to partition 1 by default and can be changed to a different partit
   Examples:
   * Switch to partition 2 and send keys: `/2` + `1234`
   * Switch back to partition 1: `/1`
-  * Set directly in sketch: `dsc.writePartition = 1;`
+  * Set directly in sketch: `dsc.writePartition = 8;`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:

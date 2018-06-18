@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/taligentx/dscKeybusInterface.git"
   },
-  "version": "0.3",
+  "version": "0.4",
   "frameworks": "arduino",
   "platforms": "atmelavr, espressif8266"
 }

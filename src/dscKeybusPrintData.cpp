@@ -25,7 +25,7 @@
 void dscKeybusInterface::printPanelMessage() {
   switch (panelData[0]) {
     case 0x05: printPanel_0x05(); return;  // Status: partitions 1-4
-    case 0x0A: printPanel_0x0A(); return;  // Status in alarm, programming
+    case 0x0A: printPanel_0x0A(); return;  // Status in alarm/programming, partitions 1-4
     case 0x11: printPanel_0x11(); return;  // Keypad slot query
     case 0x16: printPanel_0x16(); return;  // Zone wiring
     case 0x1B: printPanel_0x1B(); return;  // Status: partitions 5-8
@@ -672,7 +672,6 @@ void dscKeybusInterface::printPanel_0x0A() {
     return;
   }
 
-  stream->print(F("Partition 1: "));
   printPanelLights(2);
   stream->print(F("- "));
   printPanelMessages(3);
@@ -1585,6 +1584,7 @@ void dscKeybusInterface::printPanel_0xE6() {
   }
 
   switch (panelData[2]) {
+    case 0x03: printPanel_0xE6_0x03(); return;  // Status in alarm/programming, partitions 5-8
     case 0x09: printPanel_0xE6_0x09(); return;  // Zones 33-40 status
     case 0x0B: printPanel_0xE6_0x0B(); return;  // Zones 41-48 status
     case 0x0D: printPanel_0xE6_0x0D(); return;  // Zones 49-56 status
@@ -1600,6 +1600,16 @@ void dscKeybusInterface::printPanel_0xE6() {
     case 0x41: printPanel_0xE6_0x41(); return;  // Status in access code programming, zone lights 65-95
     default: stream->print(F("Unrecognized data"));
   }
+}
+
+
+/*
+ *  0xE6_0x03: Status in alarm/programming, partitions 5-8
+ */
+void dscKeybusInterface::printPanel_0xE6_0x03() {
+  printPanelLights(2);
+  stream->print(F("- "));
+  printPanelMessages(3);
 }
 
 
@@ -2067,15 +2077,44 @@ void dscKeybusInterface::printModule_Keys() {
   stream->print(F("[Keypad] "));
 
   byte keyByte = 2;
-  if (moduleData[2] != 0xFF && moduleData[3] == 0xFF) {
-    stream->print(F("Partition 1 | Key: "));
+  if (currentCmd == 0x05) {
+    if (moduleData[2] != 0xFF) {
+      stream->print(F("Partition 1 | Key: "));
+    }
+    else if (moduleData[3] != 0xFF) {
+      stream->print(F("Partition 2 | Key: "));
+      keyByte = 3;
+    }
+    else if (moduleData[8] != 0xFF) {
+      stream->print(F("Partition 3 | Key: "));
+      keyByte = 8;
+    }
+
+    else if (moduleData[9] != 0xFF) {
+      stream->print(F("Partition 4 | Key: "));
+      keyByte = 9;
+    }
   }
-  else if (moduleData[2] == 0xFF && moduleData[3] != 0xFF) {
-    stream->print(F("Partition 2 | Key: "));
-    keyByte = 3;
+  else if (currentCmd == 0x1B) {
+    if (moduleData[2] != 0xFF) {
+      stream->print(F("Partition 5 | Key: "));
+    }
+    else if (moduleData[3] != 0xFF) {
+      stream->print(F("Partition 6 | Key: "));
+      keyByte = 3;
+    }
+    else if (moduleData[8] != 0xFF) {
+      stream->print(F("Partition 7 | Key: "));
+      keyByte = 8;
+    }
+
+    else if (moduleData[9] != 0xFF) {
+      stream->print(F("Partition 8 | Key: "));
+      keyByte = 9;
+    }
   }
 
-  if (hideKeypadDigits && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27)) {
+  if (hideKeypadDigits && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27 || moduleData[8] <= 0x27 || moduleData[9] <= 0x27)) {
     stream->print(F("[Digit]"));
     return;
   }
@@ -2151,7 +2190,11 @@ void dscKeybusInterface::printPanelBinary(bool printSpaces) {
 void dscKeybusInterface::printModuleBinary(bool printSpaces) {
   for (byte moduleByte = 0; moduleByte < moduleByteCount; moduleByte++) {
     if (moduleByte == 1) stream->print(moduleData[moduleByte]);  // Prints the stop bit
-    else if (hideKeypadDigits && (moduleByte == 2 || moduleByte == 3) && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27) && !queryResponse) stream->print(F("........"));  // Hides keypad digits
+    else if (hideKeypadDigits
+            && (moduleByte == 2 || moduleByte == 3 || moduleByte == 8 || moduleByte == 9)
+            && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27 || moduleData[8] <= 0x27 || moduleData[9] <= 0x27)
+            && !queryResponse)
+              stream->print(F("........"));  // Hides keypad digits
     else {
       for (byte mask = 0x80; mask; mask >>= 1) {
         if (mask & moduleData[moduleByte]) stream->print("1");
