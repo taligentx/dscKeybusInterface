@@ -54,9 +54,17 @@ void dscKeybusInterface::processPanelStatus() {
       messageByte = ((partitionIndex - 4) * 2) + 3;
     }
 
+    // Status lights
     lights[partitionIndex] = panelData[statusByte];
     if (lights[partitionIndex] != previousLights[partitionIndex]) {
       previousLights[partitionIndex] = lights[partitionIndex];
+      statusChanged = true;
+    }
+
+    // Status messages
+    status[partitionIndex] = panelData[messageByte];
+    if (status[partitionIndex] != previousStatus[partitionIndex]) {
+      previousStatus[partitionIndex] = status[partitionIndex];
       statusChanged = true;
     }
 

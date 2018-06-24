@@ -280,7 +280,6 @@ void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
 void dscKeybusInterface::write(const char receivedKey) {
   static unsigned long previousTime;
   static bool setPartition;
-
   // Sets the write partition if set by virtual keypad key '/'
   if (setPartition) {
     setPartition = false;
@@ -435,8 +434,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
     if (virtualKeypad) {
       static bool writeStart = false;
       static bool writeRepeat = false;
+      static bool writeCmd = false;
 
-      static bool writeCmd;
       if (writePartition <= 4 && statusCmd == 0x05) writeCmd = true;
       else if (writePartition > 4 && statusCmd == 0x1B) writeCmd = true;
       else writeCmd = false;
@@ -445,17 +444,18 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       if ((writeAlarm && !writeReady) || writeRepeat) {
 
         // Writes the first bit by shifting the alarm key data right 7 bits and checking bit 0
-        if (isrModuleBitTotal == 0) {
-          if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
+        if (isrPanelBitTotal == 1) {
+          if (!((writeKey >> 7) & 0x01)) {
+            digitalWrite(dscWritePin, HIGH);
+          }
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
         // Writes the remaining alarm key data
-        else if (writeStart && isrModuleBitTotal > 0 && isrModuleBitTotal <= 7) {
-          if (!((writeKey >> (7 - isrModuleBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
-
+        else if (writeStart && isrPanelBitTotal > 1 && isrPanelBitTotal <= 8) {
+          if (!((writeKey >> (8 - isrPanelBitTotal)) & 0x01)) digitalWrite(dscWritePin, HIGH);
           // Resets counters when the write is complete
-          if (isrModuleBitTotal == 7) {
+          if (isrPanelBitTotal == 8) {
             writeReady = true;
             writeStart = false;
             writeAlarm = false;

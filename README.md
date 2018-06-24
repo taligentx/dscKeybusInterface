@@ -20,8 +20,9 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ## Release notes
 * 0.4-develop
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
-  - New: Support ATmega32U4-based Arduino boards, switched to AVR Timer1
+  - New: Support ATmega32U4-based Arduino boards (switched to AVR Timer1)
   - Bugfix: Virtual keypad writes with partitions 5-8 enabled
+  - Bugfix: F/A/P alarm key writes with `processModuleData` disabled
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
   - New: Virtual keypad support for partition 2
@@ -41,6 +42,8 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 * 0.1 - Initial release
 
 ## Usage
+1. Install the library:
+  - Arduino IDE: 
 Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, `git clone` the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
 
 ## Examples

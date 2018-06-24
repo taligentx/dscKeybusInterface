@@ -74,7 +74,7 @@ class dscKeybusInterface {
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
-    byte lights[dscPartitions];
+    byte lights[dscPartitions], status[dscPartitions];
     bool ready[dscPartitions], readyChanged[dscPartitions];
     bool armed[dscPartitions], armedAway[dscPartitions], armedStay[dscPartitions];
     bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];
@@ -195,7 +195,7 @@ class dscKeybusInterface {
     bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
-    byte previousLights[dscPartitions];
+    byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
     bool previousArmed[dscPartitions], previousAlarm[dscPartitions];
