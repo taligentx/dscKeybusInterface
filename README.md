@@ -10,11 +10,10 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 * Status tracking of zones 1-64
 * Virtual keypad: Enables writing keys to the panel for partitions 1-8
 * Data buffering: Helps prevent missing Keybus data when the sketch is busy
-* Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`.
+* Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
 * Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864.  All PowerSeries panels are supported, post an issue if you have a different panel (PC5020, etc) and have tested the interface to update this list.
 * Supported boards:
-  - Arduino: ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz
-    - Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
+  - Arduino: Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini (ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz)
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
@@ -41,10 +40,12 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
   - New: Panel data buffering, adds `dscBufferSize` to `dscKeybusInterface.h` to allow configuration of how many panel commands are buffered to customize memory usage (uses 18 bytes of memory per command buffered).
 * 0.1 - Initial release
 
-## Usage
-1. Install the library:
-  - Arduino IDE: 
-Download the repo and extract to the Arduino library directory or [install through the Arduino IDE](https://www.arduino.cc/en/Guide/Libraries#toc4): `Sketch > Include Library > Add .ZIP Library`.  Alternatively, `git clone` the repo in the Arduino library directory to keep track of the latest changes - after the code has been tested across different panels, I'll flag the library to be added to the Arduino Library Manager for integrated updates.
+## Installation
+* Arduino IDE: Search for `DSC` in the Library Manager (`Sketch > Include Library > Manage Libraries`)
+  ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
+* PlatformIO: Search for `DSC` in the PlatformIO Library Registry
+  ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
+* Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
 
 ## Examples
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
@@ -127,7 +128,7 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 * Reset: `r`
 * Exit: `x`
 * Change partition: `/` + `partition number` or set `writePartition` to the partition number
-  Examples:
+  - Examples:
   * Switch to partition 2 and send keys: `/2` + `1234`
   * Switch back to partition 1: `/1`
   * Set directly in sketch: `dsc.writePartition = 8;`
