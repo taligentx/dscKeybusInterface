@@ -43,7 +43,7 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 ## Installation
 * Arduino IDE: Search for `DSC` in the Library Manager (`Sketch > Include Library > Manage Libraries`)
   ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
-* PlatformIO: Search for `DSC` in the PlatformIO Library Registry
+* PlatformIO: Search for `DSC` in the PlatformIO Library Registry or install via CLI: `platformio lib install "dscKeybusInterface"`
   ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
 * Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
 
