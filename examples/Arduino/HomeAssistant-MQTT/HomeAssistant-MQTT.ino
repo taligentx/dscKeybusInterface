@@ -1,184 +1,119 @@
 /*
- *  DSC Status with MQTT (esp8266)
+ *  HomeAssistant-MQTT 0.4 (Arduino)
  *
- *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
- *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
- *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states
- *  for the contactSensor objects, and fire alarm states for the smokeSensor object.
+ *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
- *  Homebridge: https://github.com/nfarina/homebridge
- *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
+ *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
- *  For a single partition, the commands to set the alarm state are setup in Homebridge as:
- *    Stay arm: "S"
- *    Away arm: "A"
- *    Night arm (arm without an entry delay): "N"
- *    Disarm: "D"
- *
- *  For multiple partitions, add the partition number as a prefix to the command:
- *    Partition 1 stay arm: "1S"
- *    Partition 1 away arm: "1A"
- *    Partition 2 night arm (arm without an entry delay): "2N"
- *    Partition 2 disarm: "2D"
+ *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a prefix to the command:
+ *    Partition 1 disarm: "1D"
+ *    Partition 2 arm stay: "2S"
+ *    Partition 2 arm away: "2A"
  *
  *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
  *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
- *    Stay arm: "SA"
- *    Away arm: "AA"
- *    Night arm: "NA"
- *    Disarm: "D"
- *    Alarm tripped: "T"
+ *    Disarmed: "disarmed"
+ *    Arm stay: "armed_home"
+ *    Arm away: "armed_away"
+ *    Exit delay in progress: "pending"
+ *    Alarm tripped: "triggered"
+ *
+ *  The trouble state is published in the configured mqttTroubleTopic.  The trouble state is published as an integer:
+ *    Trouble: "1"
+ *    Trouble restored: "0"
  *
  *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
  *  number.  The zone state is published as an integer:
- *    "0": closed
- *    "1": open
+ *    Open: "1"
+ *    Closed: "0"
  *
  *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
  *  partition number.  The fire state is published as an integer:
- *    "0": fire alarm restored
- *    "1": fire alarm tripped
+ *    Fire alarm: "1"
+ *    Fire alarm restored: "0"
  *
- *  Example Homebridge config.json "accessories" configuration for a single partition:
+ *  Example Home Assistant configuration.yaml:
 
-        {
-            "accessory": "mqttthing",
-            "type": "securitySystem",
-            "name": "Security System",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getCurrentState":    "dsc/Get/Partition1",
-                "setTargetState":     "dsc/Set"
-            },
-            "targetStateValues": ["S", "A", "N", "D"]
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone1"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 8",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone8"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire1"
-            },
-            "integerValue": "true"
-        }
+      # https://www.home-assistant.io/components/mqtt/
+      mqtt:
+        broker: URL or IP address
+        client_id: homeAssistant
 
- *  Example Homebridge config.json "accessories" configuration for multiple partitions:
+      # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
+      alarm_control_panel:
+        - platform: mqtt
+          name: "Security System Partition 1"
+          state_topic: "dsc/Get/Partition1"
+          command_topic: "dsc/Set"
+          payload_disarm: "1D"
+          payload_arm_home: "1S"
+          payload_arm_away: "1A"
+        - platform: mqtt
+          name: "Security System Partition 2"
+          state_topic: "dsc/Get/Partition2"
+          command_topic: "dsc/Set"
+          payload_disarm: "2D"
+          payload_arm_home: "2S"
+          payload_arm_away: "2A"
 
-        {
-            "accessory": "mqttthing",
-            "type": "securitySystem",
-            "name": "Security System Partition 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getCurrentState":    "dsc/Get/Partition1",
-                "setTargetState":     "dsc/Set"
-            },
-            "targetStateValues": ["1S", "1A", "1N", "1D"]
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "securitySystem",
-            "name": "Security System Partition 2",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getCurrentState":    "dsc/Get/Partition2",
-                "setTargetState":     "dsc/Set"
-            },
-            "targetStateValues": ["2S", "2A", "2N", "2D"]
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone1"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 8",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone8"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm Partition 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire1"
-            },
-            "integerValue": "true"
-        }
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm Partition 2",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire2"
-            },
-            "integerValue": "true"
-        }
+      # https://www.home-assistant.io/components/binary_sensor/
+      binary_sensor:
+        - platform: mqtt
+          name: "Security Trouble"
+          state_topic: "dsc/Get/Trouble"
+          device_class: "problem"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Smoke Alarm 1"
+          state_topic: "dsc/Get/Fire1"
+          device_class: "smoke"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Smoke Alarm 2"
+          state_topic: "dsc/Get/Fire2"
+          device_class: "smoke"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Zone 1"
+          state_topic: "dsc/Get/Zone1"
+          device_class: "door"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Zone 2"
+          state_topic: "dsc/Get/Zone2"
+          device_class: "window"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Zone 3"
+          state_topic: "dsc/Get/Zone3"
+          device_class: "motion"
+          payload_on: "1"
+          payload_off: "0"
 
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(-) --- Arduino ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin (Arduino Uno: 2,3)
  *      DSC Yellow --- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin (Arduino Uno: 2-12)
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
  *
  *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
+ *      DSC Aux(+) --- Arduino Vin pin
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -191,13 +126,14 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
+#include <SPI.h>
+#include <Ethernet.h>
 #include <PubSubClient.h>
 #include <dscKeybusInterface.h>
 
-const char* wifiSSID = "";
-const char* wifiPassword = "";
-const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
+
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int mqttPort = 1883;      // MQTT server port
@@ -207,17 +143,18 @@ const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
 
-WiFiClient wifiClient;
-PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
+EthernetClient ethClient;
+PubSubClient mqtt(mqttServer, mqttPort, ethClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscReadPin 5   // Arduino Uno: 2-12
+#define dscWritePin 6  // Arduino Uno: 2-12
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 
@@ -226,10 +163,15 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.print("WiFi connected: ");
-  Serial.println(WiFi.localIP());
+  // Initializes ethernet with DHCP
+  Serial.print(F("Initializing Ethernet..."));
+  while(!Ethernet.begin(mac)) {
+      Serial.println(F("DHCP failed.  Retrying..."));
+      delay(5000);
+  }
+  Serial.println(F("success!"));
+  Serial.print(F("IP address: "));
+  Serial.println(Ethernet.localIP());
 
   mqtt.setCallback(mqttCallback);
   if (mqttConnect()) mqttPreviousTime = millis();
@@ -260,8 +202,29 @@ void loop() {
       dsc.write(accessCode);
     }
 
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) mqtt.publish(mqttTroubleTopic, "1", true);
+      else mqtt.publish(mqttTroubleTopic, "0", true);
+    }
+
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
+
+      // Publishes exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+
+        // Appends the mqttPartitionTopic with the partition number
+        char publishTopic[strlen(mqttPartitionTopic) + 1];
+        char partitionNumber[2];
+        strcpy(publishTopic, mqttPartitionTopic);
+        itoa(partition + 1, partitionNumber, 10);
+        strcat(publishTopic, partitionNumber);
+
+        if (dsc.exitDelay[partition]) mqtt.publish(publishTopic, "pending", true);  // Publish as a retained message
+        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) mqtt.publish(publishTopic, "disarmed", true);
+      }
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
@@ -275,15 +238,13 @@ void loop() {
         strcat(publishTopic, partitionNumber);
 
         if (dsc.armed[partition]) {
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);       // Night armed
-          else if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "AA", true);                                      // Away armed
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);  // Night armed
-          else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "SA", true);                                      // Stay armed
+          if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "armed_away", true);
+          else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "armed_home", true);
         }
-        else mqtt.publish(publishTopic, "D", true);  // Disarmed
+        else mqtt.publish(publishTopic, "disarmed", true);
       }
 
-      // Publishes alarm triggered status
+      // Publishes alarm status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
@@ -295,21 +256,8 @@ void loop() {
           itoa(partition + 1, partitionNumber, 10);
           strcat(publishTopic, partitionNumber);
 
-          mqtt.publish(publishTopic, "T", true);  // Alarm tripped
+          mqtt.publish(publishTopic, "triggered", true);  // Alarm tripped
         }
-      }
-
-      // Publishes status when the system is disarmed during exit delay
-      if (dsc.exitDelayChanged[partition] && !dsc.exitDelay[partition] && !dsc.armed[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
-
-          mqtt.publish(publishTopic, "D", true);  // Disarmed
       }
 
       // Publishes fire alarm status
@@ -361,6 +309,7 @@ void loop() {
   }
 }
 
+
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
@@ -377,28 +326,21 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
-  // homebridge-mqttthing STAY_ARM
+  // Arm stay
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
-    dsc.write('s');  // Keypad stay arm
+    dsc.write('s');  // Virtual keypad arm stay
   }
 
-  // homebridge-mqttthing AWAY_ARM
+  // Arm away
   else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
-    dsc.write('w');  // Keypad away arm
+    dsc.write('w');  // Virtual keypad arm away
   }
 
-  // homebridge-mqttthing NIGHT_ARM
-  else if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-    dsc.writePartition = partition + 1;    // Sets writes to the partition number
-    dsc.write('n');  // Keypad arm with no entry delay
-  }
-
-  // homebridge-mqttthing DISARM
+  // Disarm
   else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
@@ -435,4 +377,3 @@ bool mqttConnect() {
   }
   return mqtt.connected();
 }
-

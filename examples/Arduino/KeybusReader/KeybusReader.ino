@@ -1,5 +1,5 @@
 /*
- *  DSC Keybus Reader (Arduino)
+ *  DSC Keybus Reader 0.4 (Arduino)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status examples to put the interface

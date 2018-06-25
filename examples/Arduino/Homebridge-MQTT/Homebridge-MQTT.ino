@@ -1,5 +1,5 @@
 /*
- *  DSC Status with MQTT (Arduino)
+ *  Homebridge-MQTT 0.4 (Arduino)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -10,13 +10,7 @@
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
- *  For a single partition, the commands to set the alarm state are setup in Homebridge as:
- *    Stay arm: "S"
- *    Away arm: "A"
- *    Night arm (arm without an entry delay): "N"
- *    Disarm: "D"
- *
- *  For multiple partitions, add the partition number as a prefix to the command:
+ *  The commands to set the alarm state are setup in Homebridge with the partition number (1-8) as a prefix to the command:
  *    Partition 1 stay arm: "1S"
  *    Partition 1 away arm: "1A"
  *    Partition 2 night arm (arm without an entry delay): "2N"
@@ -32,63 +26,15 @@
  *
  *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
  *  number.  The zone state is published as an integer:
- *    "0": closed
- *    "1": open
+ *    Open: "1"
+ *    Closed: "0"
  *
  *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
  *  partition number.  The fire state is published as an integer:
- *    "0": fire alarm restored
- *    "1": fire alarm tripped
+ *    Fire alarm: "1"
+ *    Fire alarm restored: "0"
  *
- *  Example Homebridge config.json "accessories" configuration for a single partition:
-
-        {
-            "accessory": "mqttthing",
-            "type": "securitySystem",
-            "name": "Security System",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getCurrentState":    "dsc/Get/Partition1",
-                "setTargetState":     "dsc/Set"
-            },
-            "targetStateValues": ["S", "A", "N", "D"]
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone1"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "contactSensor",
-            "name": "Zone 8",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getContactSensorState": "dsc/Get/Zone8"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire1"
-            },
-            "integerValue": "true"
-        }
-
- *  Example Homebridge config.json "accessories" configuration for multiple partitions:
+ *  Example Homebridge config.json "accessories" configuration:
 
         {
             "accessory": "mqttthing",
@@ -116,6 +62,28 @@
         },
         {
             "accessory": "mqttthing",
+            "type": "smokeSensor",
+            "name": "Smoke Alarm Partition 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getSmokeDetected": "dsc/Get/Fire1"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "smokeSensor",
+            "name": "Smoke Alarm Partition 2",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getSmokeDetected": "dsc/Get/Fire2"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
             "type": "contactSensor",
             "name": "Zone 1",
             "url": "http://127.0.0.1:1883",
@@ -128,33 +96,11 @@
         {
             "accessory": "mqttthing",
             "type": "contactSensor",
-            "name": "Zone 8",
+            "name": "Zone 2",
             "url": "http://127.0.0.1:1883",
             "topics":
             {
-                "getContactSensorState": "dsc/Get/Zone8"
-            },
-            "integerValue": "true"
-        },
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm Partition 1",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire1"
-            },
-            "integerValue": "true"
-        }
-        {
-            "accessory": "mqttthing",
-            "type": "smokeSensor",
-            "name": "Smoke Alarm Partition 2",
-            "url": "http://127.0.0.1:1883",
-            "topics":
-            {
-                "getSmokeDetected": "dsc/Get/Fire2"
+                "getContactSensorState": "dsc/Get/Zone2"
             },
             "integerValue": "true"
         }

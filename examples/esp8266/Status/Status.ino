@@ -1,5 +1,5 @@
 /*
- *  DSC Status (esp8266)
+ *  DSC Status 0.4 (esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has

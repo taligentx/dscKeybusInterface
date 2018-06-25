@@ -1,17 +1,12 @@
 /*
- *  DSC Status with MQTT (esp8266)
+ *  HomeAssistant-MQTT 0.4 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
  *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
- *  For a single partition, the commands to set the alarm state are setup in Home Assistant as:
- *    Disarm: "D"
- *    Arm stay: "S"
- *    Arm away: "A"
- *
- *  For multiple partitions, add the partition number as a prefix to the command:
+ *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a prefix to the command:
  *    Partition 1 disarm: "1D"
  *    Partition 2 arm stay: "2S"
  *    Partition 2 arm away: "2A"
@@ -24,15 +19,19 @@
  *    Exit delay in progress: "pending"
  *    Alarm tripped: "triggered"
  *
+ *  The trouble state is published in the configured mqttTroubleTopic.  The trouble state is published as an integer:
+ *    Trouble: "1"
+ *    Trouble restored: "0"
+ *
  *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
  *  number.  The zone state is published as an integer:
- *    Closed: "0"
  *    Open: "1"
+ *    Closed: "0"
  *
  *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
  *  partition number.  The fire state is published as an integer:
- *    "0": fire alarm restored
- *    "1": fire alarm tripped
+ *    Fire alarm: "1"
+ *    Fire alarm restored: "0"
  *
  *  Example Home Assistant configuration.yaml:
 
@@ -42,17 +41,6 @@
         client_id: homeAssistant
 
       # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
-      # Single partition example:
-      alarm_control_panel:
-        - platform: mqtt
-          name: "Security System"
-          state_topic: "dsc/Get/Partition1"
-          command_topic: "dsc/Set"
-          payload_disarm: "D"
-          payload_arm_home: "S"
-          payload_arm_away: "A"
-
-      # Multiple partition example:
       alarm_control_panel:
         - platform: mqtt
           name: "Security System Partition 1"
@@ -61,7 +49,6 @@
           payload_disarm: "1D"
           payload_arm_home: "1S"
           payload_arm_away: "1A"
-      alarm_control_panel:
         - platform: mqtt
           name: "Security System Partition 2"
           state_topic: "dsc/Get/Partition2"
@@ -73,21 +60,39 @@
       # https://www.home-assistant.io/components/binary_sensor/
       binary_sensor:
         - platform: mqtt
+          name: "Security Trouble"
+          state_topic: "dsc/Get/Trouble"
+          device_class: "problem"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Smoke Alarm 1"
+          state_topic: "dsc/Get/Fire1"
+          device_class: "smoke"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
+          name: "Smoke Alarm 2"
+          state_topic: "dsc/Get/Fire2"
+          device_class: "smoke"
+          payload_on: "1"
+          payload_off: "0"
+        - platform: mqtt
           name: "Zone 1"
           state_topic: "dsc/Get/Zone1"
           device_class: "door"
           payload_on: "1"
           payload_off: "0"
         - platform: mqtt
-          name: "Zone 8"
-          state_topic: "dsc/Get/Zone8"
+          name: "Zone 2"
+          state_topic: "dsc/Get/Zone2"
           device_class: "window"
           payload_on: "1"
           payload_off: "0"
         - platform: mqtt
-          name: "Smoke Alarm"
-          state_topic: "dsc/Get/Fire1"
-          device_class: "smoke"
+          name: "Zone 3"
+          state_topic: "dsc/Get/Zone3"
+          device_class: "motion"
           payload_on: "1"
           payload_off: "0"
 
@@ -139,6 +144,7 @@ const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
 
@@ -190,6 +196,12 @@ void loop() {
     if (dsc.accessCodePrompt && dsc.writeReady) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
+    }
+
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) mqtt.publish(mqttTroubleTopic, "1", true);
+      else mqtt.publish(mqttTroubleTopic, "0", true);
     }
 
     // Publishes status per partition

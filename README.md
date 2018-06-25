@@ -1,9 +1,13 @@
 # DSC Keybus Interface
 This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant/Apple HomeKit/Homey, sending push notifications/email, and reading/decoding Keybus data.
 
-For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can be used with [Homebridge](https://github.com/nfarina/homebridge) for notifications and control of the security system through the iOS Home app and Siri:
+For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can enable mobile devices to control the security system:
 
-![dscHomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
+* Apple Home and Siri:
+  ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
+
+* Home Assistant:
+  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/41829054-34741e74-77fe-11e8-9d5e-fbc8601b9fc4.png)
 
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
@@ -17,11 +21,13 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
-* 0.4-develop
+* 0.4
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
   - New: Support ATmega32U4-based Arduino boards (switched to AVR Timer1)
+  - Changed: Simplified example names, configurations, added version numbers
   - Bugfix: Virtual keypad writes with partitions 5-8 enabled
   - Bugfix: F/A/P alarm key writes with `processModuleData` disabled
+  - Bugfix: HomeAssistant example `configuration.yaml` error for `alarm_control_panel`
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
   - New: Virtual keypad support for partition 2
@@ -49,13 +55,9 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
 * Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
 
 ## Examples
-* KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
+The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed a sketch/integration that others can use.
 
-  This is primarily to help decode the Keybus protocol - at this point, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat and wireless commands as I do not have these modules.
-
-  See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
-
-* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional commands - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
+* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
   * Partitions armed away/stay/disarmed
   * Partitions in alarm
   * Partitions exit delay in progress
@@ -68,15 +70,21 @@ For example, an Arduino Uno (with an ethernet module) or the inexpensive NodeMCU
   * Panel battery
   * Panel trouble
 
-* Status-MQTT-Homebridge: Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) for HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
+* Homebridge-MQTT: Integrates with Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 
-* Status-MQTT-HomeAssistant: Processes the security system status and allows for control with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as fire alarm and zone states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
+* HomeAssistant-MQTT: Integrates with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as zone, fire alarm, and trouble states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
-* Status-Homey: Processes the security system status and allows for control using [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, fire, and zone states.
+* Homey: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, fire, and zone states.
 
-* Status-Pushbullet (esp8266-only):  Processes the security system status and demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
+* Pushbullet (esp8266-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
 
-* Status-Email (esp8266-only): Processes the security system status and demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* Email (esp8266-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+
+* KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
+
+  This is primarily to help decode the Keybus protocol - at this point, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat and wireless commands as I do not have these modules.
+
+  See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
 ## Wiring
 
