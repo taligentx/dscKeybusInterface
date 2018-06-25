@@ -7,7 +7,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 * Home Assistant:
-  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/41829054-34741e74-77fe-11e8-9d5e-fbc8601b9fc4.png)
+  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/41831858-0df49f10-780f-11e8-911e-8df5c74e8038.png)
 
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
@@ -47,15 +47,15 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 * 0.1 - Initial release
 
 ## Installation
-* Arduino IDE: Search for `DSC` in the Library Manager (`Sketch > Include Library > Manage Libraries`)
+* Arduino IDE: Search for `DSC` in the Library Manager - `Sketch > Include Library > Manage Libraries`
   ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
-* PlatformIO GUI: Search for `DSC` in the PlatformIO Library Registry
+* PlatformIO IDE: Search for `DSC` in the [PlatformIO Library Registry](https://platformio.org/lib/show/5499/dscKeybusInterface)
   ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
 * PlatformIO CLI: `platformio lib install "dscKeybusInterface"`
 * Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
 
 ## Examples
-The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed a sketch/integration that others can use.
+The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed (and would like to share) a sketch/integration that others can use.
 
 * Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
   * Partitions armed away/stay/disarmed
