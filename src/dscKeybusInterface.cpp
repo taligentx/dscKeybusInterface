@@ -53,6 +53,7 @@ volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
+volatile unsigned long dscKeybusInterface::keybusTime;
 
 
 dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin) {
@@ -95,6 +96,18 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
 
 bool dscKeybusInterface::handlePanel() {
+
+  // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
+  noInterrupts();
+  if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
+  else keybusConnected = true;
+  interrupts();
+  if (previousKeybus != keybusConnected) {
+    previousKeybus = keybusConnected;
+    keybusChanged = true;
+    statusChanged = true;
+    if (!keybusConnected) return true;
+  }
 
   // Writes keys when multiple keys are sent as a char array
   if (writeKeysPending) writeKeys(writeKeysArray);
@@ -594,6 +607,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
     // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
     if (clockHighTime > 1000) {
+      keybusTime = millis();
 
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.

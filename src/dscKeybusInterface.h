@@ -69,6 +69,7 @@ class dscKeybusInterface {
 
     // Status tracking
     bool statusChanged;             // True after any status change
+    bool keybusConnected, keybusChanged;
     bool accessCodePrompt;
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
@@ -195,6 +196,7 @@ class dscKeybusInterface {
     bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
+    bool previousKeybus;
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
@@ -211,7 +213,7 @@ class dscKeybusInterface {
     static byte panelBitCount, panelByteCount;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
-    static volatile unsigned long clockHighTime;
+    static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];

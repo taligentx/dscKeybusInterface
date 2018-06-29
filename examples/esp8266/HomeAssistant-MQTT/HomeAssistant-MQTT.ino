@@ -19,17 +19,17 @@
  *    Exit delay in progress: "pending"
  *    Alarm tripped: "triggered"
  *
- *  The trouble state is published in the configured mqttTroubleTopic.  The trouble state is published as an integer:
+ *  The trouble state is published as an integer in the configured mqttTroubleTopic:
  *    Trouble: "1"
  *    Trouble restored: "0"
  *
- *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
- *  number.  The zone state is published as an integer:
+ *  Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
+ *  with the zone number:
  *    Open: "1"
  *    Closed: "0"
  *
- *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
- *  partition number.  The fire state is published as an integer:
+ *  Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
+ *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
@@ -325,21 +325,21 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   // Arm stay
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-    dsc.writePartition = partition + 1;    // Sets writes to the partition number
-    dsc.write('s');  // Virtual keypad arm stay
+    dsc.writePartition = partition + 1;         // Sets writes to the partition number
+    dsc.write('s');                             // Virtual keypad arm stay
   }
 
   // Arm away
   else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-    dsc.writePartition = partition + 1;    // Sets writes to the partition number
-    dsc.write('w');  // Virtual keypad arm away
+    dsc.writePartition = partition + 1;         // Sets writes to the partition number
+    dsc.write('w');                             // Virtual keypad arm away
   }
 
   // Disarm
   else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
-    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write(accessCode);
   }
 }

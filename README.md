@@ -7,7 +7,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
 * Home Assistant:
-  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/41831858-0df49f10-780f-11e8-911e-8df5c74e8038.png)
+  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
 
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
@@ -21,6 +21,8 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
+* 1.0-develop
+  - New: Status `dsc.keybusConnected` to check the Keybus interface
 * 0.4
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
   - New: Support ATmega32U4-based Arduino boards (switched to AVR Timer1)
@@ -69,6 +71,7 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Panel AC power
   * Panel battery
   * Panel trouble
+  * Keybus connected
 
 * Homebridge-MQTT: Integrates with Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 

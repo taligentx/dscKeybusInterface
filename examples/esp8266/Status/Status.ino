@@ -1,5 +1,5 @@
 /*
- *  DSC Status 0.4 (esp8266)
+ *  DSC Status 1.0 (esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
@@ -69,6 +69,13 @@ void loop() {
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
+
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;                 // Resets the Keybus data status flag
+      if (dsc.keybusConnected) Serial.println(F("Keybus connected"));
+      else Serial.println(F("Keybus disconnected"));
+    }
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h

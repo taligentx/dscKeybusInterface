@@ -24,13 +24,13 @@
  *    Disarm: "D"
  *    Alarm tripped: "T"
  *
- *  Zone states are published in a separate topic per zone with the configured mqttZoneTopic appended with the zone
- *  number.  The zone state is published as an integer:
+ *  Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
+ *  with the zone number:
  *    Open: "1"
  *    Closed: "0"
  *
- *  Fire states are published in a separate topic per partition with the configured mqttFireTopic appended with the
- *  partition number.  The fire state is published as an integer:
+ *  Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
+ *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
