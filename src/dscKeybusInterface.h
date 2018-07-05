@@ -67,15 +67,20 @@ class dscKeybusInterface {
     byte hour, minute, day, month;
     int year;
 
+    // These contain the current LED state and status message for each partition based on command 0x05 for
+    // partitions 1-4 and command 0x1B for partitions 5-8.  See printPanelLights() and printPanelMessages()
+    // in dscKeybusPrintData.cpp to see how this data translates to the LED status and status message.
+    byte status[dscPartitions];
+    byte lights[dscPartitions];
+
     // Status tracking
-    bool statusChanged;             // True after any status change
-    bool keybusConnected, keybusChanged;
-    bool accessCodePrompt;
+    bool statusChanged;                   // True after any status change
+    bool keybusConnected, keybusChanged;  // True if data is detected on the Keybus
+    bool accessCodePrompt;                // True if the panel is requesting an access code
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
-    byte lights[dscPartitions], status[dscPartitions];
     bool ready[dscPartitions], readyChanged[dscPartitions];
     bool armed[dscPartitions], armedAway[dscPartitions], armedStay[dscPartitions];
     bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];

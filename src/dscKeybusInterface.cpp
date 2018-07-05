@@ -337,6 +337,10 @@ void dscKeybusInterface::write(const char receivedKey) {
       case 'p': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad panic alarm
       case 'x':
       case 'X': writeKey = 0xE1; break;                                       // Exit
+      case '[': writeKey = 0xD5; break;                                       // Command output 1
+      case ']': writeKey = 0xDA; break;                                       // Command output 2
+      case '{': writeKey = 0x70; break;                                       // Command output 3
+      case '}': writeKey = 0xEC; break;                                       // Command output 4
       default: {
         validKey = false;
         break;

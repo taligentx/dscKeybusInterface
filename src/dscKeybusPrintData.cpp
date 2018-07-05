@@ -124,14 +124,15 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x05: stream->print(F("Armed away")); break;
     case 0x07: stream->print(F("Failed to arm")); break;
     case 0x08: stream->print(F("Exit delay in progress")); break;
-    case 0x09: stream->print(F("Arming without entry delay")); break;
+    case 0x09: stream->print(F("Arming with no entry delay")); break;
     case 0x0B: stream->print(F("Quick exit in progress")); break;
     case 0x0C: stream->print(F("Entry delay in progress")); break;
     case 0x0D: stream->print(F("Opening after alarm")); break;
     case 0x10: stream->print(F("Keypad lockout")); break;
     case 0x11: stream->print(F("Partition in alarm")); break;
     case 0x14: stream->print(F("Auto-arm in progress")); break;
-    case 0x16: stream->print(F("Armed without entry delay")); break;
+    case 0x15: stream->print(F("Arming with bypassed zones")); break;
+    case 0x16: stream->print(F("Armed with no entry delay")); break;
     case 0x22: stream->print(F("Recent closing")); break;
     case 0x33: stream->print(F("Partition busy")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
@@ -143,7 +144,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x8F: stream->print(F("Invalid access code")); break;
     case 0x9E: stream->print(F("Enter * function code")); break;
     case 0x9F: stream->print(F("Enter access code")); break;
-    case 0xA0: stream->print(F("*1: Zone bypass programming"));
+    case 0xA0: stream->print(F("*1: Zone bypass programming")); break;
     case 0xA1: stream->print(F("*2: Trouble menu")); break;
     case 0xA2: stream->print(F("*3: Alarm memory display")); break;
     case 0xA3: stream->print(F("Door chime enabled")); break;
@@ -185,6 +186,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF8: stream->print(F("Keypad programming")); break;
     default:
       stream->print(F("Unrecognized data"));
+      stream->print(F(": 0x"));
       if (panelData[panelByte] < 10) stream->print(F("0"));
       stream->print(panelData[panelByte], HEX);
       break;
@@ -434,8 +436,8 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
    *  Zones bypassed, zones 1-32
    *
    *             YYY1YYY2   MMMMDD DDDHHHHH MMMMMM
-   *  10100101 0 00011000 01001111 10110001 10101001 10110001 00000000 00010111 [0xA5] 03/29/2018 17:42 | Bypassed zone 2
-   *  10100101 0 00011000 01001111 10110001 11000001 10110101 00000000 00110011 [0xA5] 03/29/2018 17:48 | Bypassed zone 6
+   *  10100101 0 00011000 01001111 10110001 10101001 10110001 00000000 00010111 [0xA5] 03/29/2018 17:42 | Zone bypassed: 2
+   *  10100101 0 00011000 01001111 10110001 11000001 10110101 00000000 00110011 [0xA5] 03/29/2018 17:48 | Zone bypassed: 6
    */
   if (panelData[panelByte] >= 0xB0 && panelData[panelByte] <= 0xCF) {
     stream->print(F("Zone bypassed: "));
@@ -1298,7 +1300,6 @@ void dscKeybusInterface::printPanel_0x87() {
   switch (panelData[2]) {
     case 0x00: stream->print(F(" Bell off")); break;
     case 0xFF: stream->print(F(" Bell on")); break;
-    default: stream->print(F("Unrecognized data")); break;
   }
 
   if ((panelData[3] & 0x0F) <= 0x03) {
@@ -1309,6 +1310,14 @@ void dscKeybusInterface::printPanel_0x87() {
     else stream->print(F(" | PGM2 off"));
   }
   else stream->print(F(" | Unrecognized data"));
+
+  if ((panelData[2] & 0x0F) <= 0x03) {
+    if (bitRead(panelData[2],0)) stream->print(F(" | PGM3 on"));
+    else stream->print(F(" | PGM3 off"));
+
+    if (bitRead(panelData[2],1)) stream->print(F(" | PGM4 on"));
+    else stream->print(F(" | PGM4 off"));
+  }
 }
 
 

@@ -22,7 +22,8 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 
 ## Release notes
 * 1.0-develop
-  - New: Status `dsc.keybusConnected` to check the Keybus interface
+  - New: Status `dsc.keybusConnected` to check if data is being received from the DSC panel
+  - New: Virtual keypad support for PGM terminals 1-4 command output
 * 0.4
   - New: Virtual keypad support for partitions 3-8, thanks to [jvitkauskas](https://github.com/jvitkauskas) for contributing the necessary logs
   - New: Support ATmega32U4-based Arduino boards (switched to AVR Timer1)
@@ -144,6 +145,10 @@ Keys are sent to partition 1 by default and can be changed to a different partit
   * Switch to partition 2 and send keys: `/2` + `1234`
   * Switch back to partition 1: `/1`
   * Set directly in sketch: `dsc.writePartition = 8;`
+* Command output 1: `[`
+* Command output 2: `]`
+* Command output 3: `{`
+* Command output 4: `}`
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code`:
