@@ -134,7 +134,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed with no entry delay")); break;
     case 0x22: stream->print(F("Recent closing")); break;
-    case 0x33: stream->print(F("Partition busy")); break;
+    case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
     case 0x40: stream->print(F("Keypad blanked")); break;
@@ -196,6 +196,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
 
 // Status messages for commands 0xA5, 0xEB
 void dscKeybusInterface::printPanelStatus0(byte panelByte) {
+  bool decoded = true;
   switch (panelData[panelByte]) {
     /*
      *             YYY1YYY2   MMMMDD DDDHHHHH MMMMMM
@@ -228,38 +229,41 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
      */
     // 0x09 - 0x28: Zone alarm, zones 1-32
     // 0x29 - 0x48: Zone alarm restored, zones 1-32
-    case 0x49: stream->print(F("Duress alarm")); return;
-    case 0x4A: stream->print(F("Disarmed after alarm in memory")); return;
-    case 0x4B: stream->print(F("Partition in alarm")); return;
-    case 0x4C: stream->print(F("Zone expander supervisory alarm")); return;
-    case 0x4D: stream->print(F("Zone expander supervisory restored")); return;
-    case 0x4E: stream->print(F("Keypad Fire alarm")); return;
-    case 0x4F: stream->print(F("Keypad Aux alarm")); return;
-    case 0x50: stream->print(F("Keypad Panic alarm")); return;
-    case 0x51: stream->print(F("Keypad status check?")); return;
-    case 0x52: stream->print(F("Keypad Fire alarm restored")); return;
-    case 0x53: stream->print(F("Keypad Aux alarm restored")); return;
-    case 0x54: stream->print(F("Keypad Panic alarm restored")); return;
+    case 0x49: stream->print(F("Duress alarm")); break;
+    case 0x4A: stream->print(F("Disarmed after alarm in memory")); break;
+    case 0x4B: stream->print(F("Partition in alarm")); break;
+    case 0x4C: stream->print(F("Zone expander supervisory alarm")); break;
+    case 0x4D: stream->print(F("Zone expander supervisory restored")); break;
+    case 0x4E: stream->print(F("Keypad Fire alarm")); break;
+    case 0x4F: stream->print(F("Keypad Aux alarm")); break;
+    case 0x50: stream->print(F("Keypad Panic alarm")); break;
+    case 0x51: stream->print(F("Auxiliary input alarm")); break;
+    case 0x52: stream->print(F("Keypad Fire alarm restored")); break;
+    case 0x53: stream->print(F("Keypad Aux alarm restored")); break;
+    case 0x54: stream->print(F("Keypad Panic alarm restored")); break;
+    case 0x55: stream->print(F("Auxilary input alarm restored")); break;
     // 0x56 - 0x75: Zone tamper, zones 1-32
     // 0x76 - 0x95: Zone tamper restored, zones 1-32
-    case 0x98: stream->print(F("Keypad lockout")); return;
+    case 0x98: stream->print(F("Keypad lockout")); break;
     // 0x99 - 0xBD: Armed by access code
-    case 0xBE: stream->print(F("Armed partial: Zones bypassed")); return;
-    case 0xBF: stream->print(F("Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); return;
+    case 0xBE: stream->print(F("Armed partial: Zones bypassed")); break;
+    case 0xBF: stream->print(F("Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); break;
     // 0xC0 - 0xE4: Disarmed by access code
-    case 0xE5: stream->print(F("Auto-arm cancelled")); return;
-    case 0xE6: stream->print(F("Disarmed special: keyswitch/wireless key/DLS")); return;
-    case 0xE7: stream->print(F("Panel battery trouble")); return;
-    case 0xE8: stream->print(F("Panel AC power failure")); return;
-    case 0xE9: stream->print(F("Bell trouble")); return;
-    case 0xEA: stream->print(F("Power on +16s")); return;
-    case 0xEC: stream->print(F("Telephone line trouble")); return;
-    case 0xEF: stream->print(F("Panel battery restored")); return;
-    case 0xF0: stream->print(F("Panel AC power restored")); return;
-    case 0xF1: stream->print(F("Bell restored")); return;
-    case 0xF4: stream->print(F("Telephone line restored")); return;
-    case 0xFF: stream->print(F("System test")); return;
+    case 0xE5: stream->print(F("Auto-arm cancelled")); break;
+    case 0xE6: stream->print(F("Disarmed special: keyswitch/wireless key/DLS")); break;
+    case 0xE7: stream->print(F("Panel battery trouble")); break;
+    case 0xE8: stream->print(F("Panel AC power failure")); break;
+    case 0xE9: stream->print(F("Bell trouble")); break;
+    case 0xEA: stream->print(F("Power on +16s")); break;
+    case 0xEC: stream->print(F("Telephone line trouble")); break;
+    case 0xEF: stream->print(F("Panel battery restored")); break;
+    case 0xF0: stream->print(F("Panel AC power restored")); break;
+    case 0xF1: stream->print(F("Bell restored")); break;
+    case 0xF4: stream->print(F("Telephone line restored")); break;
+    case 0xFF: stream->print(F("System test")); break;
+    default: decoded = false;
   }
+  if (decoded) return;
 
   /*
    *  Zone alarm, zones 1-32
@@ -1297,9 +1301,9 @@ void dscKeybusInterface::printPanel_0x87() {
   }
 
   stream->print(F("Panel output:"));
-  switch (panelData[2]) {
-    case 0x00: stream->print(F(" Bell off")); break;
-    case 0xFF: stream->print(F(" Bell on")); break;
+  switch (panelData[2] & 0xF0) {
+    case 0xF0: stream->print(F(" Bell on")); break;
+    default: stream->print(F(" Bell off")); break;
   }
 
   if ((panelData[3] & 0x0F) <= 0x03) {
@@ -1311,7 +1315,7 @@ void dscKeybusInterface::printPanel_0x87() {
   }
   else stream->print(F(" | Unrecognized data"));
 
-  if ((panelData[2] & 0x0F) <= 0x03) {
+  if ((panelData[2] & 0x0F) != 0x0F) {
     if (bitRead(panelData[2],0)) stream->print(F(" | PGM3 on"));
     else stream->print(F(" | PGM3 off"));
 
@@ -1593,20 +1597,20 @@ void dscKeybusInterface::printPanel_0xE6() {
   }
 
   switch (panelData[2]) {
-    case 0x03: printPanel_0xE6_0x03(); return;  // Status in alarm/programming, partitions 5-8
-    case 0x09: printPanel_0xE6_0x09(); return;  // Zones 33-40 status
-    case 0x0B: printPanel_0xE6_0x0B(); return;  // Zones 41-48 status
-    case 0x0D: printPanel_0xE6_0x0D(); return;  // Zones 49-56 status
-    case 0x0F: printPanel_0xE6_0x0F(); return;  // Zones 57-64 status
-    case 0x17: printPanel_0xE6_0x17(); return;  // Flash panel lights: status and zones 1-32, partitions 1-8
-    case 0x18: printPanel_0xE6_0x18(); return;  // Flash panel lights: status and zones 33-64, partitions 1-8
-    case 0x19: printPanel_0xE6_0x19(); return;  // Beep - one-time, partitions 3-8
-    case 0x1A: printPanel_0xE6_0x1A(); return;  // Unknown command
-    case 0x1D: printPanel_0xE6_0x1D(); return;  // Beep pattern, partitions 3-8
-    case 0x20: printPanel_0xE6_0x20(); return;  // Status in programming, zone lights 33-64
-    case 0x2B: printPanel_0xE6_0x2B(); return;  // Enabled zones 1-32, partitions 3-8
-    case 0x2C: printPanel_0xE6_0x2C(); return;  // Enabled zones 33-64, partitions 3-8
-    case 0x41: printPanel_0xE6_0x41(); return;  // Status in access code programming, zone lights 65-95
+    case 0x03: printPanel_0xE6_0x03(); break;  // Status in alarm/programming, partitions 5-8
+    case 0x09: printPanel_0xE6_0x09(); break;  // Zones 33-40 status
+    case 0x0B: printPanel_0xE6_0x0B(); break;  // Zones 41-48 status
+    case 0x0D: printPanel_0xE6_0x0D(); break;  // Zones 49-56 status
+    case 0x0F: printPanel_0xE6_0x0F(); break;  // Zones 57-64 status
+    case 0x17: printPanel_0xE6_0x17(); break;  // Flash panel lights: status and zones 1-32, partitions 1-8
+    case 0x18: printPanel_0xE6_0x18(); break;  // Flash panel lights: status and zones 33-64, partitions 1-8
+    case 0x19: printPanel_0xE6_0x19(); break;  // Beep - one-time, partitions 3-8
+    case 0x1A: printPanel_0xE6_0x1A(); break;  // Unknown command
+    case 0x1D: printPanel_0xE6_0x1D(); break;  // Beep pattern, partitions 3-8
+    case 0x20: printPanel_0xE6_0x20(); break;  // Status in programming, zone lights 33-64
+    case 0x2B: printPanel_0xE6_0x2B(); break;  // Enabled zones 1-32, partitions 3-8
+    case 0x2C: printPanel_0xE6_0x2C(); break;  // Enabled zones 33-64, partitions 3-8
+    case 0x41: printPanel_0xE6_0x41(); break;  // Status in access code programming, zone lights 65-95
     default: stream->print(F("Unrecognized data"));
   }
 }
