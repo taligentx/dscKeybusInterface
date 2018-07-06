@@ -9,6 +9,9 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 * Home Assistant:
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
 
+* Blynk virtual keypad:
+  ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42362573-9981b8b2-80b9-11e8-9aa8-5001d9c8c08e.png)
+
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
 * Status tracking of zones 1-64
@@ -22,6 +25,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 
 ## Release notes
 * 1.0-develop
+  - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
   - New: Virtual keypad support for PGM terminals 1-4 command output
   - New: Status `dsc.keybusConnected` to check if data is being received from the DSC panel
   - New: Auxiliary input alarm decoding
@@ -84,6 +88,13 @@ The included examples demonstrate how to use the library and can be used as-is o
 * Pushbullet (esp8266-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
 
 * Email (esp8266-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+
+* VirtualKeypad-Blynk (esp8266-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+  - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
+  - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
+  - [Virtual keypad with 64 zones](https://user-images.githubusercontent.com/12835671/42364299-47d84556-80c0-11e8-9833-9f957c6aacbb.png)
+
+  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
 * KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
 
