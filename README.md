@@ -10,7 +10,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
 
 * Blynk virtual keypad:
-  ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42362573-9981b8b2-80b9-11e8-9aa8-5001d9c8c08e.png)
+  ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
 
 ## Features
 * Status tracking of armed/alarm/fire states for partitions 1-8
