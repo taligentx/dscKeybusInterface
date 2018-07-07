@@ -1,5 +1,5 @@
 /*
- *  Pushbullet Push Notification 0.4 (esp8266)
+ *  Pushbullet Push Notification 1.0 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com

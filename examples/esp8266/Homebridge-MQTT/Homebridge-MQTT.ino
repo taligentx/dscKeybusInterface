@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 0.4 (esp8266)
+ *  Homebridge-MQTT 1.0 (esp8266)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration

@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 0.4 (esp8266)
+ *  HomeAssistant-MQTT 1.0 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *

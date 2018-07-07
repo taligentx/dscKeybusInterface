@@ -1,11 +1,17 @@
 /*
  *  VirtualKeypad-Blynk 1.0 (esp8266)
  *
- *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android.  Scan one of
- *  the following QR codes from within the Blynk app for an example keypad layout:
+ *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android.
+ *
+ *  Usage:
+ *  1. Scan one of the following QR codes from within the Blynk app for an example keypad layout:
  *    16 zones: https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png
  *    32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
  *    64 zones: https://user-images.githubusercontent.com/12835671/42364299-47d84556-80c0-11e8-9833-9f957c6aacbb.png
+ *  2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
+ *  3. Select "Refresh" to generate a new auth token.
+ *  4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
+ *  5. Add the auth token to the sketch below.
  *
  *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
  *  security system internal to your network.  This also lets you use as many widgets as needed for free - local

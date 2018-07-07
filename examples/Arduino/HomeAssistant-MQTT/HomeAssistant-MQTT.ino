@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 0.4 (Arduino)
+ *  HomeAssistant-MQTT 1.0 (Arduino)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *

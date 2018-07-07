@@ -6,10 +6,10 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 * Apple Home and Siri:
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
-* Home Assistant:
+* [Home Assistant](https://www.home-assistant.io):
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
 
-* Blynk virtual keypad:
+* [Blynk](https://www.blynk.cc) virtual keypad:
 
   ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
 
@@ -25,7 +25,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
-* 1.0-develop
+* 1.0
   - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
   - New: Virtual keypad support for PGM terminals 1-4 command output
   - New: Status `dsc.keybusConnected` to check if data is being received from the DSC panel
@@ -51,7 +51,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - Note: This release changes the library methods to accomodate multiple partitions, existing sketches will need to be updated to match the new example sketches.
 * 0.2
   - New: Status for zones 9-32
-  - New: HomeAssistant integration example sketch
+  - New: [Home Assistant](https://www.home-assistant.io) integration example sketch
   - New: Panel data buffering, adds `dscBufferSize` to `dscKeybusInterface.h` to allow configuration of how many panel commands are buffered to customize memory usage (uses 18 bytes of memory per command buffered).
 * 0.1 - Initial release
 

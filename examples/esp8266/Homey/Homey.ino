@@ -1,5 +1,5 @@
 /*
- *  Homey 0.4 (esp8266)
+ *  Homey 1.0 (esp8266)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *

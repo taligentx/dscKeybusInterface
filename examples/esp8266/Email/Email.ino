@@ -1,5 +1,5 @@
 /*
- *  Email Notification 0.4 (esp8266)
+ *  Email Notification 1.0 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendEmail().
