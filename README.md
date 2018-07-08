@@ -93,7 +93,6 @@ The included examples demonstrate how to use the library and can be used as-is o
 * VirtualKeypad-Blynk (esp8266-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
-  - [Virtual keypad with 64 zones](https://user-images.githubusercontent.com/12835671/42364299-47d84556-80c0-11e8-9833-9f957c6aacbb.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
