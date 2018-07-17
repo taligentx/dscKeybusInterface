@@ -565,6 +565,38 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
     return;
   }
 
+  if (panelData[panelByte] >= 0x40 && panelData[panelByte] <= 0x5F) {
+    stream->print(F("Zone tamper: "));
+    stream->print(panelData[panelByte] - 31);
+    return;
+  }
+
+  if (panelData[panelByte] >= 0x60 && panelData[panelByte] <= 0x7F) {
+    stream->print(F("Zone tamper restored: "));
+    stream->print(panelData[panelByte] - 63);
+    return;
+  }
+
+
+  stream->print(F("Unrecognized data"));
+}
+
+
+// Status messages for command 0xEB
+void dscKeybusInterface::printPanelStatus14(byte panelByte) {
+  if (panelData[panelByte] >= 0x40 && panelData[panelByte] <= 0x5F) {
+    stream->print(F("Zone fault restored: "));
+    stream->print(panelData[panelByte] - 31);
+    return;
+  }
+
+  if (panelData[panelByte] >= 0x60 && panelData[panelByte] <= 0x7F) {
+    stream->print(F("Zone fault: "));
+    stream->print(panelData[panelByte] - 63);
+    return;
+  }
+
+
   stream->print(F("Unrecognized data"));
 }
 
@@ -1908,7 +1940,13 @@ void dscKeybusInterface::printPanel_0xE6_0x41() {
  * 11101011 0 00000001 00011000 00011000 10001010 00111000 00000000 10111011 00000000 10011001 [0xEB] 06/04/2018 10:14 | Partition: 1  // Armed away
  * 11101011 0 00000001 00011000 00011000 10001010 00111000 00000010 10011011 00000000 01111011 [0xEB] 06/04/2018 10:14 | Partition: 1  // Armed away
  * 11101011 0 00000001 00011000 00011000 10001010 00110100 00000000 11100010 00000000 10111100 [0xEB] 06/04/2018 10:13 | Partition: 1  // Disarmed
-   11101011 0 00000001 00011000 00011000 10001111 00101000 00000100 00000000 10010001 01101000 [0xEB] 06/04/2018 15:10 | Partition: 1 | Unrecognized data, add to printPanelStatus0, Byte 8: 0x00
+ * 11101011 0 00000001 00011000 00011000 10001111 00101000 00000100 00000000 10010001 01101000 [0xEB] 06/04/2018 15:10 | Partition: 1 | Unrecognized data, add to printPanelStatus0, Byte 8: 0x00
+ * 11101011 0 00000001 00000001 00000100 01100000 00010100 00000100 01000000 10000001 00101010 [0xEB] 2001.01.03 00:05 | Partition 1 | Zone tamper: 33
+ * 11101011 0 00000001 00000001 00000100 01100000 00001000 00000100 01011111 10000001 00111101 [0xEB] 2001.01.03 00:02 | Partition 1 | Zone tamper: 64
+ * 11101011 0 00000001 00000001 00000100 01100000 00011000 00000100 01100000 11111111 11001100 [0xEB] 2001.01.03 00:06 | Partition 1 | Zone tamper restored: 33
+ * 11101011 0 00000000 00000001 00000100 01100000 01001000 00010100 01100000 10000001 10001101 [0xEB] 2001.01.03 00:18 | Zone fault: 33
+ * 11101011 0 00000000 00000001 00000100 01100000 01001100 00010100 01000000 11111111 11101111 [0xEB] 2001.01.03 00:19 | Zone fault restored: 33
+ * 11101011 0 00000000 00000001 00000100 01100000 00001100 00010100 01011111 11111111 11001110 [0xEB] 2001.01.03 00:03 | Zone fault restored: 64
  */
 void dscKeybusInterface::printPanel_0xEB() {
   if (!validCRC()) {
@@ -1949,12 +1987,13 @@ void dscKeybusInterface::printPanel_0xEB() {
     stream->print(F("| "));
   }
 
-  switch (panelData[7] & 0x07) {
+  switch (panelData[7]) {
     case 0x00: printPanelStatus0(8); return;
     case 0x01: printPanelStatus1(8); return;
     case 0x02: printPanelStatus2(8); return;
     case 0x03: printPanelStatus3(8); return;
     case 0x04: printPanelStatus4(8); return;
+    case 0x14: printPanelStatus14(8); return;
   }
 }
 

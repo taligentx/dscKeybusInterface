@@ -1,5 +1,5 @@
 # DSC Keybus Interface
-This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant/Apple HomeKit/Homey, sending push notifications/email, and reading/decoding Keybus data.
+This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant/Apple HomeKit/Homey, sending push notifications/email, and reading/decoding the Keybus protocol.
 
 For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can enable mobile devices to control the security system:
 
@@ -25,6 +25,8 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
+* 1.1-develop
+  - New: Zones 33-64 tamper and fault decoding
 * 1.0
   - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
   - New: Virtual keypad support for PGM terminals 1-4 command output

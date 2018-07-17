@@ -519,7 +519,7 @@ ISR(TIMER1_OVF_vect) {
 #endif
 
 
-// Interrupt function called by AVR Timer2 and esp8266 timer1 after 250us to read the data line
+// Interrupt function called by AVR Timer1 and esp8266 timer1 after 250us to read the data line
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
