@@ -1,8 +1,8 @@
 /*
- *  Pushbullet Push Notification 1.0 (esp8266)
+ *  Twilio Push Notification 1.0 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
- *  This example sends notifications via Pushbullet: https://www.pushbullet.com
+ *  This example sends notifications via Twilio: https://www.twilio.com
  *
  *  Wiring:
  *      DSC Aux(-) --- esp8266 ground
@@ -41,7 +41,13 @@
 
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* pushToken = "";  // Set the access token generated in the Pushbullet account settings
+
+// Twilio SMS Settings
+const char* AccountSID = "";	// Set the access token generated in the Twilio account settings
+const char* AuthToken = "";		// 
+const char* Base64EncodedAuth = "";	// echo -n "[AccountSID]:[AuthToken]" | openssl base64 -base64
+const char* From = "";	// i.e. 16041234567
+const char* To = "";		// i.e. 16041234567
 
 WiFiClientSecure pushClient;
 
@@ -135,21 +141,27 @@ void loop() {
 
 bool sendPush(const char* pushMessage) {
 
-  // Connects and sends the message as JSON
-  if (!pushClient.connect("api.pushbullet.com", 443)) return false;
-  pushClient.println(F("POST /v2/pushes HTTP/1.1"));
-  pushClient.println(F("Host: api.pushbullet.com"));
+  // Connects and sends the message as x-www-form-urlencoded
+  if (!pushClient.connect("api.twilio.com", 443)) return false;
+  pushClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
+  pushClient.print(AccountSID);
+  pushClient.println(F("/Messages.json HTTP/1.1"));
+  pushClient.print(F("Authorization: Basic "));
+  pushClient.println(Base64EncodedAuth);
+  pushClient.println(F("Host: api.twilio.com"));
   pushClient.println(F("User-Agent: ESP8266"));
   pushClient.println(F("Accept: */*"));
-  pushClient.println(F("Content-Type: application/json"));
+  pushClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   pushClient.print(F("Content-Length: "));
-  pushClient.println(strlen(pushMessage) + 25);  // Length including JSON data
-  pushClient.print(F("Access-Token: "));
-  pushClient.println(pushToken);
+  pushClient.println(strlen(To) + strlen(From) + strlen(pushMessage) + 18);  // Length including data
+  pushClient.println("Connection: Close");
   pushClient.println();
-  pushClient.print(F("{\"body\":\""));
-  pushClient.print(pushMessage);
-  pushClient.print(F("\",\"type\":\"note\"}"));
+  pushClient.print(F("To=+"));
+  pushClient.print(To);
+  pushClient.print(F("&From=+"));
+  pushClient.print(From);
+  pushClient.print(F("&Body="));
+  pushClient.println(pushMessage);
 
   // Waits for a response
   unsigned long previousMillis = millis();
@@ -189,4 +201,5 @@ bool sendPush(const char* pushMessage) {
     return false;
   }
 }
+
 
