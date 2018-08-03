@@ -27,6 +27,8 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 ## Release notes
 * 1.1-develop
   - New: Zones 33-64 tamper and fault decoding
+  - New: Push notification example using [Twilio](https://www.twilio.com), thanks to [ColingNG](https://github.com/ColinNg) for the contribution!
+  - Bugfix: Zones 17-32 status incorrectly stored
 * 1.0
   - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
   - New: Virtual keypad support for PGM terminals 1-4 command output
