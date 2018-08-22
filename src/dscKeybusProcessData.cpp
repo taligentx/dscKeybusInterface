@@ -1,5 +1,5 @@
 /*
-    DSC Keybus Interface
+    DSC Keybus Interface update by l33d, problem is zones 17-31
 
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -333,7 +333,7 @@ void dscKeybusInterface::processPanel_0x34() {
   if (dscZones < 3) return;
 
   // Open zones 17-24 status is stored in openZones[2] and openZonesChanged[2]: Bit 0 = Zone 17 ... Bit 7 = Zone 24
-  openZones[1] = panelData[6];
+  openZones[2] = panelData[6];
   byte zonesChanged = openZones[2] ^ previousOpenZones[2];
   if (zonesChanged != 0) {
     previousOpenZones[2] = openZones[2];
@@ -356,7 +356,7 @@ void dscKeybusInterface::processPanel_0x3E() {
   if (dscZones < 4) return;
 
   // Open zones 25-32 status is stored in openZones[3] and openZonesChanged[3]: Bit 0 = Zone 25 ... Bit 7 = Zone 32
-  openZones[1] = panelData[6];
+  openZones[3] = panelData[6];
   byte zonesChanged = openZones[3] ^ previousOpenZones[3];
   if (zonesChanged != 0) {
     previousOpenZones[3] = openZones[3];
