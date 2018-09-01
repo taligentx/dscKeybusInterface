@@ -35,6 +35,7 @@
     This example code is in the public domain.
 */
 
+
 #include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
 
@@ -82,16 +83,94 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 
     client->ping();
 
+    Serial.println("Connected");
+
+
+
+  } else if (type == WS_EVT_DISCONNECT) {
+    Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+  } else if (type == WS_EVT_ERROR) {
+    Serial.printf("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
+  } else if (type == WS_EVT_PONG) {
+    Serial.printf("ws[%s][%u] pong[%u]: %s\n", server->url(), client->id(), len, (len) ? (char*)data : "");
+
+  } else if (type == WS_EVT_DATA) {
+    AwsFrameInfo * info = (AwsFrameInfo*)arg;
+    String msg = "";
+    if (info->final && info->index == 0 && info->len == len) {
+      //the whole message is in a single frame and we got all of it's data
+      //Serial.printf("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT) ? "text" : "binary", info->len);
+
+      if (info->opcode == WS_TEXT) {
+        for (size_t i = 0; i < info->len; i++) {
+          msg += (char) data[i];
+        }
+      }
+      Serial.printf("%s\n", msg.c_str());
+
+      if (info->opcode == WS_TEXT) {
+        StaticJsonDocument<200> doc;
+        auto err = deserializeJson(doc, msg);
+        if (!err) {
+          JsonObject root = doc.as<JsonObject>();
+          if (root.containsKey("btn_single_click")) {
+            char *tmp = (char *)root["btn_single_click"].as<char*>();
+            char * const sep_at = strchr(tmp, '_');
+            if (sep_at != NULL)            {
+              *sep_at = '\0';
+              dsc.write(sep_at + 1);
+            }
+
+          }
+
+        }
+
+
+      }
+
+    } else {
+      //message is comprised of multiple frames or the frame is split into multiple packets
+      if (info->index == 0) {
+        if (info->num == 0)
+          Serial.printf("ws[%s][%u] %s-message start\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
+        Serial.printf("ws[%s][%u] frame[%u] start[%llu]\n", server->url(), client->id(), info->num, info->len);
+      }
+
+      Serial.printf("ws[%s][%u] frame[%u] %s[%llu - %llu]: ", server->url(), client->id(), info->num, (info->message_opcode == WS_TEXT) ? "text" : "binary", info->index, info->index + len);
+
+      if (info->opcode == WS_TEXT) {
+        for (size_t i = 0; i < info->len; i++) {
+          msg += (char) data[i];
+        }
+      } else {
+        char buff[3];
+        for (size_t i = 0; i < info->len; i++) {
+          sprintf(buff, "%02x ", (uint8_t) data[i]);
+          msg += buff ;
+        }
+      }
+      Serial.printf("%s\n", msg.c_str());
+
+      if ((info->index + len) == info->len) {
+        Serial.printf("ws[%s][%u] frame[%u] end[%llu]\n", server->url(), client->id(), info->num, info->len);
+        if (info->final) {
+          Serial.printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
+          if (info->message_opcode == WS_TEXT)
+            client->text("I got your text message");
+          else
+            client->binary("I got your binary message");
+        }
+      }
+    }
   }
 }
 
 void setup() {
   Serial.begin(115200);
- 
+
+  Serial.println(F("DSC Keybus Interface is online."));
   WiFi.disconnect();
-
   WiFi.mode(WIFI_STA);
-
   WiFi.begin(wifiSSID, wifiPassword);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -269,170 +348,7 @@ void loop() {
   }
 }
 
-//BLYNK_WRITE(V0) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('0');
-//  Blynk.virtualWrite(V0, 0);
-//}
-//
-//BLYNK_WRITE(V1) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('1');
-//  Blynk.virtualWrite(V1, 0);
-//}
-//
-//BLYNK_WRITE(V2) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('2');
-//  Blynk.virtualWrite(V2, 0);
-//}
-//
-//BLYNK_WRITE(V3) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('3');
-//  Blynk.virtualWrite(V3, 0);
-//}
-//
-//BLYNK_WRITE(V4) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('4');
-//  Blynk.virtualWrite(V4, 0);
-//}
-//
-//BLYNK_WRITE(V5) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('5');
-//  Blynk.virtualWrite(V5, 0);
-//}
-//
-//BLYNK_WRITE(V6) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('6');
-//  Blynk.virtualWrite(V6, 0);
-//}
-//
-//BLYNK_WRITE(V7) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('7');
-//  Blynk.virtualWrite(V7, 0);
-//}
-//
-//BLYNK_WRITE(V8) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('8');
-//  Blynk.virtualWrite(V8, 0);
-//}
-//
-//BLYNK_WRITE(V9) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('9');
-//  Blynk.virtualWrite(V9, 0);
-//}
-//
-//BLYNK_WRITE(V10) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('*');
-//  Blynk.virtualWrite(V10, 0);
-//}
-//
-//BLYNK_WRITE(V11) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('#');
-//  Blynk.virtualWrite(V11, 0);
-//}
-//
-//BLYNK_WRITE(V12) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('s');
-//  Blynk.virtualWrite(V12, 0);
-//}
-//
-//BLYNK_WRITE(V13) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('w');
-//  Blynk.virtualWrite(V13, 0);
-//}
-//
-//BLYNK_WRITE(V14) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('f');
-//  Blynk.virtualWrite(V14, 0);
-//}
-//
-//BLYNK_WRITE(V15) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('a');
-//  Blynk.virtualWrite(V15, 0);
-//}
-//
-//BLYNK_WRITE(V16) {
-//  int buttonPressed = param.asInt();
-//  if (buttonPressed) dsc.write('p');
-//  Blynk.virtualWrite(V16, 0);
-//}
-//
-//BLYNK_WRITE(V30) {
-//  switch (param.asInt()) {
-//    case 1: {
-//        viewPartition = 1;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 1;
-//        break;
-//      }
-//    case 2: {
-//        viewPartition = 2;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 2;
-//        break;
-//      }
-//    case 3: {
-//        viewPartition = 3;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 3;
-//        break;
-//      }
-//    case 4: {
-//        viewPartition = 4;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 4;
-//        break;
-//      }
-//    case 5: {
-//        viewPartition = 5;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 5;
-//        break;
-//      }
-//    case 6: {
-//        viewPartition = 6;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 6;
-//        break;
-//      }
-//    case 7: {
-//        viewPartition = 7;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 7;
-//        break;
-//      }
-//    case 8: {
-//        viewPartition = 8;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 8;
-//        break;
-//      }
-//    default: {
-//        viewPartition = 1;
-//        changedPartition(viewPartition - 1);
-//        dsc.writePartition = 1;
-//        break;
-//      }
-//  }
-//  byte position = strlen(lcdPartition);
-//  lcd.print(0, 0, "                ");
-//  lcd.print(0, 0, lcdPartition);
-//  lcd.print(position, 0, viewPartition);
-//}
+
 
 
 void changedPartition(byte partition) {
@@ -543,7 +459,7 @@ void setStatus(byte partition) {
 }
 
 
-void printFire(byte partition) {
+void printFire(byte partition) {p
   if (dsc.fire[partition]) {
     //    lcd.clear();
     //    byte position = strlen(lcdPartition);
