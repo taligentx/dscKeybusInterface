@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+
+    <title>DSC PK5501 Panel</title>
+
+    <style type="text/css" media="screen">
+      @import url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans');
+      @import url('https://fonts.googleapis.com/css?family=Codystar');
+
+      html {
+        font-size: 16px;
+      }
+
+      @media screen and (min-width: 955px) {
+        body {
+          font-size: 1.265rem !important;
+        }
+        button.keypad_button {
+          width: 5rem !important;
+          font-size: 1.2rem !important;
+        }
+        button.keypad_button_small {
+          width: 2.3rem !important;
+        }
+        div.virtual_lcd {
+          font-size: 2.36rem !important;
+        }
+        div#zones_list {
+          font-size: 0.75rem !important;
+        }
+      }
+
+      body {
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-size: calc(0.38rem + 1.5vw);
+      }
+
+      .greenbullet {
+        color: #28a745;
+      }
+
+      .redbullet {
+        color: #dc3545;
+      }
+
+
+
+      p.state_title {
+        display: inline-block;
+      }
+
+      p.state_title:not(:first-child) {
+        margin-left: 10px;
+      }
+
+      button.keypad_button {
+        width: calc(0.6rem + 10vw);
+        border-radius: 1.5rem;
+        font-weight: bold;
+        font-size: calc(0.6rem + 1vw);
+        padding: 0.2rem;
+        max-width: 5rem;
+      }
+
+      button.keypad_button_small {
+        width: 7.0vw;
+        padding: 0px;
+        max-width: 2.2rem;
+        line-height: 1 !important;
+      }
+
+      button.keypad_button_slim {
+        width: 14.5vw;
+        padding: 0px;
+        line-height: 1;
+        max-width: 4.5rem;
+        line-height: 1 !important;
+      }
+
+      button.keypad_button_control {
+        width: 11vw;
+        padding: 0px;
+        font-size: calc(0.6rem + 1vw);
+        line-height: 1 !important;
+        max-width: 4.0rem;
+      }
+
+
+      div.virtual_lcd {
+        background-color: #5f7cd8;
+        color: #ffffff;
+        font-family: 'Codystar', cursive;
+        font-size: calc(1.3rem + 1.8vw);
+        font-weight: bold;
+        padding: 2px 10px;
+        border-radius: 8px;
+        flex: 1;
+      }
+
+      div#lcd_container {
+        width: 100%;
+        margin: 0 auto;
+        border: 1px solid lightgrey;
+        padding: 7px;
+        background-color: whitesmoke;
+        border-radius: 10px;
+        white-space: nowrap;
+        margin-bottom: 10px;
+        display: flex;
+      }
+
+      div.keypad_button_row {
+        margin: 12px 10px;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      div.container {
+        border: 1px solid #939393;
+        border-radius: 20px;
+        padding: 10px;
+        width: 100vw;
+        background-color: #cacaca;
+        max-width: 500px;
+        min-width: 320px;
+        margin-bottom: 10px;
+      }
+
+      div.inline_container {
+        display: inline-block;
+      }
+
+      div.status_icons {
+        text-align: center;
+        padding: 0px;
+        margin: 0px 0px 0px 5px;
+        flex: 0;
+        color: grey;
+      }
+
+      div.status_icons i {
+        display: block;
+        padding: 4px 0px;
+        margin: 0px;
+      }
+
+      button.btn {
+        background-color: #d9dcdf;
+        border: 2px solid #898e94;
+      }
+
+
+
+      div#left_buttons,
+      div#right_buttons,
+      div#keypad_container {
+        border: 1px solid lightgrey;
+        padding: 7px 0px;
+        border-radius: 8px;
+        background-color: whitesmoke;
+      }
+
+      div#left_buttons {
+        flex: 1;
+        max-width: 5.9rem;
+        line-height: 1 !important;
+      }
+
+      div#right_buttons div.keypad_button_row {
+        margin: 8px 10px;
+      }
+
+      div#keypad_container {
+        flex: 2;
+        margin: 0px 10px;
+        max-width: 17.5rem;
+        line-height: 1.5 !important;
+      }
+
+      div#right_buttons {
+        flex: 0;
+        max-width: 5.8rem;
+        line-height: 1 !important;
+      }
+
+      div#buttons_area {
+        display: flex;
+      }
+
+      div.zones {
+        background-color: whitesmoke;
+      }
+
+      div#zones_list {
+        border-top: 1px solid grey;
+        margin-top: 5px;
+        padding-top: 5px;
+
+        display: grid;
+        grid-template-rows: repeat(16, auto);
+        grid-gap: 10px;
+        grid-auto-flow: column;
+        font-size: 0.75rem;
+      }
+
+      div#regular_icons {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .green_circle {
+        color: green;
+      }
+
+      .red_circle {
+        color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="container">
+
+
+      <div id="lcd_container">
+        <div class="virtual_lcd">
+          <div id="first_line">&nbsp;</div>
+          <div id="second_line">&nbsp;</div>
+        </div>
+        <div class="status_icons">
+          <i class="fas fa-check" id="ready_icon" title="Ready"></i>
+          <i class="fas fa-lock" id="armed_icon" title="Armed"></i>
+          <i class="fas fa-exclamation-circle" id="" title="System Trouble"></i>
+          <i class="fab fa-stumbleupon-circle" title="AC Present"></i>
+        </div>
+      </div>
+
+
+      <div id="buttons_area">
+
+        <div id="left_buttons" class="inline_container">
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_small"><i class="fas fa-chevron-left"></i></button>
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_small"><i class="fas fa-chevron-right"></i></button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+          <i class="fas fa-fire" title="Fire"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+            <i class="fas fa-exclamation-triangle" title="Alert"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+            <i class="fas fa-shield-alt" title="Panic"></i>
+          </button>
+          </div>
+
+
+
+        </div>
+
+        <div id="keypad_container" class="inline_container">
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button">1</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">2</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">3</button>
+          </div>
+          <div class="keypad_button_row">
+
+            <button type="button" class="btn btn-outline-dark keypad_button">4</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">5</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">6</button>
+          </div>
+          <div class="keypad_button_row">
+
+            <button type="button" class="btn btn-outline-dark keypad_button">*</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">0</button>
+            <button type="button" class="btn btn-outline-dark keypad_button">#</button>
+          </div>
+        </div>
+
+        <div id="right_buttons" class="inline_container">
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <i class="fas fa-user-circle"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <i class="far fa-circle"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+          <i class="far fa-bell"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+          <i class="fas fa-sync-alt"></i>
+          </button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <i class="fas fa-door-open"></i>
+          </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="container zones">
+      <div id="regular_icons">
+        <div class="zone inline_container">
+          <i class="far fa-circle" id="fire_icon"></i> Fire
+        </div>
+        <div class="zone inline_container">
+          <i class="far fa-circle" id="memory_icon"></i> Memory
+        </div>
+        <div class="zone inline_container">
+          <i class="far fa-circle" id="bypass_icon"></i> Bypass
+        </div>
+        <div class="zone inline_container">
+          <i class="far fa-circle" id="program_icon"></i> Program
+        </div>
+        <div class="zone inline_container">
+          <i class="far fa-circle" id="pgm_icon"></i> PGM
+        </div>
+      </div>
+      <div id="zones_list">
+
+      </div>
+
+    </div>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+    <script>
+      window.jQuery || document.write('<script src="jquery-3.3.1.min.js">\x3C/script>\r\n<link rel="stylesheet" href="bootstrap.min.css"><script src="popper.min.js">\x3C/script>\r\n<script src="bootstrap.min.js">\x3C/script>')
+    </script>
+
+    <script type="text/javascript">
+      var ws = null;
+      var cnn_string = document.location.host;
+
+      $(window).on('beforeunload', function() {
+        if (ws != null) {
+          ws.close();
+        }
+      });
+
+      $(document).ready(function() {
+
+
+        startSocket();
+
+        $(".btn").click(function(event) {
+          // Removes focus of the button.
+          $(this).blur();
+        });
+
+        for (var i = 1; i <= 64; i++) {
+          $("#zones_list").append('<div class="zone" id="zone_' + i + '"><i class="far fa-circle"></i> Zone ' + i + '</div>');
+        }
+
+        function startSocket() {
+
+          if (location.protocol == "file:") {
+            //for testing on local
+            cnn_string = "192.168.1.101";
+          }
+
+          ws = new WebSocket('ws://' + cnn_string + '/ws');
+          ws.binaryType = "arraybuffer";
+          ws.onopen = function(e) {
+            //addMessage("Connected");
+          };
+          ws.onclose = function(e) {
+            console.log("WS disconnected");
+            ws = null;
+          };
+          ws.onerror = function(e) {
+            console.log("ws error", e);
+          };
+          ws.onmessage = function(e) {
+            var msg = "";
+            if (e.data instanceof ArrayBuffer) {
+              msg = "BIN:";
+              var bytes = new Uint8Array(e.data);
+              for (var i = 0; i < bytes.length; i++) {
+                msg += String.fromCharCode(bytes[i]);
+              }
+              console.log(msg);
+            } else {
+              if (IsJsonString(e.data)) {
+                try {
+                  var obj = JSON.parse(e.data);
+                } catch (err) {
+                  console.log(e.data);
+                }
+                if (obj instanceof Object) {
+                  //console.log(e.data);
+                  if ("open_zone_0" in obj) {
+                    //console.log(Object.keys(obj));
+                    var obj_keys = Object.keys(obj);
+                    for (var j = 0; j < obj_keys.length; j++) {
+                      for (var z = 0; z < 8; z++) {
+                        var zone_id = "zone_" + ((z + 1) + (j * 8));
+                        //console.log(zone_id);
+                        //console.log($("#zone_"+zone_id+" > i").attr("class"));
+                        if ((obj[obj_keys[j]] >> z) % 2 != 0) {
+                          $("#" + zone_id + " > i").removeClass("far").addClass("fas").addClass("green_circle").removeClass("red_circle");
+                        } else {
+                          $("#" + zone_id + " > i").removeClass("fas").addClass("far").removeClass("green_circle");
+                        }
+
+                      }
+                    }
+                  } else if ("status_packet" in obj) {
+                    var dsc_status = parseInt(obj.status_packet);
+
+                    //ready icon logic
+                    if ((dsc_status & 0x01) != 0 && !$("#ready_icon").hasClass("green_circle")) {
+                      $("#ready_icon").addClass("green_circle");
+                    } else if ((dsc_status & 0x01) == 0 && $("#ready_icon").hasClass("green_circle")) {
+                      $("#ready_icon").removeClass("green_circle");
+                    }
+
+                    //armed icon logic
+                    if ((dsc_status & 0x02) != 0 && !$("#armed_icon").hasClass("green_circle")) {
+                      $("#armed_icon").addClass("green_circle");
+                    } else if ((dsc_status & 0x02) == 0 && $("#armed_icon").hasClass("green_circle")) {
+                      $("#armed_icon").removeClass("green_circle");
+                    }
+
+                    //memory light logic
+                    if ((dsc_status & 0x04) != 0 && !$("#memory_icon").hasClass("green_circle")) {
+                      $("#memory_icon").removeClass("far").addClass("fas").addClass("green_circle");
+                    } else if ((dsc_status & 0x04) == 0 && $("#memory_icon").hasClass("green_circle")) {
+                      $("#memory_icon").removeClass("fas").addClass("far").removeClass("green_circle");
+                    }
+
+                    //bypass light logic
+                    if ((dsc_status & 0x08) != 0 && !$("#bypass_icon").hasClass("green_circle")) {
+                      $("#bypass_icon").removeClass("far").addClass("fas").addClass("green_circle");
+                    } else if ((dsc_status & 0x08) == 0 && $("#bypass_icon").hasClass("green_circle")) {
+                      $("#bypass_icon").removeClass("fas").addClass("far").removeClass("green_circle");
+                    }
+
+                    //trouble light logic
+                    if ((dsc_status & 0x10) != 0 && !$("#bypass_icon").hasClass("green_circle")) {
+                      $("#bypass_icon").addClass("green_circle");
+                    } else if ((dsc_status & 0x10) == 0 && $("#bypass_icon").hasClass("green_circle")) {
+                      $("#bypass_icon").removeClass("green_circle");
+                    }
+
+                    //program light logic
+                    if ((dsc_status & 0x20) != 0 && !$("#program_icon").hasClass("green_circle")) {
+                      $("#program_icon").addClass("green_circle");
+                    } else if ((dsc_status & 0x20) == 0 && $("#program_icon").hasClass("green_circle")) {
+                      $("#program_icon").removeClass("green_circle");
+                    }
+
+                    //fire light logic
+                    if ((dsc_status & 0x40) != 0 && !$("#fire_icon").hasClass("green_circle")) {
+                      $("#fire_icon").addClass("green_circle");
+                    } else if ((dsc_status & 0x40) == 0 && $("#fire_icon").hasClass("green_circle")) {
+                      $("#fire_icon").removeClass("green_circle");
+                    }
+
+                  }else if ("lcd_lower" in obj) {
+                    $("#second_line").html(obj.lcd_lower);
+                  }else if ("lcd_upper" in obj) {
+                    $("#first_line").html(obj.lcd_upper);
+                  } else {
+                    console.log(obj);
+                  }
+                } else {
+                  console.log(obj);
+                }
+              } else {
+                console.log(e.data);
+              }
+            }
+          };
+
+        }
+
+      });
+
+      function IsJsonString(MyTestStr) {
+        try {
+          var MyJSON = JSON.stringify(MyTestStr);
+          var json = JSON.parse(MyJSON);
+          if (typeof(MyTestStr) == 'string')
+            if (MyTestStr.length == 0)
+              return false;
+        } catch (e) {
+          return false;
+        }
+        return true;
+      }
+    </script>
+  </body>
+
+</html>
