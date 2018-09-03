@@ -47,6 +47,7 @@
 #include <ESPAsyncWebServer.h>
 #include <SPIFFSEditor.h>
 #include <ArduinoJson.h>
+#include <Chrono.h>
 
 
 char wifiSSID[] = "";
@@ -71,6 +72,8 @@ AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 static AsyncClient * aClient = NULL;
 
+Chrono ws_ping_pong(Chrono::SECONDS);
+
 
 bool partitionChanged;
 byte viewPartition = 1;
@@ -82,13 +85,17 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     force_send_status_for_new_client = true;
 
     client->ping();
+    ws_ping_pong.restart();
 
-    Serial.println("Connected");
+    
 
 
 
   } else if (type == WS_EVT_DISCONNECT) {
     Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+    if (ws.count() <= 0) {
+      ws_ping_pong.stop();
+    }
   } else if (type == WS_EVT_ERROR) {
     Serial.printf("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
   } else if (type == WS_EVT_PONG) {
@@ -233,6 +240,7 @@ void setup() {
 
 
   dsc.begin();
+  ws_ping_pong.stop();
 
 
 }
@@ -240,6 +248,12 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
+
+  //ping-pong WebSocket to keep connection open
+  if (ws_ping_pong.isRunning() && ws_ping_pong.elapsed() > 5 * 60) {
+    ws.pingAll();
+    ws_ping_pong.restart();
+  }
 
 
   if (dsc.handlePanel() && (dsc.statusChanged || force_send_status_for_new_client)) {  // Processes data only when a valid Keybus command has been read
@@ -295,28 +309,23 @@ void loop() {
     //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged || force_send_status_for_new_client) {
       dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
-      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-          if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
-            bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
-            if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {
-              /*String out;
-                StaticJsonDocument<200> doc;
-                JsonObject root = doc.to<JsonObject>();
-                root["alam_on_zone"] = zoneBit + 1 + (zoneGroup * 8);
-                serializeJson(root, out);
-                ws.textAll(out);*/
-            } else {
-              /* String out;
-                StaticJsonDocument<200> doc;
-                JsonObject root = doc.to<JsonObject>();
-                root["alarm_off_zone"] = zoneBit + 1 + (zoneGroup * 8);
-                serializeJson(root, out);
-                ws.textAll(out);*/
-            }
-          }
-        }
+      
+      if (ws.count()) {
+        char outas[512];
+        StaticJsonDocument<200> doc;
+        JsonObject root = doc.to<JsonObject>();
+        root["alarm_zone_0"] = dsc.alarmZones[0];
+        root["alarm_zone_1"] = dsc.alarmZones[1];
+        root["alarm_zone_2"] = dsc.alarmZones[2];
+        root["alarm_zone_3"] = dsc.alarmZones[3];
+        root["alarm_zone_4"] = dsc.alarmZones[4];
+        root["alarm_zone_5"] = dsc.alarmZones[5];
+        root["alarm_zone_6"] = dsc.alarmZones[6];
+        root["alarm_zone_7"] = dsc.alarmZones[7];
+        serializeJson(root, outas);
+        ws.textAll(outas);
       }
+
     }
 
     if (dsc.powerChanged) {
@@ -459,7 +468,7 @@ void setStatus(byte partition) {
 }
 
 
-void printFire(byte partition) {p
+void printFire(byte partition) {
   if (dsc.fire[partition]) {
     //    lcd.clear();
     //    byte position = strlen(lcdPartition);
