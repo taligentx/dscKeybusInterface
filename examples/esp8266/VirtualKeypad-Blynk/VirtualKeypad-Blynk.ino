@@ -170,6 +170,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.println();
+  WiFi.mode(WIFI_STA);
   Blynk.begin(blynkAuthToken, wifiSSID, wifiPassword, blynkServer, blynkPort);
 
   // Starts the Keybus interface and optionally specifies how to print data.

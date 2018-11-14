@@ -164,6 +164,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
+  WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) delay(500);
   Serial.print("WiFi connected: ");
