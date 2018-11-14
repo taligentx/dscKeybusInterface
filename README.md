@@ -25,7 +25,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
 
 ## Release notes
-* 1.1-develop
+* 1.1
   - New: Zones 33-64 tamper and fault decoding
   - New: Push notification example using [Twilio](https://www.twilio.com), thanks to [ColingNG](https://github.com/ColinNg) for the contribution!
   - Bugfix: Zones 17-32 status incorrectly stored
