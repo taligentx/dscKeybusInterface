@@ -128,14 +128,31 @@
  *  This example code is in the public domain.
  */
 
+#include <ArduinoOTA.h>
+#include <dscKeybusInterface.h>
+#include <ESP8266mDNS.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <dscKeybusInterface.h>
+#include <WiFiClient.h>
+#include <WiFiUdp.h>
 
-const char* wifiSSID = "";
-const char* wifiPassword = "";
+// Serial Baud
+#define SERIAL_BAUD 115200
+
+// Wifi Setup
+#define wifi_ssid ""
+#define wifi_password ""
+#define wifi_client_name ""
+WiFiClient wifiClient;
+
+// OTA Setup
+#define ota_port 8266
+#define ota_hostname "esp8266_dsc"
+
+// DSC setup
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 
+// MQTT Setup
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -147,8 +164,6 @@ const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per 
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
-
-WiFiClient wifiClient;
 PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
@@ -158,17 +173,15 @@ PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
-
 void setup() {
-  Serial.begin(115200);
-  Serial.println();
-  Serial.println();
+  // Setup Serial
+  Serial.begin(SERIAL_BAUD);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.print("WiFi connected: ");
-  Serial.println(WiFi.localIP());
+  // Setup Wifi
+  setup_wifi();
+
+  // Setup OTA Update
+  setup_ota();
 
   mqtt.setCallback(mqttCallback);
   if (mqttConnect()) mqttPreviousTime = millis();
@@ -181,8 +194,72 @@ void setup() {
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("MAC: ");
+  Serial.println(WiFi.macAddress());
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(wifi_ssid);
+  WiFi.begin(wifi_ssid, wifi_password);
+  WiFi.mode(WIFI_STA);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+}
+
+void setup_ota(){
+  // Set OTA Port - Default 8266
+  ArduinoOTA.setPort(ota_port);
+
+  // Set OTA Hostname - Default esp8266-[ChipID]
+  ArduinoOTA.setHostname(ota_hostname);
+  
+  // Set OTA Password
+  ArduinoOTA.setPassword((const char *)"esp8266");
+
+  // OTA Start
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH)
+      type = "sketch";
+    else // U_SPIFFS
+      type = "filesystem";
+
+    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+    Serial.println("Start updating " + type);
+  });
+  
+  // OTA End
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nOTA End");
+  });
+
+  // OTA Progress
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+
+  // OTA Error
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+
+  // OTA Startup
+  ArduinoOTA.begin();
+}
 
 void loop() {
+  // OTA Update
+  ArduinoOTA.handle();
+  
   mqttHandle();
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
@@ -306,7 +383,6 @@ void loop() {
   }
 }
 
-
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
@@ -374,4 +450,3 @@ bool mqttConnect() {
   }
   return mqtt.connected();
 }
-
