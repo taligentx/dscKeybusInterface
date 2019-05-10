@@ -45,6 +45,7 @@
         - platform: mqtt
           name: "Security System Partition 1"
           state_topic: "dsc/Get/Partition1"
+          availability_topic: "dsc/Status"
           command_topic: "dsc/Set"
           payload_disarm: "1D"
           payload_arm_home: "1S"
@@ -52,6 +53,7 @@
         - platform: mqtt
           name: "Security System Partition 2"
           state_topic: "dsc/Get/Partition2"
+          availability_topic: "dsc/Status"
           command_topic: "dsc/Set"
           payload_disarm: "2D"
           payload_arm_home: "2S"
@@ -145,6 +147,9 @@ const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm 
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
+const char* mqttStatusTopic = "dsc/Status";
+const char* mqttBirthMessage = "online";
+const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
 
@@ -363,9 +368,10 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
-  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
+    mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
     mqtt.subscribe(mqttSubscribeTopic);
   }
   else {
