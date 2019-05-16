@@ -287,17 +287,17 @@
             <button type="button" class="btn btn-outline-dark keypad_button keypad_button_small"><i class="fas fa-chevron-right"></i></button>
           </div>
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+            <button type="button" id="btn_f" class="btn btn-outline-dark keypad_button keypad_button_slim">
           <i class="dsc-icon icon-flame" title="Fire"></i>
           </button>
           </div>
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+            <button type="button" id="btn_a" class="btn btn-outline-dark keypad_button keypad_button_slim">
             <i class="dsc-icon icon-alert" title="Alert"></i>
           </button>
           </div>
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_slim">
+            <button type="button" id="btn_p" class="btn btn-outline-dark keypad_button keypad_button_slim">
             <i class="dsc-icon icon-thief" title="Panic"></i>
           </button>
             <div class="keypad_button_row">
@@ -334,17 +334,17 @@
 
         <div id="right_buttons">
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <button type="button" id="btn_s" class="btn btn-outline-dark keypad_button keypad_button_control">
             <i class="dsc-icon icon-stay_away"></i>
           </button>
           </div>
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <button type="button" id="btn_w" class="btn btn-outline-dark keypad_button keypad_button_control">
             <i class="dsc-icon icon-stay_empty"></i>
           </button>
           </div>
           <div class="keypad_button_row">
-            <button type="button" class="btn btn-outline-dark keypad_button keypad_button_control">
+            <button type="button" id="btn_c" class="btn btn-outline-dark keypad_button keypad_button_control">
           <i class="dsc-icon icon-bell"></i>
           </button>
           </div>
@@ -489,10 +489,10 @@
                   }
 
                   //armed icon logic
-                  if ((dsc_status & 0x02) != 0 && !$("#armed_icon").hasClass("green_circle")) {
-                    $("#armed_icon").addClass("green_circle");
-                  } else if ((dsc_status & 0x02) == 0 && $("#armed_icon").hasClass("green_circle")) {
-                    $("#armed_icon").removeClass("green_circle");
+                  if ((dsc_status & 0x02) != 0 && !$("#armed_icon").hasClass("red_circle")) {
+                    $("#armed_icon").addClass("red_circle");
+                  } else if ((dsc_status & 0x02) == 0 && $("#armed_icon").hasClass("red_circle")) {
+                    $("#armed_icon").removeClass("red_circle");
                   }
 
                   //memory light logic
@@ -510,10 +510,10 @@
                   }
 
                   //trouble light logic
-                  if ((dsc_status & 0x10) != 0 && !$("#trouble_icon").hasClass("green_circle")) {
-                    $("#trouble_icon").addClass("green_circle");
-                  } else if ((dsc_status & 0x10) == 0 && $("#trouble_icon").hasClass("green_circle")) {
-                    $("#trouble_icon").removeClass("green_circle");
+                  if ((dsc_status & 0x10) != 0 && !$("#trouble_icon").hasClass("orange_color")) {
+                    $("#trouble_icon").addClass("orange_color");
+                  } else if ((dsc_status & 0x10) == 0 && $("#trouble_icon").hasClass("orange_color")) {
+                    $("#trouble_icon").removeClass("orange_color");
                   }
 
                   //program light logic

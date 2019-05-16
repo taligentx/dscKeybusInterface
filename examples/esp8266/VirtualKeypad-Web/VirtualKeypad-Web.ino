@@ -1,70 +1,83 @@
 /*
-    VirtualKeypad HTTP (esp8266)
-
-    Provides a virtual keypad interface on standalone esp8266 Async HTTP Server using WebSockets.
-
-    Wiring:
-        DSC Aux(-) --- esp8266 ground
-
-                                           +--- dscClockPin (esp8266: D1, D2, D8)
-        DSC Yellow --- 15k ohm resistor ---|
-                                           +--- 10k ohm resistor --- Ground
-
-                                           +--- dscReadPin (esp8266: D1, D2, D8)
-        DSC Green ---- 15k ohm resistor ---|
-                                           +--- 10k ohm resistor --- Ground
-
-    Virtual keypad (optional):
-        DSC Green ---- NPN collector --\
-                                        |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
-              Ground --- NPN emitter --/
-
-    Power (when disconnected from USB):
-        DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
-                      |
-                      +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
-
-    Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
-    be suitable, for example:
-     -- 2N3904
-     -- BC547, BC548, BC549
-
-    Issues and (especially) pull requests are welcome:
-    https://github.com/taligentx/dscKeybusInterface
-
-    This example code is in the public domain.
-*/
-
+ *  VirtualKeypad-Web 1.1 (esp8266)
+ *
+ *  Provides a virtual keypad web interface using the esp8266 as a standalone web server.
+ *
+ *  Usage:
+ *    1. Install the following libraries, available in the Arduino IDE Library Manager and
+ *       the Platform.io Library Registry:
+ *         ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
+ *         ESPAsyncTCP: https://github.com/me-no-dev/ESPAsyncTCP
+ *         ArduinoJson: https://github.com/bblanchon/ArduinoJson
+ *         Chrono: https://github.com/SofaPirate/Chrono
+ *    2. Set the WiFi SSID and password in the sketch.
+ *    3. If desired, update the DNS hostname in the sketch.  By default, this is set to
+ *       "dsc" and the web interface will be accessible at: http://dsc.local
+ *    4. Set the esp8266 flash size to use 1M SPIFFS.
+ *         Arduino IDE: Tools > Flash Size > 4M (1M SPIFFS)
+ *    5. Upload the sketch.
+ *    6. Upload the SPIFFS data containing the web server files:
+ *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
+ *
+ *  Release notes:
+ *    1.1 - New: Fire, alarm, panic, stay arm, away arm, door chime buttons are now functional
+ *          Bugfix: Set mDNS to update in loop()
+ *          Changed: ArduinoOTA no longer included by default to reduce security attack vectors
+ *    1.0 - Initial release
+ *
+ *  Wiring:
+ *      DSC Aux(-) --- esp8266 ground
+ *
+ *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *      DSC Yellow --- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *  Virtual keypad (optional):
+ *      DSC Green ---- NPN collector --\
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *            Ground --- NPN emitter --/
+ *
+ *  Power (when disconnected from USB):
+ *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *                    |
+ *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
+ *
+ *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
+ *  be suitable, for example:
+ *   -- 2N3904
+ *   -- BC547, BC548, BC549
+ *
+ *  Issues and (especially) pull requests are welcome:
+ *  https://github.com/taligentx/dscKeybusInterface
+ *
+ *  Many thanks to Elektrik1 for contributing this example: https://github.com/Elektrik1
+ *
+ *  This example code is in the public domain.
+ */
 
 #include <ESP8266WiFi.h>
-#include <dscKeybusInterface.h>
-
 #include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include <FS.h>
-#include <ESPAsyncTCP.h>
+#include <dscKeybusInterface.h>
 #include <ESPAsyncWebServer.h>
+#include <ESPAsyncTCP.h>
+#include <FS.h>
 #include <SPIFFSEditor.h>
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
-
 char wifiSSID[] = "";
 char wifiPassword[] = "";
+char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-
-byte ligths_sent = 0x00;
-byte last_open_zones[8];
-
-byte partition = 0;
-
-bool force_send_status_for_new_client = false;
 
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
@@ -74,180 +87,52 @@ static AsyncClient * aClient = NULL;
 
 Chrono ws_ping_pong(Chrono::SECONDS);
 
-
 bool partitionChanged;
 byte viewPartition = 1;
+byte ligths_sent = 0x00;
+byte last_open_zones[8];
+byte partition = 0;
+bool force_send_status_for_new_client = false;
 const char* lcdPartition = "Partition ";
-
-void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
-  if (type == WS_EVT_CONNECT) {
-    client->printf("{\"connected_id\": %u}", client->id());
-    force_send_status_for_new_client = true;
-
-    client->ping();
-    ws_ping_pong.restart();
-
-    
-
-
-
-  } else if (type == WS_EVT_DISCONNECT) {
-    Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
-    if (ws.count() <= 0) {
-      ws_ping_pong.stop();
-    }
-  } else if (type == WS_EVT_ERROR) {
-    Serial.printf("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
-  } else if (type == WS_EVT_PONG) {
-    Serial.printf("ws[%s][%u] pong[%u]: %s\n", server->url(), client->id(), len, (len) ? (char*)data : "");
-
-  } else if (type == WS_EVT_DATA) {
-    AwsFrameInfo * info = (AwsFrameInfo*)arg;
-    String msg = "";
-    if (info->final && info->index == 0 && info->len == len) {
-      //the whole message is in a single frame and we got all of it's data
-      //Serial.printf("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT) ? "text" : "binary", info->len);
-
-      if (info->opcode == WS_TEXT) {
-        for (size_t i = 0; i < info->len; i++) {
-          msg += (char) data[i];
-        }
-      }
-      Serial.printf("%s\n", msg.c_str());
-
-      if (info->opcode == WS_TEXT) {
-        StaticJsonDocument<200> doc;
-        auto err = deserializeJson(doc, msg);
-        if (!err) {
-          JsonObject root = doc.as<JsonObject>();
-          if (root.containsKey("btn_single_click")) {
-            char *tmp = (char *)root["btn_single_click"].as<char*>();
-            char * const sep_at = strchr(tmp, '_');
-            if (sep_at != NULL)            {
-              *sep_at = '\0';
-              dsc.write(sep_at + 1);
-            }
-
-          }
-
-        }
-
-
-      }
-
-    } else {
-      //message is comprised of multiple frames or the frame is split into multiple packets
-      if (info->index == 0) {
-        if (info->num == 0)
-          Serial.printf("ws[%s][%u] %s-message start\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
-        Serial.printf("ws[%s][%u] frame[%u] start[%llu]\n", server->url(), client->id(), info->num, info->len);
-      }
-
-      Serial.printf("ws[%s][%u] frame[%u] %s[%llu - %llu]: ", server->url(), client->id(), info->num, (info->message_opcode == WS_TEXT) ? "text" : "binary", info->index, info->index + len);
-
-      if (info->opcode == WS_TEXT) {
-        for (size_t i = 0; i < info->len; i++) {
-          msg += (char) data[i];
-        }
-      } else {
-        char buff[3];
-        for (size_t i = 0; i < info->len; i++) {
-          sprintf(buff, "%02x ", (uint8_t) data[i]);
-          msg += buff ;
-        }
-      }
-      Serial.printf("%s\n", msg.c_str());
-
-      if ((info->index + len) == info->len) {
-        Serial.printf("ws[%s][%u] frame[%u] end[%llu]\n", server->url(), client->id(), info->num, info->len);
-        if (info->final) {
-          Serial.printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
-          if (info->message_opcode == WS_TEXT)
-            client->text("I got your text message");
-          else
-            client->binary("I got your binary message");
-        }
-      }
-    }
-  }
-}
 
 void setup() {
   Serial.begin(115200);
+  Serial.println();
+  Serial.println();
 
-  Serial.println(F("DSC Keybus Interface is online."));
-  WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-
+  while (WiFi.status() != WL_CONNECTED) delay(100);
+  Serial.print(F("WiFi connected: "));
   Serial.println(WiFi.localIP());
 
-  SPIFFS.begin();
+  if (!MDNS.begin(dnsHostname)) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {
+      delay(1000);
+    }
+  }
 
+  SPIFFS.begin();
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
-
-
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
-
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_SPIFFS
-      type = "filesystem";
-    }
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    Serial.println("Start updating " + type);
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
-    }
-  });
-
-
-  MDNS.begin("DSC");
-
   server.begin();
-
   MDNS.addService("http", "tcp", 80);
-
-  ArduinoOTA.begin();
-
+  Serial.print(F("Web server started: http://"));
+  Serial.print(dnsHostname);
+  Serial.println(F(".local"));
 
   dsc.begin();
   ws_ping_pong.stop();
 
-
+  Serial.println(F("DSC Keybus Interface is online."));
 }
 
 
 void loop() {
-  ArduinoOTA.handle();
+
+  MDNS.update();
 
   //ping-pong WebSocket to keep connection open
   if (ws_ping_pong.isRunning() && ws_ping_pong.elapsed() > 5 * 60) {
@@ -255,9 +140,8 @@ void loop() {
     ws_ping_pong.restart();
   }
 
-
   if (dsc.handlePanel() && (dsc.statusChanged || force_send_status_for_new_client)) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                     // Resets the status flag
+    dsc.statusChanged = false;  // Resets the status flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
@@ -283,7 +167,7 @@ void loop() {
     //   ...
     //   openZones[7] and openZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.openZonesStatusChanged || force_send_status_for_new_client) {
-      dsc.openZonesStatusChanged = false;                           // Resets the open zones status flag
+      dsc.openZonesStatusChanged = false;  // Resets the open zones status flag
 
       if (ws.count()) {
         char outas[512];
@@ -308,8 +192,8 @@ void loop() {
     //   ...
     //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
     if (dsc.alarmZonesStatusChanged || force_send_status_for_new_client) {
-      dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
-      
+      dsc.alarmZonesStatusChanged = false;  // Resets the alarm zones status flag
+
       if (ws.count()) {
         char outas[512];
         StaticJsonDocument<200> doc;
@@ -325,7 +209,6 @@ void loop() {
         serializeJson(root, outas);
         ws.textAll(outas);
       }
-
     }
 
     if (dsc.powerChanged) {
@@ -358,8 +241,6 @@ void loop() {
 }
 
 
-
-
 void changedPartition(byte partition) {
   partitionChanged = true;
   setStatus(partition);
@@ -390,7 +271,6 @@ void setStatus(byte partition) {
     char outas[128];
     StaticJsonDocument<200> doc;
     JsonObject root = doc.to<JsonObject>();
-
 
     switch (dsc.status[partition]) {
       case 0x01: root["lcd_lower"] = "Ready"; break;
@@ -464,7 +344,6 @@ void setStatus(byte partition) {
     serializeJson(root, outas);
     ws.textAll(outas);
   }
-
 }
 
 
@@ -481,5 +360,93 @@ void printFire(byte partition) {
     //    lcd.print(0, 0, lcdPartition);
     //    lcd.print(position, 0, partition + 1);
     //    lcd.print(0, 1, "Fire alarm off");
+  }
+}
+
+
+void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
+  if (type == WS_EVT_CONNECT) {
+    client->printf("{\"connected_id\": %u}", client->id());
+    force_send_status_for_new_client = true;
+
+    client->ping();
+    ws_ping_pong.restart();
+
+  } else if (type == WS_EVT_DISCONNECT) {
+    Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+    if (ws.count() <= 0) {
+      ws_ping_pong.stop();
+    }
+
+  } else if (type == WS_EVT_ERROR) {
+    Serial.printf("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
+
+  } else if (type == WS_EVT_PONG) {
+    Serial.printf("ws[%s][%u] pong[%u]: %s\n", server->url(), client->id(), len, (len) ? (char*)data : "");
+
+  } else if (type == WS_EVT_DATA) {
+    AwsFrameInfo * info = (AwsFrameInfo*)arg;
+    String msg = "";
+    if (info->final && info->index == 0 && info->len == len) {
+      //the whole message is in a single frame and we got all of it's data
+      //Serial.printf("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT) ? "text" : "binary", info->len);
+
+      if (info->opcode == WS_TEXT) {
+        for (size_t i = 0; i < info->len; i++) {
+          msg += (char) data[i];
+        }
+      }
+      Serial.printf("%s\n", msg.c_str());
+
+      if (info->opcode == WS_TEXT) {
+        StaticJsonDocument<200> doc;
+        auto err = deserializeJson(doc, msg);
+        if (!err) {
+          JsonObject root = doc.as<JsonObject>();
+          if (root.containsKey("btn_single_click")) {
+            char *tmp = (char *)root["btn_single_click"].as<char*>();
+            char * const sep_at = strchr(tmp, '_');
+            if (sep_at != NULL)            {
+              *sep_at = '\0';
+              dsc.write(sep_at + 1);
+            }
+          }
+        }
+      }
+
+    } else {
+      //message is comprised of multiple frames or the frame is split into multiple packets
+      if (info->index == 0) {
+        if (info->num == 0)
+          Serial.printf("ws[%s][%u] %s-message start\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
+        Serial.printf("ws[%s][%u] frame[%u] start[%llu]\n", server->url(), client->id(), info->num, info->len);
+      }
+
+      Serial.printf("ws[%s][%u] frame[%u] %s[%llu - %llu]: ", server->url(), client->id(), info->num, (info->message_opcode == WS_TEXT) ? "text" : "binary", info->index, info->index + len);
+
+      if (info->opcode == WS_TEXT) {
+        for (size_t i = 0; i < info->len; i++) {
+          msg += (char) data[i];
+        }
+      } else {
+        char buff[3];
+        for (size_t i = 0; i < info->len; i++) {
+          sprintf(buff, "%02x ", (uint8_t) data[i]);
+          msg += buff ;
+        }
+      }
+      Serial.printf("%s\n", msg.c_str());
+
+      if ((info->index + len) == info->len) {
+        Serial.printf("ws[%s][%u] frame[%u] end[%llu]\n", server->url(), client->id(), info->num, info->len);
+        if (info->final) {
+          Serial.printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT) ? "text" : "binary");
+          if (info->message_opcode == WS_TEXT)
+            client->text("I got your text message");
+          else
+            client->binary("I got your binary message");
+        }
+      }
+    }
   }
 }

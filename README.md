@@ -1,39 +1,74 @@
 # DSC Keybus Interface
-This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on system events, and usage as a virtual keypad.  The included examples demonstrate monitoring armed/alarm/zone/fire/trouble states, integrating with Home Assistant/Apple HomeKit/Homey, sending push notifications/email, and reading/decoding the Keybus protocol.
+This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and usage as a virtual keypad.  This enables homes and offices with existing DSC security systems (of which millions have been installed over the decades) to connect with modern devices and software, while retaining the features and reliability of a hardwired system.
 
-For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive NodeMCU and Wemos D1 Mini modules ($3USD shipped) can enable mobile devices to control the security system:
+The built-in examples can be used as-is or as a base to adapt to other uses:
+* Home automation: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Athom Homey](https://www.athom.com/en/)
+* Notifications: [PushBullet](https://www.pushbullet.com), [Twilio](https://www.twilio.com), MQTT, E-mail
+* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 
-* Apple Home and Siri:
+## Screenshots
+* [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 
-* [Home Assistant](https://www.home-assistant.io):
+* [Home Assistant](https://www.home-assistant.io):  
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
 
-* [Blynk](https://www.blynk.cc) virtual keypad:
-
+* [Blynk](https://www.blynk.cc) app virtual keypad:  
   ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
-  
-* Standalone Async HTTP server with WebSockets:
 
-  <img src="https://raw.githubusercontent.com/Elektrik1/dscKeybusInterface/master/extras/Screenshots/HTTP_firefox_pc.png" width="30%" />
-  <img src="https://raw.githubusercontent.com/Elektrik1/dscKeybusInterface/master/extras/Screenshots/HTTP_chrome_android_portrait.jpg" width="30%" />
-  <img src="https://raw.githubusercontent.com/Elektrik1/dscKeybusInterface/master/extras/Screenshots/HTTP_chrome_android_landscape.jpg" width="30%" />
+* Web virtual keypad:  
+  ![dsc-web](https://user-images.githubusercontent.com/12835671/57727601-8cebb280-7657-11e9-9404-dbdaeed9adae.png)
+
+## Why?
+**I Had**: _A DSC security system not being monitored by a third-party service._  
+**I Wanted**: _Notification if the alarm triggered._
+
+I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel and modules (keypads, etc).  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) platform.
+
+While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol) and a few existing projects, there were major issues that remained unsolved:
+* Error-prone Keybus data capture.
+* Limited data decoding - there was good progress for armed/disarmed states and partial zone status for a single partition, but otherwise most of the data was undecoded (notably missing the alarm triggered state).
+* Read-only - unable to control the Keybus to act as a virtual keypad.
+* No implementations to do useful work with the data.
+
+Poking around with a logic analyzer and oscilloscope revealed that the errors capturing the Keybus data were timing issues.  Updating the existing projects to fix this turned out to be more troublesome than starting from scratch, so this project was born.  After resolving the data errors, decoding the data required capturing the Keybus binary data as the security system handled various events and reverse engineering the protocol.
+
+At this point, this interface resolves all of the earlier issues (and goes beyond my initial goal of simply seeing if the alarm is triggered).
 
 ## Features
-* Status tracking of armed/alarm/fire states for partitions 1-8
-* Status tracking of zones 1-64
-* Virtual keypad: Enables writing keys to the panel for partitions 1-8
-* Data buffering: Helps prevent missing Keybus data when the sketch is busy
-* Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
-* Tested DSC panels: PC1555MX, PC5015, PC1616, PC1832, PC1864.  All PowerSeries panels are supported, post an issue if you have a different panel (PC5020, etc) and have tested the interface to update this list.
-* Supported boards:
+* Monitor the alarm state of all partitions: alarm triggered, armed/disarmed, entry/exit delay, fire triggered
+* Monitor the state of all zones: zones open/closed, zones in alarm
+* Virtual keypad: Send keys to the panel for any partition
+* Direct Keybus interface: does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
+* Supported security systems: [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify)
+  - Verified panels: PC585, PC1555MX, PC5005, PC5015, PC1616, PC1808, PC1832, PC1864.
+  - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
+  - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
+* Unsupported security systems:
+  - DSC Classic ([PC1500, etc](https://www.dsc.com/?n=enduser&o=identify)): Uses a different data protocol, though support is theoretically possible.
+  - DSC Neo: Uses a higher speed encrypted data protocol (Corbus) that is not possible to support.
+  - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use totally different protocols and are not supported.
+* Supported microcontrollers:
   - Arduino: Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini (ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz)
-  - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc
+  - esp8266: NodeMCU, Wemos D1 Mini, ESP12, etc - these work with the Arduino framework, have integrated WiFi, and feature much better performance/memory at only $3USD shipped.
+* Designed for reliable data decoding and performance:
+  - Pin change and timer interrupts for accurate data capture timing
+  - Data buffering: helps prevent lost Keybus data if the sketch is busy
+  - Extensive data decoding: reverse engineered the majority of Keybus data as seen in the [DSC IT-100 Data Interface developer's guide](https://cms.dsc.com/download.php?t=1&id=16238) and documented in [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp).
+  - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
+* Potential future features (pending [sufficient interest](https://github.com/taligentx/dscKeybusInterface/issues)):
+  - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
+  - Installer code unlocking: Requires brute force checking all possible codes and a workaround if keypad lockout is enabled (possibly automatically power-cycling the panel to skip the lockout time).
+  - ESP32 microcontroller support: At minimum, requires changing the timer interrupts.
+  - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
 ## Release notes
+* 1.2
+  - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
+  - Updated: List of tested DSC panels: PC585, PC5005, PC1808
 * 1.1
   - New: Zones 33-64 tamper and fault decoding
-  - New: Push notification example using [Twilio](https://www.twilio.com), thanks to [ColingNG](https://github.com/ColinNg) for the contribution!
+  - New: Push notification example using [Twilio](https://www.twilio.com), thanks to [ColingNG](https://github.com/ColinNg) for this contribution!
   - Bugfix: Zones 17-32 status incorrectly stored
 * 1.0
   - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
@@ -50,7 +85,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 * 0.3
   - New: Status for partitions 2-8, zones 33-64
   - New: Virtual keypad support for partition 2
-  - New: [Athom Homey](https://www.athom.com/en/) integration example sketch, contributed by [MagnusPer](https://github.com/MagnusPer)
+  - New: [Athom Homey](https://www.athom.com/en/) integration example sketch, thanks to [MagnusPer](https://github.com/MagnusPer) for this contribution!
   - New: PCB layouts, contributed by [sjlouw](https://github.com/sj-louw)
   - New: Configurable number of partitions and zones to customize memory usage: `dscPartitions` and `dscZones` in `dscKeybusInterface.h`
   - New: KeybusReader decoding of commands `0xE6` and `0xEB` 
@@ -58,7 +93,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
   - Changed: Arduino sketches no longer use pin 4 to avoid a conflict with the SD card on Ethernet shields. 
   - Changed: MQTT examples updated with username and password fields
   - Changed: `processRedundantData` now true by default to prevent storing repetitive data, reduces memory usage.
-  - Note: This release changes the library methods to accomodate multiple partitions, existing sketches will need to be updated to match the new example sketches.
+  - Note: This release changes the library methods to accommodate multiple partitions, existing sketches will need to be updated to match the new example sketches.
 * 0.2
   - New: Status for zones 9-32
   - New: [Home Assistant](https://www.home-assistant.io) integration example sketch
@@ -76,7 +111,7 @@ For example, an Arduino Uno (with an ethernet/wifi module) or the inexpensive No
 ## Examples
 The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed (and would like to share) a sketch/integration that others can use.
 
-* Status: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
+* **Status**: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
   * Partitions armed away/stay/disarmed
   * Partitions in alarm
   * Partitions exit delay in progress
@@ -90,27 +125,29 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Panel trouble
   * Keybus connected
 
-* Homebridge-MQTT: Integrates with Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
+* **Homebridge-MQTT**: Integrates with Apple HomeKit, including the iOS Home app and Siri.  This uses MQTT to interface with [Homebridge](https://github.com/nfarina/homebridge) and [homebridge-mqttthing](https://github.com/arachnetech/homebridge-mqttthing) and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
 
-* HomeAssistant-MQTT: Integrates with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as zone, fire alarm, and trouble states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
+* **HomeAssistant-MQTT**: Integrates with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as zone, fire alarm, and trouble states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
-* Homey: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, fire, and zone states.
+* **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* Pushbullet (esp8266-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
+* **Pushbullet** (esp8266-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
 
-* Email (esp8266-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* **Twilio** (esp8266-only): Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Twilio](https://www.twilio.com) and requires the esp8266 for SSL support - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
-* VirtualKeypad-Blynk (esp8266-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **Email** (esp8266-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+
+* **VirtualKeypad-Blynk** (esp8266-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
-* KeybusReader: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.
+* **VirtualKeypad-Web** (esp8266-only): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server.  This example uses the [ESP Async Web Server](https://github.com/me-no-dev/ESPAsyncWebServer) and Websockets - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
-  This is primarily to help decode the Keybus protocol - at this point, I've decoded a substantial portion of the commands seen in the [DSC IT-100 Developers Guide](http://cms.dsc.com/download.php?t=1&id=16238) (which also means that a very basic IT-100 emulator is possible).  The notable exceptions are the thermostat and wireless commands as I do not have these modules.
+* **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.
 
-  See `src/dscKeybusPrintData.cpp` for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
+  See [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp) for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
 ## Wiring
 
@@ -159,7 +196,7 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 * Fire alarm: `f`
 * Auxiliary alarm: `a`
 * Panic alarm: `p`
-* Door chime: `c`
+* Door chime enable/disable: `c`
 * Reset: `r`
 * Exit: `x`
 * Change partition: `/` + `partition number` or set `writePartition` to the partition number.  Examples:
@@ -172,17 +209,18 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 * Command output 4: `}`
 
 ## DSC Configuration
-Panel options affecting this interface, configured by `*8 + installer code`:
-* Swinger shutdown: PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377.  By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a monitoring station, and also affects this interface - this limit can be adjusted or disabled in this configuration section.
+Panel options affecting this interface, configured by `*8 + installer code` - see the DSC installation manual for your panel for configuration steps:
+* PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377:
+  - Swinger shutdown: By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a third-party monitoring service, and also affects this interface.  As I do not use a monitoring service, I disable swinger shutdown by setting this to `000`.
 
-  This section also sets the delay in reporting AC power failure to 30 minutes by default and can be set to 000 for no delay.  
+  - AC power failure reporting delay: The default delay is 30 minutes and can be set to 000 to immediately report a power failure.  
 
 ## Notes
-* Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in `src/dscKeybusInterface.h`.  Default settings:
+* Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybusInterface.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusInterface.h).  Default settings:
   * Arduino: up to 4 partitions, 32 zones, 10 buffered commands
   * esp8266: up to 8 partitions, 64 zones, 50 buffered commands
 
-* PCB layouts are available in `extras/PCB Layouts` - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
+* PCB layouts are available in [`extras/PCB Layouts`](https://github.com/taligentx/dscKeybusInterface/tree/master/extras/PCB%20Layouts) - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
 
 * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
 

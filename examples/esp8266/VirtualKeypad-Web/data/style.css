@@ -9,6 +9,10 @@
   font-style: normal;
 }
 
+div.container {
+  margin-top: 5px;
+}
+
 i.dsc-icon {
   /* use !important to prevent issues with browser extensions that change fonts */
   font-family: 'dsc_icons' !important;
