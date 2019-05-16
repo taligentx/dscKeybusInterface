@@ -65,6 +65,7 @@ At this point, this interface resolves all of the earlier issues (and goes beyon
 ## Release notes
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
+  - Updated: HomeAssistant-MQTT example includes availability status, thanks to [bjrolfe](https://github.com/bjrolfe) for this contribution!
   - Updated: List of tested DSC panels: PC585, PC5005, PC1808
 * 1.1
   - New: Zones 33-64 tamper and fault decoding
