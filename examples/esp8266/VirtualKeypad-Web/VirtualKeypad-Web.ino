@@ -22,11 +22,15 @@
  *  Release notes:
  *    1.1 - New: Fire, alarm, panic, stay arm, away arm, door chime buttons are now functional
  *          Bugfix: Set mDNS to update in loop()
- *          Changed: ArduinoOTA no longer included by default to reduce security attack vectors
+ *          Updated: ArduinoOTA no longer included by default
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -40,11 +44,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -69,8 +68,11 @@
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
+// WiFi settings
 char wifiSSID[] = "";
 char wifiPassword[] = "";
+
+// DNS settings
 char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
@@ -107,7 +109,7 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   if (!MDNS.begin(dnsHostname)) {
-    Serial.println("Error setting up MDNS responder!");
+    Serial.println("Error setting up MDNS responder.");
     while (1) {
       delay(1000);
     }

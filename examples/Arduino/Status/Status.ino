@@ -6,7 +6,9 @@
  *  changed, and how to take action based on those changes.
  *
  *  Wiring:
- *      DSC Aux(-) --- Arduino ground
+ *      DSC Aux(+) --- Arduino Vin pin
+ *
+ *      DSC Aux(-) --- Arduino Ground
  *
  *                                         +--- dscClockPin (Arduino Uno: 2,3)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -20,9 +22,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) --- Arduino Vin pin
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:

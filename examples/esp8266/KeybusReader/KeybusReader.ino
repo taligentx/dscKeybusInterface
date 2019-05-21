@@ -6,7 +6,11 @@
  *  to productive use.
  *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -20,11 +24,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:

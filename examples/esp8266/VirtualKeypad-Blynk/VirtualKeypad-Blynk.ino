@@ -17,7 +17,7 @@
  *  servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above
  *  example layouts requires more of Blynk's Energy units than available on the free usage tier.
  *
- *  Blynk virtual pin mapping:
+ *  The Blynk layout can be customized with widgets using these virtual pin mappings:
  *    V0 - Keypad 0 ... V9 - Keypad 9
  *    V10 - Keypad *
  *    V11 - Keypad #
@@ -38,7 +38,11 @@
  *    V61 - Zone 1 ... V124 - Zone 64
  *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -52,11 +56,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -75,11 +74,14 @@
 
 #define BLYNK_PRINT Serial
 
+// WiFi settings
+char wifiSSID[] = "";
+char wifiPassword[] = "";
+
+// Blynk settings
 char blynkAuthToken[] = "";  // Token generated from within the Blynk app
 char blynkServer[] = "";     // Blynk local server address
 int blynkPort = 8080;        // Blynk local server port
-char wifiSSID[] = "";
-char wifiPassword[] = "";
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
@@ -824,4 +826,3 @@ void printFire(byte partition) {
     lcd.print(0,1, "Fire alarm off");
   }
 }
-

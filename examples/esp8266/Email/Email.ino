@@ -8,8 +8,16 @@
  *  be supported.  For example, this will work with Gmail after changing the account settings to allow less secure
  *  apps: https://support.google.com/accounts/answer/6010255
  *
+ *  Release notes:
+ *  1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
+ *  1.0 - Initial release
+ *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -23,11 +31,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -43,6 +46,7 @@
 #include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
 
+// WiFi settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 
@@ -66,6 +70,9 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   // Sends an email on startup to verify connectivity
+  #ifdef AXTLS_DEPRECATED
+    smtpClient.setInsecure();  // Sets authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
+  #endif
   if (sendEmail("Security system initializing", "")) Serial.println(F("Initialization email sent successfully."));
   else Serial.println(F("Initialization email failed to send."));
 
@@ -139,7 +146,7 @@ void loop() {
 
 // sendEmail() takes the email subject and body as separate parameters.  Configure the settings for your SMTP
 // server - the login and password must be base64 encoded. For example, on the macOS/Linux terminal:
-// $ echo -n 'mylogin@example.com' | base64
+// $ echo -n 'mylogin@example.com' | base64 -w 0
 bool sendEmail(const char* emailSubject, const char* emailBody) {
   if (!smtpClient.connect("smtp.example.com", 465)) return false;       // Set the SMTP server address - for example: smtp.gmail.com
   if(!smtpValidResponse()) return false;
