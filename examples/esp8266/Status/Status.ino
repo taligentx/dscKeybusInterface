@@ -6,7 +6,11 @@
  *  changed, and how to take action based on those changes.
  *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -20,11 +24,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -70,6 +69,11 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
 
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
       dsc.keybusChanged = false;                 // Resets the Keybus data status flag
@@ -77,14 +81,10 @@ void loop() {
       else Serial.println(F("Keybus disconnected"));
     }
 
-    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
-
     // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
+      // Checks armed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
@@ -101,6 +101,7 @@ void loop() {
         }
       }
 
+      // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
@@ -110,6 +111,7 @@ void loop() {
         }
       }
 
+      // Checks exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
         if (dsc.exitDelay[partition]) {
@@ -119,6 +121,7 @@ void loop() {
         }
       }
 
+      // Checks entry delay status
       if (dsc.entryDelayChanged[partition]) {
         dsc.entryDelayChanged[partition] = false;  // Resets the exit delay status flag
         if (dsc.entryDelay[partition]) {
@@ -128,6 +131,7 @@ void loop() {
         }
       }
 
+      // Checks fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
         if (dsc.fire[partition]) {
@@ -143,6 +147,7 @@ void loop() {
       }
     }
 
+    // Checks for open zones
     // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
@@ -167,6 +172,7 @@ void loop() {
       }
     }
 
+    // Checks for zones in alarm
     // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
     //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
@@ -191,34 +197,40 @@ void loop() {
       }
     }
 
+    // Checks for trouble status
     if (dsc.troubleChanged) {
       dsc.troubleChanged = false;  // Resets the trouble status flag
       if (dsc.trouble) Serial.println(F("Trouble status on"));
       else Serial.println(F("Trouble status restored"));
     }
 
+    // Checks for AC power status
     if (dsc.powerChanged) {
       dsc.powerChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
       else Serial.println(F("Panel AC power restored"));
     }
 
+    // Checks for panel battery status
     if (dsc.batteryChanged) {
       dsc.batteryChanged = false;  // Resets the battery trouble status flag
       if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
       else Serial.println(F("Panel battery restored"));
     }
 
+    // Checks for keypad fire alarm status
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
       Serial.println(F("Keypad fire alarm"));
     }
 
+    // Checks for keypad aux auxiliary alarm status
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
       Serial.println(F("Keypad aux alarm"));
     }
 
+    // Checks for keypad panic alarm status
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
       Serial.println(F("Keypad panic alarm"));

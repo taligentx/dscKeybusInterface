@@ -1,11 +1,20 @@
 /*
- *  Pushbullet Push Notification 1.0 (esp8266)
+ *  Pushbullet Push Notification 1.1 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com
  *
+ *  Release notes:
+ *  1.1 - New: Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
+ *        New: Added notifications - Keybus connected, armed status, zone alarm status
+ *  1.0 - Initial release
+ *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -19,11 +28,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -39,8 +43,11 @@
 #include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
 
+// WiFi settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+
+// Pushbullet settings
 const char* pushToken = "";  // Set the access token generated in the Pushbullet account settings
 
 WiFiClientSecure pushClient;
@@ -63,6 +70,9 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   // Sends a push notification on startup to verify connectivity
+  #ifdef AXTLS_DEPRECATED
+    pushClient.setInsecure();  // Sets authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
+  #endif
   if (sendPush("Security system initializing")) Serial.println(F("Initialization push notification sent successfully."));
   else Serial.println(F("Initialization push notification failed to send."));
 
@@ -82,34 +92,50 @@ void loop() {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
-    if (dsc.keypadFireAlarm) {
-      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      sendPush("Security system fire alarm button pressed");
-    }
-
-    if (dsc.keypadAuxAlarm) {
-      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      sendPush("Security system aux alarm button pressed");
-    }
-
-    if (dsc.keypadPanicAlarm) {
-      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      sendPush("Security system panic alarm button pressed");
-    }
-
-    if (dsc.powerChanged) {
-      dsc.powerChanged = false;  // Resets the battery trouble status flag
-      if (dsc.powerTrouble) sendPush("Security system AC power trouble");
-      else sendPush("Security system AC power restored");
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;  // Resets the Keybus data status flag
+      if (dsc.keybusConnected) sendPush("Security system connected");
+      else sendPush("Security system disconnected");
     }
 
     // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
+      // Checks armed status
+      if (dsc.armedChanged[partition]) {
+        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
+        if (dsc.armed[partition]) {
+
+          char pushMessage[40] = "Security system ";
+          if (dsc.armedAway[partition]) {
+            char armedState[24] = "armed away: partition ";
+            strcat(pushMessage, armedState);
+          }
+          else if (dsc.armedStay[partition]) {
+            char armedState[24] = "armed stay: partition ";
+            strcat(pushMessage, armedState);
+          }
+          char partitionNumber[2];
+          itoa(partition + 1, partitionNumber, 10);
+          strcat(pushMessage, partitionNumber);
+          sendPush(pushMessage);
+
+        }
+        else {
+          char pushMessage[39] = "Security system disarmed: partition ";
+          char partitionNumber[2];
+          itoa(partition + 1, partitionNumber, 10);
+          strcat(pushMessage, partitionNumber);
+          sendPush(pushMessage);
+        }
+      }
+
+      // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
-        char pushMessage[38] = "Security system in alarm, partition ";
+        char pushMessage[38] = "Security system in alarm: partition ";
         char partitionNumber[2];
         itoa(partition + 1, partitionNumber, 10);
         strcat(pushMessage, partitionNumber);
@@ -118,10 +144,11 @@ void loop() {
         else sendPush("Security system disarmed after alarm");
       }
 
+      // Checks fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
-        char pushMessage[40] = "Security system fire alarm, partition ";
+        char pushMessage[40] = "Security system fire alarm: partition ";
         char partitionNumber[2];
         itoa(partition + 1, partitionNumber, 10);
         strcat(pushMessage, partitionNumber);
@@ -129,6 +156,62 @@ void loop() {
         if (dsc.fire[partition]) sendPush(pushMessage);
         else sendPush("Security system fire alarm restored");
       }
+    }
+
+    // Checks for zones in alarm
+    // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
+    //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
+    //   ...
+    //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
+    if (dsc.alarmZonesStatusChanged) {
+      dsc.alarmZonesStatusChanged = false;                           // Resets the alarm zones status flag
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
+            bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
+            if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {       // Zone alarm
+              char pushMessage[24] = "Security zone alarm: ";
+              char zoneNumber[3];
+              itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
+              strcat(pushMessage, zoneNumber);
+              sendPush(pushMessage);
+            }
+            else {
+              char pushMessage[33] = "Security zone alarm restored: ";
+              char zoneNumber[3];
+              itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
+              strcat(pushMessage, zoneNumber);
+              sendPush(pushMessage);
+            }
+          }
+        }
+      }
+    }
+
+    // Checks for AC power status
+    if (dsc.powerChanged) {
+      dsc.powerChanged = false;  // Resets the battery trouble status flag
+      if (dsc.powerTrouble) sendPush("Security system AC power trouble");
+      else sendPush("Security system AC power restored");
+    }
+
+    // Checks for keypad fire alarm status
+    if (dsc.keypadFireAlarm) {
+      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
+      sendPush("Security system fire alarm button pressed");
+    }
+
+    // Checks for keypad aux auxiliary alarm status
+    if (dsc.keypadAuxAlarm) {
+      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
+      sendPush("Security system aux alarm button pressed");
+    }
+
+    // Checks for keypad panic alarm status
+    if (dsc.keypadPanicAlarm) {
+      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
+      sendPush("Security system panic alarm button pressed");
     }
   }
 }
@@ -190,4 +273,3 @@ bool sendPush(const char* pushMessage) {
     return false;
   }
 }
-

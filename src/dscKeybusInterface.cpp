@@ -433,8 +433,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   // esp8266 timer1 calls dscDataInterrupt() directly as set in begin()
   #elif defined(ESP8266)
-  // Timer duration = (clockCyclesPerMicrosecond() / 16) * microseconds
-  timer1_write((clockCyclesPerMicrosecond() / 16) * 250);
+  timer1_write(1250);
   #endif
 
 

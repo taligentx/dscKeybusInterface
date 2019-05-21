@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.0 (Arduino)
+ *  Homebridge-MQTT 1.0 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -10,29 +10,16 @@
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
- *  The commands to set the alarm state are setup in Homebridge with the partition number (1-8) as a prefix to the command:
- *    Partition 1 stay arm: "1S"
- *    Partition 1 away arm: "1A"
- *    Partition 2 night arm (arm without an entry delay): "2N"
- *    Partition 2 disarm: "2D"
+ *  Usage:
+ *    1. Set the security system access code to permit disarming through HomeKit.
+ *    2. Set the MQTT server address in the sketch.
+ *    3. Copy the example configuration to Homebridge's config.json and customize.
+ *    4. Upload the sketch.
+ *    5. Restart Homebridge.
  *
- *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
- *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
- *    Stay arm: "SA"
- *    Away arm: "AA"
- *    Night arm: "NA"
- *    Disarm: "D"
- *    Alarm tripped: "T"
- *
- *  Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
- *  with the zone number:
- *    Open: "1"
- *    Closed: "0"
- *
- *  Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
- *  appended with the partition number:
- *    Fire alarm: "1"
- *    Fire alarm restored: "0"
+ *  Release notes:
+ *    1.1 - Add "getTargetState" to the Homebridge config.json example
+ *    1.0 - Initial release
  *
  *  Example Homebridge config.json "accessories" configuration:
 
@@ -44,6 +31,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition1",
+                "getTargetState":    "dsc/Get/Partition1",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["1S", "1A", "1N", "1D"]
@@ -56,6 +44,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition2",
+                "getTargetState":    "dsc/Get/Partition1",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["2S", "2A", "2N", "2D"]
@@ -105,8 +94,34 @@
             "integerValue": "true"
         }
 
+ *  The commands to set the alarm state are setup in Homebridge with the partition number (1-8) as a prefix to the command:
+ *    Partition 1 stay arm: "1S"
+ *    Partition 1 away arm: "1A"
+ *    Partition 2 night arm (arm without an entry delay): "2N"
+ *    Partition 2 disarm: "2D"
+ *
+ *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
+ *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
+ *    Stay arm: "SA"
+ *    Away arm: "AA"
+ *    Night arm: "NA"
+ *    Disarm: "D"
+ *    Alarm tripped: "T"
+ *
+ *  Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
+ *  with the zone number:
+ *    Open: "1"
+ *    Closed: "0"
+ *
+ *  Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
+ *  appended with the partition number:
+ *    Fire alarm: "1"
+ *    Fire alarm restored: "0"
+ *
  *  Wiring:
- *      DSC Aux(-) --- Arduino ground
+ *      DSC Aux(+) --- Arduino Vin pin
+ *
+ *      DSC Aux(-) --- Arduino Ground
  *
  *                                         +--- dscClockPin (Arduino Uno: 2,3)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -120,9 +135,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) --- Arduino Vin pin
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -140,14 +152,15 @@
 #include <PubSubClient.h>
 #include <dscKeybusInterface.h>
 
+// Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
-
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
+
+// MQTT topics - match to Homebridge's config.json
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64

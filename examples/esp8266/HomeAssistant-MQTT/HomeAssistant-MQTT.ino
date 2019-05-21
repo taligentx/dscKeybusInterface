@@ -1,11 +1,84 @@
 /*
- *  HomeAssistant-MQTT 1.0 (esp8266)
+ *  HomeAssistant-MQTT 1.1 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
  *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
+ *  Usage:
+ *    1. Set the WiFi SSID and password in the sketch.
+ *    2. Set the security system access code to permit disarming through Home Assistant.
+ *    3. Set the MQTT server address in the sketch.
+ *    4. Copy the example configuration to Home Assistant's configuration.yaml and customize.
+ *    5. Upload the sketch.
+ *    6. Restart Home Assistant.
+ *
+ *  Example Home Assistant configuration.yaml:
+
+# https://www.home-assistant.io/components/mqtt/
+mqtt:
+  broker: URL or IP address
+  client_id: homeAssistant
+
+# https://www.home-assistant.io/components/alarm_control_panel.mqtt/
+alarm_control_panel:
+  - platform: mqtt
+    name: "Security System Partition 1"
+    state_topic: "dsc/Get/Partition1"
+    availability_topic: "dsc/Status"
+    command_topic: "dsc/Set"
+    payload_disarm: "1D"
+    payload_arm_home: "1S"
+    payload_arm_away: "1A"
+  - platform: mqtt
+    name: "Security System Partition 2"
+    state_topic: "dsc/Get/Partition2"
+    availability_topic: "dsc/Status"
+    command_topic: "dsc/Set"
+    payload_disarm: "2D"
+    payload_arm_home: "2S"
+    payload_arm_away: "2A"
+
+# https://www.home-assistant.io/components/binary_sensor/
+binary_sensor:
+  - platform: mqtt
+    name: "Security Trouble"
+    state_topic: "dsc/Get/Trouble"
+    device_class: "problem"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "Smoke Alarm 1"
+    state_topic: "dsc/Get/Fire1"
+    device_class: "smoke"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "Smoke Alarm 2"
+    state_topic: "dsc/Get/Fire2"
+    device_class: "smoke"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "Zone 1"
+    state_topic: "dsc/Get/Zone1"
+    device_class: "door"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "Zone 2"
+    state_topic: "dsc/Get/Zone2"
+    device_class: "window"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "Zone 3"
+    state_topic: "dsc/Get/Zone3"
+    device_class: "motion"
+    payload_on: "1"
+    payload_off: "0"
+
  *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a prefix to the command:
  *    Partition 1 disarm: "1D"
  *    Partition 2 arm stay: "2S"
@@ -33,71 +106,17 @@
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
- *  Example Home Assistant configuration.yaml:
-
-      # https://www.home-assistant.io/components/mqtt/
-      mqtt:
-        broker: URL or IP address
-        client_id: homeAssistant
-
-      # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
-      alarm_control_panel:
-        - platform: mqtt
-          name: "Security System Partition 1"
-          state_topic: "dsc/Get/Partition1"
-          command_topic: "dsc/Set"
-          payload_disarm: "1D"
-          payload_arm_home: "1S"
-          payload_arm_away: "1A"
-        - platform: mqtt
-          name: "Security System Partition 2"
-          state_topic: "dsc/Get/Partition2"
-          command_topic: "dsc/Set"
-          payload_disarm: "2D"
-          payload_arm_home: "2S"
-          payload_arm_away: "2A"
-
-      # https://www.home-assistant.io/components/binary_sensor/
-      binary_sensor:
-        - platform: mqtt
-          name: "Security Trouble"
-          state_topic: "dsc/Get/Trouble"
-          device_class: "problem"
-          payload_on: "1"
-          payload_off: "0"
-        - platform: mqtt
-          name: "Smoke Alarm 1"
-          state_topic: "dsc/Get/Fire1"
-          device_class: "smoke"
-          payload_on: "1"
-          payload_off: "0"
-        - platform: mqtt
-          name: "Smoke Alarm 2"
-          state_topic: "dsc/Get/Fire2"
-          device_class: "smoke"
-          payload_on: "1"
-          payload_off: "0"
-        - platform: mqtt
-          name: "Zone 1"
-          state_topic: "dsc/Get/Zone1"
-          device_class: "door"
-          payload_on: "1"
-          payload_off: "0"
-        - platform: mqtt
-          name: "Zone 2"
-          state_topic: "dsc/Get/Zone2"
-          device_class: "window"
-          payload_on: "1"
-          payload_off: "0"
-        - platform: mqtt
-          name: "Zone 3"
-          state_topic: "dsc/Get/Zone3"
-          device_class: "motion"
-          payload_on: "1"
-          payload_off: "0"
-
+ *  Release notes:
+ *    1.1 - Merged: availability status
+ *          Updated: availability status based on Keybus connection status
+ *    1.0 - Initial release
+ *
  *  Wiring:
- *      DSC Aux(-) --- esp8266 ground
+ *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
+ *                    |
+ *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *
+ *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
  *      DSC Yellow --- 15k ohm resistor ---|
@@ -111,11 +130,6 @@
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
- *
- *  Power (when disconnected from USB):
- *      DSC Aux(+) ---+--- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
- *                    |
- *                    +--- 3.3v voltage regulator --- esp8266 bare module VCC pin (ESP-12, etc)
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
  *  be suitable, for example:
@@ -132,19 +146,24 @@
 #include <PubSubClient.h>
 #include <dscKeybusInterface.h>
 
+// Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
-
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
+
+// MQTT topics - match to Home Assistant's configuration.yaml
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
+const char* mqttStatusTopic = "dsc/Status";
+const char* mqttBirthMessage = "online";
+const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 unsigned long mqttPreviousTime;
 
@@ -192,6 +211,13 @@ void loop() {
     // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
+
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;  // Resets the Keybus data status flag
+      if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
+      else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
+    }
 
     // Sends the access code when needed by the panel for arming
     if (dsc.accessCodePrompt && dsc.writeReady) {
@@ -352,6 +378,7 @@ void mqttHandle() {
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
       mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
+        if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
       }
@@ -363,10 +390,9 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
-  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
-    mqtt.subscribe(mqttSubscribeTopic);
   }
   else {
     Serial.print(F("MQTT connection failed: "));
@@ -374,4 +400,3 @@ bool mqttConnect() {
   }
   return mqtt.connected();
 }
-
