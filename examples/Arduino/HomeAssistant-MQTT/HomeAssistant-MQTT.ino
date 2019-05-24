@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.0 (Arduino with Ethernet)
+ *  HomeAssistant-MQTT 1.1 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -12,6 +12,10 @@
  *    3. Copy the example configuration to Home Assistant's configuration.yaml and customize.
  *    4. Upload the sketch.
  *    5. Restart Home Assistant.
+ *
+ *  Release notes
+ *    1.1 - Added status update on initial MQTT connection and reconnection
+ *    1.0 - Initial release
  *
  *  Example Home Assistant configuration.yaml:
 
@@ -369,6 +373,7 @@ void mqttHandle() {
       if (mqttConnect()) {
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
+        dsc.getStatus();  // Resets the state of all status components as changed to get the current status
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }
@@ -381,8 +386,7 @@ bool mqttConnect() {
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
-    mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
-    mqtt.subscribe(mqttSubscribeTopic);
+    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("MQTT connection failed: "));

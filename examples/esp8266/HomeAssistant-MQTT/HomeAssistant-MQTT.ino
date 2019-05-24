@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.1 (esp8266)
+ *  HomeAssistant-MQTT 1.2 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -13,6 +13,12 @@
  *    4. Copy the example configuration to Home Assistant's configuration.yaml and customize.
  *    5. Upload the sketch.
  *    6. Restart Home Assistant.
+ *
+ *  Release notes:
+ *    1.2 - Added status update on initial MQTT connection and reconnection
+ *    1.1 - Merged: availability status
+ *          Updated: availability status based on Keybus connection status
+ *    1.0 - Initial release
  *
  *  Example Home Assistant configuration.yaml:
 
@@ -105,11 +111,6 @@ binary_sensor:
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
- *
- *  Release notes:
- *    1.1 - Merged: availability status
- *          Updated: availability status based on Keybus connection status
- *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
@@ -381,6 +382,7 @@ void mqttHandle() {
         if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
+        dsc.getStatus();  // Resets the state of all status components as changed to get the current status
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }
@@ -393,6 +395,7 @@ bool mqttConnect() {
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
+    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("MQTT connection failed: "));

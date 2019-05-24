@@ -47,6 +47,7 @@ class dscKeybusInterface {
     static volatile bool writeReady;                  // True if the library is ready to write a key
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
+    void getStatus();                                 // Resets the state of all status components as changed for sketches to get the current status
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
     void printPanelCommand();                         // Prints the panel command as hex
     void printPanelMessage();                         // Prints the decoded panel message

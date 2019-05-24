@@ -84,6 +84,16 @@ void loop() {
     // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
+      // Checks ready status
+      if (dsc.readyChanged[partition]) {
+        dsc.readyChanged[partition] = false;  // Resets the partition ready status flag
+        if (dsc.ready[partition]) {
+          Serial.print(F("Partition "));
+          Serial.print(partition + 1);
+          Serial.println(F(" ready"));
+        }
+      }
+
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag

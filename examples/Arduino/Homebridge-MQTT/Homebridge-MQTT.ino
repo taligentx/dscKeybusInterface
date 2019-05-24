@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.0 (Arduino with Ethernet)
+ *  Homebridge-MQTT 1.2 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -18,6 +18,7 @@
  *    5. Restart Homebridge.
  *
  *  Release notes:
+ *    1.2 - Added status update on initial MQTT connection and reconnection
  *    1.1 - Add "getTargetState" to the Homebridge config.json example
  *    1.0 - Initial release
  *
@@ -378,6 +379,7 @@ void mqttHandle() {
       if (mqttConnect()) {
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
+        dsc.getStatus();  // Resets the state of all status components as changed to get the current status
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }
@@ -390,7 +392,7 @@ bool mqttConnect() {
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
-    mqtt.subscribe(mqttSubscribeTopic);
+    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("MQTT connection failed: "));
@@ -398,4 +400,3 @@ bool mqttConnect() {
   }
   return mqtt.connected();
 }
-

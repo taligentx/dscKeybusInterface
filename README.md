@@ -64,6 +64,10 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
 ## Release notes
+* 1.3
+  - New: Added `dsc.getStatus()` to enable sketches to trigger a status update, useful to provide current status after initialization or after a lost network connection.
+  - New: Partition ready status added to the Status example sketch.
+  - New: Troubleshooting added to README.md
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
     - As of esp8266 Arduino Core 2.5.1, you may need to [manually update the esp8266FS plugin](https://github.com/esp8266/arduino-esp8266fs-plugin) for SPIFFS upload.
@@ -118,6 +122,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed (and would like to share) a sketch/integration that others can use.
 
 * **Status**: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
+  * Partitions ready
   * Partitions armed away/stay/disarmed
   * Partitions in alarm
   * Partitions exit delay in progress
@@ -235,6 +240,14 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 * PCB layouts are available in [`extras/PCB Layouts`](https://github.com/taligentx/dscKeybusInterface/tree/master/extras/PCB%20Layouts) - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
 
 * Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
+
+## Troubleshooting
+If you are running into issues:
+1. Run the KeybusReader example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.
+  * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.
+2. For virtual keypad, run the KeybusReader example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
+  * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
+3. Run the Status example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.
 
 ## References
 [AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): An excellent discussion on how data is sent on the Keybus.

@@ -18,6 +18,35 @@
 #include "dscKeybusInterface.h"
 
 
+// Resets the state of all status components as changed for sketches to get the current status
+void dscKeybusInterface::getStatus() {
+  statusChanged = true;
+  keybusChanged = true;
+  troubleChanged = true;
+  powerChanged = true;
+  batteryChanged = true;
+  for (byte partition = 0; partition < dscPartitions; partition++) {
+    armedChanged[partition] = true;
+    alarmChanged[partition] = true;
+    exitDelayChanged[partition] = true;
+    entryDelayChanged[partition] = true;
+    fireChanged[partition] = true;
+  }
+  openZonesStatusChanged = true;
+  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      bitWrite(openZonesChanged[zoneGroup], zoneBit, 1);  // Sets the individual open zone status flag
+    }
+  }
+  alarmZonesStatusChanged = true;
+  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      bitWrite(alarmZonesChanged[zoneGroup], zoneBit, 1);  // Sets the individual open zone status flag
+    }
+  }
+}
+
+
 // Processes 0x05 and 0x1B commands
 void dscKeybusInterface::processPanelStatus() {
 

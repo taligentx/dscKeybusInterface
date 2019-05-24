@@ -1,5 +1,5 @@
 /*
- *  Homey 1.0 (esp8266)
+ *  Homey 1.1 (esp8266)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -10,6 +10,10 @@
  *  configured Capabilities homealarm_state, alarm_tamper, alarm_fire (optional).
  *
  *  Zone states are published by Homey.trigger command including the zone number.
+ *
+ *  Release notes:
+ *    1.1 - Added status update on WiFi reconnection
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
@@ -60,6 +64,8 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
+bool wifiConnected = false;
+
 
 void setup() {
   Serial.begin(115200);
@@ -69,6 +75,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) delay(500);
+  wifiConnected = true;
   Serial.print("WiFi connected: ");
   Serial.println(WiFi.localIP());
 
@@ -94,6 +101,18 @@ void setup() {
 
 
 void loop() {
+
+  // Updates status if WiFi drops and reconnects
+  if (!wifiConnected && WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi reconnected");
+    wifiConnected = true;
+    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
+  }
+  else if (WiFi.status() != WL_CONNECTED && wifiConnected) {
+    Serial.println("WiFi disconnected");
+    wifiConnected = false;
+  }
+
   // Run the Homey loop
   Homey.loop();
 
@@ -190,7 +209,6 @@ void armStay() {
   }
 }
 
-
 // Arm away
 void armAway() {
    if (Homey.value.toInt() == 1 && !dsc.armed[0] && !dsc.exitDelay[0]) {  // Read the argument sent from the homey flow
@@ -198,7 +216,6 @@ void armAway() {
      dsc.write('w');  // Keypad away arm
   }
 }
-
 
 // Disarm
 void disarm() {
