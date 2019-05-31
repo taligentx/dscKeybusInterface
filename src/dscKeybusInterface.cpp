@@ -94,6 +94,14 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timer1_isr_init();
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+
+  // esp8266 timer0 calls dscDataInterrupt() from dscClockInterrupt()
+  #elif defined(ESP32)
+  timer0 = timerBegin(0, 80, true);
+  timerStop(timer0);
+  timerAttachInterrupt(timer0, &dscDataInterrupt, true);
+  timerAlarmWrite(timer0, 250, true);
+  timerAlarmEnable(timer0);
   #endif
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino
@@ -460,19 +468,15 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   TCNT1=61535;            // Timer1 counter start value, overflows at 65535 in 250us
   TCCR1B |= (1 << CS10);  // Sets the prescaler to 1
 
-  // esp8266 timer1 calls dscDataInterrupt() directly as set in begin()
+  // esp8266 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP8266)
   timer1_write(1250);
 
   // esp32 timer0 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  timer0 = timerBegin(0, 80, true);
-  timerAttachInterrupt(timer0, &dscDataInterrupt, true);
-  timerAlarmWrite(timer0, 262, true);
-  timerAlarmEnable(timer0);
+  timerStart(timer0);
   portENTER_CRITICAL(&timer0Mux);
   #endif
-
 
   static unsigned long previousClockHighTime;
   if (digitalRead(dscClockPin) == HIGH) {
@@ -565,6 +569,7 @@ void dscKeybusInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+  timerStop(timer0);
   portENTER_CRITICAL(&timer0Mux);
 #endif
 
@@ -707,9 +712,6 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
     }
   }
   #if defined(ESP32)
-  timerAlarmDisable(timer0);
-  timerDetachInterrupt(timer0);
-  timerEnd(timer0);
   portEXIT_CRITICAL(&timer0Mux);
   #endif
 }
