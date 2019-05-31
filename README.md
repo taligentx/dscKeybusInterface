@@ -63,7 +63,6 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Potential future features (pending [sufficient interest](https://github.com/taligentx/dscKeybusInterface/issues)):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
   - Installer code unlocking: Requires brute force checking all possible codes and a workaround if keypad lockout is enabled (possibly automatically power-cycling the panel with a relay to skip the lockout time).
-  - ESP32 microcontroller support: At minimum, requires changing the timer interrupts.
   - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
 ## Release notes
