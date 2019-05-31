@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Blynk 1.1 (esp8266)
+ *  VirtualKeypad-Blynk 1.0 (esp32)
  *
  *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android.
  *
@@ -38,23 +38,21 @@
  *    V61 - Zone 1 ... V124 - Zone 64
  *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -68,8 +66,8 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
-#include <BlynkSimpleEsp8266.h>
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
 #include <dscKeybusInterface.h>
 
 #define BLYNK_PRINT Serial
@@ -85,9 +83,9 @@ int blynkPort = 8080;        // Blynk local server port
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin 19   // esp32: 4,13,16-39
+#define dscWritePin 21  // esp32: 4,13,16-33
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 bool wifiConnected = false;

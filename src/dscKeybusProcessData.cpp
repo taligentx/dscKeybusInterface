@@ -56,7 +56,7 @@ void dscKeybusInterface::processPanelStatus() {
   if (trouble != previousTrouble && (panelData[3] < 0x05 || panelData[3] == 0xC7)) {  // Ignores trouble light status in intermittent states
     previousTrouble = trouble;
     troubleChanged = true;
-    statusChanged = true;
+    if (!holdStatus) statusChanged = true;
   }
 
   byte partitionStart = 0;
@@ -87,14 +87,14 @@ void dscKeybusInterface::processPanelStatus() {
     lights[partitionIndex] = panelData[statusByte];
     if (lights[partitionIndex] != previousLights[partitionIndex]) {
       previousLights[partitionIndex] = lights[partitionIndex];
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
     // Status messages
     status[partitionIndex] = panelData[messageByte];
     if (status[partitionIndex] != previousStatus[partitionIndex]) {
       previousStatus[partitionIndex] = status[partitionIndex];
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
     // Fire status
@@ -103,7 +103,7 @@ void dscKeybusInterface::processPanelStatus() {
     if (fire[partitionIndex] != previousFire[partitionIndex] && panelData[messageByte] < 0x12) {  // Ignores fire light status in intermittent states
       previousFire[partitionIndex] = fire[partitionIndex];
       fireChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
 
@@ -115,7 +115,7 @@ void dscKeybusInterface::processPanelStatus() {
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -124,19 +124,19 @@ void dscKeybusInterface::processPanelStatus() {
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
           entryDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -148,19 +148,19 @@ void dscKeybusInterface::processPanelStatus() {
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
           entryDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -171,13 +171,13 @@ void dscKeybusInterface::processPanelStatus() {
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -187,13 +187,13 @@ void dscKeybusInterface::processPanelStatus() {
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
           entryDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -203,19 +203,19 @@ void dscKeybusInterface::processPanelStatus() {
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
           entryDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -225,19 +225,19 @@ void dscKeybusInterface::processPanelStatus() {
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         entryDelay[partitionIndex] = false;
         if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
           previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
           entryDelayChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -250,7 +250,7 @@ void dscKeybusInterface::processPanelStatus() {
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -258,13 +258,13 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x9F: {
         if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
           accessCodePrompt = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -274,7 +274,7 @@ void dscKeybusInterface::processPanelStatus() {
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];
           readyChanged[partitionIndex] = true;
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         break;
       }
@@ -304,13 +304,13 @@ void dscKeybusInterface::processPanel_0x27() {
       if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
         previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
         exitDelayChanged[partitionIndex] = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
       }
       armed[partitionIndex] = true;
       if (previousArmed[partitionIndex] != true) {
         previousArmed[partitionIndex] = true;
         armedChanged[partitionIndex] = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
       }
     }
   }
@@ -321,7 +321,7 @@ void dscKeybusInterface::processPanel_0x27() {
   if (zonesChanged != 0) {
     previousOpenZones[0] = openZones[0];
     openZonesStatusChanged = true;
-    statusChanged = true;
+    if (!holdStatus) statusChanged = true;
 
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
       if (bitRead(zonesChanged, zoneBit)) {
@@ -344,7 +344,7 @@ void dscKeybusInterface::processPanel_0x2D() {
   if (zonesChanged != 0) {
     previousOpenZones[1] = openZones[1];
     openZonesStatusChanged = true;
-    statusChanged = true;
+    if (!holdStatus) statusChanged = true;
 
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
       if (bitRead(zonesChanged, zoneBit)) {
@@ -367,7 +367,7 @@ void dscKeybusInterface::processPanel_0x34() {
   if (zonesChanged != 0) {
     previousOpenZones[2] = openZones[2];
     openZonesStatusChanged = true;
-    statusChanged = true;
+    if (!holdStatus) statusChanged = true;
 
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
       if (bitRead(zonesChanged, zoneBit)) {
@@ -390,7 +390,7 @@ void dscKeybusInterface::processPanel_0x3E() {
   if (zonesChanged != 0) {
     previousOpenZones[3] = openZones[3];
     openZonesStatusChanged = true;
-    statusChanged = true;
+    if (!holdStatus) statusChanged = true;
 
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
       if (bitRead(zonesChanged, zoneBit)) {
@@ -474,41 +474,41 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     switch (panelData[panelByte]) {
       case 0x4E: {       // Keypad Fire alarm
         keypadFireAlarm = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0x4F: {       // Keypad Aux alarm
         keypadAuxAlarm = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0x50: {       // Keypad Panic alarm
         keypadPanicAlarm = true;
-        statusChanged =true;
+        if (!holdStatus) statusChanged =true;
         return;
       }
       case 0xE7: {       // Panel battery trouble
         batteryTrouble = true;
         batteryChanged = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0xE8: {       // Panel AC power failure
         powerTrouble = true;
         powerChanged = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0xEF: {       // Panel battery restored
         batteryTrouble = false;
         batteryChanged = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0xF0: {       // Panel AC power restored
         powerTrouble = false;
         powerChanged = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       default: return;
@@ -532,13 +532,13 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     if (previousAlarm[partitionIndex] != false) {
       previousAlarm[partitionIndex] = false;
       alarmChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
     if (previousArmed[partitionIndex] != false) {
       previousArmed[partitionIndex] = false;
       armedChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
     return;
   }
@@ -548,7 +548,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     if (previousAlarm[partitionIndex] != true) {
       previousAlarm[partitionIndex] = true;
       alarmChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
     return;
   }
@@ -564,7 +564,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     if (previousAlarm[partitionIndex] != true) {
       previousAlarm[partitionIndex] = true;
       alarmChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
     byte maxZones = dscZones * 8;
@@ -577,7 +577,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[0], zoneCount, 1);
             bitWrite(alarmZonesChanged[0], zoneCount, 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
@@ -586,7 +586,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[1], (zoneCount - 8), 1);
             bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
@@ -595,7 +595,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[2], (zoneCount - 16), 1);
             bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
@@ -604,7 +604,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[3], (zoneCount - 24), 1);
             bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
       }
@@ -630,7 +630,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[0], zoneCount, 0);
             bitWrite(alarmZonesChanged[0], zoneCount, 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
@@ -639,7 +639,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[1], (zoneCount - 8), 0);
             bitWrite(alarmZonesChanged[1], (zoneCount - 8), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
@@ -648,7 +648,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[2], (zoneCount - 16), 0);
             bitWrite(alarmZonesChanged[2], (zoneCount - 16), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
@@ -657,7 +657,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
             bitWrite(previousAlarmZones[3], (zoneCount - 24), 0);
             bitWrite(alarmZonesChanged[3], (zoneCount - 24), 1);
             alarmZonesStatusChanged = true;
-            statusChanged = true;
+            if (!holdStatus) statusChanged = true;
           }
         }
       }
@@ -686,12 +686,12 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
     if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
       previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
       exitDelayChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
     if (previousArmed[partitionIndex] != true) {
       previousArmed[partitionIndex] = true;
       armedChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
     return;
   }
@@ -703,7 +703,7 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
         armedAway[partitionIndex] = true;
         armedStay[partitionIndex] = false;
         armedChanged[partitionIndex] = true;
-        statusChanged = true;
+        if (!holdStatus) statusChanged = true;
         return;
       }
       case 0x9C: {        // Armed without entry delay
@@ -731,7 +731,7 @@ void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
     if (previousAlarm[partitionIndex] != true) {
       previousAlarm[partitionIndex] = true;
       alarmChanged[partitionIndex] = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
     }
 
     byte maxZones = dscZones * 8;
@@ -742,22 +742,22 @@ void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[4], zoneCount, 1);
           bitWrite(alarmZonesChanged[4], zoneCount, 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[5], (zoneCount - 8), 1);
           bitWrite(alarmZonesChanged[5], (zoneCount - 8), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[6], (zoneCount - 16), 1);
           bitWrite(alarmZonesChanged[6], (zoneCount - 16), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[7], (zoneCount - 24), 1);
           bitWrite(alarmZonesChanged[7], (zoneCount - 24), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
       }
     }
@@ -781,22 +781,22 @@ void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
         if (zoneCount < 8) {
           bitWrite(alarmZones[4], zoneCount, 0);
           bitWrite(alarmZonesChanged[4], zoneCount, 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 8 && zoneCount < 16) {
           bitWrite(alarmZones[5], (zoneCount - 8), 0);
           bitWrite(alarmZonesChanged[5], (zoneCount - 8), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 16 && zoneCount < 24) {
           bitWrite(alarmZones[6], (zoneCount - 16), 0);
           bitWrite(alarmZonesChanged[6], (zoneCount - 16), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
         else if (zoneCount >= 24 && zoneCount < 32) {
           bitWrite(alarmZones[7], (zoneCount - 24), 0);
           bitWrite(alarmZonesChanged[7], (zoneCount - 24), 1);
-          statusChanged = true;
+          if (!holdStatus) statusChanged = true;
         }
       }
     }
@@ -827,7 +827,7 @@ void dscKeybusInterface::processPanel_0xE6_0x09() {
     if (zonesChanged != 0) {
       previousOpenZones[4] = openZones[4];
       openZonesStatusChanged = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
 
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(zonesChanged, zoneBit)) {
@@ -849,7 +849,7 @@ void dscKeybusInterface::processPanel_0xE6_0x0B() {
     if (zonesChanged != 0) {
       previousOpenZones[5] = openZones[5];
       openZonesStatusChanged = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
 
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(zonesChanged, zoneBit)) {
@@ -871,7 +871,7 @@ void dscKeybusInterface::processPanel_0xE6_0x0D() {
     if (zonesChanged != 0) {
       previousOpenZones[6] = openZones[6];
       openZonesStatusChanged = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
 
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(zonesChanged, zoneBit)) {
@@ -893,7 +893,7 @@ void dscKeybusInterface::processPanel_0xE6_0x0F() {
     if (zonesChanged != 0) {
       previousOpenZones[7] = openZones[7];
       openZonesStatusChanged = true;
-      statusChanged = true;
+      if (!holdStatus) statusChanged = true;
 
       for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
         if (bitRead(zonesChanged, zoneBit)) {

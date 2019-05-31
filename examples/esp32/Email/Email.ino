@@ -1,37 +1,32 @@
 /*
- *  Email Notification 1.2 (esp8266)
+ *  Email Notification 1.0 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendEmail().
  *
- *  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can
+ *  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP32 until STARTTLS can
  *  be supported.  For example, this will work with Gmail after changing the account settings to allow less secure
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
- *  1.2 - New: Check if WiFi disconnects and wait to send updates until reconnection
- *        Updated: esp8266 Arduino Core version check for BearSSL
- *  1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
  *  1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -45,7 +40,7 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <dscKeybusInterface.h>
 
 // WiFi settings
@@ -56,8 +51,8 @@ WiFiClientSecure smtpClient;
 bool wifiConnected = false;
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin 19   // esp32: 4,13,16-39
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 
 
@@ -71,11 +66,6 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) delay(100);
   Serial.print(F("WiFi connected: "));
   Serial.println(WiFi.localIP());
-
-  // Sets authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
-  #if HAS_ESP8266_VERSION_NUMERIC
-    if (esp8266::coreVersionNumeric() >= 20500000) smtpClient.setInsecure();
-  #endif
 
   // Sends an email on startup to verify connectivity
   if (sendEmail("Security system initializing", "")) Serial.println(F("Initialization email sent successfully."));
@@ -169,7 +159,7 @@ void loop() {
 bool sendEmail(const char* emailSubject, const char* emailBody) {
   if (!smtpClient.connect("smtp.example.com", 465)) return false;       // Set the SMTP server address - for example: smtp.gmail.com
   if(!smtpValidResponse()) return false;
-  smtpClient.println(F("HELO ESP8266"));
+  smtpClient.println(F("HELO ESP32"));
   if(!smtpValidResponse()) return false;
   smtpClient.println(F("AUTH LOGIN"));
   if(!smtpValidResponse()) return false;

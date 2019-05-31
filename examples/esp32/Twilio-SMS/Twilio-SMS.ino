@@ -1,34 +1,28 @@
 /*
- *  Twilio SMS Notification 1.2 (esp8266)
+ *  Twilio SMS Notification 1.0 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
  *
  *  Release notes:
- *  1.2 - New: Check if WiFi disconnects and wait to send updates until reconnection
- *        Updated: esp8266 Arduino Core version check for BearSSL
- *  1.1 - New: Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
- *        New: Added notifications - Keybus connected, armed status, zone alarm status
- *  1.0 - Initial release
+ *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -42,7 +36,7 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <dscKeybusInterface.h>
 
 // WiFi settings
@@ -60,8 +54,8 @@ WiFiClientSecure pushClient;
 bool wifiConnected = false;
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin 19   // esp32: 4,13,16-39
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 
 
@@ -75,11 +69,6 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) delay(500);
   Serial.print(F("WiFi connected: "));
   Serial.println(WiFi.localIP());
-
-  // Sets authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
-  #if HAS_ESP8266_VERSION_NUMERIC
-    if (esp8266::coreVersionNumeric() >= 20500000) pushClient.setInsecure();
-  #endif
 
   // Sends a message on startup to verify connectivity
   if (sendPush("Security system initializing")) Serial.println(F("Initialization SMS sent successfully."));
@@ -250,7 +239,7 @@ bool sendPush(const char* pushMessage) {
   pushClient.print(F("Authorization: Basic "));
   pushClient.println(Base64EncodedAuth);
   pushClient.println(F("Host: api.twilio.com"));
-  pushClient.println(F("User-Agent: ESP8266"));
+  pushClient.println(F("User-Agent: ESP32"));
   pushClient.println(F("Accept: */*"));
   pushClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   pushClient.print(F("Content-Length: "));
