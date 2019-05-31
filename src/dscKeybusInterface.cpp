@@ -95,7 +95,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
 
-  // esp8266 timer0 calls dscDataInterrupt() from dscClockInterrupt()
+  // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
   timer0 = timerBegin(0, 80, true);
   timerStop(timer0);
