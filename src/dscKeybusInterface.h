@@ -25,7 +25,7 @@
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(ESP32)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
@@ -76,6 +76,7 @@ class dscKeybusInterface {
 
     // Status tracking
     bool statusChanged;                   // True after any status change
+    bool pauseStatus;                     // Prevent status from showing as changed, set in sketch to control when to update status
     bool keybusConnected, keybusChanged;  // True if data is detected on the Keybus
     bool accessCodePrompt;                // True if the panel is requesting an access code
     bool trouble, troubleChanged;

@@ -1,5 +1,5 @@
 # DSC Keybus Interface
-This library directly interfaces Arduino and esp8266 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and usage as a virtual keypad.  This enables homes and offices with existing DSC security systems (of which millions have been installed over the decades) to connect with modern devices and software, while retaining the features and reliability of a hardwired system for under $5USD in components.
+This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and usage as a virtual keypad.  This enables homes and offices with existing DSC security systems (of which millions have been installed over the decades) to connect with modern devices and software, while retaining the features and reliability of a hardwired system for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Athom Homey](https://www.athom.com/en/)
@@ -44,10 +44,13 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Supported microcontrollers:
-    - [Arduino](https://www.arduino.cc/en/Main/Products): Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini (ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz)
+    - [Arduino](https://www.arduino.cc/en/Main/Products): Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
+      * ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz
     - esp8266: NodeMCU v2 or v3, Wemos D1 Mini, etc.    
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino), integrated WiFi, and improved specs at only $3USD shipped.
       * NodeMCU modules are a good choice as they can be powered directly from the DSC panel, the Wemos D1 Mini requires an additional 5v voltage regulator to handle the 12v+ DSC panel power.
+      * Supports running at 160MHz - this especially helps sketches using TLS connections
+    - esp32 development boards (experimental)
 * Designed for reliable data decoding and performance:
   - Pin change and timer interrupts for accurate data capture timing
   - Data buffering: helps prevent lost Keybus data if the sketch is busy
@@ -60,12 +63,13 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Potential future features (pending [sufficient interest](https://github.com/taligentx/dscKeybusInterface/issues)):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
   - Installer code unlocking: Requires brute force checking all possible codes and a workaround if keypad lockout is enabled (possibly automatically power-cycling the panel with a relay to skip the lockout time).
-  - ESP32 microcontroller support: At minimum, requires changing the timer interrupts.
   - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
 ## Release notes
 * 1.3
-  - New: Added `dsc.getStatus()` to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection, updated example sketches with implementation.
+  - New: esp32 microcontroller support (experimental).  Note that the VirtualKeypad-Web example sketch currently does not work for esp32.
+  - New: Added `dsc.getStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Updated example sketches with implementation.
+  - New: Added `dsc.pauseStatus` that can be set to `true` to pause status updates, useful to hold status changes during a lost network connection.  When set to `false`, only the changed components will be triggered - useful when a full status update of all partitions and zones is unnecessary (push notifications, email, SMS).  Updated example sketches with implementation.
   - New: Partition ready status added to the Status example sketch.
   - New: Troubleshooting added to README.md
 * 1.2
@@ -142,11 +146,11 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* **Pushbullet** (esp8266-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266 for SSL support.
+* **Pushbullet** (esp8266/esp32-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266/esp32 for SSL support.
 
-* **Twilio** (esp8266-only): Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Twilio](https://www.twilio.com) and requires the esp8266 for SSL support - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
+* **Twilio** (esp8266/esp32-only): Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Twilio](https://www.twilio.com) and requires the esp8266/esp32 for SSL support - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
-* **Email** (esp8266-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the ESP8266 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* **Email** (esp8266/esp32-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
   This can be used to send SMS messages if the number's service provider has an [email to SMS gateway](https://en.wikipedia.org/wiki/SMS_gateway#Email_clients) - examples for the US:
   * T-mobile: 5558675309@tmomail.net
@@ -154,7 +158,7 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Sprint: 5558675309@messaging.sprintpcs.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
 
@@ -174,27 +178,38 @@ DSC Aux(+) ---+--- Arduino Vin pin
               +--- esp8266 NodeMCU Vin pin
               |
               +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+              |
+              +--- 5v voltage regulator --- esp32 dev board 5v pin
 
-DSC Aux(-) --- Arduino/esp8266 Ground
+DSC Aux(-) --- Arduino/esp8266/esp32 Ground
 
-                                   +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
-DSC Yellow --- 15k ohm resistor ---|
-                                   +--- 10k ohm resistor --- Ground
+                                       +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+DSC Yellow ---+--- 15k ohm resistor ---|
+              |                        +--- 10k ohm resistor --- Ground
+              |
+              |                        +--- dscClockPin (esp32: 4,13,16-39)
+              +--- 33k ohm resistor ---|
+                                       +--- 10k ohm resistor --- Ground
 
-                                   +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
-DSC Green ---- 15k ohm resistor ---|
-                                   +--- 10k ohm resistor --- Ground
-
+                                       +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+DSC Green ----+--- 15k ohm resistor ---|
+              |                        +--- 10k ohm resistor --- Ground
+              |
+              |                        +--- dscReadPin (esp32: 4,13,16-39)
+              +--- 33k ohm resistor ---|
+                                       +--- 10k ohm resistor --- Ground
+ 
 Virtual keypad (optional):
 DSC Green ---- NPN collector --\
-                                |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+                                |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8 / esp32: 4,13,16-33)
       Ground --- NPN emitter --/
 ```
 
 ## Wiring Notes
-* The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.
+* The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.  The esp32 requires lower voltage and uses different resistor values.
 * Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 and 3.  The DSC Green (Data) line can be connected to any of the remaining digital pins 2-12.
 * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
+* esp32: connect the DSC lines to GPIO pins that do not send signals at boot: 4, 13, 16-39.  For virtual keypad, pins 34-39 are input only and cannot be used.
 * Virtual keypad uses an NPN transistor and a resistor to write to the Keybus.  Most small signal NPN transistors should be suitable, for example:
   * 2N3904
   * BC547, BC548, BC549
@@ -235,11 +250,11 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 ## Notes
 * Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybusInterface.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusInterface.h).  Default settings:
   * Arduino: up to 4 partitions, 32 zones, 10 buffered commands
-  * esp8266: up to 8 partitions, 64 zones, 50 buffered commands
+  * esp8266/esp32: up to 8 partitions, 64 zones, 50 buffered commands
 
 * PCB layouts are available in [`extras/PCB Layouts`](https://github.com/taligentx/dscKeybusInterface/tree/master/extras/PCB%20Layouts) - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
 
-* Support for the esp32 and other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
+* Support for other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
 
 ## Troubleshooting
 If you are running into issues:

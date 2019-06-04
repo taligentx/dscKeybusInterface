@@ -55,6 +55,11 @@ volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
+#if defined(ESP32)
+hw_timer_t *timer0 = NULL;
+portMUX_TYPE timer0Mux = portMUX_INITIALIZER_UNLOCKED;
+#endif
+
 
 dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin) {
   dscClockPin = setClockPin;
@@ -66,6 +71,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   displayTrailingBits = false;
   processModuleData = false;
   writePartition = 1;
+  pauseStatus = false;
 }
 
 
@@ -88,6 +94,14 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timer1_isr_init();
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+
+  // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
+  #elif defined(ESP32)
+  timer0 = timerBegin(0, 80, true);
+  timerStop(timer0);
+  timerAttachInterrupt(timer0, &dscDataInterrupt, true);
+  timerAlarmWrite(timer0, 250, true);
+  timerAlarmEnable(timer0);
   #endif
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino
@@ -98,14 +112,25 @@ void dscKeybusInterface::begin(Stream &_stream) {
 bool dscKeybusInterface::handlePanel() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
+  #if defined(ESP32)
+  portENTER_CRITICAL(&timer0Mux);
+  #else
   noInterrupts();
+  #endif
+
   if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
+
+  #if defined(ESP32)
+  portEXIT_CRITICAL(&timer0Mux);
+  #else
   interrupts();
+  #endif
+
   if (previousKeybus != keybusConnected) {
     previousKeybus = keybusConnected;
     keybusChanged = true;
-    statusChanged = true;
+    if (!pauseStatus) statusChanged = true;
     if (!keybusConnected) return true;
   }
 
@@ -124,12 +149,22 @@ bool dscKeybusInterface::handlePanel() {
   panelBufferIndex++;
 
   // Resets counters when the buffer is cleared
+  #if defined(ESP32)
+  portENTER_CRITICAL(&timer0Mux);
+  #else
   noInterrupts();
+  #endif
+
   if (panelBufferIndex > panelBufferLength) {
     panelBufferIndex = 1;
     panelBufferLength = 0;
   }
+
+  #if defined(ESP32)
+  portEXIT_CRITICAL(&timer0Mux);
+  #else
   interrupts();
+  #endif
 
   // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
   static bool firstClockCycle = true;
@@ -420,6 +455,8 @@ bool dscKeybusInterface::validCRC() {
 void dscKeybusInterface::dscClockInterrupt() {
 #elif defined(ESP8266)
 void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #endif
 
   // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for keypad data).
@@ -431,11 +468,15 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   TCNT1=61535;            // Timer1 counter start value, overflows at 65535 in 250us
   TCCR1B |= (1 << CS10);  // Sets the prescaler to 1
 
-  // esp8266 timer1 calls dscDataInterrupt() directly as set in begin()
+  // esp8266 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP8266)
   timer1_write(1250);
-  #endif
 
+  // esp32 timer0 calls dscDataInterrupt() in 250us
+  #elif defined(ESP32)
+  timerStart(timer0);
+  portENTER_CRITICAL(&timer0Mux);
+  #endif
 
   static unsigned long previousClockHighTime;
   if (digitalRead(dscClockPin) == HIGH) {
@@ -505,6 +546,9 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
     }
   }
+  #if defined(ESP32)
+  portEXIT_CRITICAL(&timer0Mux);
+  #endif
 }
 
 
@@ -518,11 +562,15 @@ ISR(TIMER1_OVF_vect) {
 #endif
 
 
-// Interrupt function called by AVR Timer1 and esp8266 timer1 after 250us to read the data line
+// Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer0 after 250us to read the data line
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+  timerStop(timer0);
+  portENTER_CRITICAL(&timer0Mux);
 #endif
 
   static bool skipData = false;
@@ -663,4 +711,7 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
     }
   }
+  #if defined(ESP32)
+  portEXIT_CRITICAL(&timer0Mux);
+  #endif
 }

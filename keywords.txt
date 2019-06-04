@@ -19,8 +19,8 @@ displayTrailingBits	KEYWORD2
 processModuleData	KEYWORD2
 
 statusChanged	KEYWORD2
-pauseStatus	KEYWORD2
 getStatus	KEYWORD2
+pauseStatus	KEYWORD2
 keybusConnected	KEYWORD2
 keybusChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
