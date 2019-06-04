@@ -24,17 +24,17 @@
 
 void dscKeybusInterface::printPanelMessage() {
   switch (panelData[0]) {
-    case 0x05: printPanel_0x05(); return;  // Status: partitions 1-4
-    case 0x0A: printPanel_0x0A(); return;  // Status in alarm/programming, partitions 1-4
+    case 0x05: printPanel_0x05(); return;  // Panel status: partitions 1-4
+    case 0x0A: printPanel_0x0A(); return;  // Panel status in alarm/programming, partitions 1-4
     case 0x11: printPanel_0x11(); return;  // Keypad slot query
     case 0x16: printPanel_0x16(); return;  // Zone wiring
-    case 0x1B: printPanel_0x1B(); return;  // Status: partitions 5-8
+    case 0x1B: printPanel_0x1B(); return;  // Panel status: partitions 5-8
     case 0x1C: printPanel_0x1C(); return;  // Verify keypad Fire/Auxiliary/Panic
-    case 0x27: printPanel_0x27(); return;  // Status with zones 1-8
+    case 0x27: printPanel_0x27(); return;  // Panel status and zones 1-8 status
     case 0x28: printPanel_0x28(); return;  // Zone expander query
-    case 0x2D: printPanel_0x2D(); return;  // Status with zones 9-16
-    case 0x34: printPanel_0x34(); return;  // Status with zones 17-24
-    case 0x3E: printPanel_0x3E(); return;  // Status with zones 25-32
+    case 0x2D: printPanel_0x2D(); return;  // Panel status and zones 9-16 status
+    case 0x34: printPanel_0x34(); return;  // Panel status and zones 17-24 status
+    case 0x3E: printPanel_0x3E(); return;  // Panel status and zones 25-32 status
     case 0x4C: printPanel_0x4C(); return;  // Unknown Keybus query
     case 0x58: printPanel_0x58(); return;  // Unknown Keybus query
     case 0x5D: printPanel_0x5D(); return;  // Flash panel lights: status and zones 1-32, partition 1

@@ -19,11 +19,13 @@ displayTrailingBits	KEYWORD2
 processModuleData	KEYWORD2
 
 statusChanged	KEYWORD2
+pauseStatus	KEYWORD2
+getStatus	KEYWORD2
 keybusConnected	KEYWORD2
 keybusChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
 writePartition	KEYWORD2
-timeAvailable	KEYWORD2
+timestampChanged	KEYWORD2
 ready	KEYWORD2
 readyChanged	KEYWORD2
 exitDelay	KEYWORD2

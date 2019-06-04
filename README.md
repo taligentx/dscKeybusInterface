@@ -65,7 +65,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 
 ## Release notes
 * 1.3
-  - New: Added `dsc.getStatus()` to enable sketches to trigger a status update, useful to provide current status after initialization or after a lost network connection.
+  - New: Added `dsc.getStatus()` to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection, updated example sketches with implementation.
   - New: Partition ready status added to the Status example sketch.
   - New: Troubleshooting added to README.md
 * 1.2
