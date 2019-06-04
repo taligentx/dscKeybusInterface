@@ -33,21 +33,15 @@ void dscKeybusInterface::getStatus() {
     fireChanged[partition] = true;
   }
   openZonesStatusChanged = true;
-  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-      bitWrite(openZonesChanged[zoneGroup], zoneBit, 1);  // Sets the individual open zone status flag
-    }
-  }
   alarmZonesStatusChanged = true;
   for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-      bitWrite(alarmZonesChanged[zoneGroup], zoneBit, 1);  // Sets the individual open zone status flag
-    }
+    openZonesChanged[zoneGroup] = 0xFF;
+    alarmZonesChanged[zoneGroup] = 0xFF;
   }
 }
 
 
-// Processes 0x05 and 0x1B commands
+// Processes status commands: 0x05 (Partitions 1-4) and 0x1B (Partitions 5-8)
 void dscKeybusInterface::processPanelStatus() {
 
   // Trouble status
@@ -283,6 +277,7 @@ void dscKeybusInterface::processPanelStatus() {
 }
 
 
+// Panel status and zones 1-8 status
 void dscKeybusInterface::processPanel_0x27() {
   if (!validCRC()) return;
 
@@ -334,6 +329,7 @@ void dscKeybusInterface::processPanel_0x27() {
 }
 
 
+// Zones 9-16 status
 void dscKeybusInterface::processPanel_0x2D() {
   if (!validCRC()) return;
   if (dscZones < 2) return;
@@ -357,6 +353,7 @@ void dscKeybusInterface::processPanel_0x2D() {
 }
 
 
+// Zones 17-24 status
 void dscKeybusInterface::processPanel_0x34() {
   if (!validCRC()) return;
   if (dscZones < 3) return;
@@ -380,6 +377,7 @@ void dscKeybusInterface::processPanel_0x34() {
 }
 
 
+// Zones 25-32 status
 void dscKeybusInterface::processPanel_0x3E() {
   if (!validCRC()) return;
   if (dscZones < 4) return;
@@ -409,6 +407,8 @@ void dscKeybusInterface::processPanel_0xA5() {
   byte dscYear3 = panelData[2] >> 4;
   byte dscYear4 = panelData[2] & 0x0F;
   year = (dscYear3 * 10) + dscYear4;
+  if (dscYear3 >= 7) year += 1900;
+  else year += 2000;
   month = panelData[3] << 2; month >>= 4;
   byte dscDay1 = panelData[3] << 6; dscDay1 >>= 3;
   byte dscDay2 = panelData[4] >> 5;
@@ -419,7 +419,7 @@ void dscKeybusInterface::processPanel_0xA5() {
   // Timestamp
   if (panelData[6] == 0 && panelData[7] == 0) {
     statusChanged = true;
-    timeAvailable = true;
+    timestampChanged = true;
     return;
   }
 
@@ -438,6 +438,8 @@ void dscKeybusInterface::processPanel_0xEB() {
   byte dscYear3 = panelData[3] >> 4;
   byte dscYear4 = panelData[3] & 0x0F;
   year = (dscYear3 * 10) + dscYear4;
+  if (dscYear3 >= 7) year += 1900;
+  else year += 2000;
   month = panelData[4] << 2; month >>=4;
   byte dscDay1 = panelData[4] << 6; dscDay1 >>= 3;
   byte dscDay2 = panelData[5] >> 5;

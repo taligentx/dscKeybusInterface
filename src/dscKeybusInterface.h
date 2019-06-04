@@ -31,7 +31,7 @@ const byte dscZones = 8;
 const byte dscBufferSize = 50;
 #endif
 
-const byte dscReadSize = 16;   // Maximum size of a Keybus command
+const byte dscReadSize = 16;   // Maximum bytes of a Keybus command
 
 
 class dscKeybusInterface {
@@ -64,7 +64,7 @@ class dscKeybusInterface {
     bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
     // Panel time
-    bool timeAvailable;             // True after the panel sends the first timestamped message
+    bool timestampChanged;          // True after the panel sends a timestamped message
     byte hour, minute, day, month;
     int year;
 
