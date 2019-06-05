@@ -770,8 +770,9 @@ void dscKeybusInterface::printPanel_0x11() {
  *  00010110 0 00001110 00100011 11110010 00111001 [0x16] PC1555MX | Zone wiring: EOL | Armed, Exit *8 +15s, Power-on +2m
  *  00010110 0 00001110 00100011 11110111 00111101 [0x16] PC1555MX | Zone wiring: DEOL | Interval 4m
  *  00010110 0 00001110 00010000 11110011 00100111 [0x16] PC5015 | Zone wiring: DEOL | Armed, Exit *8 +15s, Power-on +2m
- *  00010110 0 00001110 01000010 10110101 00011011 [0x16] PC1832/1864 | Zone wiring: NC | Interval 4m
- *  00010110 0 00001110 01000010 10110001 00010111 [0x16] PC1832/1864 | Zone wiring: NC | Armed
+ *  00010110 0 00001110 01000001 11110101 01011010 [0x16] PC1832 | Zone wiring: NC | Interval 4m
+ *  00010110 0 00001110 01000010 10110101 00011011 [0x16] PC1864 | Zone wiring: NC | Interval 4m
+ *  00010110 0 00001110 01000010 10110001 00010111 [0x16] PC1864 | Zone wiring: NC | Armed
  */
 void dscKeybusInterface::printPanel_0x16() {
   if (!validCRC()) {
@@ -784,7 +785,8 @@ void dscKeybusInterface::printPanel_0x16() {
     switch (panelData[3]) {
       case 0x10: stream->print(F("PC5015 ")); break;
       case 0x23: stream->print(F("PC1555MX ")); break;
-      case 0x42: stream->print(F("PC1832/1864 ")); break;
+      case 0x41: stream->print(F("PC1832 ")); break;
+      case 0x42: stream->print(F("PC1864 ")); break;
       default: stream->print(F("Unknown panel ")); break;
     }
 
