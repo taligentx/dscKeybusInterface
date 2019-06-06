@@ -69,7 +69,7 @@ class dscKeybusInterface {
     int year;
 
     // Sets panel time, the year can be sent as either 2 or 4 digits
-    void setTime(byte hour, byte minute, byte month, byte day, unsigned int year, const char* accessCode);
+    void setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode);
 
     // These contain the current LED state and status message for each partition based on command 0x05 for
     // partitions 1-4 and command 0x1B for partitions 5-8.  See printPanelLights() and printPanelMessages()
