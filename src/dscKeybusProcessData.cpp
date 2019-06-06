@@ -41,6 +41,43 @@ void dscKeybusInterface::getStatus() {
 }
 
 
+// Sets the panel time
+void dscKeybusInterface::setTime(byte hour, byte minute, byte month, byte day, unsigned int year, const char* accessCode) {
+  if (!ready[0]) return;  // Skips if partition 1 is not ready
+  if (hour > 23 || minute > 59 || month > 12 || day > 31 || year > 2099 || (year > 99 && year < 1900)) return;  // Skips if input date/time is invalid
+  char timeEntry[21];
+  strcpy(timeEntry, "*6");
+  strcat(timeEntry, accessCode);
+  strcat(timeEntry, "1");
+
+  char timeChar[3];
+  if (hour < 10) strcat(timeEntry, "0");
+  itoa(hour, timeChar, 10);
+  strcat(timeEntry, timeChar);
+
+  if (minute < 10) strcat(timeEntry, "0");
+  itoa(minute, timeChar, 10);
+  strcat(timeEntry, timeChar);
+
+  if (month < 10) strcat(timeEntry, "0");
+  itoa(month, timeChar, 10);
+  strcat(timeEntry, timeChar);
+
+  if (day < 10) strcat(timeEntry, "0");
+  itoa(day, timeChar, 10);
+  strcat(timeEntry, timeChar);
+
+  if (year >= 2000) year -= 2000;
+  else if (year >= 1900) year -= 1900;
+  if (year < 10) strcat(timeEntry, "0");
+  itoa(year, timeChar, 10);
+  strcat(timeEntry, timeChar);
+
+  strcat(timeEntry, "#");
+  write(timeEntry);
+}
+
+
 // Processes status commands: 0x05 (Partitions 1-4) and 0x1B (Partitions 5-8)
 void dscKeybusInterface::processPanelStatus() {
 

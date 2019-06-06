@@ -298,9 +298,16 @@ bool dscKeybusInterface::handleModule() {
   return true;
 }
 
+// Sets up writes for a single key
+void dscKeybusInterface::write(const char receivedKey) {
+  while(!writeReady || writeKeysPending) handlePanel();
+  setWriteKey(receivedKey);
+}
+
 
 // Sets up writes if multiple keys are sent as a char array
 void dscKeybusInterface::write(const char * receivedKeys) {
+  while(!writeReady || writeKeysPending) handlePanel();
   writeKeysArray = receivedKeys;
   if (writeKeysArray[0] != '\0') writeKeysPending = true;
   writeKeys(writeKeysArray);
@@ -312,7 +319,7 @@ void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
   static byte writeCounter = 0;
   if (writeKeysPending && writeReady && writeCounter < strlen(writeKeysArray)) {
     if (writeKeysArray[writeCounter] != '\0') {
-      write(writeKeysArray[writeCounter]);
+      setWriteKey(writeKeysArray[writeCounter]);
       writeCounter++;
       if (writeKeysArray[writeCounter] == '\0') {
         writeKeysPending = false;
@@ -325,9 +332,10 @@ void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
 
 // Specifies the key value to be written by dscClockInterrupt() and selects the write partition.  This includes a 500ms
 // delay after alarm keys to resolve errors when additional keys are sent immediately after alarm keys.
-void dscKeybusInterface::write(const char receivedKey) {
+void dscKeybusInterface::setWriteKey(const char receivedKey) {
   static unsigned long previousTime;
   static bool setPartition;
+
   // Sets the write partition if set by virtual keypad key '/'
   if (setPartition) {
     setPartition = false;

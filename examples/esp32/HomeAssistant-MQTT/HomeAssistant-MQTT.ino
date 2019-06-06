@@ -347,21 +347,18 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   // Arm stay
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write('s');                             // Virtual keypad arm stay
   }
 
   // Arm away
   else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write('w');                             // Virtual keypad arm away
   }
 
   // Disarm
   else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write(accessCode);
   }
