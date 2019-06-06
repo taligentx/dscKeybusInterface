@@ -169,7 +169,7 @@ bool dscKeybusInterface::handlePanel() {
   // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
   static bool firstClockCycle = true;
   if (firstClockCycle) {
-    if (validCRC() || panelData[0] == 0x05) firstClockCycle = false;
+    if ((validCRC() || panelData[0] == 0x05) && panelData[0] != 0) firstClockCycle = false;
     else return false;
   }
 

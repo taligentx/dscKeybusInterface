@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.1 (Arduino with Ethernet)
+ *  HomeAssistant-MQTT 1.2 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -14,6 +14,7 @@
  *    5. Restart Home Assistant.
  *
  *  Release notes
+ *    1.2 - Added Keybus status for online/offline status
  *    1.1 - Added status update on initial MQTT connection and reconnection
  *    1.0 - Initial release
  *
@@ -216,6 +217,13 @@ void loop() {
     if (dsc.accessCodePrompt && dsc.writeReady) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
+    }
+
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;  // Resets the Keybus data status flag
+      if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
+      else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
     }
 
     if (dsc.troubleChanged) {

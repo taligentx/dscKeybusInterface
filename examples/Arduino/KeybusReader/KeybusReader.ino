@@ -50,10 +50,10 @@ void setup() {
   Serial.println();
 
   // Optional configuration
-  dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: true)
-  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
-  dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
+  dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs
+  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed
+  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
+  dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.

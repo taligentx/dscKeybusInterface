@@ -248,22 +248,20 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
   - AC power failure reporting delay: The default delay is 30 minutes and can be set to 000 to immediately report a power failure.  
 
 ## Notes
-* For OTA updates on esp8266 and esp32, you may need to disable this interface's interrupts using `detachInterrupt(digitalPinToInterrupt(dscClockPin));`
-
-For example, in the sketch's `setup()`:
-```
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_SPIFFS
-      type = "filesystem";
-    }
-    detachInterrupt(digitalPinToInterrupt(dscClockPin));  // Disables the DSC clock interrupt and prevents the DSC data timer interrupt from interfering with OTA
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    Serial.println("Start updating " + type);
-  });
-```
+* For OTA updates on esp8266 and esp32, you may need to disable this interface's interrupts using: `detachInterrupt(digitalPinToInterrupt(dscClockPin));` For example, this can be set in the sketch's `setup()` when OTA starts:
+  ```
+    ArduinoOTA.onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH) {
+        type = "sketch";
+      } else { // U_SPIFFS
+        type = "filesystem";
+      }
+      detachInterrupt(digitalPinToInterrupt(dscClockPin));  // Disables the DSC clock interrupt and prevents the DSC data timer interrupt from interfering with OTA
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+    });
+  ```
 * Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybusInterface.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusInterface.h).  Default settings:
   * Arduino: up to 4 partitions, 32 zones, 10 buffered commands
   * esp8266/esp32: up to 8 partitions, 64 zones, 50 buffered commands
@@ -274,10 +272,10 @@ For example, in the sketch's `setup()`:
 
 ## Troubleshooting
 If you are running into issues:
-1. Run the KeybusReader example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.
-  * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.
-2. For virtual keypad, run the KeybusReader example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
-  * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
+1. Run the KeybusReader example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.  
+    * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.
+2. For virtual keypad, run the KeybusReader example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.  
+    * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
 3. Run the Status example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.
 
 ## References
