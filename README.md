@@ -47,10 +47,12 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
     - [Arduino](https://www.arduino.cc/en/Main/Products): Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
       * ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz
     - esp8266: NodeMCU v2 or v3, Wemos D1 Mini, etc.    
-      * Includes [Arduino framework support](https://github.com/esp8266/Arduino), integrated WiFi, and improved specs at only $3USD shipped.
+      * Includes [Arduino framework support](https://github.com/esp8266/Arduino), integrated WiFi, and improved specs for ~$3USD shipped.
       * NodeMCU modules are a good choice as they can be powered directly from the DSC panel, the Wemos D1 Mini requires an additional 5v voltage regulator to handle the 12v+ DSC panel power.
       * Supports running at 160MHz - this especially helps sketches using TLS connections
-    - esp32 development boards (experimental)
+    - esp32 development boards (experimental support)
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
+      * Note that different resistor values are used as the GPIO pins are 3.3v-only.
 * Designed for reliable data decoding and performance:
   - Pin change and timer interrupts for accurate data capture timing
   - Data buffering: helps prevent lost Keybus data if the sketch is busy
@@ -68,10 +70,14 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 ## Release notes
 * 1.3
   - New: esp32 microcontroller support (experimental).  Note that the VirtualKeypad-Web example sketch currently does not work for esp32.
-  - New: Added `dsc.getStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Updated example sketches with implementation.
-  - New: Added `dsc.pauseStatus` that can be set to `true` to pause status updates, useful to hold status changes during a lost network connection.  When set to `false`, only the changed components will be triggered - useful when a full status update of all partitions and zones is unnecessary (push notifications, email, SMS).  Updated example sketches with implementation.
+  - New: Added `dsc.setTime()` to set the panel time.
+  - New: Added `dsc.getStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Demonstrated in the MQTT example sketches.
+  - New: Added `dsc.pauseStatus` that can be set to `true` to pause status updates, useful to hold status changes during a lost network connection.  When set to `false`, only the changed components will be triggered - useful when a full status update of all partitions and zones is unnecessary. Demonstrated in the push notification, email, and SMS example sketches.
+  - New: Added `dsc.stop()` to disable the clock hardware interrupt and data timer interrupt, can be used prior to starting OTA updates.
   - New: Partition ready status added to the Status example sketch.
   - New: Troubleshooting added to README.md
+  - Deprecated: `dsc.writeReady` has been moved into the library and is no longer needed in the sketch. Updated example sketches to remove this.
+  - Bugfix: Resolved timing issues when consecutively calling `dsc.write`
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
     - As of esp8266 Arduino Core 2.5.1, you may need to [manually update the esp8266FS plugin](https://github.com/esp8266/arduino-esp8266fs-plugin) for SPIFFS upload.
@@ -248,19 +254,13 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
   - AC power failure reporting delay: The default delay is 30 minutes and can be set to 000 to immediately report a power failure.  
 
 ## Notes
-* For OTA updates on esp8266 and esp32, you may need to disable this interface's interrupts using: `detachInterrupt(digitalPinToInterrupt(dscClockPin));` For example, this can be set in the sketch's `setup()` when OTA starts:
+* For OTA updates on esp8266 and esp32, you may need to stop the interface using `dsc.stop();`:
   ```
+  void setup() {
+    ...
     ArduinoOTA.onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH) {
-        type = "sketch";
-      } else { // U_SPIFFS
-        type = "filesystem";
-      }
-      detachInterrupt(digitalPinToInterrupt(dscClockPin));  // Disables the DSC clock interrupt and prevents the DSC data timer interrupt from interfering with OTA
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
-    });
+      dsc.stop();
+    ...
   ```
 * Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybusInterface.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusInterface.h).  Default settings:
   * Arduino: up to 4 partitions, 32 zones, 10 buffered commands

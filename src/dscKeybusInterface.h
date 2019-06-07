@@ -42,6 +42,7 @@ class dscKeybusInterface {
     dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin = 255);
 
     void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
+    void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
     bool handlePanel();                               // Returns true if valid panel data is available
     bool handleModule();                              // Returns true if valid keypad or module data is available
     static volatile bool writeReady;                  // True if the library is ready to write a key

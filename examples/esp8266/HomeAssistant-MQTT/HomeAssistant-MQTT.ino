@@ -222,7 +222,7 @@ void loop() {
     }
 
     // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt && dsc.writeReady) {
+    if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
     }

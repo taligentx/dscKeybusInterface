@@ -117,7 +117,7 @@ void loop() {
     dsc.statusChanged = false;                   // Reset the status tracking flag
 
     // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt && dsc.writeReady) {
+    if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
     }

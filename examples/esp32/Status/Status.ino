@@ -60,9 +60,7 @@ void setup() {
 void loop() {
 
   // Reads from serial input and writes to the Keybus as a virtual keypad
-  if (Serial.available() > 0 && dsc.writeReady) {
-    dsc.write(Serial.read());
-  }
+  if (Serial.available() > 0) dsc.write(Serial.read());
 
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag

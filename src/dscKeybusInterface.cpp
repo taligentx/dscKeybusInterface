@@ -109,6 +109,28 @@ void dscKeybusInterface::begin(Stream &_stream) {
 }
 
 
+void dscKeybusInterface::stop() {
+
+  // Disables Arduino Timer1 interrupts
+  #if defined(__AVR__)
+  TIMSK1 = 0;
+
+  // Disables esp8266 timer1
+  #elif defined(ESP8266)
+  timer1_disable();
+  timer1_detachInterrupt();
+
+  // Disables esp32 timer0
+  #elif defined(ESP32)
+  timerAlarmDisable(timer0);
+  timerEnd(timer0);
+  #endif
+
+  // Disables the Keybus clock pin interrupt
+  detachInterrupt(digitalPinToInterrupt(dscClockPin));
+}
+
+
 bool dscKeybusInterface::handlePanel() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
@@ -190,8 +212,7 @@ bool dscKeybusInterface::handlePanel() {
     if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8)) return false;  // Status in alarm/programming, partitions 5-8
   }
 
-  // Skips redundant data from periodic commands sent at regular intervals, skipping is a configurable
-  // option and the default behavior to help see new Keybus data when decoding the protocol
+  // Skips redundant data from periodic commands sent at regular intervals, by default this data is processed
   if (!processRedundantData) {
     static byte previousCmd11[dscReadSize];
     static byte previousCmd16[dscReadSize];
