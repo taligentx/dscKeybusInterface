@@ -68,17 +68,17 @@ void loop() {
   if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
 
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
+    dsc.bufferOverflow = false;
+
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
       dsc.keybusChanged = false;                 // Resets the Keybus data status flag
       if (dsc.keybusConnected) Serial.println(F("Keybus connected"));
       else Serial.println(F("Keybus disconnected"));
     }
-
-    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
 
     // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
@@ -93,6 +93,7 @@ void loop() {
         }
       }
 
+      // Checks armed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
@@ -109,6 +110,7 @@ void loop() {
         }
       }
 
+      // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
@@ -118,6 +120,7 @@ void loop() {
         }
       }
 
+      // Checks exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
         if (dsc.exitDelay[partition]) {
@@ -132,6 +135,7 @@ void loop() {
         }
       }
 
+      // Checks entry delay status
       if (dsc.entryDelayChanged[partition]) {
         dsc.entryDelayChanged[partition] = false;  // Resets the exit delay status flag
         if (dsc.entryDelay[partition]) {
@@ -141,6 +145,24 @@ void loop() {
         }
       }
 
+      // Checks the access code used to arm or disarm
+      if (dsc.accessCodeChanged[partition]) {
+        dsc.accessCodeChanged[partition] = false;  // Resets the access code status flag
+        Serial.print(F("Partition "));
+        Serial.print(partition + 1);
+        switch (dsc.accessCode[partition]) {
+          case 33: Serial.print(F(" duress")); break;
+          case 34: Serial.print(F(" duress")); break;
+          case 40: Serial.print(F(" master")); break;
+          case 41: Serial.print(F(" supervisor")); break;
+          case 42: Serial.print(F(" supervisor")); break;
+          default: Serial.print(F(" user")); break;
+        }
+        Serial.print(F(" code "));
+        Serial.println(dsc.accessCode[partition]);
+      }
+
+      // Checks fire status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
         if (dsc.fire[partition]) {
@@ -211,6 +233,7 @@ void loop() {
     //
     if (dsc.timestampChanged) {
       dsc.timestampChanged = false;
+      Serial.print(F("Timestamp: "));
       Serial.print(dsc.year);                  // Returns year as a 4-digit unsigned int
       Serial.print(".");
       if (dsc.month < 10) Serial.print("0");
@@ -226,34 +249,40 @@ void loop() {
       Serial.println(dsc.minute);              // Returns minute as a byte
     }
 
+    // Checks trouble status
     if (dsc.troubleChanged) {
       dsc.troubleChanged = false;  // Resets the trouble status flag
       if (dsc.trouble) Serial.println(F("Trouble status on"));
       else Serial.println(F("Trouble status restored"));
     }
 
+    // Checks AC power status
     if (dsc.powerChanged) {
       dsc.powerChanged = false;  // Resets the power trouble status flag
       if (dsc.powerTrouble) Serial.println(F("Panel AC power trouble"));
       else Serial.println(F("Panel AC power restored"));
     }
 
+    // Checks panel battery status
     if (dsc.batteryChanged) {
       dsc.batteryChanged = false;  // Resets the battery trouble status flag
       if (dsc.batteryTrouble) Serial.println(F("Panel battery trouble"));
       else Serial.println(F("Panel battery restored"));
     }
 
+    // Checks keypad fire alarm triggered
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
       Serial.println(F("Keypad fire alarm"));
     }
 
+    // Checks keypad auxiliary alarm triggered
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
       Serial.println(F("Keypad aux alarm"));
     }
 
+    // Checks keypad panic alarm triggered
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
       Serial.println(F("Keypad panic alarm"));

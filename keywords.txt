@@ -23,6 +23,8 @@ resetStatus	KEYWORD2
 pauseStatus	KEYWORD2
 keybusConnected	KEYWORD2
 keybusChanged	KEYWORD2
+accessCode	KEYWORD2
+accessCodeChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
 writePartition	KEYWORD2
 timestampChanged	KEYWORD2
