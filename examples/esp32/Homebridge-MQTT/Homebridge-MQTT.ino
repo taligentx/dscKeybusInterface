@@ -258,19 +258,6 @@ void loop() {
         }
       }
 
-      // Publishes status when the system is disarmed during exit delay
-      if (dsc.exitDelayChanged[partition] && !dsc.exitDelay[partition] && !dsc.armed[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
-
-          mqtt.publish(publishTopic, "D", true);  // Disarmed
-      }
-
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
@@ -370,7 +357,6 @@ void mqttHandle() {
       if (mqttConnect()) {
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
-        dsc.getStatus();  // Resets the state of all status components as changed to get the current status
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }

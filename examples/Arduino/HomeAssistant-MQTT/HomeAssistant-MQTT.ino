@@ -379,7 +379,6 @@ void mqttHandle() {
       if (mqttConnect()) {
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
-        dsc.getStatus();  // Resets the state of all status components as changed to get the current status
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }

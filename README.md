@@ -23,7 +23,7 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 **I Had**: _A DSC security system not being monitored by a third-party service._  
 **I Wanted**: _Notification if the alarm triggered._
 
-I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel and modules (keypads, etc).  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) platform.
+I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel, keypads, and other modules.  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) platform.
 
 While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol) and a few existing projects, there were major issues that remained unsolved:
 * Error-prone Keybus data capture.
@@ -34,12 +34,18 @@ While there has been excellent [discussion about the DSC Keybus protocol](https:
 Poking around with a logic analyzer and oscilloscope revealed that the errors capturing the Keybus data were timing issues.  Updating the existing projects to fix this turned out to be more troublesome than starting from scratch, so this project was born.  After resolving the data errors, it was possible to reverse engineer the protocol by capturing the Keybus binary data as the security system handled various events.  At this point, this interface resolves all of the earlier issues (and goes beyond my initial goal of simply seeing if the alarm is triggered).
 
 ## Features
-* Monitor the alarm state of all partitions: alarm triggered, armed/disarmed, entry/exit delay, fire triggered, keypad panic keys
-* Monitor the state of all zones: zones open/closed, zones in alarm
-* Monitor the system status: trouble, AC power, battery
-* Virtual keypad: Send keys to the panel for any partition
-* Direct Keybus interface: does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
-* Supported security systems: [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify)
+* Monitor the alarm state of all partitions:
+  - Alarm triggered, armed/disarmed, entry/exit delay, fire triggered, keypad panic keys
+* Monitor zones status:
+  - Zones open/closed, zones in alarm
+* Monitor system status:
+  - Ready, trouble, AC power, battery
+* Virtual keypad:
+  - Send keys to the panel for any partition
+* Direct Keybus interface:
+  - Does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
+* Supported security systems:
+  - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify)
   - Verified panels: PC585, PC1555MX, PC1565, PC5005, PC5015, PC1616, PC1808, PC1832, PC1864.
   - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
@@ -50,7 +56,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino), integrated WiFi, and improved specs for ~$3USD shipped.
       * NodeMCU modules are a good choice as they can be powered directly from the DSC panel, the Wemos D1 Mini requires an additional 5v voltage regulator to handle the 12v+ DSC panel power.
       * Supports running at 160MHz - this especially helps sketches using TLS connections
-    - esp32 development boards (experimental support)
+    - esp32: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc (experimental support)
       * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
       * Note that different resistor values are used as the GPIO pins are 3.3v-only.
 * Designed for reliable data decoding and performance:
@@ -77,7 +83,9 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: Partition ready status added to the Status example sketch.
   - New: Troubleshooting added to README.md
   - Deprecated: `dsc.writeReady` has been moved into the library and is no longer needed in the sketch. Updated example sketches to remove this.
+  - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
   - Bugfix: Resolved timing issues when consecutively calling `dsc.write`
+  - Bugfix: Homebridge sketches missing reset for `dsc.exitDelayChanged`
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
     - As of esp8266 Arduino Core 2.5.1, you may need to [manually update the esp8266FS plugin](https://github.com/esp8266/arduino-esp8266fs-plugin) for SPIFFS upload.
@@ -154,11 +162,11 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Pushbullet** (esp8266/esp32-only):  Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Pushbullet](https://www.pushbullet.com) and requires the esp8266/esp32 for SSL support.
 
-* **Twilio** (esp8266/esp32-only): Demonstrates how to send a push notification when the status has changed. This example sends notifications via [Twilio](https://www.twilio.com) and requires the esp8266/esp32 for SSL support - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
+* **Twilio-SMS** (esp8266/esp32-only): Demonstrates how to send an SMS text message when the status has changed. This example sends texts via [Twilio](https://www.twilio.com) and requires the esp8266/esp32 for SSL support - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
 * **Email** (esp8266/esp32-only): Demonstrates how to send an email when the status has changed. Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
-  This can be used to send SMS messages if the number's service provider has an [email to SMS gateway](https://en.wikipedia.org/wiki/SMS_gateway#Email_clients) - examples for the US:
+  This can be used to send SMS text messages if the number's service provider has an [email to SMS gateway](https://en.wikipedia.org/wiki/SMS_gateway#Email_clients) - examples for the US:
   * T-mobile: 5558675309@tmomail.net
   * Verizon: 5558675309@vtext.com
   * Sprint: 5558675309@messaging.sprintpcs.com
@@ -175,6 +183,9 @@ The included examples demonstrate how to use the library and can be used as-is o
 * **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.
 
   See [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp) for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
+
+## External examples
+* **[dscalarm-mqtt](https://github.com/jimtng/dscalarm-mqtt)**: implementation of the [Homie](https://homieiot.github.io) MQTT convention
 
 ## Wiring
 
@@ -235,8 +246,8 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 * Auxiliary alarm: `a`
 * Panic alarm: `p`
 * Door chime enable/disable: `c`
-* Reset: `r`
-* Exit: `x`
+* Fire reset: `r`
+* Quick exit: `x`
 * Change partition: `/` + `partition number` or set `writePartition` to the partition number.  Examples:
   * Switch to partition 2 and send keys: `/2` + `1234`
   * Switch back to partition 1: `/1`
@@ -268,7 +279,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 
 * PCB layouts are available in [`extras/PCB Layouts`](https://github.com/taligentx/dscKeybusInterface/tree/master/extras/PCB%20Layouts) - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
 
-* Support for other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250us after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
+* Support for other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250μs after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160us after the clock falls.
 
 ## Troubleshooting
 If you are running into issues:

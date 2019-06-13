@@ -121,6 +121,11 @@ void loop() {
           Serial.print(partition + 1);
           Serial.println(F(" exit delay in progress"));
         }
+        else if (!dsc.armed[partition]) {  // Checks for disarm during exit delay
+          Serial.print(F("Partition "));
+          Serial.print(partition +1);
+          Serial.println(F(" disarmed"));
+        }
       }
 
       if (dsc.entryDelayChanged[partition]) {
@@ -193,6 +198,28 @@ void loop() {
           }
         }
       }
+    }
+
+    // Checks for a panel timestamp
+    //
+    // The panel time can be set using dsc.setTime(year, month, day, hour, minute, "accessCode") - for example:
+    //   dsc.setTime(2015, 10, 21, 7, 28, "1234")  # Sets 2015.10.21 07:28 with access code 1234
+    //
+    if (dsc.timestampChanged) {
+      dsc.timestampChanged = false;
+      Serial.print(dsc.year);                  // Returns year as a 4-digit unsigned int
+      Serial.print(".");
+      if (dsc.month < 10) Serial.print("0");
+      Serial.print(dsc.month);                 // Returns month as a byte
+      Serial.print(".");
+      if (dsc.day < 10) Serial.print("0");
+      Serial.print(dsc.day);                   // Returns day as a byte
+      Serial.print(" ");
+      if (dsc.hour < 10) Serial.print("0");
+      Serial.print(dsc.hour);                  // Returns hour as a byte
+      Serial.print(":");
+      if (dsc.minute < 10) Serial.print("0");
+      Serial.println(dsc.minute);              // Returns minute as a byte
     }
 
     if (dsc.troubleChanged) {

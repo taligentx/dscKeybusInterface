@@ -213,7 +213,8 @@ class dscKeybusInterface {
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
-    bool previousArmed[dscPartitions], previousAlarm[dscPartitions];
+    bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
+    bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
 
