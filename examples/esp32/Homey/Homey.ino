@@ -103,7 +103,7 @@ void loop() {
   if (!wifiConnected && WiFi.status() == WL_CONNECTED) {
     Serial.println("WiFi reconnected");
     wifiConnected = true;
-    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else if (WiFi.status() != WL_CONNECTED && wifiConnected) {
     Serial.println("WiFi disconnected");

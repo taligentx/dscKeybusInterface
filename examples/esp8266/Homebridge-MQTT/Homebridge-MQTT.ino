@@ -21,6 +21,7 @@
  *  Release notes:
  *    1.2 - Added status update on initial MQTT connection and reconnection
  *          Removed writeReady check, moved into library
+ *          Removed exit delay checking, not supported by Homebridge-mqttthing
  *    1.1 - Add "getTargetState" to the Homebridge config.json example
  *    1.0 - Initial release
  *
@@ -374,7 +375,7 @@ bool mqttConnect() {
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
-    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("MQTT connection failed: "));

@@ -1,9 +1,13 @@
 /*
- *  DSC Status 1.0 (esp8266)
+ *  DSC Status 1.1 (esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
+ *
+ *  Release notes:
+ *    1.1 - Added partition ready and timestamp status
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin

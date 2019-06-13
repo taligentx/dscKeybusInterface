@@ -19,7 +19,7 @@
 
 
 // Resets the state of all status components as changed for sketches to get the current status
-void dscKeybusInterface::getStatus() {
+void dscKeybusInterface::resetStatus() {
   statusChanged = true;
   keybusChanged = true;
   troubleChanged = true;

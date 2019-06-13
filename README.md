@@ -77,15 +77,16 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * 1.3
   - New: esp32 microcontroller support (experimental).  Note that the VirtualKeypad-Web example sketch currently does not work for esp32.
   - New: Added `dsc.setTime()` to set the panel time.
-  - New: Added `dsc.getStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Demonstrated in the MQTT example sketches.
+  - New: Added `dsc.resetStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Demonstrated in the MQTT example sketches.
   - New: Added `dsc.pauseStatus` that can be set to `true` to pause status updates, useful to hold status changes during a lost network connection.  When set to `false`, only the changed components will be triggered - useful when a full status update of all partitions and zones is unnecessary. Demonstrated in the push notification, email, and SMS example sketches.
   - New: Added `dsc.stop()` to disable the clock hardware interrupt and data timer interrupt, can be used prior to starting OTA updates.
-  - New: Partition ready status added to the Status example sketch.
-  - New: Troubleshooting added to README.md
-  - Deprecated: `dsc.writeReady` has been moved into the library and is no longer needed in the sketch. Updated example sketches to remove this.
+  - New: Partition ready and timestamp status added to the Status example sketch.
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
+  - New: Troubleshooting added to README.md
+  - Updated: Adjusted partition state processing to improve panel state detection at startup
+  - Updated: Removed checking for exit delay in Homebridge sketches
+  - Deprecated: `dsc.writeReady` has been moved into the library and is no longer needed in the sketch. Updated example sketches to remove this.
   - Bugfix: Resolved timing issues when consecutively calling `dsc.write`
-  - Bugfix: Homebridge sketches missing reset for `dsc.exitDelayChanged`
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!
     - As of esp8266 Arduino Core 2.5.1, you may need to [manually update the esp8266FS plugin](https://github.com/esp8266/arduino-esp8266fs-plugin) for SPIFFS upload.

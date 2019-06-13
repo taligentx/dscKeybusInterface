@@ -386,7 +386,7 @@ bool mqttConnect() {
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
-    dsc.getStatus();  // Resets the state of all status components as changed to get the current status
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("MQTT connection failed: "));
