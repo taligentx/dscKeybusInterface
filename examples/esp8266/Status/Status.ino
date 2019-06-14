@@ -6,7 +6,7 @@
  *  changed, and how to take action based on those changes.
  *
  *  Release notes:
- *    1.1 - Added partition ready and timestamp status
+ *    1.1 - Added partition ready, access code, and timestamp status
  *    1.0 - Initial release
  *
  *  Wiring:
