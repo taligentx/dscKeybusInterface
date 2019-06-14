@@ -82,6 +82,8 @@ class dscKeybusInterface {
     bool statusChanged;                   // True after any status change
     bool pauseStatus;                     // Prevent status from showing as changed, set in sketch to control when to update status
     bool keybusConnected, keybusChanged;  // True if data is detected on the Keybus
+    byte accessCode[dscPartitions];
+    bool accessCodeChanged[dscPartitions];
     bool accessCodePrompt;                // True if the panel is requesting an access code
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
@@ -210,6 +212,7 @@ class dscKeybusInterface {
     bool queryResponse;
     bool previousTrouble;
     bool previousKeybus;
+    byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];

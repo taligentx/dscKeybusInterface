@@ -20,6 +20,7 @@
  *
  *  Release notes:
  *    1.2 - Added status update on initial MQTT connection and reconnection
+ *          Add appendPartition() to simplify sketch
  *          Removed writeReady check, moved into library
  *          Removed exit delay checking, not supported by Homebridge-mqttthing
  *    1.1 - Add "getTargetState" to the Homebridge config.json example
@@ -231,13 +232,8 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-
-        // Appends the mqttPartitionTopic with the partition number
         char publishTopic[strlen(mqttPartitionTopic) + 1];
-        char partitionNumber[2];
-        strcpy(publishTopic, mqttPartitionTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(publishTopic, partitionNumber);
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);       // Night armed
@@ -252,13 +248,8 @@ void loop() {
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
           char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
+          appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
           mqtt.publish(publishTopic, "T", true);  // Alarm tripped
         }
@@ -267,16 +258,11 @@ void loop() {
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
+        char publishTopic[strlen(mqttFireTopic) + 1];
+        appendPartition(mqttFireTopic, partition, publishTopic);  // Appends the mqttFireTopic with the partition number
 
-        // Appends the mqttFireTopic with the partition number
-        char firePublishTopic[strlen(mqttFireTopic) + 1];
-        char partitionNumber[2];
-        strcpy(firePublishTopic, mqttFireTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(firePublishTopic, partitionNumber);
-
-        if (dsc.fire[partition]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
-        else mqtt.publish(firePublishTopic, "0");                           // Fire alarm restored
+        if (dsc.fire[partition]) mqtt.publish(publishTopic, "1");  // Fire alarm tripped
+        else mqtt.publish(publishTopic, "0");                      // Fire alarm restored
       }
     }
 
@@ -382,4 +368,12 @@ bool mqttConnect() {
     Serial.println(mqttServer);
   }
   return mqtt.connected();
+}
+
+
+void appendPartition(const char* sourceTopic, byte sourceNumber, char* publishTopic) {
+  char partitionNumber[2];
+  strcpy(publishTopic, sourceTopic);
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(publishTopic, partitionNumber);
 }

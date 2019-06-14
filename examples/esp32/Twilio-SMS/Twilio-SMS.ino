@@ -119,26 +119,20 @@ void loop() {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
 
-          char pushMessage[40] = "Security system ";
+          char pushMessage[40];
           if (dsc.armedAway[partition]) {
-            char armedState[24] = "armed away: partition ";
-            strcat(pushMessage, armedState);
+            strcpy(pushMessage, "Security system armed away: partition ");
           }
           else if (dsc.armedStay[partition]) {
-            char armedState[24] = "armed stay: partition ";
-            strcat(pushMessage, armedState);
+            strcpy(pushMessage, "Security system armed stay: partition ");
           }
-          char partitionNumber[2];
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(pushMessage, partitionNumber);
+          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
           sendPush(pushMessage);
 
         }
         else {
           char pushMessage[39] = "Security system disarmed: partition ";
-          char partitionNumber[2];
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(pushMessage, partitionNumber);
+          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
           sendPush(pushMessage);
         }
       }
@@ -148,9 +142,7 @@ void loop() {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char pushMessage[38] = "Security system in alarm: Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(pushMessage, partitionNumber);
+        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
 
         if (dsc.alarm[partition]) sendPush(pushMessage);
         else sendPush("Security system disarmed after alarm");
@@ -161,9 +153,7 @@ void loop() {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char pushMessage[40] = "Security system fire alarm: Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(pushMessage, partitionNumber);
+        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
 
         if (dsc.fire[partition]) sendPush(pushMessage);
         else sendPush("Security system fire alarm restored");
@@ -290,4 +280,11 @@ bool sendPush(const char* pushMessage) {
     pushClient.stop();
     return false;
   }
+}
+
+
+void appendPartition(byte sourceNumber, char* pushMessage) {
+  char partitionNumber[2];
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(pushMessage, partitionNumber);
 }

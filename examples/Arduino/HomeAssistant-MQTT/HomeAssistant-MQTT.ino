@@ -15,6 +15,7 @@
  *
  *  Release notes
  *    1.2 - Added Keybus status for online/offline status
+ *          Add appendPartition() to simplify sketch
  *          Removed writeReady check, moved into library
  *    1.1 - Added status update on initial MQTT connection and reconnection
  *    1.0 - Initial release
@@ -214,17 +215,17 @@ void loop() {
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
-    // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt) {
-      dsc.accessCodePrompt = false;
-      dsc.write(accessCode);
-    }
-
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
       if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
       else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
+    }
+
+    // Sends the access code when needed by the panel for arming
+    if (dsc.accessCodePrompt) {
+      dsc.accessCodePrompt = false;
+      dsc.write(accessCode);
     }
 
     if (dsc.troubleChanged) {
@@ -239,13 +240,8 @@ void loop() {
       // Publishes exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
-
-        // Appends the mqttPartitionTopic with the partition number
         char publishTopic[strlen(mqttPartitionTopic) + 1];
-        char partitionNumber[2];
-        strcpy(publishTopic, mqttPartitionTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(publishTopic, partitionNumber);
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.exitDelay[partition]) mqtt.publish(publishTopic, "pending", true);  // Publish as a retained message
         else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) mqtt.publish(publishTopic, "disarmed", true);
@@ -254,13 +250,8 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-
-        // Appends the mqttPartitionTopic with the partition number
         char publishTopic[strlen(mqttPartitionTopic) + 1];
-        char partitionNumber[2];
-        strcpy(publishTopic, mqttPartitionTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(publishTopic, partitionNumber);
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
           if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "armed_away", true);
@@ -273,13 +264,8 @@ void loop() {
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
           char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
+          appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
           mqtt.publish(publishTopic, "triggered", true);  // Alarm tripped
         }
@@ -288,16 +274,11 @@ void loop() {
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
+        char publishTopic[strlen(mqttFireTopic) + 1];
+        appendPartition(mqttFireTopic, partition, publishTopic);  // Appends the mqttFireTopic with the partition number
 
-        // Appends the mqttFireTopic with the partition number
-        char firePublishTopic[strlen(mqttFireTopic) + 1];
-        char partitionNumber[2];
-        strcpy(firePublishTopic, mqttFireTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(firePublishTopic, partitionNumber);
-
-        if (dsc.fire[partition]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
-        else mqtt.publish(firePublishTopic, "0");                      // Fire alarm restored
+        if (dsc.fire[partition]) mqtt.publish(publishTopic, "1");  // Fire alarm tripped
+        else mqtt.publish(publishTopic, "0");                      // Fire alarm restored
       }
     }
 
@@ -398,4 +379,12 @@ bool mqttConnect() {
     Serial.println(mqttServer);
   }
   return mqtt.connected();
+}
+
+
+void appendPartition(const char* sourceTopic, byte sourceNumber, char* publishTopic) {
+  char partitionNumber[2];
+  strcpy(publishTopic, sourceTopic);
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(publishTopic, partitionNumber);
 }

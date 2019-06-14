@@ -9,8 +9,9 @@
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
- *  1.2 - New: Check if WiFi disconnects and wait to send updates until reconnection
- *        Updated: esp8266 Arduino Core version check for BearSSL
+ *  1.2 - Check if WiFi disconnects and wait to send updates until reconnection
+ *        Add appendPartition() to simplify sketch
+ *        esp8266 Arduino Core version check for BearSSL
  *  1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
  *  1.0 - Initial release
  *
@@ -139,9 +140,7 @@ void loop() {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char emailBody[12] = "Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(emailBody, partitionNumber);
+        appendPartition(partition, emailBody);  // Appends the email body with the partition number
 
         if (dsc.alarm[partition]) sendEmail("Security system in alarm", emailBody);
         else sendEmail("Security system disarmed after alarm", emailBody);
@@ -151,9 +150,7 @@ void loop() {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char emailBody[12] = "Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(emailBody, partitionNumber);
+        appendPartition(partition, emailBody);  // Appends the email body with the partition number
 
         if (dsc.fire[partition]) sendEmail("Security system fire alarm", emailBody);
         else sendEmail("Security system fire alarm restored", emailBody);
@@ -235,4 +232,11 @@ bool smtpValidResponse() {
     smtpClient.stop();
     return false;
   }
+}
+
+
+void appendPartition(byte sourceNumber, char* pushMessage) {
+  char partitionNumber[2];
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(pushMessage, partitionNumber);
 }

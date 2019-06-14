@@ -129,9 +129,7 @@ void loop() {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
         char emailBody[12] = "Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(emailBody, partitionNumber);
+        appendPartition(partition, emailBody);  // Appends the email body with the partition number
 
         if (dsc.alarm[partition]) sendEmail("Security system in alarm", emailBody);
         else sendEmail("Security system disarmed after alarm", emailBody);
@@ -141,9 +139,7 @@ void loop() {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
         char emailBody[12] = "Partition ";
-        char partitionNumber[2];
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(emailBody, partitionNumber);
+        appendPartition(partition, emailBody);  // Appends the email body with the partition number
 
         if (dsc.fire[partition]) sendEmail("Security system fire alarm", emailBody);
         else sendEmail("Security system fire alarm restored", emailBody);
@@ -225,4 +221,11 @@ bool smtpValidResponse() {
     smtpClient.stop();
     return false;
   }
+}
+
+
+void appendPartition(byte sourceNumber, char* pushMessage) {
+  char partitionNumber[2];
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(pushMessage, partitionNumber);
 }
