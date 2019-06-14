@@ -154,6 +154,8 @@ void loop() {
       ArduinoOTA.handle();
   #endif
   
+  dsc.handlePanel(); //call it to process buffer when client is disconnected
+
   client = wifiServer.available(); 
   if (client) {
     while (client.connected()) {
@@ -206,7 +208,6 @@ void loop() {
           client.printf("\n");
           }
         }
-      delay(10); //needed or else too frequent polling and blocks dsc stuff, replace with non blocking?
     }
     client.stop();
     client.printf("Client disconnected from dscKeybusReader\n");
