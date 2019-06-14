@@ -37,23 +37,9 @@
 #include "ESP8266WiFi.h"
 #include <dscKeybusInterface.h>
 
-//output debug msgs using define DEBUG_ESP_PORT
-#ifdef DEBUG_ESP_PORT
-  #define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
-#else
-  #define DEBUG_MSG(...)
-#endif
-
-// This define controls wether OTA is used
-#define USE_ARDUINO_OTA
-#ifdef USE_ARDUINO_OTA
-  #include <ArduinoOTA.h>
-#endif
-
 // Adjust settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* host = "dscip"; //hostname to be used by OTA, accessible on LAN with mdns: dscip.local
 WiFiServer wifiServer(80);
 WiFiClient client;
 
@@ -65,54 +51,6 @@ bool runOnce = true;
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
-
-#ifdef USE_ARDUINO_OTA
-void initOTA() {
-  // Hostname defaults to esp8266-[ChipID]
-  ArduinoOTA.setHostname(host);
-
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_SPIFFS
-      type = "filesystem";
-    }
-    detachInterrupt(digitalPinToInterrupt(dscClockPin));  // Disables the DSC clock interrupt and prevents the DSC data timer interrupt from interfering with OTA
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    DEBUG_MSG("Start updating %s", type.c_str());
-  });
-  
-  ArduinoOTA.onEnd([]() {
-    DEBUG_MSG("\nEnd");
-  });
-  
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    DEBUG_MSG("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  
-  ArduinoOTA.onError([](ota_error_t error) {
-    DEBUG_MSG("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      DEBUG_MSG("Auth Failed\n");
-    }
-    else if (error == OTA_BEGIN_ERROR) {
-      DEBUG_MSG("Begin Failed\n");
-    }
-    else if (error == OTA_CONNECT_ERROR) {
-      DEBUG_MSG("Connect Failed\n");
-    }
-    else if (error == OTA_RECEIVE_ERROR) {
-      DEBUG_MSG("Receive Failed\n");
-    }
-    else if (error == OTA_END_ERROR) {
-      DEBUG_MSG("End Failed\n");
-    }
-  });
-  ArduinoOTA.begin();
-}
-#endif
 
 void setup() {
   Serial.begin(115200);
@@ -128,10 +66,6 @@ void setup() {
  
   Serial.print("Connected to WiFi. IP:");
   Serial.println(WiFi.localIP());
-
-  #ifdef USE_ARDUINO_OTA
-    initOTA();
-  #endif
 
   wifiServer.begin();
 
@@ -149,10 +83,6 @@ void setup() {
 
 
 void loop() {
-
-  #ifdef USE_ARDUINO_OTA
-      ArduinoOTA.handle();
-  #endif
   
   dsc.handlePanel(); //call it to process buffer when client is disconnected
 
