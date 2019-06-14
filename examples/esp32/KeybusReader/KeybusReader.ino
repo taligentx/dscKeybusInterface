@@ -68,10 +68,10 @@ void loop() {
   // Reads from serial input and writes to the Keybus as a virtual keypad
   if (Serial.available() > 0) dsc.write(Serial.read());
 
-  if (dsc.handlePanel()) {
+  if (dsc.loop()) {
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 

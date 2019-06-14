@@ -41,22 +41,25 @@ class dscKeybusInterface {
     // Initializes writes as disabled by default
     dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin = 255);
 
+    // Interface control
     void begin(Stream &_stream = Serial);             // Initializes the stream output to Serial by default
+    bool loop();                                      // Returns true if valid panel data is available
     void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
-    bool handlePanel();                               // Returns true if valid panel data is available
-    bool handleModule();                              // Returns true if valid keypad or module data is available
-    static volatile bool writeReady;                  // True if the library is ready to write a key
+    void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
+
+    // Write
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
-    void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
+    static byte writePartition;                       // Set to a partition number for virtual keypad
+    static volatile bool writeReady;                  // True if the library is ready to write a key
+
+    // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
     void printPanelCommand();                         // Prints the panel command as hex
     void printPanelMessage();                         // Prints the decoded panel message
     void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printModuleMessage();                        // Prints the decoded keypad or module message
 
-    // Set to a partition number for virtual keypad
-    static byte writePartition;
 
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
@@ -71,12 +74,6 @@ class dscKeybusInterface {
 
     // Sets panel time, the year can be sent as either 2 or 4 digits
     void setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode);
-
-    // These contain the current LED state and status message for each partition based on command 0x05 for
-    // partitions 1-4 and command 0x1B for partitions 5-8.  See printPanelLights() and printPanelMessages()
-    // in dscKeybusPrintData.cpp to see how this data translates to the LED status and status message.
-    byte status[dscPartitions];
-    byte lights[dscPartitions];
 
     // Status tracking
     bool statusChanged;                   // True after any status change
@@ -111,11 +108,21 @@ class dscKeybusInterface {
     static byte panelData[dscReadSize];
     static volatile byte moduleData[dscReadSize];
 
+    // These contain the current status message and LED state for each partition.  See printPanelLights() and printPanelMessages()
+    // in dscKeybusPrintData.cpp to see how this data translates to the status message and LED status.
+    byte status[dscPartitions];
+    byte lights[dscPartitions];
+
+    // Process keypad and module data, returns true if data is available
+    bool handleModule();
+
     // True if dscBufferSize needs to be increased
     static volatile bool bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
+
+    bool handlePanel();  // Deprecated, relabeled to loop()
 
   private:
 

@@ -75,19 +75,21 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 
 ## Release notes
 * 1.3
-  - New: esp32 microcontroller support (experimental).  Note that the VirtualKeypad-Web example sketch currently does not work for esp32.
-  - New: Added `setTime()` to set the panel time, updated the `Status` example sketch.
-  - New: Added access code status tracking to check which codes are used to arm/disarm, updated the `Status` example sketch.
-  - New: Added `resetStatus()` function to trigger a full status update of all partitions and zones, useful to provide current status after initialization or after a lost network connection.  Demonstrated in the MQTT example sketches.
-  - New: Added `pauseStatus` that can be set to `true` to pause status updates, useful to hold status changes during a lost network connection.  When set to `false`, only the changed components will be triggered - useful when a full status update of all partitions and zones is unnecessary. Demonstrated in the push notification, email, and SMS example sketches.
-  - New: Added `stop()` to disable the clock hardware interrupt and data timer interrupt, can be used prior to starting OTA updates.
-  - New: Partition ready and timestamp status added to the Status example sketch.
+  - New: esp32 microcontroller support (experimental)
+  - New: Added functionality for sketches and updated examples
+      * `ready` tracks partition ready status
+      * `setTime()` sets the panel date and time
+      * `timestampChanged` tracks when the panel sends a timestamp
+      * `accessCode` tracks the access code used to arm/disarm
+      * `resetStatus()` triggers a full status update of all partitions and zones - for example, after initialization or a lost network connection.
+      * `pauseStatus` pauses status updates if set to `true` - for example, holding status changes during a lost network connection.
+      * `stop()` disables the interface - for example, prior to starting OTA updates.
+      * `appendPartition()` in example sketches simplifies adding partition numbers to messages
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
-  - New: Added `appendPartition()` in example sketches to simplify adding partition numbers to messages
-  - New: Troubleshooting added to README.md
-  - Updated: Adjusted partition state processing to improve panel state detection at startup
+  - Updated: Expanded partition state processing to improve panel state detection at startup
   - Updated: Removed checking for exit delay in Homebridge sketches
-  - Deprecated: `writeReady` has been moved into the library and is no longer needed in the sketch. Updated example sketches to remove this.
+  - Deprecated: `handlePanel()` is now `loop()`
+  - Deprecated: `writeReady` has been moved into the library and is no longer needed in the sketch.
   - Bugfix: Resolved timing issues when consecutively calling `write`
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!

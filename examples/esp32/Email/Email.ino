@@ -93,11 +93,11 @@ void loop() {
     dsc.pauseStatus = true;
   }
 
-  if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
+  if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Resets the status flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
     if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
     dsc.bufferOverflow = false;
 
@@ -191,7 +191,7 @@ bool smtpValidResponse() {
   // Waits for a response
   unsigned long previousMillis = millis();
   while (!smtpClient.available()) {
-    dsc.handlePanel();  // Processes Keybus data while waiting on the SMTP response
+    dsc.loop();  // Processes Keybus data while waiting on the SMTP response
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
       smtpClient.stop();
