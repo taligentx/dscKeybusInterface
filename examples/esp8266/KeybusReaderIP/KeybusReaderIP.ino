@@ -1,5 +1,5 @@
 /*
- *  DSC Keybus Reader 1.0 (esp8266)
+ *  DSC Keybus Reader 1.1 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a TCP connection including virtual keyboard over IP. This is primarily to help decode the Keybus protocol - see the Status examples to put the interface
  *  to productive use.
