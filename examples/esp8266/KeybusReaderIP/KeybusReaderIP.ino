@@ -84,7 +84,7 @@ void setup() {
 
 void loop() {
   
-  dsc.handlePanel(); //call it to process buffer when client is disconnected
+  dsc.loop(); //call it to process buffer when client is disconnected
 
   client = wifiServer.available(); 
   if (client) {
@@ -103,9 +103,9 @@ void loop() {
         dsc.write(c);
       }
 
-      if (dsc.handlePanel()) {
+      if (dsc.loop()) {
         // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-        // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+        // loop more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
         if (dsc.bufferOverflow) client.print(F("Keybus buffer overflow"));
         dsc.bufferOverflow = false;
 
