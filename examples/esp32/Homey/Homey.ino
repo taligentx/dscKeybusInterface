@@ -113,7 +113,7 @@ void loop() {
   // Run the Homey loop
   Homey.loop();
 
-  if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
+  if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
     dsc.statusChanged = false;                   // Reset the status tracking flag
 
     // Sends the access code when needed by the panel for arming
