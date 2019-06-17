@@ -90,6 +90,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - Updated: Removed checking for exit delay in Homebridge sketches
   - Deprecated: `handlePanel()` is now `loop()`
   - Deprecated: `writeReady` has been moved into the library and is no longer needed in the sketch.
+  - Bugfix: Resolved `Homebridge-MQTT` sketch not handling HomeKit target states
   - Bugfix: Resolved timing issues when consecutively calling `write`
 * 1.2
   - New: Virtual keypad web interface example, thanks to [Elektrik1](https://github.com/Elektrik1) for this contribution!

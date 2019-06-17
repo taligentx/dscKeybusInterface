@@ -206,12 +206,14 @@ void loop() {
   mqttHandle();
 
   if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                   // Reset the status tracking flag
+    dsc.statusChanged = false;            // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Sends the access code when needed by the panel for arming
     if (dsc.accessCodePrompt) {
@@ -225,16 +227,68 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
+        char targetState[3];
         char publishTopic[strlen(mqttPartitionTopic) + 1];
         appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);       // Night armed
-          else if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "AA", true);                                 // Away armed
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);  // Night armed
-          else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "SA", true);                                 // Stay armed
+
+          // Night armed away
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+            prependPartition(partition, "N", targetState);
+            mqtt.publish(publishTopic, targetState, true);
+            mqtt.publish(publishTopic, "NA", true);
+          }
+
+          // Armed away
+          else if (dsc.armedAway[partition]) {
+            prependPartition(partition, "A", targetState);
+            mqtt.publish(publishTopic, targetState, true);
+            mqtt.publish(publishTopic, "AA", true);
+          }
+
+            // Night armed stay
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+            prependPartition(partition, "N", targetState);
+            mqtt.publish(publishTopic, targetState, true);
+            mqtt.publish(publishTopic, "NA", true);
+          }
+
+          // Armed stay
+          else if (dsc.armedStay[partition]) {
+            prependPartition(partition, "S", targetState);
+            mqtt.publish(publishTopic, targetState, true);
+            mqtt.publish(publishTopic, "SA", true);
+          }
         }
-        else mqtt.publish(publishTopic, "D", true);  // Disarmed
+
+        // Disarmed
+        else {
+          prependPartition(partition, "D", targetState);
+          mqtt.publish(publishTopic, targetState, true);
+          mqtt.publish(publishTopic, "D", true);
+        }
+      }
+
+      // Checks exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+        char targetState[3];
+        char publishTopic[strlen(mqttPartitionTopic) + 1];
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
+
+        // Exit delay
+        if (dsc.exitDelay[partition]) {
+            prependPartition(partition, "A", targetState);
+            mqtt.publish(publishTopic, targetState, true);
+        }
+
+        // Disarmed during exit delay
+        else if (!dsc.armed[partition]) {
+          prependPartition(partition, "D", targetState);
+          mqtt.publish(publishTopic, targetState, true);
+          mqtt.publish(publishTopic, "D", true);
+        }
       }
 
       // Publishes alarm triggered status
@@ -369,4 +423,12 @@ void appendPartition(const char* sourceTopic, byte sourceNumber, char* publishTo
   strcpy(publishTopic, sourceTopic);
   itoa(sourceNumber + 1, partitionNumber, 10);
   strcat(publishTopic, partitionNumber);
+}
+
+
+void prependPartition(byte sourceNumber, const char* sourceCommand, char* targetState) {
+  char partitionNumber[2];
+  itoa(sourceNumber +1, partitionNumber, 10);
+  strcpy(targetState, partitionNumber);
+  strcat(targetState, sourceCommand);
 }

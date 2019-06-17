@@ -72,8 +72,10 @@ void loop() {
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Prints panel data
     printTimestamp();
@@ -86,7 +88,7 @@ void loop() {
     Serial.println();
 
     // Prints keypad and module data when valid panel data is printed
-    if (dsc.loop()) {
+    if (dsc.handleModule()) {
       printTimestamp();
       Serial.print(" ");
       dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);

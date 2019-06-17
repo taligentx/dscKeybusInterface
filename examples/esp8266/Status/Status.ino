@@ -69,12 +69,14 @@ void loop() {
   if (Serial.available() > 0) dsc.write(Serial.read());
 
   if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                   // Resets the status flag
+    dsc.statusChanged = false;            // Resets the status flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
