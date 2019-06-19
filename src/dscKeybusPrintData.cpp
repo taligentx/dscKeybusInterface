@@ -472,7 +472,7 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
      *  10100101 0 00010001 01101101 01100000 00101110 10011001 00000000 01001010 [0xA5] 11/11/2011 00:11 | Activate stay/away zones
      *  10100101 0 00011000 01001111 00101101 00011010 10011010 00000000 11101101 [0xA5] 03/25/2018 13:06 | Armed: stay
      *  10100101 0 00011000 01001111 00101101 00010010 10011011 00000000 11100110 [0xA5] 03/25/2018 13:04 | Armed: away
-     *  10100101 0 00011000 01001111 00101101 10011010 10011100 00000000 01101111 [0xA5] 03/25/2018 13:38 | Armed without entry delay
+     *  10100101 0 00011000 01001111 00101101 10011010 10011100 00000000 01101111 [0xA5] 03/25/2018 13:38 | Armed with no entry delay
      *  10100101 0 00011000 01001111 00101100 11011110 11000011 00000000 11011001 [0xA5] 03/25/2018 12:55 | Enter *5 programming
      *  10100101 0 00011000 01001111 00101110 00000010 11100110 00000000 00100010 [0xA5] 03/25/2018 14:00 | Enter *6 programming
      */
@@ -492,7 +492,7 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     case 0x99: stream->print(F("Activate stay/away zones")); return;
     case 0x9A: stream->print(F("Armed: stay")); return;
     case 0x9B: stream->print(F("Armed: away")); return;
-    case 0x9C: stream->print(F("Armed without entry delay")); return;
+    case 0x9C: stream->print(F("Armed with no entry delay")); return;
     case 0xC3: stream->print(F("Enter *5 programming")); return;
     // 0xC6 - 0xE5: Auto-arm cancelled by user code
     case 0xE6: stream->print(F("Enter *6 programming")); return;
