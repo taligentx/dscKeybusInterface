@@ -18,10 +18,10 @@
  *    5. Restart Homebridge.
  *
  *  Release notes:
- *    1.2 - Added status update on initial MQTT connection and reconnection
- *          Add appendPartition() to simplify sketch
+ *    1.2 - Resolved handling HomeKit target states
+ *          Added status update on initial MQTT connection and reconnection
+ *          Added publishState() to simplify sketch
  *          Removed writeReady check, moved into library
- *          Removed exit delay checking, not supported by Homebridge-mqttthing
  *    1.1 - Add "getTargetState" to the Homebridge config.json example
  *    1.0 - Initial release
  *
@@ -35,7 +35,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition1",
-                "getTargetState":    "dsc/Get/Partition1",
+                "getTargetState":     "dsc/Get/Partition1",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["1S", "1A", "1N", "1D"]
@@ -48,7 +48,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition2",
-                "getTargetState":    "dsc/Get/Partition1",
+                "getTargetState":     "dsc/Get/Partition2",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["2S", "2A", "2N", "2D"]
@@ -158,7 +158,7 @@
 
 // Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -174,6 +174,7 @@ unsigned long mqttPreviousTime;
 
 EthernetClient ethClient;
 PubSubClient mqtt(mqttServer, mqttPort, ethClient);
+char exitState;
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
@@ -213,8 +214,10 @@ void setup() {
 void loop() {
   mqttHandle();
 
-  if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;            // Reset the status tracking flag
+  dsc.loop();
+
+  if (dsc.statusChanged) {      // Checks if the security system status has changed
+    dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
@@ -235,37 +238,74 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-        char publishTopic[strlen(mqttPartitionTopic) + 1];
-        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);       // Night armed
-          else if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "AA", true);                                 // Away armed
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);  // Night armed
-          else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "SA", true);                                 // Stay armed
+          exitState = 0;
+
+          // Night armed away
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+            publishState(mqttPartitionTopic, partition, "N", "NA");
+          }
+
+          // Armed away
+          else if (dsc.armedAway[partition]) {
+            publishState(mqttPartitionTopic, partition, "A", "AA");
+          }
+
+          // Night armed stay
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+            publishState(mqttPartitionTopic, partition, "N", "NA");
+          }
+
+          // Armed stay
+          else if (dsc.armedStay[partition]) {
+            publishState(mqttPartitionTopic, partition, "S", "SA");
+          }
         }
-        else mqtt.publish(publishTopic, "D", true);  // Disarmed
+
+        // Disarmed
+        else publishState(mqttPartitionTopic, partition, "D", "D");
+      }
+
+      // Checks exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+
+        // Exit delay in progress
+        if (dsc.exitDelay[partition]) {
+
+          // Sets default target state to away if the panel is armed externally
+          if (exitState == 0) {
+            exitState = 'A';
+            publishState(mqttPartitionTopic, partition, "A", 0);
+          }
+        }
+
+        // Disarmed during exit delay
+        else if (!dsc.armed[partition]) {
+          exitState = 0;
+          publishState(mqttPartitionTopic, partition, "D", "D");
+        }
       }
 
       // Publishes alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
-          appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
-
-          mqtt.publish(publishTopic, "T", true);  // Alarm tripped
+          publishState(mqttPartitionTopic, partition, 0, "T");
         }
       }
 
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
-        char publishTopic[strlen(mqttFireTopic) + 1];
-        appendPartition(mqttFireTopic, partition, publishTopic);  // Appends the mqttFireTopic with the partition number
 
-        if (dsc.fire[partition]) mqtt.publish(publishTopic, "1");  // Fire alarm tripped
-        else mqtt.publish(publishTopic, "0");                      // Fire alarm restored
+        if (dsc.fire[partition]) {
+          publishState(mqttFireTopic, partition, 0, "1");  // Fire alarm tripped
+        }
+        else {
+          publishState(mqttFireTopic, partition, 0, "0");  // Fire alarm restored
+        }
       }
     }
 
@@ -302,6 +342,7 @@ void loop() {
   }
 }
 
+
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
@@ -318,28 +359,53 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
+  // Resets the HomeKit target state if attempting to change the armed mode while armed or not ready
+  if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
+    dsc.armedChanged[partition] = true;
+    dsc.statusChanged = true;
+    return;
+  }
+
+  // Resets the HomeKit target state if attempting to change the arming mode during the exit delay
+  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState != 0) {
+    if (exitState == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
+    else if (exitState == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
+    else if (exitState == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
+  }
+
+
   // homebridge-mqttthing STAY_ARM
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('s');  // Keypad stay arm
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState = 'S';
+    return;
   }
 
   // homebridge-mqttthing AWAY_ARM
-  else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+  if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('w');  // Keypad away arm
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState = 'A';
+    return;
   }
 
   // homebridge-mqttthing NIGHT_ARM
-  else if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+  if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad arm with no entry delay
+    publishState(mqttPartitionTopic, partition, "N", 0);
+    exitState = 'N';
+    return;
   }
 
   // homebridge-mqttthing DISARM
-  else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
+  if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write(accessCode);
+    return;
   }
 }
 
@@ -374,9 +440,29 @@ bool mqttConnect() {
 }
 
 
-void appendPartition(const char* sourceTopic, byte sourceNumber, char* publishTopic) {
+// Publishes HomeKit target and current states with partition numbers
+void publishState(const char* sourceTopic, byte partition, const char* targetSuffix, const char* currentState) {
+  char publishTopic[strlen(sourceTopic) + 1];
   char partitionNumber[2];
+
+  // Appends the sourceTopic with the partition number
+  itoa(partition + 1, partitionNumber, 10);
   strcpy(publishTopic, sourceTopic);
-  itoa(sourceNumber + 1, partitionNumber, 10);
   strcat(publishTopic, partitionNumber);
+
+  if (targetSuffix != 0) {
+
+    // Prepends the targetSuffix with the partition number
+    char targetState[strlen(targetSuffix)];
+    strcpy(targetState, partitionNumber);
+    strcat(targetState, targetSuffix);
+
+    // Publishes the target state
+    mqtt.publish(publishTopic, targetState, true);
+  }
+
+  // Publishes the current state
+  if (currentState != 0) {
+    mqtt.publish(publishTopic, currentState, true);
+  }
 }

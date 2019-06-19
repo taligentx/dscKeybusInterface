@@ -312,6 +312,13 @@ void dscKeybusInterface::processPanelStatus() {
           armedChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
+
+        ready[partitionIndex] = false;
+        if (ready[partitionIndex] != previousReady[partitionIndex]) {
+          previousReady[partitionIndex] = ready[partitionIndex];
+          readyChanged[partitionIndex] = true;
+          if (!pauseStatus) statusChanged = true;
+        }
       }
 
       // Partition disarmed
@@ -448,6 +455,20 @@ void dscKeybusInterface::processPanel_0x27() {
         previousArmed[partitionIndex] = armed[partitionIndex];
         previousArmedStay[partitionIndex] = armedStay[partitionIndex];
         armedChanged[partitionIndex] = true;
+        if (!pauseStatus) statusChanged = true;
+      }
+
+      exitDelay[partitionIndex] = false;
+      if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
+        previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
+        exitDelayChanged[partitionIndex] = true;
+        if (!pauseStatus) statusChanged = true;
+      }
+
+      ready[partitionIndex] = false;
+      if (ready[partitionIndex] != previousReady[partitionIndex]) {
+        previousReady[partitionIndex] = ready[partitionIndex];
+        readyChanged[partitionIndex] = true;
         if (!pauseStatus) statusChanged = true;
       }
     }
@@ -894,6 +915,13 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
       exitDelayChanged[partitionIndex] = true;
       if (!pauseStatus) statusChanged = true;
     }
+
+    ready[partitionIndex] = false;
+    if (ready[partitionIndex] != previousReady[partitionIndex]) {
+      previousReady[partitionIndex] = ready[partitionIndex];
+      readyChanged[partitionIndex] = true;
+      if (!pauseStatus) statusChanged = true;
+    }
     return;
   }
 
@@ -907,8 +935,15 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
         if (!pauseStatus) statusChanged = true;
         return;
       }
-      case 0x9C: {        // Armed without entry delay
+      case 0x9C: {        // Armed with no entry delay
         noEntryDelay[partitionIndex] = true;
+
+        ready[partitionIndex] = false;
+        if (ready[partitionIndex] != previousReady[partitionIndex]) {
+          previousReady[partitionIndex] = ready[partitionIndex];
+          readyChanged[partitionIndex] = true;
+          if (!pauseStatus) statusChanged = true;
+        }
         return;
       }
     }
