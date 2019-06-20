@@ -62,8 +62,10 @@ void loop() {
   // Reads from serial input and writes to the Keybus as a virtual keypad
   if (Serial.available() > 0) dsc.write(Serial.read());
 
-  if (dsc.loop() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;            // Resets the status flag
+  dsc.loop();
+
+  if (dsc.statusChanged) {      // Checks if the security system status has changed
+    dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
     // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
