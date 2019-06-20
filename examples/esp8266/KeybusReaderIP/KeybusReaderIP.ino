@@ -97,7 +97,7 @@ void loop() {
       }
 
       // Reads from IP input and writes to the Keybus as a virtual keypad
-      while (client.available() > 0 && dsc.writeReady)
+      while (client.available() > 0)
       {
         char c = static_cast<char>(client.read());
         dsc.write(c);
@@ -106,8 +106,10 @@ void loop() {
       if (dsc.loop()) {
         // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
         // loop more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-        if (dsc.bufferOverflow) client.print(F("Keybus buffer overflow"));
-        dsc.bufferOverflow = false;
+        if (dsc.bufferOverflow) {
+          client.print(F("Keybus buffer overflow"));
+          dsc.bufferOverflow = false;
+        }
 
         // Prints panel data
         printTimestamp();
@@ -127,6 +129,7 @@ void loop() {
           client.print(" ");
           dsc.printModuleMessage();  // Prints the decoded message
           client.printf("\n");
+          }
         }
           // Prints keypad and module data when valid panel data is not available
         else if (dsc.handleModule()) {
@@ -137,8 +140,7 @@ void loop() {
           dsc.printModuleMessage();
           client.printf("\n");
           }
-        }
-    }
+      }
     client.stop();
     client.printf("Client disconnected from dscKeybusReader\n");
   }
