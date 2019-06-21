@@ -51,7 +51,6 @@ class dscKeybusInterface {
     void write(const char receivedKey);               // Writes a single key
     void write(const char * receivedKeys);            // Writes multiple keys from a char array
     static byte writePartition;                       // Set to a partition number for virtual keypad
-    static volatile bool writeReady;                  // True if the library is ready to write a key
 
     // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
@@ -122,7 +121,9 @@ class dscKeybusInterface {
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
 
-    bool handlePanel();  // Deprecated, relabeled to loop()
+    // Deprecated
+    bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
+    static volatile bool writeReady;  // True if the library is ready to write a key.  To be moved to private
 
   private:
 

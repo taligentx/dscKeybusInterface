@@ -6,16 +6,13 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 * Notifications: [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), MQTT, E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 
-## Screenshots
+Screenshots:
 * [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
-
 * [Home Assistant](https://www.home-assistant.io):  
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
-
 * [Blynk](https://www.blynk.cc) app virtual keypad:  
   ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
-
 * Web virtual keypad:  
   ![dsc-web](https://user-images.githubusercontent.com/12835671/57727601-8cebb280-7657-11e9-9404-dbdaeed9adae.png)
 
@@ -39,7 +36,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Monitor zones status:
   - Zones open/closed, zones in alarm
 * Monitor system status:
-  - Ready, trouble, AC power, battery
+  - Ready, trouble, time, AC power, battery
 * Virtual keypad:
   - Send keys to the panel for any partition
 * Direct Keybus interface:
@@ -50,15 +47,15 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Supported microcontrollers:
-    - [Arduino](https://www.arduino.cc/en/Main/Products): Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
+    - [Arduino](https://www.arduino.cc/en/Main/Products):
+      * Boards: Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
       * ATmega328P, ATmega2560, and ATmega32U4-based boards at 16Mhz
-    - esp8266: NodeMCU v2 or v3, Wemos D1 Mini, etc.    
+    - esp8266:
+      * Development boards: NodeMCU v2 or v3, Wemos D1 Mini, etc.
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino), integrated WiFi, and improved specs for ~$3USD shipped.
-      * NodeMCU modules are a good choice as they can be powered directly from the DSC panel, the Wemos D1 Mini requires an additional 5v voltage regulator to handle the 12v+ DSC panel power.
-      * Supports running at 160MHz - this especially helps sketches using TLS connections
-    - esp32: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc (experimental support)
+    - esp32 (experimental support):
+      * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
       * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
-      * Note that different resistor values are used as the GPIO pins are 3.3v-only.
 * Designed for reliable data decoding and performance:
   - Pin change and timer interrupts for accurate data capture timing
   - Data buffering: helps prevent lost Keybus data if the sketch is busy
@@ -76,7 +73,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 ## Release notes
 * 1.3
   - New: esp32 microcontroller support (experimental)
-  - New: Added functionality for sketches and updated examples
+  - New: Added functionality for sketches, updated example sketches
       * `ready` tracks partition ready status
       * `setTime()` sets the panel date and time
       * `timestampChanged` tracks when the panel sends a timestamp
@@ -87,7 +84,6 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
   - Updated: Expanded partition state processing to improve panel state detection at startup
-  - Updated: Removed checking for exit delay in Homebridge sketches
   - Deprecated: `handlePanel()` is now `loop()`
   - Deprecated: `writeReady` has been moved into the library and is no longer needed in the sketch.
   - Bugfix: Resolved `Homebridge-MQTT` sketch not handling HomeKit target states
@@ -154,6 +150,7 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Partitions fire alarm
   * Zones open/closed
   * Zones in alarm
+  * Get/set panel date and time
   * Keypad fire/auxiliary/panic alarm
   * Panel AC power
   * Panel battery
@@ -198,27 +195,24 @@ The included examples demonstrate how to use the library and can be used as-is o
 ```
 DSC Aux(+) ---+--- Arduino Vin pin
               |
-              +--- esp8266 NodeMCU Vin pin
-              |
-              +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
-              |
-              +--- 5v voltage regulator --- esp32 dev board 5v pin
+              +--- 5v voltage regulator --- esp8266 NodeMCU / Wemos D1 Mini 5v pin
+                                            esp32 dev board 5v pin
 
 DSC Aux(-) --- Arduino/esp8266/esp32 Ground
 
-                                       +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+              Arduino/esp8266          +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
 DSC Yellow ---+--- 15k ohm resistor ---|
               |                        +--- 10k ohm resistor --- Ground
               |
-              |                        +--- dscClockPin (esp32: 4,13,16-39)
+              |esp32                   +--- dscClockPin (esp32: 4,13,16-39)
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
 
-                                       +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+              Arduino/esp8266          +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
 DSC Green ----+--- 15k ohm resistor ---|
               |                        +--- 10k ohm resistor --- Ground
               |
-              |                        +--- dscReadPin (esp32: 4,13,16-39)
+              |esp32                   +--- dscReadPin (esp32: 4,13,16-39)
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
  
@@ -229,14 +223,20 @@ DSC Green ---- NPN collector --\
 ```
 
 ## Wiring Notes
-* The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for both Arduino and esp8266.  The esp32 requires lower voltage and uses different resistor values.
-* Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 and 3.  The DSC Green (Data) line can be connected to any of the remaining digital pins 2-12.
-* esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
-* esp32: connect the DSC lines to GPIO pins that do not send signals at boot: 4, 13, 16-39.  For virtual keypad, pins 34-39 are input only and cannot be used.
+* The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for each microcontroller.
+    * Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 or 3.  The DSC Green (Data) line can be connected to any of the remaining digital pins 2-12.
+    * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
+    * esp32: connect the DSC lines to GPIO pins that do not send signals at boot: 4, 13, 16-39.  For virtual keypad, use pins 4, 13, 16-33 - pins 34-39 are input only and cannot be used.
 * Virtual keypad uses an NPN transistor and a resistor to write to the Keybus.  Most small signal NPN transistors should be suitable, for example:
   * 2N3904
   * BC547, BC548, BC549
   * That random NPN at the bottom of your parts bin (my choice)
+* Power:
+  * Arduino boards can be powered directly from the DSC panel
+  * esp8266/esp32 development boards should use a 5v voltage regulator:
+    - LM2596-based step-down buck converter modules are reasonably efficient and commonly available for under $1USD shipped (eBay, Aliexpress, etc).
+    - Mini360 step-down buck converter modules are also available but some versions run hot with an efficiency nearly as poor as linear regulators.
+    - Linear voltage regulators (LM7805, etc) will work but are inefficient and run hot - these may need a heatsink.
 * Connections should be soldered, breadboards can cause issues.
 
 ## Virtual keypad

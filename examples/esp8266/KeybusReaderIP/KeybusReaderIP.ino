@@ -5,9 +5,7 @@
  *  to productive use.
  *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
@@ -63,7 +61,7 @@ void setup() {
     delay(250);
     Serial.print(".");
   }
- 
+
   Serial.print("Connected to WiFi. IP:");
   Serial.println(WiFi.localIP());
 
@@ -83,16 +81,16 @@ void setup() {
 
 
 void loop() {
-  
+
   dsc.loop(); //call it to process buffer when client is disconnected
 
-  client = wifiServer.available(); 
+  client = wifiServer.available();
   if (client) {
     while (client.connected()) {
 
       // Once client is connected, tell it is connected (once!)
       if (runOnce) {
-        client.printf("Client connected to dscKeybusReader\n"); 
+        client.printf("Client connected to dscKeybusReader\n");
         runOnce = false;
       }
 
