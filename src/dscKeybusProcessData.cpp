@@ -44,7 +44,7 @@ void dscKeybusInterface::resetStatus() {
 void dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode) {
   if (!ready[0]) return;  // Skips if partition 1 is not ready
   if (hour > 23 || minute > 59 || month > 12 || day > 31 || year > 2099 || (year > 99 && year < 1900)) return;  // Skips if input date/time is invalid
-  char timeEntry[21];
+  static char timeEntry[21];
   strcpy(timeEntry, "*6");
   strcat(timeEntry, accessCode);
   strcat(timeEntry, "1");

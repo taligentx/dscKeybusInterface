@@ -128,6 +128,19 @@ void dscKeybusInterface::stop() {
 
   // Disables the Keybus clock pin interrupt
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
+
+  // Resets the panel capture data and counters
+  panelBufferLength == 0
+  for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
+  isrPanelBitTotal = 0;
+  isrPanelBitCount = 0;
+  isrPanelByteCount = 0;
+
+  // Resets the keypad and module capture data and counters
+  for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+  isrModuleBitTotal = 0;
+  isrModuleBitCount = 0;
+  isrModuleByteCount = 0;
 }
 
 

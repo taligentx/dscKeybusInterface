@@ -196,7 +196,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 DSC Aux(+) ---+--- Arduino Vin pin
               |
               +--- 5v voltage regulator --- esp8266 NodeMCU / Wemos D1 Mini 5v pin
-                                            esp32 dev board 5v pin
+                                            esp32 development board 5v pin
 
 DSC Aux(-) --- Arduino/esp8266/esp32 Ground
 
@@ -235,7 +235,7 @@ DSC Green ---- NPN collector --\
   * Arduino boards can be powered directly from the DSC panel
   * esp8266/esp32 development boards should use a 5v voltage regulator:
     - LM2596-based step-down buck converter modules are reasonably efficient and commonly available for under $1USD shipped (eBay, Aliexpress, etc).
-    - Mini360 step-down buck converter modules are also available but some versions run hot with an efficiency nearly as poor as linear regulators.
+    - MP2307-based step-down buck converter modules (aka Mini360) are also available but some versions run hot with an efficiency nearly as poor as linear regulators.
     - Linear voltage regulators (LM7805, etc) will work but are inefficient and run hot - these may need a heatsink.
 * Connections should be soldered, breadboards can cause issues.
 
