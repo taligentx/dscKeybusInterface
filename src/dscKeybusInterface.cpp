@@ -130,7 +130,7 @@ void dscKeybusInterface::stop() {
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
 
   // Resets the panel capture data and counters
-  panelBufferLength == 0
+  panelBufferLength = 0;
   for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
   isrPanelBitTotal = 0;
   isrPanelBitCount = 0;
