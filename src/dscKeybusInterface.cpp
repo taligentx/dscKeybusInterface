@@ -130,6 +130,7 @@ void dscKeybusInterface::stop() {
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
 
   // Resets the panel capture data and counters
+  panelBufferIndex = 1;
   panelBufferLength = 0;
   for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
   isrPanelBitTotal = 0;
@@ -893,7 +894,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         // Stores new keypad and module data - this data is not buffered
         if (moduleDataDetected) {
           moduleDataDetected = false;
-          moduleDataCaptured = true;  // Sets a flag for handleModules()
+          moduleDataCaptured = true;  // Sets a flag for handleModule()
           for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
           moduleBitCount = isrModuleBitTotal;
           moduleByteCount = isrModuleByteCount;

@@ -89,11 +89,12 @@ void dscKeybusInterface::processPanelStatus() {
     if (!pauseStatus) statusChanged = true;
   }
 
+  // Sets partition counts based on the status command and generation of panel
   byte partitionStart = 0;
   byte partitionCount = 0;
   if (panelData[0] == 0x05) {
     partitionStart = 0;
-    if (panelByteCount < 9) partitionCount = 2;
+    if (panelByteCount < 9) partitionCount = 2;  // Handles earlier panels that support up to 2 partitions
     else partitionCount = 4;
     if (dscPartitions < partitionCount) partitionCount = dscPartitions;
   }
@@ -102,6 +103,7 @@ void dscKeybusInterface::processPanelStatus() {
     partitionCount = 8;
   }
 
+  // Sets status per partition
   for (byte partitionIndex = partitionStart; partitionIndex < partitionCount; partitionIndex++) {
     byte statusByte, messageByte;
     if (partitionIndex < 4) {
@@ -163,6 +165,13 @@ void dscKeybusInterface::processPanelStatus() {
         if (armed[partitionIndex] != previousArmed[partitionIndex]) {
           previousArmed[partitionIndex] = armed[partitionIndex];
           armedChanged[partitionIndex] = true;
+          if (!pauseStatus) statusChanged = true;
+        }
+
+        alarm[partitionIndex] = false;
+        if (alarm[partitionIndex] != previousAlarm[partitionIndex]) {
+          previousAlarm[partitionIndex] = alarm[partitionIndex];
+          alarmChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
         break;
@@ -405,10 +414,11 @@ void dscKeybusInterface::processPanelStatus() {
 void dscKeybusInterface::processPanel_0x27() {
   if (!validCRC()) return;
 
+  // Messages
   for (byte partitionIndex = 0; partitionIndex < 2; partitionIndex++) {
     byte messageByte = (partitionIndex * 2) + 3;
 
-    // Messages
+    // Armed
     if (panelData[messageByte] == 0x04 || panelData[messageByte] == 0x05) {
 
       ready[partitionIndex] = false;
@@ -860,7 +870,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     return;
   }
 
-  //Armed by access code
+  // Armed by access code
   if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
     accessCode[partitionIndex] = panelData[panelByte] - 0x98;
     if (accessCode[partitionIndex] >= 35) accessCode[partitionIndex] += 5;
@@ -927,7 +937,9 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
 
   if (panelData[panelByte] == 0xA5) {
     switch (panelData[panelByte]) {
-      case 0x99: {        // Activate stay/away zones
+
+      // Activate stay/away zones
+      case 0x99: {
         armed[partitionIndex] = true;
         armedAway[partitionIndex] = true;
         armedStay[partitionIndex] = false;
@@ -935,7 +947,9 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
         if (!pauseStatus) statusChanged = true;
         return;
       }
-      case 0x9C: {        // Armed with no entry delay
+
+      // Armed with no entry delay
+      case 0x9C: {
         noEntryDelay[partitionIndex] = true;
 
         ready[partitionIndex] = false;
