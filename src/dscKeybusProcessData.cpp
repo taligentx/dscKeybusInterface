@@ -331,6 +331,7 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       // Partition disarmed
+      case 0x3D:
       case 0x3E: {
         exitDelay[partitionIndex] = false;
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
