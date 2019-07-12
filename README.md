@@ -6,6 +6,8 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 * Notifications: [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), MQTT, E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 
+This library has also been ported to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables native esp8266 integration with [Apple HomeKit & Siri](https://www.apple.com/ios/home/) as a standalone accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit) - see the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for details.
+
 Screenshots:
 * [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
@@ -15,8 +17,6 @@ Screenshots:
   ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
 * Web virtual keypad:  
   ![dsc-web](https://user-images.githubusercontent.com/12835671/57727601-8cebb280-7657-11e9-9404-dbdaeed9adae.png)
-
-This library has also been ported to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) to support native esp8266 integration with [Apple HomeKit & Siri](https://www.apple.com/ios/home/) as a standalone accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit) - see the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for details.
 
 ## Why?
 **I Had**: _A DSC security system not being monitored by a third-party service._  
@@ -66,7 +66,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
 * Unsupported security systems:
   - DSC Classic series ([PC1500, etc](https://www.dsc.com/?n=enduser&o=identify)) use a different data protocol, though support is possible.
-  - DSC Neo series use a higher speed encrypted data protocol (Corbus) that is not possible to support.
+  - DSC Neo series use a higher speed encrypted data protocol (Corbus) that is not currently possible to support.
   - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use different protocols and are not supported.
 * Possible features (PRs welcome!):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.

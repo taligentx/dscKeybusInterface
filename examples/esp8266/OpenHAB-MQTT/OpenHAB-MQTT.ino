@@ -12,7 +12,7 @@
  *
  *  Usage:
  *    1. Set the WiFi SSID and password in the sketch.
- *    2. Set the security system access code to permit disarming through HomeKit.
+ *    2. Set the security system access code to permit disarming through OpenHAB.
  *    3. Set the MQTT server address in the sketch.
  *    4. Upload the sketch.
  *    5. Install the OpenHAB MQTT binding.
