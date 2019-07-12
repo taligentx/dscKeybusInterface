@@ -1,6 +1,8 @@
 /*
     DSC Keybus Interface
 
+    https://github.com/taligentx/dscKeybusInterface
+
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -243,11 +245,19 @@ void dscKeybusInterface::processPanelStatus() {
       // Exit delay in progress
       case 0x08: {
         writeArm[partitionIndex] = false;
+        accessCodePrompt = false;
 
         exitDelay[partitionIndex] = true;
         if (exitDelay[partitionIndex] != previousExitDelay[partitionIndex]) {
           previousExitDelay[partitionIndex] = exitDelay[partitionIndex];
           exitDelayChanged[partitionIndex] = true;
+          if (!pauseStatus) statusChanged = true;
+        }
+
+        ready[partitionIndex] = true;
+        if (ready[partitionIndex] != previousReady[partitionIndex]) {
+          previousReady[partitionIndex] = ready[partitionIndex];
+          readyChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
         break;
@@ -328,6 +338,7 @@ void dscKeybusInterface::processPanelStatus() {
           readyChanged[partitionIndex] = true;
           if (!pauseStatus) statusChanged = true;
         }
+        break;
       }
 
       // Partition disarmed
@@ -358,11 +369,13 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Invalid access code
       case 0x8F: {
+        if (!armed[partitionIndex]) {
         ready[partitionIndex] = true;
-        if (ready[partitionIndex] != previousReady[partitionIndex]) {
-          previousReady[partitionIndex] = ready[partitionIndex];
-          readyChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
+          if (ready[partitionIndex] != previousReady[partitionIndex]) {
+            previousReady[partitionIndex] = ready[partitionIndex];
+            readyChanged[partitionIndex] = true;
+            if (!pauseStatus) statusChanged = true;
+          }
         }
         break;
       }

@@ -38,7 +38,7 @@
  *    V61 - Zone 1 ... V124 - Zone 64
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
  *      DSC Aux(-) --- esp32 Ground
  *
@@ -86,10 +86,13 @@ int blynkPort = 8080;        // Blynk local server port
 #define dscClockPin 18  // esp32: 4,13,16-39
 #define dscReadPin 19   // esp32: 4,13,16-39
 #define dscWritePin 21  // esp32: 4,13,16-33
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
-
 bool wifiConnected = false;
-
+bool partitionChanged;
+byte viewPartition = 1;
+const char* lcdPartition = "Partition ";
 WidgetLCD lcd(V40);
 WidgetLED ledReady(V50);
 WidgetLED ledArmed(V51);
@@ -162,10 +165,6 @@ WidgetLED ledZone61(V121);
 WidgetLED ledZone62(V122);
 WidgetLED ledZone63(V123);
 WidgetLED ledZone64(V124);
-
-bool partitionChanged;
-byte viewPartition = 1;
-const char* lcdPartition = "Partition ";
 
 
 void setup() {

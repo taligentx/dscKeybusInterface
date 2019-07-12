@@ -2,7 +2,7 @@
  *  DSC Keybus Reader 1.0 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
- *  keypad.  This is primarily to help decode the Keybus protocol - see the Status examples to put the interface
+ *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
  *  Wiring:
@@ -41,6 +41,8 @@
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

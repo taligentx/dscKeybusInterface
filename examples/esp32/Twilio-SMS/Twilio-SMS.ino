@@ -8,7 +8,7 @@
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
  *      DSC Aux(-) --- esp32 Ground
  *
@@ -50,13 +50,14 @@ const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "Account
 const char* From = "";	// i.e. 16041234567
 const char* To = "";		// i.e. 16041234567
 
-WiFiClientSecure pushClient;
-bool wifiConnected = false;
-
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // esp32: 4,13,16-39
 #define dscReadPin 19   // esp32: 4,13,16-39
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
+WiFiClientSecure pushClient;
+bool wifiConnected = false;
 
 
 void setup() {

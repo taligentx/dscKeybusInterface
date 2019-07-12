@@ -110,7 +110,7 @@ binary_sensor:
  *    Fire alarm restored: "0"
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
  *      DSC Aux(-) --- esp32 Ground
  *
@@ -161,17 +161,18 @@ const char* mqttStatusTopic = "dsc/Status";
 const char* mqttBirthMessage = "online";
 const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
-unsigned long mqttPreviousTime;
-
-WiFiClient wifiClient;
-PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 18  // esp32: 4,13,16-39
 #define dscReadPin 19   // esp32: 4,13,16-39
 #define dscWritePin 21  // esp32: 4,13,16-33
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+WiFiClient wifiClient;
+PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
+unsigned long mqttPreviousTime;
 
 
 void setup() {

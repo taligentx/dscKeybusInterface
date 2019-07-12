@@ -164,17 +164,18 @@ const char* mqttStatusTopic = "dsc/Status";
 const char* mqttBirthMessage = "online";
 const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
-unsigned long mqttPreviousTime;
-
-EthernetClient ethClient;
-PubSubClient mqtt(mqttServer, mqttPort, ethClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin 5   // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+EthernetClient ethClient;
+PubSubClient mqtt(mqttServer, mqttPort, ethClient);
+unsigned long mqttPreviousTime;
 
 
 void setup() {

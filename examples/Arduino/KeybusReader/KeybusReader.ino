@@ -2,7 +2,7 @@
  *  DSC Keybus Reader 1.0 (Arduino)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
- *  keypad.  This is primarily to help decode the Keybus protocol - see the Status examples to put the interface
+ *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
  *  Wiring:
@@ -41,6 +41,8 @@
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin 5   // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 

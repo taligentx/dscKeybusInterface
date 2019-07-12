@@ -171,18 +171,19 @@ const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm 
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
-unsigned long mqttPreviousTime;
-
-WiFiClient wifiClient;
-PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
-char exitState;
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+WiFiClient wifiClient;
+PubSubClient mqtt(mqttServer, mqttPort, wifiClient);
+unsigned long mqttPreviousTime;
+char exitState;
 
 
 void setup() {
@@ -450,7 +451,7 @@ void publishState(const char* sourceTopic, byte partition, const char* targetSuf
   if (targetSuffix != 0) {
 
     // Prepends the targetSuffix with the partition number
-    char targetState[strlen(targetSuffix)];
+    char targetState[strlen(targetSuffix) + 1];
     strcpy(targetState, partitionNumber);
     strcat(targetState, targetSuffix);
 

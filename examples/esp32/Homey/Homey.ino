@@ -15,7 +15,7 @@
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp32 dev board 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
  *      DSC Aux(-) --- esp32 Ground
  *
@@ -59,8 +59,9 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 #define dscClockPin 18  // esp32: 4,13,16-39
 #define dscReadPin 19   // esp32: 4,13,16-39
 #define dscWritePin 21  // esp32: 4,13,16-33
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
+// Initialize components
+dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool wifiConnected = false;
 
 

@@ -55,13 +55,14 @@ const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "Account
 const char* From = "";	// i.e. 16041234567
 const char* To = "";		// i.e. 16041234567
 
-WiFiClientSecure pushClient;
-bool wifiConnected = false;
-
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
+WiFiClientSecure pushClient;
+bool wifiConnected = false;
 
 
 void setup() {

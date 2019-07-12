@@ -170,18 +170,19 @@ const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm 
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
-unsigned long mqttPreviousTime;
-
-EthernetClient ethClient;
-PubSubClient mqtt(mqttServer, mqttPort, ethClient);
-char exitState;
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin 5   // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+EthernetClient ethClient;
+PubSubClient mqtt(mqttServer, mqttPort, ethClient);
+unsigned long mqttPreviousTime;
+char exitState;
 
 
 void setup() {
@@ -453,7 +454,7 @@ void publishState(const char* sourceTopic, byte partition, const char* targetSuf
   if (targetSuffix != 0) {
 
     // Prepends the targetSuffix with the partition number
-    char targetState[strlen(targetSuffix)];
+    char targetState[strlen(targetSuffix) + 1];
     strcpy(targetState, partitionNumber);
     strcat(targetState, targetSuffix);
 

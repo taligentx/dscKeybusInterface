@@ -81,14 +81,13 @@ char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access v
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
+// Initialize components
+dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 static AsyncClient * aClient = NULL;
-
 Chrono ws_ping_pong(Chrono::SECONDS);
-
 bool partitionChanged;
 byte viewPartition = 1;
 byte ligths_sent = 0x00;
@@ -96,6 +95,7 @@ byte last_open_zones[8];
 byte partition = 0;
 bool force_send_status_for_new_client = false;
 const char* lcdPartition = "Partition ";
+
 
 void setup() {
   Serial.begin(115200);

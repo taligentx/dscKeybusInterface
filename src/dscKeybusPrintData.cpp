@@ -1,6 +1,8 @@
 /*
     DSC Keybus Interface
 
+    https://github.com/taligentx/dscKeybusInterface
+
     This library is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -389,6 +391,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
      *  10100101 0 00011000 01001101 00001010 00001101 10101100 00000000 11001101 [0xA5] 03/08/2018 10:03 | Exit *8 programming
      *  10100101 0 00011000 01001101 00001001 11100001 10101101 00000000 10100001 [0xA5] 03/08/2018 09:56 | Enter *8
      *  10100101 0 00010001 01101101 01100010 11001101 11010000 00000000 00100010 [0xA5] 11/11/2011 02:51 | Command output 4
+     *  10100101 0 00010110 01010110 00101011 11010001 11010010 00000000 11011111 [0xA5] 2016.05.17 11:52 | Armed with no entry delay cancelled
      */
     case 0x03: stream->print(F("Cross zone alarm")); return;
     case 0x04: stream->print(F("Delinquency alarm")); return;
@@ -404,6 +407,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     case 0xAD: stream->print(F("Enter *8 programming")); return;
     // 0xB0 - 0xCF: Zones bypassed, zones 1-32
     case 0xD0: stream->print(F("Command output 4")); return;
+    case 0xD2: stream->print(F("Armed with no entry delay cancelled")); return;
   }
 
   /*
