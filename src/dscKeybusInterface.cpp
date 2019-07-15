@@ -536,7 +536,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
   }
 
   // Sets the binary to write for virtual keypad keys
-  if (writeReady && millis() - previousTime > 500) {
+  if (writeReady && (millis() - previousTime > 500 || millis() <= 500)) {
     bool validKey = true;
     switch (receivedKey) {
       case '/': setPartition = true; validKey = false; break;
