@@ -70,7 +70,6 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use different protocols and are not supported.
 * Possible features (PRs welcome!):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
-  - Installer code unlocking: Requires brute force checking all possible codes and a workaround if keypad lockout is enabled (possibly automatically power-cycling the panel with a relay to skip the lockout time).
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
