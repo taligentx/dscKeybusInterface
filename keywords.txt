@@ -4,6 +4,7 @@ dsc	KEYWORD1
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1
 dscWritePin	LITERAL1
+dscRelayPin LITERAL1
 dscZones	LITERAL1
 dscPartitions	LITERAL1
 
@@ -63,6 +64,7 @@ alarmZonesChanged	KEYWORD2
 alarmZonesStatusChanged	KEYWORD2
 lights	KEYWORD2
 status	KEYWORD2
+panelData	KEYWORD2
 
 printPanelBinary	KEYWORD2
 printPanelCommand	KEYWORD2

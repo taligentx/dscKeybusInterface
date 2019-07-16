@@ -77,6 +77,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 ## Release notes
 * develop
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
+  - New: `Unlocker` example sketch to determine the panel installer code
   - New: esp32 microcontroller support (experimental)
   - New: Added functionality for sketches, updated example sketches
       * `ready` tracks partition ready status
@@ -189,6 +190,8 @@ The included examples demonstrate how to use the library and can be used as-is o
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
 * **VirtualKeypad-Web** (esp8266-only): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server.  This example uses the [ESP Async Web Server](https://github.com/me-no-dev/ESPAsyncWebServer) and Websockets - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+
+* **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
 
 * **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.
 
