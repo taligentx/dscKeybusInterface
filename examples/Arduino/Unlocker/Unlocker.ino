@@ -79,7 +79,7 @@
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin 5   // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
-#define dscRelayPin 7  // Arduino Uno: 2-12
+#define dscRelayPin 7  // Arduino Uno: 2-12 - Optional, leave this pin disconnected if not using a relay
 
 // Starting installer code to test (without leading zeros) - this can be changed to start at a different code
 // if the process is interrupted

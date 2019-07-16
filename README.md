@@ -4,7 +4,7 @@ This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
 * Notifications: [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), MQTT, E-mail
-* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
+* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app, installer code unlocking
 
 This library has also been ported to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables native esp8266 integration with [Apple HomeKit & Siri](https://www.apple.com/ios/home/) as a standalone accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit) - see the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for details.
 
@@ -40,6 +40,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Monitor system status:
   - Ready, trouble, time, AC power, battery
 * Panel time - retrieve current panel date/time and set a new date/time
+* Panel installer code unlocking - finds a valid 4-digit installer code
 * Virtual keypad:
   - Send keys to the panel for any partition
 * Direct Keybus interface:
