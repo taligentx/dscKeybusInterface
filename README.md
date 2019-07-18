@@ -150,15 +150,15 @@ The included examples demonstrate how to use the library and can be used as-is o
 * **Status**: Processes and prints the security system status to a serial interface, including reading from serial for the virtual keypad.  This demonstrates how to determine if the security system status has changed, what has changed, and how to take action based on those changes.  Post an issue/pull request if you have a use for additional system states - for now, only a subset of all decoded commands are being tracked for status to limit memory usage:
   * Partitions ready
   * Partitions armed away/stay/disarmed
-  * User a
   * Partitions in alarm
   * Partitions exit delay in progress
   * Partitions entry delay in progress
   * Partitions fire alarm
   * Zones open/closed
   * Zones in alarm
-  * Get/set panel date and time
   * Keypad fire/auxiliary/panic alarm
+  * Get/set panel date and time
+  * User access code number (1-40)
   * Panel AC power
   * Panel battery
   * Panel trouble
