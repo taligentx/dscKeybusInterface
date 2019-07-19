@@ -2,9 +2,10 @@
  *  OpenHAB-MQTT 1.0 (esp8266)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
- *  interface with OpenHAB and the MQTT binding and demonstrates using the armed states as OpenHAB
- *  switches, and the alarm and zones states as OpenHAB contacts.  Also see https://github.com/jimtng/dscalarm-mqtt
- *  for an integration using the Homie convention for OpenHAB's Homie MQTT component.
+ *  interface with OpenHAB and the MQTT binding and demonstrates sending the panel status as a
+ *  string, using the panel and partitions states as OpenHAB switches, and using zone states as
+ *  OpenHAB contacts.  Also see https://github.com/jimtng/dscalarm-mqtt for an integration using
+ *  the Homie convention for OpenHAB's Homie MQTT component.
  *
  *  OpenHAB: https://www.openhab.org
  *  OpenHAB MQTT Binding: https://www.openhab.org/addons/bindings/mqtt/
@@ -32,21 +33,31 @@ Bridge mqtt:broker:mymqtt "My MQTT" [host="MQTT broker IP address or hostname"]
 
 Thing mqtt:topic:mymqtt:dsc "DSC Security System" (mqtt:broker:mymqtt) @ "Home" {
     Channels:
+        Type string : partition1_message "Partition 1" [stateTopic="dsc/Get/Partition1/Message"]
         Type switch : partition1_armed_away "Partition 1 Armed Away" [stateTopic="dsc/Get/Partition1", commandTopic="dsc/Set", on="1A", off="1D"]
         Type switch : partition1_armed_stay "Partition 1 Armed Stay" [stateTopic="dsc/Get/Partition1", commandTopic="dsc/Set", on="1S", off="1D"]
-        Type contact: partition1_triggered "Partition 1 Alarm Triggered" [stateTopic="dsc/Get/Partition1", on="1T", off="1D"]
+        Type switch : partition1_alarm "Partition 1 Alarm" [stateTopic="dsc/Get/Partition1", on="1T", off="1D"]
+        Type switch : partition1_fire "Partition 1 Fire" [stateTopic="dsc/Get/Fire1", on="1", off="0"]
+        Type switch : panel_online "Panel Online" [stateTopic="dsc/Status", on="online", off="offline"]
+        Type switch : panel_trouble "Panel Trouble" [stateTopic="dsc/Get/Trouble", on="1", off="0"]
         Type contact : zone1 "Zone 1" [stateTopic="dsc/Get/Zone1", on="1", off="0"]
         Type contact : zone2 "Zone 2" [stateTopic="dsc/Get/Zone2", on="1", off="0"]
+        Type contact : zone3 "Zone 3" [stateTopic="dsc/Get/Zone3", on="1", off="0"]
 }
 
 *   3. Create an "items" file for the security system as (OpenHAB configuration directory)/items/dsc.items:
 *      - https://www.openhab.org/docs/configuration/items.html
 
-Switch partition1_armed_away "Partition 1 Armed Away" {channel="mqtt:topic:mymqtt:dsc:partition1_armed_away"}
-Switch partition1_armed_stay "Partition 1 Armed Stay" {channel="mqtt:topic:mymqtt:dsc:partition1_armed_stay"}
-Contact partition1_triggered "Partition 1 Alarm Triggered" {channel="mqtt:topic:mymqtt:dsc:partition1_triggered"}
-Contact zone1 "Zone 1" {channel="mqtt:topic:mymqtt:dsc:zone1"}
-Contact zone2 "Zone 2" {channel="mqtt:topic:mymqtt:dsc:zone2"}
+String partition1_message "Partition 1 [%s]" <shield> {channel="mqtt:topic:mymqtt:dsc:partition1_message"}
+Switch partition1_armed_away "Partition 1 Armed Away" <shield> {channel="mqtt:topic:mymqtt:dsc:partition1_armed_away"}
+Switch partition1_armed_stay  "Partition 1 Armed Stay" <shield> {channel="mqtt:topic:mymqtt:dsc:partition1_armed_stay"}
+Switch partition1_triggered "Partition 1 Alarm" <alarm> {channel="mqtt:topic:mymqtt:dsc:partition1_alarm"}
+Switch partition1_fire "Partition 1 Fire" <fire> {channel="mqtt:topic:mymqtt:dsc:partition1_fire"}
+Switch panel_online "Panel Online" <switch> {channel="mqtt:topic:mymqtt:dsc:panel_online"}
+Switch panel_trouble "Panel Trouble" <error> {channel="mqtt:topic:mymqtt:dsc:panel_trouble"}
+Contact zone1 "Zone 1" <door> {channel="mqtt:topic:mymqtt:dsc:zone1"}
+Contact zone2 "Zone 2" <window> {channel="mqtt:topic:mymqtt:dsc:zone2"}
+Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
 
 
  *  The commands to set the alarm state are setup in OpenHAB with the partition number (1-8) as a prefix to the command:
@@ -113,11 +124,16 @@ const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 
-// MQTT topics - match to Homebridge's config.json
+// MQTT topics - match to the OpenHAB "things" configuration file
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
+const char* mqttPartitionMessageSuffix = "/Message";   // Sends partition status messages: dsc/Get/Partition1/Message ... dsc/Get/Partition8/Message
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
+const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
+const char* mqttBirthMessage = "online";
+const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
@@ -171,14 +187,30 @@ void loop() {
       dsc.bufferOverflow = false;
     }
 
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;  // Resets the Keybus data status flag
+      if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
+      else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
+    }
+
     // Sends the access code when needed by the panel for arming
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
     }
 
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) mqtt.publish(mqttTroubleTopic, "1", true);
+      else mqtt.publish(mqttTroubleTopic, "0", true);
+    }
+
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
+
+      // Publishes the partition status message
+      publishMessage(mqttPartitionTopic, partition);
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
@@ -251,7 +283,7 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
-            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zonePublishTopic[strlen(mqttZoneTopic) + 3];
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);
@@ -317,6 +349,7 @@ void mqttHandle() {
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
       mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
+        if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
       }
@@ -328,7 +361,7 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
-  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
     dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
@@ -343,7 +376,7 @@ bool mqttConnect() {
 
 // Publishes the current states with partition numbers
 void publishState(const char* sourceTopic, byte partition, const char* sourceSuffix) {
-  char publishTopic[strlen(sourceTopic) + 1];
+  char publishTopic[strlen(sourceTopic) + 2];
   char partitionNumber[2];
 
   // Appends the sourceTopic with the partition number
@@ -352,10 +385,95 @@ void publishState(const char* sourceTopic, byte partition, const char* sourceSuf
   strcat(publishTopic, partitionNumber);
 
   // Prepends the sourceSuffix with the partition number
-  char currentState[strlen(sourceSuffix) + 1];
+  char currentState[strlen(sourceSuffix) + 2];
   strcpy(currentState, partitionNumber);
   strcat(currentState, sourceSuffix);
 
   // Publishes the current state
   mqtt.publish(publishTopic, currentState, true);
+}
+
+
+// Publishes the partition status message
+void publishMessage(const char* sourceTopic, byte partition) {
+  char publishTopic[strlen(sourceTopic) + strlen(mqttPartitionMessageSuffix) + 2];
+  char partitionNumber[2];
+
+  // Appends the sourceTopic with the partition number and message topic
+  itoa(partition + 1, partitionNumber, 10);
+  strcpy(publishTopic, sourceTopic);
+  strcat(publishTopic, partitionNumber);
+  strcat(publishTopic, mqttPartitionMessageSuffix);
+
+  // Publishes the current partition message
+  switch (dsc.status[partition]) {
+    case 0x01: mqtt.publish(publishTopic, "Ready", true); break;
+    case 0x02: mqtt.publish(publishTopic, "Stay zones open", true); break;
+    case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
+    case 0x04: mqtt.publish(publishTopic, "Armed stay", true); break;
+    case 0x05: mqtt.publish(publishTopic, "Armed away", true); break;
+    case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
+    case 0x08: mqtt.publish(publishTopic, "Exit delay", true); break;
+    case 0x09: mqtt.publish(publishTopic, "No entry delay", true); break;
+    case 0x0B: mqtt.publish(publishTopic, "Quick exit", true); break;
+    case 0x0C: mqtt.publish(publishTopic, "Entry delay", true); break;
+    case 0x0D: mqtt.publish(publishTopic, "Alarm memory", true); break;
+    case 0x10: mqtt.publish(publishTopic, "Keypad lockout", true); break;
+    case 0x11: mqtt.publish(publishTopic, "Alarm", true); break;
+    case 0x14: mqtt.publish(publishTopic, "Auto-arm", true); break;
+    case 0x15: mqtt.publish(publishTopic, "Arm with bypass", true); break;
+    case 0x16: mqtt.publish(publishTopic, "No entry delay", true); break;
+    case 0x22: mqtt.publish(publishTopic, "Alarm memory", true); break;
+    case 0x33: mqtt.publish(publishTopic, "Busy", true); break;
+    case 0x3D: mqtt.publish(publishTopic, "Disarmed", true); break;
+    case 0x3E: mqtt.publish(publishTopic, "Disarmed", true); break;
+    case 0x40: mqtt.publish(publishTopic, "Keypad blanked", true); break;
+    case 0x8A: mqtt.publish(publishTopic, "Activate zones", true); break;
+    case 0x8B: mqtt.publish(publishTopic, "Quick exit", true); break;
+    case 0x8E: mqtt.publish(publishTopic, "Invalid option", true); break;
+    case 0x8F: mqtt.publish(publishTopic, "Invalid code", true); break;
+    case 0x9E: mqtt.publish(publishTopic, "Enter * code", true); break;
+    case 0x9F: mqtt.publish(publishTopic, "Access code", true); break;
+    case 0xA0: mqtt.publish(publishTopic, "Zone bypass", true); break;
+    case 0xA1: mqtt.publish(publishTopic, "Trouble menu", true); break;
+    case 0xA2: mqtt.publish(publishTopic, "Alarm memory", true); break;
+    case 0xA3: mqtt.publish(publishTopic, "Door chime on", true); break;
+    case 0xA4: mqtt.publish(publishTopic, "Door chime off", true); break;
+    case 0xA5: mqtt.publish(publishTopic, "Master code", true); break;
+    case 0xA6: mqtt.publish(publishTopic, "Access codes", true); break;
+    case 0xA7: mqtt.publish(publishTopic, "Enter new code", true); break;
+    case 0xA9: mqtt.publish(publishTopic, "User function", true); break;
+    case 0xAA: mqtt.publish(publishTopic, "Time and Date", true); break;
+    case 0xAB: mqtt.publish(publishTopic, "Auto-arm time", true); break;
+    case 0xAC: mqtt.publish(publishTopic, "Auto-arm on", true); break;
+    case 0xAD: mqtt.publish(publishTopic, "Auto-arm off", true); break;
+    case 0xAF: mqtt.publish(publishTopic, "System test", true); break;
+    case 0xB0: mqtt.publish(publishTopic, "Enable DLS", true); break;
+    case 0xB2: mqtt.publish(publishTopic, "Command output", true); break;
+    case 0xB7: mqtt.publish(publishTopic, "Installer code", true); break;
+    case 0xB8: mqtt.publish(publishTopic, "Enter * code", true); break;
+    case 0xB9: mqtt.publish(publishTopic, "Zone tamper", true); break;
+    case 0xBA: mqtt.publish(publishTopic, "Zones low batt.", true); break;
+    case 0xC6: mqtt.publish(publishTopic, "Zone fault menu", true); break;
+    case 0xC8: mqtt.publish(publishTopic, "Service required", true); break;
+    case 0xD0: mqtt.publish(publishTopic, "Keypads low batt", true); break;
+    case 0xD1: mqtt.publish(publishTopic, "Wireless low bat", true); break;
+    case 0xE4: mqtt.publish(publishTopic, "Installer menu", true); break;
+    case 0xE5: mqtt.publish(publishTopic, "Keypad slot", true); break;
+    case 0xE6: mqtt.publish(publishTopic, "Input: 2 digits", true); break;
+    case 0xE7: mqtt.publish(publishTopic, "Input: 3 digits", true); break;
+    case 0xE8: mqtt.publish(publishTopic, "Input: 4 digits", true); break;
+    case 0xEA: mqtt.publish(publishTopic, "Code: 2 digits", true); break;
+    case 0xEB: mqtt.publish(publishTopic, "Code: 4 digits", true); break;
+    case 0xEC: mqtt.publish(publishTopic, "Input: 6 digits", true); break;
+    case 0xED: mqtt.publish(publishTopic, "Input: 32 digits", true); break;
+    case 0xEE: mqtt.publish(publishTopic, "Input: option", true); break;
+    case 0xF0: mqtt.publish(publishTopic, "Function key 1", true); break;
+    case 0xF1: mqtt.publish(publishTopic, "Function key 2", true); break;
+    case 0xF2: mqtt.publish(publishTopic, "Function key 3", true); break;
+    case 0xF3: mqtt.publish(publishTopic, "Function key 4", true); break;
+    case 0xF4: mqtt.publish(publishTopic, "Function key 5", true); break;
+    case 0xF8: mqtt.publish(publishTopic, "Keypad program", true); break;
+    default: return;
+  }
 }

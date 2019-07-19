@@ -316,7 +316,7 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
-            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zonePublishTopic[strlen(mqttZoneTopic) + 3];
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);
@@ -435,7 +435,7 @@ bool mqttConnect() {
 
 // Publishes HomeKit target and current states with partition numbers
 void publishState(const char* sourceTopic, byte partition, const char* targetSuffix, const char* currentState) {
-  char publishTopic[strlen(sourceTopic) + 1];
+  char publishTopic[strlen(sourceTopic) + 2];
   char partitionNumber[2];
 
   // Appends the sourceTopic with the partition number
@@ -446,7 +446,7 @@ void publishState(const char* sourceTopic, byte partition, const char* targetSuf
   if (targetSuffix != 0) {
 
     // Prepends the targetSuffix with the partition number
-    char targetState[strlen(targetSuffix) + 1];
+    char targetState[strlen(targetSuffix) + 2];
     strcpy(targetState, partitionNumber);
     strcat(targetState, targetSuffix);
 

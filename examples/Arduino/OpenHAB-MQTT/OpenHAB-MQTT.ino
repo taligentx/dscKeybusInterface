@@ -2,8 +2,8 @@
  *  OpenHAB-MQTT 1.0 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
- *  interface with OpenHAB and the MQTT binding and demonstrates using the armed states as OpenHAB
- *  switches, and the alarm and zones states as OpenHAB contacts.  Also see https://github.com/jimtng/dscalarm-mqtt
+ *  interface with OpenHAB and the MQTT binding and demonstrates using panel and partition states
+ *  as OpenHAB switches, and zone states as OpenHAB contacts.  Also see https://github.com/jimtng/dscalarm-mqtt
  *  for an integration using the Homie convention for OpenHAB's Homie MQTT component.
  *
  *  OpenHAB: https://www.openhab.org
@@ -34,19 +34,27 @@ Thing mqtt:topic:mymqtt:dsc "DSC Security System" (mqtt:broker:mymqtt) @ "Home" 
     Channels:
         Type switch : partition1_armed_away "Partition 1 Armed Away" [stateTopic="dsc/Get/Partition1", commandTopic="dsc/Set", on="1A", off="1D"]
         Type switch : partition1_armed_stay "Partition 1 Armed Stay" [stateTopic="dsc/Get/Partition1", commandTopic="dsc/Set", on="1S", off="1D"]
-        Type contact: partition1_triggered "Partition 1 Alarm Triggered" [stateTopic="dsc/Get/Partition1", on="1T", off="1D"]
+        Type switch : partition1_alarm "Partition 1 Alarm" [stateTopic="dsc/Get/Partition1", on="1T", off="1D"]
+        Type switch : partition1_fire "Partition 1 Fire" [stateTopic="dsc/Get/Fire1", on="1", off="0"]
+        Type switch : panel_online "Panel Online" [stateTopic="dsc/Status", on="online", off="offline"]
+        Type switch : panel_trouble "Panel Trouble" [stateTopic="dsc/Get/Trouble", on="1", off="0"]
         Type contact : zone1 "Zone 1" [stateTopic="dsc/Get/Zone1", on="1", off="0"]
         Type contact : zone2 "Zone 2" [stateTopic="dsc/Get/Zone2", on="1", off="0"]
+        Type contact : zone3 "Zone 3" [stateTopic="dsc/Get/Zone3", on="1", off="0"]
 }
 
 *   3. Create an "items" file for the security system as (OpenHAB configuration directory)/items/dsc.items:
 *      - https://www.openhab.org/docs/configuration/items.html
 
-Switch partition1_armed_away "Partition 1 Armed Away" {channel="mqtt:topic:mymqtt:dsc:partition1_armed_away"}
-Switch partition1_armed_stay "Partition 1 Armed Stay" {channel="mqtt:topic:mymqtt:dsc:partition1_armed_stay"}
-Contact partition1_triggered "Partition 1 Alarm Triggered" {channel="mqtt:topic:mymqtt:dsc:partition1_triggered"}
-Contact zone1 "Zone 1" {channel="mqtt:topic:mymqtt:dsc:zone1"}
-Contact zone2 "Zone 2" {channel="mqtt:topic:mymqtt:dsc:zone2"}
+Switch partition1_armed_away "Partition 1 Armed Away" <shield> {channel="mqtt:topic:mymqtt:dsc:partition1_armed_away"}
+Switch partition1_armed_stay  "Partition 1 Armed Stay" <shield> {channel="mqtt:topic:mymqtt:dsc:partition1_armed_stay"}
+Switch partition1_triggered "Partition 1 Alarm" <alarm> {channel="mqtt:topic:mymqtt:dsc:partition1_alarm"}
+Switch partition1_fire "Partition 1 Fire" <fire> {channel="mqtt:topic:mymqtt:dsc:partition1_fire"}
+Switch panel_online "Panel Online" <switch> {channel="mqtt:topic:mymqtt:dsc:panel_online"}
+Switch panel_trouble "Panel Trouble" <error> {channel="mqtt:topic:mymqtt:dsc:panel_trouble"}
+Contact zone1 "Zone 1" <door> {channel="mqtt:topic:mymqtt:dsc:zone1"}
+Contact zone2 "Zone 2" <window> {channel="mqtt:topic:mymqtt:dsc:zone2"}
+Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
 
 
  *  The commands to set the alarm state are setup in OpenHAB with the partition number (1-8) as a prefix to the command:
@@ -113,11 +121,15 @@ const int mqttPort = 1883;      // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 
-// MQTT topics - match to Homebridge's config.json
+// MQTT topics - match to the OpenHAB "things" configuration file
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
+const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
+const char* mqttBirthMessage = "online";
+const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
@@ -175,10 +187,23 @@ void loop() {
       dsc.bufferOverflow = false;
     }
 
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;  // Resets the Keybus data status flag
+      if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
+      else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
+    }
+
     // Sends the access code when needed by the panel for arming
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
+    }
+
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) mqtt.publish(mqttTroubleTopic, "1", true);
+      else mqtt.publish(mqttTroubleTopic, "0", true);
     }
 
     // Publishes status per partition
@@ -255,7 +280,7 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
-            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zonePublishTopic[strlen(mqttZoneTopic) + 3];
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);
@@ -321,6 +346,7 @@ void mqttHandle() {
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
       mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
+        if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
         Serial.println(F("MQTT disconnected, successfully reconnected."));
         mqttPreviousTime = 0;
       }
@@ -332,7 +358,7 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
-  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
     Serial.print(F("MQTT connected: "));
     Serial.println(mqttServer);
     dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
@@ -347,7 +373,7 @@ bool mqttConnect() {
 
 // Publishes the current states with partition numbers
 void publishState(const char* sourceTopic, byte partition, const char* sourceSuffix) {
-  char publishTopic[strlen(sourceTopic) + 1];
+  char publishTopic[strlen(sourceTopic) + 2];
   char partitionNumber[2];
 
   // Appends the sourceTopic with the partition number
@@ -356,7 +382,7 @@ void publishState(const char* sourceTopic, byte partition, const char* sourceSuf
   strcat(publishTopic, partitionNumber);
 
   // Prepends the sourceSuffix with the partition number
-  char currentState[strlen(sourceSuffix) + 1];
+  char currentState[strlen(sourceSuffix) + 2];
   strcpy(currentState, partitionNumber);
   strcat(currentState, sourceSuffix);
 

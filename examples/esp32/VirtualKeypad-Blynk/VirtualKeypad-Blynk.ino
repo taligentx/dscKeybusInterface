@@ -772,6 +772,7 @@ void setStatus(byte partition) {
     case 0x10: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad lockout"); break;
     case 0x11: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm"); break;
     case 0x14: lcd.print(0,1, "                "); lcd.print(0,1, "Auto-arm"); break;
+    case 0x15: lcd.print(0,1, "                "); lcd.print(0,1, "Arm with bypass"); break;
     case 0x16: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); break;
     case 0x22: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm memory"); break;
     case 0x33: lcd.print(0,1, "                "); lcd.print(0,1, "Busy"); break;

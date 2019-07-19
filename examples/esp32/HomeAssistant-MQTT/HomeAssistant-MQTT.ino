@@ -157,7 +157,7 @@ const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm 
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
-const char* mqttStatusTopic = "dsc/Status";
+const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
 const char* mqttBirthMessage = "online";
 const char* mqttLwtMessage = "offline";
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
@@ -235,20 +235,10 @@ void loop() {
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      // Publishes exit delay status
-      if (dsc.exitDelayChanged[partition]) {
-        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
-        char publishTopic[strlen(mqttPartitionTopic) + 1];
-        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
-
-        if (dsc.exitDelay[partition]) mqtt.publish(publishTopic, "pending", true);  // Publish as a retained message
-        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) mqtt.publish(publishTopic, "disarmed", true);
-      }
-
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-        char publishTopic[strlen(mqttPartitionTopic) + 1];
+        char publishTopic[strlen(mqttPartitionTopic) + 2];
         appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
@@ -258,11 +248,21 @@ void loop() {
         else mqtt.publish(publishTopic, "disarmed", true);
       }
 
+      // Publishes exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+        char publishTopic[strlen(mqttPartitionTopic) + 2];
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
+
+        if (dsc.exitDelay[partition]) mqtt.publish(publishTopic, "pending", true);  // Publish as a retained message
+        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) mqtt.publish(publishTopic, "disarmed", true);
+      }
+
       // Publishes alarm status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
+          char publishTopic[strlen(mqttPartitionTopic) + 2];
           appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
           mqtt.publish(publishTopic, "triggered", true);  // Alarm tripped
@@ -272,7 +272,7 @@ void loop() {
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
-        char publishTopic[strlen(mqttFireTopic) + 1];
+        char publishTopic[strlen(mqttFireTopic) + 2];
         appendPartition(mqttFireTopic, partition, publishTopic);  // Appends the mqttFireTopic with the partition number
 
         if (dsc.fire[partition]) mqtt.publish(publishTopic, "1");  // Fire alarm tripped
@@ -294,7 +294,7 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
-            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zonePublishTopic[strlen(mqttZoneTopic) + 3];
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);

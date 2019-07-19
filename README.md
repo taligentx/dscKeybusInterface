@@ -13,6 +13,8 @@ Screenshots:
   ![HomeKit](https://user-images.githubusercontent.com/12835671/39588413-5a99099a-4ec1-11e8-9a2e-e332fa2d6379.jpg)
 * [Home Assistant](https://www.home-assistant.io):  
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/42108879-7362ccf6-7ba1-11e8-902e-d6cb25483a00.png)
+* [OpenHAB](https://www.openhab.org):
+  ![OpenHAB](https://user-images.githubusercontent.com/12835671/61560425-daa6e180-aa31-11e9-9efe-0fcb44d2106a.png)
 * [Blynk](https://www.blynk.cc) app virtual keypad:  
   ![dsc-blynk](https://user-images.githubusercontent.com/12835671/42364975-add27c94-80c2-11e8-8a55-9d6d168ff8c1.png)
 * Web virtual keypad:  
@@ -168,7 +170,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **HomeAssistant-MQTT**: Integrates with [Home Assistant](https://www.home-assistant.io) via MQTT.  This uses the armed and alarm states for the HomeAssistant [Alarm Control Panel](https://www.home-assistant.io/components/alarm_control_panel.mqtt) component, as well as zone, fire alarm, and trouble states for the [Binary Sensor](https://www.home-assistant.io/components/binary_sensor.mqtt) component.
 
-* **OpenHAB-MQTT**: Integrates with [OpenHAB](https://www.openhab.org) via MQTT.  This uses the [OpenHAB MQTT binding](https://www.openhab.org/addons/bindings/mqtt/) and demonstrates using the armed states as OpenHAB switches, and the alarm and zones states as OpenHAB contacts.  Also see https://github.com/jimtng/dscalarm-mqtt for an integration using the Homie convention for OpenHAB's Homie MQTT component.
+* **OpenHAB-MQTT**: Integrates with [OpenHAB](https://www.openhab.org) via MQTT.  This uses the [OpenHAB MQTT binding](https://www.openhab.org/addons/bindings/mqtt/) and demonstrates using the panel and partitions states as OpenHAB switches and zone states as OpenHAB contacts.  For esp8266/esp32, the panel status message is also sent as a string.  Also see https://github.com/jimtng/dscalarm-mqtt for an integration using the Homie convention for OpenHAB's Homie MQTT component.
 
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
