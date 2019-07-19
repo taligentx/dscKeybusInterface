@@ -1,12 +1,12 @@
 /*
- *  DSC Unlocker 1.0 (esp8266)
+ *  DSC Unlocker 1.0 (esp32)
  *
  *  Feedback requested, post your results at: https://github.com/taligentx/dscKeybusInterface/issues/101
  *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
  *  built-in LED - each digit is indicated by the number of blinks, a long blink indicates "0".  This
- *  esp8266 example tests codes by general frequency: https://www.datagenetics.com/blog/september32012/
+ *  esp32 example tests codes by general frequency: https://www.datagenetics.com/blog/september32012/
  *
  *  If keypad lockout has been enabled by the installer, the sketch waits for the lockout to expire
  *  before continuing the code search.  The physical keypads may beep when this occurs, the keypads can
@@ -47,24 +47,24 @@
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
  *      Alternatively if using a relay, external power is required instead of using DSC Aux(+):
- *      External USB or 5v DC power supply --- esp8266 development board USB or 5v pin (NodeMCU, Wemos)
+ *      External USB or 5v DC power supply --- esp32 development board USB or 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad:
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -76,8 +76,8 @@
  *          DSC power adapter (one wire) --- DSC AC
  *          DSC power adapter (one wire) --- Relay board COM (common)
  *      Relay board NC (normally closed) --- DSC AC
- *            Relay board trigger signal --- dscRelayPin (esp8266: D5, D6, D7)
- *                        Relay board 5v --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *            Relay board trigger signal --- dscRelayPin (esp32: 4,13,16-33)
+ *                        Relay board 5v --- esp32 development board 5v pin
  *                       Relay board GND --- Ground
  *
  *  Issues and (especially) pull requests are welcome:
@@ -89,10 +89,10 @@
 #include <dscKeybusInterface.h>
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscRelayPin D6  // esp8266: D5, D6, D7 (GPIO 14, 12, 13) - Optional, leave this pin disconnected if not using a relay
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin 19   // esp32: 4,13,16-39
+#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscRelayPin 17  // esp32: 4,13,16-33 - Optional, leave this pin disconnected if not using a relay
 
 // Starting test position - this can be changed to start at a different position if the process is interrupted
 int startPosition = 0;
@@ -503,7 +503,7 @@ void setup() {
 
   // Pin setup
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
   pinMode(dscRelayPin, OUTPUT);
   digitalWrite(dscRelayPin, LOW);
 
@@ -695,16 +695,16 @@ void loop() {
             else blinks = testCodeChar[digit - leadingZerosTotal] - 48;
 
             if (blinks == 0) {
-              digitalWrite(LED_BUILTIN, LOW);
-              delay(750);
               digitalWrite(LED_BUILTIN, HIGH);
+              delay(750);
+              digitalWrite(LED_BUILTIN, LOW);
               delay(400);
             }
             else {
               for (byte i = 0; i < blinks; i++) {
-                digitalWrite(LED_BUILTIN, LOW);
-                delay(100);
                 digitalWrite(LED_BUILTIN, HIGH);
+                delay(100);
+                digitalWrite(LED_BUILTIN, LOW);
                 delay(400);
               }
             }

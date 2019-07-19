@@ -31,11 +31,11 @@
  *  dscKeybusPrintData.cpp-printPanelMessage()).
  *
  *  Usage:
- *    1. Run the sketch while the security system does not need to be armed - keypads will be unavailable
- *       during the search.
- *    2. Press any key via serial to pause and resume the code search.
- *    3. If the sketch is restarted, the code search can be resumed at the last known test code by setting
- *       `startingCode`.
+ *    - Run the sketch while the security system does not need to be armed - keypads will be unavailable
+ *      during the search.
+ *    - Press any key via serial to pause and resume the code search.
+ *    - If the sketch is restarted, the code search can be resumed at the last known position by setting
+ *      `startingCode`.
  *
  *  Release notes:
  *    1.0 - Initial release

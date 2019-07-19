@@ -38,7 +38,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Monitor zones status:
   - Zones open/closed, zones in alarm
 * Monitor system status:
-  - Ready, trouble, time, AC power, battery
+  - Ready, trouble, AC power, battery
 * Panel time - retrieve current panel date/time and set a new date/time
 * Panel installer code unlocking - finds a valid 4-digit installer code
 * Virtual keypad:
