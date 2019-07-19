@@ -18,11 +18,6 @@
  *      to Z1). This has been tested with the commonly available relay boards using the Songle SRD-05VDC-SL-C
  *      relay (~1USD shipped).
  *
- *    - The Wemos Relay Shield v1 is hardwired to connect using the D1 pin and will conflict with this
- *      interface if using the default wiring scheme and plugging directly into the Wemos D1 mini. Wire
- *      the relay board separately (without plugging in directly to the Wemos board) to connect the relay
- *      board D1 pin to a different esp8266 pin (or use a different relay board).
- *
  *  Example maximum unlocking times:
  *    - PC1864 without keypad lockout: ~8h20m
  *    - PC1864 with 5m keypad lockout, 6 codes tested before lockout: ~6d3h13m
