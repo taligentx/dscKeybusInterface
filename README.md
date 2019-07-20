@@ -278,10 +278,10 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code` - see the `Unlocker` sketch if your panel's installer code is unknown.  Refer to the DSC installation manual for your panel to configure these options:
-* PC1555MX/5015 section 370, PC1616/PC1832/PC1864 section 377:
+* PC1555MX/5015 section `370`, PC1616/PC1832/PC1864 section `377`:
   - Swinger shutdown: By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a third-party monitoring service, and also affects this interface.  As I do not use a monitoring service, I disable swinger shutdown by setting this to `000`.
 
-  - AC power failure reporting delay: The default delay is 30 minutes and can be set to 000 to immediately report a power failure.  
+  - AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.  
 
 ## Notes
 * For OTA updates on esp8266 and esp32, you may need to stop the interface using `dsc.stop();`:
