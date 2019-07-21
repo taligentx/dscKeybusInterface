@@ -219,7 +219,7 @@ class dscKeybusInterface {
 
     Stream* stream;
     const char* writeKeysArray;
-    bool writeKeysPending;
+    bool writeKeyPending, writeKeysPending;
     bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;

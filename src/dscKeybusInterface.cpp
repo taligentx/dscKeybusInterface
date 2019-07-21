@@ -490,14 +490,24 @@ bool dscKeybusInterface::handleModule() {
 
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
-  while(!writeReady || writeKeysPending) loop();
+  while(!writeReady || writeKeysPending) {
+    loop();
+    #if defined(ESP8266)
+    yield();
+    #endif
+  }
   setWriteKey(receivedKey);
 }
 
 
 // Sets up writes if multiple keys are sent as a char array
-void dscKeybusInterface::write(const char * receivedKeys) {
-  while(!writeReady || writeKeysPending) loop();
+void dscKeybusInterface::write(const char *receivedKeys) {
+  while(!writeReady || writeKeysPending) {
+    loop();
+    #if defined(ESP8266)
+    yield();
+    #endif
+  }
   writeKeysArray = receivedKeys;
   if (writeKeysArray[0] != '\0') writeKeysPending = true;
   writeKeys(writeKeysArray);
@@ -505,7 +515,7 @@ void dscKeybusInterface::write(const char * receivedKeys) {
 
 
 // Writes multiple keys from a char array
-void dscKeybusInterface::writeKeys(const char * writeKeysArray) {
+void dscKeybusInterface::writeKeys(const char *writeKeysArray) {
   static byte writeCounter = 0;
   if (writeKeysPending && writeReady && writeCounter < strlen(writeKeysArray)) {
     if (writeKeysArray[writeCounter] != '\0') {
@@ -580,8 +590,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
       }
     }
 
+    // Skips writing to partitions not specified in dscKeybusInterface.h
+    if (dscPartitions < writePartition) return;
+
     // Sets the writing position in dscClockInterrupt() for the currently set partition
-    if (dscPartitions < writePartition) writePartition = 1;
     switch (writePartition) {
       case 1:
       case 5: {
