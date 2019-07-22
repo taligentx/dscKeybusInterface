@@ -384,7 +384,7 @@ void dscKeybusInterface::processPanelStatus() {
       case 0x9E: {
         wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
         writeAsterisk = false;
-        writeReady = true;
+        writeKeyPending = false;
         ready[partitionIndex] = false;
         if (ready[partitionIndex] != previousReady[partitionIndex]) {
           previousReady[partitionIndex] = ready[partitionIndex];

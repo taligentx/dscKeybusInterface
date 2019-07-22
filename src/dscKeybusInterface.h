@@ -49,10 +49,21 @@ class dscKeybusInterface {
     void stop();                                      // Disables the clock hardware interrupt and data timer interrupt
     void resetStatus();                               // Resets the state of all status components as changed for sketches to get the current status
 
-    // Write
-    void write(const char receivedKey);               // Writes a single key
-    void write(const char * receivedKeys);            // Writes multiple keys from a char array
+    // Writes a single key - nonblocking unless a previous write is in progress
+    void write(const char receivedKey);
+
+    // Writes multiple keys from a char array
+    //
+    // By default, this is nonblocking unless there is a previous write in progress - in this case, the sketch must keep the char
+    // array defined at least until the write is complete.
+    //
+    // If the char array is ephemeral, check if the write is complete by checking writeReady or set blockingWrite to true to
+    // block until the write is complete.
+    void write(const char * receivedKeys, bool blockingWrite = false);
+
+    // Write control
     static byte writePartition;                       // Set to a partition number for virtual keypad
+    bool writeReady;                                  // Returns true if the library is ready to write a key
 
     // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
@@ -127,7 +138,6 @@ class dscKeybusInterface {
 
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
-    static volatile bool writeReady;  // True if the library is ready to write a key.  To be moved to private
 
   private:
 
@@ -219,7 +229,7 @@ class dscKeybusInterface {
 
     Stream* stream;
     const char* writeKeysArray;
-    bool writeKeyPending, writeKeysPending;
+    bool writeKeysPending;
     bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
@@ -240,6 +250,7 @@ class dscKeybusInterface {
     static bool virtualKeypad;
     static char writeKey;
     static byte panelBitCount, panelByteCount;
+    static volatile bool writeKeyPending;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;

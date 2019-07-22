@@ -79,21 +79,23 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 ## Release notes
 * develop
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
-  - New: `Unlocker` example sketch determines the panel installer code
+  - New: `Unlocker` example sketch added to determine the panel installer code
   - New: esp32 microcontroller support (experimental)
-  - New: Added functionality for sketches, updated example sketches
+  - New: Features for sketches:
       * `ready` tracks partition ready status
       * `setTime()` sets the panel date and time
       * `timestampChanged` tracks when the panel sends a timestamp
       * `accessCode` tracks the access code used to arm/disarm
       * `resetStatus()` triggers a full status update of all partitions and zones - for example, after initialization or a lost network connection.
-      * `pauseStatus` pauses status updates if set to `true` - for example, holding status changes during a lost network connection.
-      * `stop()` disables the interface - for example, prior to starting OTA updates.
+      * `pauseStatus` pauses status updates if set to `true` - for example, holding status changes during a lost network connection
+      * `stop()` disables the interface - for example, prior to starting OTA updates
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
+  - Updated: Virtual keypad writes
+      * `write()` for multiple characters can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
+      * Checking `writeReady` is typically no longer needed in the sketch, the library will block if a previous write is in progress - this can be checked if the sketch needs to wait until the library can perform a nonblocking write
   - Updated: Expanded partition state processing to improve panel state detection at startup
   - Deprecated: `handlePanel()` is now `loop()`
-  - Deprecated: `writeReady` has been moved into the library and is no longer needed in the sketch.
   - Bugfix: Resolved `Homebridge-MQTT` sketch not handling HomeKit target states
   - Bugfix: Resolved timing issues when consecutively calling `write`
 * 1.2

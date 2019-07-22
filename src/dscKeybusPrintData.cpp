@@ -135,7 +135,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed with no entry delay")); break;
-    case 0x22: stream->print(F("Recent closing")); break;
+    case 0x22: stream->print(F("Partition busy")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
@@ -1253,7 +1253,7 @@ void dscKeybusInterface::printPanel_0x75() {
     case 0x11: stream->print(F("1 beep, 1s interval")); break;
     case 0x31: stream->print(F("3 beeps, 1s interval")); break;
     case 0x80: stream->print(F("constant tone")); break;
-    case 0xB1: stream->print(F("contant tone + 3 beeps, 1s interval")); break;
+    case 0xB1: stream->print(F("constant tone + 3 beeps, 1s interval")); break;
     default: stream->print(F("Unknown data")); break;
   }
 }
@@ -1277,7 +1277,7 @@ void dscKeybusInterface::printPanel_0x7A() {
     case 0x11: stream->print(F("1 beep, 1s interval")); break;
     case 0x31: stream->print(F("3 beeps, 1s interval")); break;
     case 0x80: stream->print(F("constant tone")); break;
-    case 0xB1: stream->print(F("contant tone + 3 beeps, 1s interval")); break;
+    case 0xB1: stream->print(F("constant tone + 3 beeps, 1s interval")); break;
     default: stream->print(F("Unknown data")); break;
   }
 }
@@ -1589,7 +1589,8 @@ void dscKeybusInterface::printPanel_0xC3() {
  * 11001110 0 00000001 10110001 00000000 00000000 00000000 10000000 [0xCE]  // Partition 1 armed stay
  * 11001110 0 00000001 10110011 00000000 00000000 00000000 10000010 [0xCE]  // Partition 1 armed away
  * 11001110 0 00000001 10100100 00000000 00000000 00000000 01110011 [0xCE]  // Partition 2 armed away
- * 11001110 0 01000000 11111111 11111111 11111111 11111111 00001010 [0xCE]  // Partition 1,2 activity
+ * 11001110 0 01000000 11111111 11111111 11111111 11111111 00001010 [0xCE]  // Unknown data
+ * 11001110 0 01000000 11111111 11111111 11111111 11111111 00001010 [0xCE]  // LCD: System is in Alarm
  */
 void dscKeybusInterface::printPanel_0xCE() {
   if (!validCRC()) {
@@ -1608,7 +1609,7 @@ void dscKeybusInterface::printPanel_0xCE() {
       }
       break;
     }
-    case 0x40: stream->print(F("Partition 1,2 activity")); break;
+    case 0x40: stream->print(F("Unknown data")); break;
     default: stream->print(F("Unknown data")); break;
   }
 }
@@ -1805,7 +1806,21 @@ void dscKeybusInterface::printPanel_0xE6_0x19() {
 /*
  *  0xE6_0x1A: Unknown data
  *
- *  11100110 0 00011010 01000000 00000000 00000000 00001001 00000000 00000000 00000000 01001001 [0xE6] 0x1A: Unknown data  // Exit delay in progress, disarmed
+ *  11100110 0 00011010 01000000 00000000 00000000 00001001 00000000 00000000 00000000 01001001 [0xE6] 0x1A: Unknown data  // All partitions exit delay in progress, disarmed
+ *  11100110 0 00011010 01000000 00010001 00000000 00001001 00000000 00000000 00000000 01011010 [0xE6] 0x1A: Unknown data  // Keypad panic alarm
+ *  11100110 0 00011010 01000000 00000010 00000000 00001001 00000000 00000000 00000000 01001011 [0xE6] 0x1A: Unknown data  // Partition 2 in alarm
+    11100110 0 00011010 01000000 00000001 00000000 00001001 00000000 00000000 00000000 01001010 [0xE6] 0x1A: Unknown data  // Partition 1 in alarm
+
+    10111011 0 00100000 00000000 11011011 [0xBB] Bell: on
+    10100101 0 00010110 00010111 11100000 10001000 00010000 10010001 11011011 [0xA5] 2016.05.31 00:34 | Zone alarm: 8
+    10000111 0 00000000 00000010 10001001 [0x87] Panel output: Bell off | PGM1 off | PGM2 on | PGM3 off | PGM4 off
+    11100110 0 00011010 01000000 10000000 00000000 00001001 00000000 00000000 00000000 11001001 [0xE6] 0x1A: Unknown data
+    01110101 0 00000000 01110101 [0x75] Partition 1 | Tone: off
+    11100110 0 00011010 01000000 10000000 00000000 00001001 00000000 00000000 00000000 11001001 [0xE6] 0x1A: Unknown data  // Partition 8 in alarm
+
+    10111011 0 00000000 00000000 10111011 [0xBB] Bell: off
+    11100110 0 00011010 01000000 00000000 00000000 00001001 00000000 00000000 00000000 01001001 [0xE6] 0x1A: Unknown data  // Partition 8 bell off, in alarm
+    01110101 0 00000000 01110101 [0x75] Partition 1 | Tone: off
  */
 void dscKeybusInterface::printPanel_0xE6_0x1A() {
   stream->print(F("0x1A: "));
@@ -1829,7 +1844,7 @@ void dscKeybusInterface::printPanel_0xE6_0x1D() {
     case 0x11: stream->print(F("1 beep, 1s interval")); break;
     case 0x31: stream->print(F("3 beeps, 1s interval")); break;
     case 0x80: stream->print(F("constant tone")); break;
-    case 0xB1: stream->print(F("contant tone + 3 beeps, 1s interval")); break;
+    case 0xB1: stream->print(F("constant tone + 3 beeps, 1s interval")); break;
     default: stream->print(F("Unknown data")); break;
   }
 }
