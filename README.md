@@ -92,10 +92,11 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
   - Updated: Virtual keypad writes
-      * `write()` for multiple characters can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
+      * `write()` for multiple keys can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
       * Checking `writeReady` is typically no longer needed in the sketch, the library will block if a previous write is in progress - this can be checked if the sketch needs to wait until the library can perform a nonblocking write
   - Updated: Expanded partition state processing to improve panel state detection at startup
   - Deprecated: `handlePanel()` is now `loop()`
+  - Bugfix: Resolved keypad aux/panic key, AC power, and battery status on PC585/PC1555MX
   - Bugfix: Resolved `Homebridge-MQTT` sketch not handling HomeKit target states
   - Bugfix: Resolved timing issues when consecutively calling `write`
 * 1.2

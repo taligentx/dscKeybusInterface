@@ -94,6 +94,11 @@ void loop() {
           Serial.print(partition + 1);
           Serial.println(F(" ready"));
         }
+        else {
+          Serial.print(F("Partition "));
+          Serial.print(partition + 1);
+          Serial.println(F(" not ready"));
+        }
       }
 
       // Checks armed status

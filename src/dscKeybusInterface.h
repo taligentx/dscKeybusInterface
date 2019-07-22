@@ -63,7 +63,7 @@ class dscKeybusInterface {
 
     // Write control
     static byte writePartition;                       // Set to a partition number for virtual keypad
-    bool writeReady;                                  // Returns true if the library is ready to write a key
+    bool writeReady;                                  // True if the library is ready to write a key
 
     // Prints output to the stream interface set in begin()
     void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default

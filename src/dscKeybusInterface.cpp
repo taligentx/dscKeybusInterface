@@ -497,30 +497,38 @@ bool dscKeybusInterface::handleModule() {
 
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
+
+  // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
   }
+
   setWriteKey(receivedKey);
 }
 
 
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
+
+  // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
   }
+
   writeKeysArray = receivedKeys;
+
   if (writeKeysArray[0] != '\0') {
     writeKeysPending = true;
     writeReady = false;
   }
 
+  // Optionally loops until the write is complete
   if (blockingWrite) {
     while (writeKeysPending) {
       writeKeys(writeKeysArray);
