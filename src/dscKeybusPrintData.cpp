@@ -661,10 +661,15 @@ void dscKeybusInterface::printPanelBitNumbers(byte panelByte, byte startNumber) 
  *  00000101 0 10000000 00000011 10000010 00000101 10000010 00000101 00000000 11000111 [0x05] Status lights: Backlight | Zones open
  */
 void dscKeybusInterface::printPanel_0x05() {
-  stream->print(F("Partition 1: "));
-  printPanelLights(2);
-  stream->print(F("- "));
-  printPanelMessages(3);
+  if (panelData[3] == 0xC7) {
+    stream->print(F(" | Partition 1: disabled"));
+  }
+  else {
+    stream->print(F("Partition 1: "));
+    printPanelLights(2);
+    stream->print(F("- "));
+    printPanelMessages(3);
+  }
 
   if (panelData[5] == 0xC7) {
     stream->print(F(" | Partition 2: disabled"));

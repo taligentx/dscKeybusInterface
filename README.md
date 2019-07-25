@@ -83,7 +83,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: `Unlocker` example sketch added to determine the panel installer code
   - New: esp32 microcontroller support (experimental)
   - New: Features for sketches:
-      * `ready` tracks partition ready status
+      * `ready` and `disabled` track partition status
       * `setTime()` sets the panel date and time
       * `timestampChanged` tracks when the panel sends a timestamp
       * `accessCode` tracks the access code used to arm/disarm

@@ -32,6 +32,7 @@ void dscKeybusInterface::resetStatus() {
     armedChanged[partition] = true;
     alarmChanged[partition] = true;
     fireChanged[partition] = true;
+    disabled[partition] = true;
   }
   openZonesStatusChanged = true;
   alarmZonesStatusChanged = true;
@@ -126,6 +127,10 @@ void dscKeybusInterface::processPanelStatus() {
       statusByte = ((partitionIndex - 4) * 2) + 2;
       messageByte = ((partitionIndex - 4) * 2) + 3;
     }
+
+    // Partition disabled status
+    if (panelData[messageByte] == 0xC7) disabled[partitionIndex] = true;
+    else disabled[partitionIndex] = false;
 
     // Status lights
     lights[partitionIndex] = panelData[statusByte];

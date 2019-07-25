@@ -105,6 +105,7 @@ class dscKeybusInterface {
     bool batteryTrouble, batteryChanged;
     bool keypadFireAlarm, keypadAuxAlarm, keypadPanicAlarm;
     bool ready[dscPartitions], readyChanged[dscPartitions];
+    bool disabled[dscPartitions];
     bool armed[dscPartitions], armedAway[dscPartitions], armedStay[dscPartitions];
     bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];
     bool alarm[dscPartitions], alarmChanged[dscPartitions];

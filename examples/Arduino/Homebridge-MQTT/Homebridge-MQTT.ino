@@ -236,6 +236,9 @@ void loop() {
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
+      // Skips processing if the partition is disabled or in installer programming
+      if (dsc.disabled[partition]) return;
+
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
