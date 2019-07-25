@@ -42,7 +42,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Monitor system status:
   - Ready, trouble, AC power, battery
 * Panel time - retrieve current panel date/time and set a new date/time
-* Panel installer code unlocking - finds a valid 4-digit installer code
+* Panel installer code unlocking - determine the 4-digit panel installer code
 * Virtual keypad:
   - Send keys to the panel for any partition
 * Direct Keybus interface:
@@ -74,6 +74,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Possible features (PRs welcome!):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
+  - Unlock 6-digit installer codes
   - DSC Classic series support: This protocol is [already decoded](https://github.com/dougkpowers/pc1550-interface), use with this library would require major changes.
 
 ## Release notes

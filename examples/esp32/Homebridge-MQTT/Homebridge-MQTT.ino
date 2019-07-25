@@ -267,10 +267,26 @@ void loop() {
         // Exit delay in progress
         if (dsc.exitDelay[partition]) {
 
-          // Sets default target state to away if the panel is armed externally
-          if (exitState == 0) {
-            exitState = 'A';
-            publishState(mqttPartitionTopic, partition, "A", 0);
+          // Sets the arming target state if the panel is armed externally
+          if (exitState == 0 || dsc.exitStateChanged[partition]) {
+            dsc.exitStateChanged[partition] = 0;
+            switch (dsc.exitState[partition]) {
+              case DSC_EXIT_STAY: {
+                exitState = 'S';
+                publishState(mqttPartitionTopic, partition, "S", 0);
+                break;
+              }
+              case DSC_EXIT_AWAY: {
+                exitState = 'A';
+                publishState(mqttPartitionTopic, partition, "A", 0);
+                break;
+              }
+              case DSC_EXIT_NO_ENTRY_DELAY: {
+                exitState = 'N';
+                publishState(mqttPartitionTopic, partition, "N", 0);
+                break;
+              }
+            }
           }
         }
 

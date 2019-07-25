@@ -33,7 +33,13 @@ const byte dscZones = 8;
 const byte dscBufferSize = 50;
 #endif
 
-const byte dscReadSize = 16;   // Maximum bytes of a Keybus command
+// Maximum bytes of a Keybus command
+const byte dscReadSize = 16;
+
+// Exit delay target states
+#define DSC_EXIT_STAY 1
+#define DSC_EXIT_AWAY 2
+#define DSC_EXIT_NO_ENTRY_DELAY 3
 
 
 class dscKeybusInterface {
@@ -103,6 +109,7 @@ class dscKeybusInterface {
     bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];
     bool alarm[dscPartitions], alarmChanged[dscPartitions];
     bool exitDelay[dscPartitions], exitDelayChanged[dscPartitions];
+    byte exitState[dscPartitions], exitStateChanged[dscPartitions];
     bool entryDelay[dscPartitions], entryDelayChanged[dscPartitions];
     bool fire[dscPartitions], fireChanged[dscPartitions];
     bool openZonesStatusChanged;
@@ -238,6 +245,7 @@ class dscKeybusInterface {
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
+    byte previousExitState[dscPartitions];
     bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
