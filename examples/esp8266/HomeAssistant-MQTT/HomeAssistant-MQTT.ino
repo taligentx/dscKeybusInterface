@@ -15,14 +15,16 @@
  *    6. Restart Home Assistant.
  *
  *  Release notes:
- *    1.2 - Added status update on initial MQTT connection and reconnection
+ *    1.2 - Added sensor component to display partition status messages
+ *          Added night arm (arming with no entry delay)
+ *          Added status update on initial MQTT connection and reconnection
  *          Add appendPartition() to simplify sketch
  *          Removed writeReady check, moved into library
  *    1.1 - Merged: availability status
  *          Updated: availability status based on Keybus connection status
  *    1.0 - Initial release
  *
- *  Example Home Assistant configuration.yaml:
+ *  Example Home Assistant configuration.yaml for 2 partitions, 3 zones:
 
 # https://www.home-assistant.io/components/mqtt/
 mqtt:
@@ -32,23 +34,38 @@ mqtt:
 # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
 alarm_control_panel:
   - platform: mqtt
-    name: "Security System Partition 1"
+    name: "Security Partition 1"
     state_topic: "dsc/Get/Partition1"
     availability_topic: "dsc/Status"
     command_topic: "dsc/Set"
     payload_disarm: "1D"
     payload_arm_home: "1S"
     payload_arm_away: "1A"
+    payload_arm_night: "1N"
   - platform: mqtt
-    name: "Security System Partition 2"
+    name: "Security Partition 2"
     state_topic: "dsc/Get/Partition2"
     availability_topic: "dsc/Status"
     command_topic: "dsc/Set"
     payload_disarm: "2D"
     payload_arm_home: "2S"
     payload_arm_away: "2A"
+    payload_arm_night: "2N"
 
-# https://www.home-assistant.io/components/binary_sensor/
+# https://www.home-assistant.io/components/sensor.mqtt/
+sensor:
+  - platform: mqtt
+    name: "Security Partition 1"
+    state_topic: "dsc/Get/Partition1/Message"
+    availability_topic: "dsc/Status"
+    icon: "mdi:shield"
+  - platform: mqtt
+    name: "Security Partition 2"
+    state_topic: "dsc/Get/Partition2/Message"
+    availability_topic: "dsc/Status"
+    icon: "mdi:shield"
+
+# https://www.home-assistant.io/components/binary_sensor.mqtt/
 binary_sensor:
   - platform: mqtt
     name: "Security Trouble"
@@ -91,12 +108,14 @@ binary_sensor:
  *    Partition 1 disarm: "1D"
  *    Partition 2 arm stay: "2S"
  *    Partition 2 arm away: "2A"
+ *    Partition 1 arm night: "1N"
  *
  *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
  *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
  *    Disarmed: "disarmed"
  *    Arm stay: "armed_home"
  *    Arm away: "armed_away"
+ *    Arm night: "armed_night"
  *    Exit delay in progress: "pending"
  *    Alarm tripped: "triggered"
  *
@@ -159,6 +178,7 @@ const char* mqttPassword = "";  // Optional, leave blank if not required
 // MQTT topics - match to Home Assistant's configuration.yaml
 const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
+const char* mqttPartitionMessageSuffix = "/Message";   // Sends partition status messages: dsc/Get/Partition1/Message ... dsc/Get/Partition8/Message
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
@@ -241,7 +261,10 @@ void loop() {
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
       // Skips processing if the partition is disabled or in installer programming
-      if (dsc.disabled[partition]) return;
+      if (dsc.disabled[partition]) continue;
+
+      // Publishes the partition status message
+      publishMessage(mqttPartitionTopic, partition);
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
@@ -250,7 +273,9 @@ void loop() {
         appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
         if (dsc.armed[partition]) {
-          if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "armed_away", true);
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "armed_night", true);
+          else if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "armed_away", true);
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "armed_night", true);
           else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "armed_home", true);
         }
         else mqtt.publish(publishTopic, "disarmed", true);
@@ -338,6 +363,13 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
+  // Resets status if attempting to change the armed mode while armed or not ready
+  if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
+    dsc.armedChanged[partition] = true;
+    dsc.statusChanged = true;
+    return;
+  }
+
   // Arm stay
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
@@ -348,6 +380,12 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write('w');                             // Virtual keypad arm away
+  }
+
+  // Arm night
+  else if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+    dsc.writePartition = partition + 1;         // Sets writes to the partition number
+    dsc.write('n');                             // Virtual keypad arm away
   }
 
   // Disarm
@@ -394,4 +432,92 @@ void appendPartition(const char* sourceTopic, byte sourceNumber, char* publishTo
   strcpy(publishTopic, sourceTopic);
   itoa(sourceNumber + 1, partitionNumber, 10);
   strcat(publishTopic, partitionNumber);
+}
+
+
+// Publishes the partition status message
+void publishMessage(const char* sourceTopic, byte partition) {
+  char publishTopic[strlen(sourceTopic) + strlen(mqttPartitionMessageSuffix) + 2];
+  char partitionNumber[2];
+
+  // Appends the sourceTopic with the partition number and message topic
+  itoa(partition + 1, partitionNumber, 10);
+  strcpy(publishTopic, sourceTopic);
+  strcat(publishTopic, partitionNumber);
+  strcat(publishTopic, mqttPartitionMessageSuffix);
+
+  // Publishes the current partition message
+  switch (dsc.status[partition]) {
+    case 0x01: mqtt.publish(publishTopic, "Partition ready", true); break;
+    case 0x02: mqtt.publish(publishTopic, "Stay zones open", true); break;
+    case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
+    case 0x04: mqtt.publish(publishTopic, "Armed stay", true); break;
+    case 0x05: mqtt.publish(publishTopic, "Armed away", true); break;
+    case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
+    case 0x08: mqtt.publish(publishTopic, "Exit delay in progress", true); break;
+    case 0x09: mqtt.publish(publishTopic, "Arming with no entry delay", true); break;
+    case 0x0B: mqtt.publish(publishTopic, "Quick exit in progress", true); break;
+    case 0x0C: mqtt.publish(publishTopic, "Entry delay in progress", true); break;
+    case 0x0D: mqtt.publish(publishTopic, "Zone open after alarm", true); break;
+    case 0x10: mqtt.publish(publishTopic, "Keypad lockout", true); break;
+    case 0x11: mqtt.publish(publishTopic, "Partition in alarm", true); break;
+    case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
+    case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
+    case 0x16: mqtt.publish(publishTopic, "Armed with no entry delay", true); break;
+    case 0x22: mqtt.publish(publishTopic, "Partition busy", true); break;
+    case 0x33: mqtt.publish(publishTopic, "Command output in progress", true); break;
+    case 0x3D: mqtt.publish(publishTopic, "Disarmed after alarm in memory", true); break;
+    case 0x3E: mqtt.publish(publishTopic, "Partition disarmed", true); break;
+    case 0x40: mqtt.publish(publishTopic, "Keypad blanked", true); break;
+    case 0x8A: mqtt.publish(publishTopic, "Activate stay/away zones", true); break;
+    case 0x8B: mqtt.publish(publishTopic, "Quick exit", true); break;
+    case 0x8E: mqtt.publish(publishTopic, "Invalid option", true); break;
+    case 0x8F: mqtt.publish(publishTopic, "Invalid access code", true); break;
+    case 0x9E: mqtt.publish(publishTopic, "Enter * code", true); break;
+    case 0x9F: mqtt.publish(publishTopic, "Enter access code", true); break;
+    case 0xA0: mqtt.publish(publishTopic, "Zone bypass", true); break;
+    case 0xA1: mqtt.publish(publishTopic, "Trouble menu", true); break;
+    case 0xA2: mqtt.publish(publishTopic, "Alarm memory", true); break;
+    case 0xA3: mqtt.publish(publishTopic, "Door chime enabled", true); break;
+    case 0xA4: mqtt.publish(publishTopic, "Door chime disabled", true); break;
+    case 0xA5: mqtt.publish(publishTopic, "Enter master code", true); break;
+    case 0xA6: mqtt.publish(publishTopic, "Access codes", true); break;
+    case 0xA7: mqtt.publish(publishTopic, "Enter new code", true); break;
+    case 0xA9: mqtt.publish(publishTopic, "User function", true); break;
+    case 0xAA: mqtt.publish(publishTopic, "Time and date", true); break;
+    case 0xAB: mqtt.publish(publishTopic, "Auto-arm time", true); break;
+    case 0xAC: mqtt.publish(publishTopic, "Auto-arm enabled", true); break;
+    case 0xAD: mqtt.publish(publishTopic, "Auto-arm disabled", true); break;
+    case 0xAF: mqtt.publish(publishTopic, "System test", true); break;
+    case 0xB0: mqtt.publish(publishTopic, "Enable DLS", true); break;
+    case 0xB2: mqtt.publish(publishTopic, "Command output", true); break;
+    case 0xB7: mqtt.publish(publishTopic, "Enter installer code", true); break;
+    case 0xB8: mqtt.publish(publishTopic, "Key * while armed", true); break;
+    case 0xB9: mqtt.publish(publishTopic, "Zone tamper menu", true); break;
+    case 0xBA: mqtt.publish(publishTopic, "Zones with low batteries", true); break;
+    case 0xC6: mqtt.publish(publishTopic, "Zone fault menu", true); break;
+    case 0xC8: mqtt.publish(publishTopic, "Service required menu", true); break;
+    case 0xD0: mqtt.publish(publishTopic, "Handheld keypads with low batteries", true); break;
+    case 0xD1: mqtt.publish(publishTopic, "Wireless key with low batteries", true); break;
+    case 0xE4: mqtt.publish(publishTopic, "Installer programming", true); break;
+    case 0xE5: mqtt.publish(publishTopic, "Keypad slot assignment", true); break;
+    case 0xE6: mqtt.publish(publishTopic, "Input: 2 digits", true); break;
+    case 0xE7: mqtt.publish(publishTopic, "Input: 3 digits", true); break;
+    case 0xE8: mqtt.publish(publishTopic, "Input: 4 digits", true); break;
+    case 0xEA: mqtt.publish(publishTopic, "Code: 2 digits", true); break;
+    case 0xEB: mqtt.publish(publishTopic, "Code: 4 digits", true); break;
+    case 0xEC: mqtt.publish(publishTopic, "Input: 6 digits", true); break;
+    case 0xED: mqtt.publish(publishTopic, "Input: 32 digits", true); break;
+    case 0xEE: mqtt.publish(publishTopic, "Input: 1 option per zone", true); break;
+    case 0xEF: mqtt.publish(publishTopic, "Module supervision field", true); break;
+    case 0xF0: mqtt.publish(publishTopic, "Function key 1", true); break;
+    case 0xF1: mqtt.publish(publishTopic, "Function key 2", true); break;
+    case 0xF2: mqtt.publish(publishTopic, "Function key 3", true); break;
+    case 0xF3: mqtt.publish(publishTopic, "Function key 4", true); break;
+    case 0xF4: mqtt.publish(publishTopic, "Function key 5", true); break;
+    case 0xF5: mqtt.publish(publishTopic, "Wireless module placement test", true); break;
+    case 0xF7: mqtt.publish(publishTopic, "Installer programming subsection", true); break;
+    case 0xF8: mqtt.publish(publishTopic, "Keypad programming", true); break;
+    default: return;
+  }
 }

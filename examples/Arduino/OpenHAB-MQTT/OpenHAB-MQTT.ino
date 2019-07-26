@@ -210,7 +210,7 @@ void loop() {
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
       // Skips processing if the partition is disabled or in installer programming
-      if (dsc.disabled[partition]) return;
+      if (dsc.disabled[partition]) continue;
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
@@ -319,6 +319,12 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
+  // Resets status if attempting to change the armed mode while armed or not ready
+  if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
+    dsc.armedChanged[partition] = true;
+    dsc.statusChanged = true;
+    return;
+  }
 
   // Arm stay
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {

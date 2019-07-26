@@ -91,7 +91,7 @@ void loop() {
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
       // Skips processing if the partition is disabled or in installer programming
-      if (dsc.disabled[partition]) return;
+      if (dsc.disabled[partition]) continue;
 
       // Checks ready status
       if (dsc.readyChanged[partition]) {

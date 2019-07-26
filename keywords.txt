@@ -34,6 +34,7 @@ accessCodePrompt	KEYWORD2
 timestampChanged	KEYWORD2
 ready	KEYWORD2
 readyChanged	KEYWORD2
+disabled	KEYWORD2
 exitDelay	KEYWORD2
 exitDelayChanged	KEYWORD2
 entryDelay	KEYWORD2

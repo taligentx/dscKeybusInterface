@@ -581,16 +581,13 @@ void loop() {
     if (testCode < 10) {
       Serial.print("000");
       Serial.println(testCode);
-      dsc.write('0');
-      dsc.write('0');
-      dsc.write('0');
+      dsc.write("000");
       dsc.write(testCodeChar);
     }
     else if (testCode < 100) {
       Serial.print("00");
       Serial.println(testCode);
-      dsc.write('0');
-      dsc.write('0');
+      dsc.write("00");
       dsc.write(testCodeChar);
     }
     else if (testCode < 1000) {
