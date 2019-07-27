@@ -38,6 +38,8 @@
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
  *
+ *  Many thanks to ColinNG for contributing this example: https://github.com/ColinNG
+ *
  *  This example code is in the public domain.
  */
 

@@ -19,6 +19,8 @@
  *    6. Upload the sketch.
  *    7. Upload the SPIFFS data containing the web server files:
  *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
+ *    8. Access the virtual keypad web interface by the IP address displayed through
+ *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
  *    1.1 - New: Fire, alarm, panic, stay arm, away arm, door chime buttons are now functional
@@ -68,11 +70,9 @@
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
-// WiFi settings
+// Settings
 char wifiSSID[] = "";
 char wifiPassword[] = "";
-
-// DNS settings
 char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 
 // Configures the Keybus interface with the specified pins - dscWritePin is

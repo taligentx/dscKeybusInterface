@@ -12,7 +12,7 @@ Screenshots:
 * [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/61570833-c9bb9780-aa54-11e9-9477-8e0853609e91.png)
 * [Home Assistant](https://www.home-assistant.io):  
-  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/61985688-f54bfe00-afcf-11e9-82f9-1a41bf8b89a5.png)
+  ![HomeAssistant](https://user-images.githubusercontent.com/12835671/61985900-38f33780-afd1-11e9-9d43-ab0b681b7b03.png)
 * [OpenHAB](https://www.openhab.org):  
   ![OpenHAB](https://user-images.githubusercontent.com/12835671/61560425-daa6e180-aa31-11e9-9efe-0fcb44d2106a.png)
 * [Blynk](https://www.blynk.cc) app virtual keypad:  
@@ -81,6 +81,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * develop
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
   - New: `Unlocker` example sketch - determines the panel installer code
+  - New: `KeybusReaderIP` example sketch enables Keybus data access over IP, thanks to [aboulfad](https://github.com/aboulfad) for this contribution!
   - New: esp32 microcontroller support
   - New: Features for sketches:
       * `ready` and `disabled` track partition status
@@ -202,7 +203,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
 
-* **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.
+* **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.  For esp8266/esp32, `KeybusReaderIP` enables connectivity over WiFi.
 
   See [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp) for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
