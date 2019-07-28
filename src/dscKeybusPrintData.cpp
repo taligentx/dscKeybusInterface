@@ -135,6 +135,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed with no entry delay")); break;
+    case 0x19: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x22: stream->print(F("Partition busy")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
@@ -142,7 +143,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
     case 0x8B: stream->print(F("Quick exit")); break;
-    case 0x8E: stream->print(F("Invalid option")); break;
+    case 0x8E: stream->print(F("Function not available")); break;
     case 0x8F: stream->print(F("Invalid access code")); break;
     case 0x9E: stream->print(F("Enter * function code")); break;
     case 0x9F: stream->print(F("Enter access code")); break;

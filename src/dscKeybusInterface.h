@@ -90,8 +90,8 @@ class dscKeybusInterface {
     byte hour, minute, day, month;
     int year;
 
-    // Sets panel time, the year can be sent as either 2 or 4 digits
-    void setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode);
+    // Sets panel time, the year can be sent as either 2 or 4 digits, returns true if the panel is ready to set the time
+    bool setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode);
 
     // Status tracking
     bool statusChanged;                   // True after any status change
