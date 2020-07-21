@@ -1,0 +1,162 @@
+globals:
+  - id: accesscode
+    type: int
+    initial_value: !secret access_code
+ 
+esphome:
+  name: alarm
+  platform: ESP8266
+  board: nodemcuv2
+  
+  includes:
+    #copy dsckeybusinterface library source to this directory to be included
+    - dscKeybusInterface/
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "DSCalarm"
+    password: !secret wifi_password
+
+logger:
+  baud_rate: 0
+
+api:
+   password: !secret api_password  
+   
+ota:
+   password: !secret ota_password
+   safe_mode: True
+   
+status_led:
+  pin:
+    number: D4
+    inverted: yes
+
+custom_component:
+- lambda: |-
+    auto DSCkeybus = new DSCkeybushome();
+    
+    DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
+       id(system_status).publish_state(statusCode);
+    });
+    
+    DSCkeybus->onPartitionStatusChange([&](uint8_t partition,std::string statusCode) {
+       switch(partition) {
+         case 1: id(p1).publish_state(statusCode); break;
+         case 2: id(p2).publish_state(statusCode); break;
+      }
+    });
+    
+     DSCkeybus->onTroubleStatusChange([&](bool open) {
+        id(trouble_status).publish_state(open);
+    });
+    
+    DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
+      switch (partition) {
+          case 1: id(f1).publish_state(open); break;
+      }
+    });
+    
+    DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
+      switch (zone) {
+        case 1: id(z1).publish_state(open); break;
+        case 2: id(z2).publish_state(open); break;
+        case 3: id(z3).publish_state(open); break;
+        case 4: id(z4).publish_state(open); break;
+        case 5: id(z5).publish_state(open); break;
+        case 6: id(z6).publish_state(open); break;
+        case 7: id(z7).publish_state(open); break;
+        case 8: id(z8).publish_state(open); break;
+        case 9: id(z9).publish_state(open); break;
+        case 10: id(z10).publish_state(open); break;
+        case 11: id(z11).publish_state(open); break;
+      }
+    });
+    return {DSCkeybus};
+
+binary_sensor:
+  - platform: template
+    id: z1
+    name: "Front door"
+    device_class: door
+  - platform: template
+    id: z2
+    name: "Garage door"
+    device_class: door
+  - platform: template
+    id: z3
+    name: "Back door"
+    device_class: door
+  - platform: template
+    id: z4
+    name: "Living room window"
+    device_class: window
+  - platform: template
+    id: z5
+    name: "Dining room window"
+    device_class: window
+  - platform: template
+    id: z6
+    name: "Family room window LF"
+    device_class: window
+  - platform: template
+    id: z7
+    name: "Family room window RF"
+    device_class: window
+  - platform: template
+    id: z8
+    name: "Basement windows"
+    device_class: window
+  - platform: template
+    id: z9
+    name: "Upstairs motion"
+    device_class: motion
+  - platform: template
+    id: z10
+    name: "Basement motion"
+    device_class: motion
+  - platform: template
+    id: z11
+    name: "Main floor motion"
+    device_class: motion
+  - platform: template
+    id: trouble_status
+    name: "Trouble Status"
+    device_class: problem
+  - platform: template
+    id: f1
+    device_class: safety
+    name: "Fire Status"
+  
+text_sensor:
+  - platform: template
+    id: system_status
+    name: "System Status"
+    icon: "mdi:shield"
+  - platform: template
+    id: p1
+    name: "Partition 1 Status "
+    icon: "mdi:shield"
+  - platform: template
+    id: p2
+    name: "Partition 2 Status "
+    icon: "mdi:shield"    
+    
+switch:
+  - platform: template
+    name: "Alarm Connection"
+    id: connection_status_switch
+    lambda: |-
+      return getKeybusConnectionStatus();
+    icon: "mdi:shield-link-variant"
+    turn_on_action:
+      - switch.toggle: restart_switch
+    turn_off_action:
+      - lambda: |-
+          disconnectKeybus();
+  - platform: restart
+    id: restart_switch
+
