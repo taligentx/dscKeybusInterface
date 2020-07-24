@@ -9,7 +9,6 @@ esphome:
   board: nodemcuv2
   
   includes:
-    #copy dsckeybusinterface library source to this directory to be included
     - dscKeybusInterface/
 
 wifi:
@@ -22,6 +21,7 @@ wifi:
 
 logger:
   baud_rate: 0
+  level: debug
 
 api:
    password: !secret api_password  
@@ -47,6 +47,12 @@ custom_component:
        switch(partition) {
          case 1: id(p1).publish_state(statusCode); break;
          case 2: id(p2).publish_state(statusCode); break;
+      }
+    });
+    DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
+       switch(partition) {
+         case 1: id(m1).publish_state(msg); break;
+         case 2: id(m2).publish_state(msg); break;
       }
     });
     
@@ -143,8 +149,17 @@ text_sensor:
   - platform: template
     id: p2
     name: "Partition 2 Status "
-    icon: "mdi:shield"    
-    
+    icon: "mdi:shield"  
+  - platform: template
+    id: m1
+    name: "Partition 1 Msg "
+    icon: "mdi:alert-box"
+  - platform: template
+    id: m2
+    name: "Partition 2 Msg "
+    icon: "mdi:alert-box"
+     
+      
 switch:
   - platform: template
     name: "Alarm Connection"

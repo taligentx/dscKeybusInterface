@@ -3,14 +3,14 @@
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-
-bool forceDisconnect;
+  
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+bool forceDisconnect;
 
 void disconnectKeybus() {
-	dsc.stop();
-	dsc.keybusConnected = false;
-	forceDisconnect = true;
+  dsc.stop();
+  dsc.keybusConnected = false;
+  forceDisconnect = true;
 }
 
 bool getKeybusConnectionStatus() {
@@ -23,7 +23,8 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   std::function<void (std::string)> systemStatusChangeCallback;
   std::function<void ( bool)> troubleStatusChangeCallback;
   std::function<void (uint8_t, bool)> fireStatusChangeCallback;
-  std::function<void (uint8_t,std::string)> partitionStatusChangeCallback;  
+  std::function<void (uint8_t,std::string)> partitionStatusChangeCallback; 
+  std::function<void (uint8_t,std::string)> partitionMsgChangeCallback;    
   
   const std::string STATUS_PENDING = "pending";
   const std::string STATUS_ARM = "armed_away";
@@ -35,6 +36,9 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   const std::string STATUS_TRIGGERED = "triggered";
   const std::string STATUS_READY = "ready";
   const std::string STATUS_NOT_READY = "not_ready";
+  const std::string MSG_ZONE_BYPASS = "zone_bypass_entered";
+  const std::string MSG_ARMED_BYPASS = "armed_custom_bypass";
+  const std::string MSG_NONE = "no_messages";
  
   uint8_t zone;
 
@@ -43,8 +47,10 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onFireStatusChange(std::function<void (uint8_t partition, bool isOpen)> callback) { fireStatusChangeCallback = callback; }
   void onTroubleStatusChange(std::function<void (bool isOpen)> callback) { troubleStatusChangeCallback = callback; }
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
+  void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
   char accessCode[4];
+  byte lastStatus[dscPartitions];
   
   void setup() override {
 
@@ -58,8 +64,8 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
     register_service(&DSCkeybushome::alarm_keypress, "alarm_keypress",{"keys"});
 	
 	systemStatusChangeCallback(STATUS_OFFLINE);
-	dsc.resetStatus();
 	forceDisconnect = false;
+	dsc.resetStatus();
 	dsc.begin();
 
   }
@@ -130,13 +136,15 @@ void alarm_trigger_panic () {
       dsc.write('n');                             // Virtual keypad arm away
     }
 	*/
-	//Arm night
+	// Arm night
 	else if (state.compare("N") == 0 && !dsc.armed[partition] &&  !dsc.exitDelay[partition]) {
 		char cmd[2];
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
 		if (code==0) code=id(accesscode);
 		itoa(code,accessCode,10);
+		//strcat(cmd,accessCode);
+		 ESP_LOGD("Debun","Writing keys: %s,%s",cmd,accessCode);
 		dsc.write(cmd);
 		dsc.write(accessCode);
 	}
@@ -165,10 +173,11 @@ void alarm_trigger_panic () {
 	 
 
   void loop() override {
-		 
-    if (!forceDisconnect && dsc.loop() &&  dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
+    	 
+		
+    if ( !forceDisconnect && dsc.loop() && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
-	
+			 
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
 		// handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
 		if (dsc.bufferOverflow) ESP_LOGD("Error","Keybus buffer overflow");
@@ -198,13 +207,32 @@ void alarm_trigger_panic () {
 		// Publishes status per partition
 		for (byte partition = 0; partition < dscPartitions; partition++) {
 			
+			if (lastStatus[partition] == 0) partitionMsgChangeCallback(partition+1,MSG_NONE ); //init msgs
+			
+			if (lastStatus[partition] != dsc.status[partition] ) {
+				lastStatus[partition]=dsc.status[partition];
+				//ESP_LOGD("Debug","Msg %02X: %02X",partition,dsc.status[partition]);
+				if ( dsc.status[partition] == 0xA0 ) {
+					partitionMsgChangeCallback(partition+1,MSG_ZONE_BYPASS );
+				}	
+				else if ( dsc.status[partition] == 0x15 ) {
+					partitionMsgChangeCallback(partition+1,MSG_ARMED_BYPASS );
+				}	
+				else if ( dsc.status[partition] == 0x04 ) {
+					partitionMsgChangeCallback(partition+1,STATUS_STAY );
+				}	
+				else if (dsc.status[partition] == 0x3e ) {
+					partitionMsgChangeCallback(partition+1,MSG_NONE );
+				}
+			}
+			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
+				
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
 					if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
-					else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
 				} else {
 					partitionStatusChangeCallback(partition+1,STATUS_OFF );
@@ -222,7 +250,7 @@ void alarm_trigger_panic () {
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.ready[partition] ) {
-					partitionStatusChangeCallback(partition+1,STATUS_READY );
+					partitionStatusChangeCallback(partition+1,STATUS_OFF );
 				} else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
 			}
 
