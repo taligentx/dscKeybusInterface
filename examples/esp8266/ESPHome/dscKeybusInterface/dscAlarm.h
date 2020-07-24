@@ -130,7 +130,7 @@ void alarm_trigger_panic () {
       dsc.write('w');                             // Virtual keypad arm away
     }
 	/*
-	// Arm night
+	// Arm night  #note this code does not work with my older PC5010 panel
 	else if (state.compare("N") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
       dsc.write('n');                             // Virtual keypad arm away
@@ -141,11 +141,8 @@ void alarm_trigger_panic () {
 		char cmd[2];
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
-		if (code==0) code=id(accesscode);
-		itoa(code,accessCode,10);
-		//strcat(cmd,accessCode);
-		 ESP_LOGD("Debun","Writing keys: %s,%s",cmd,accessCode);
 		dsc.write(cmd);
+		itoa(code,accessCode,10);
 		dsc.write(accessCode);
 	}
 	// Fire command
@@ -163,7 +160,6 @@ void alarm_trigger_panic () {
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		if (code==0) code=id(accesscode);
 		itoa(code,accessCode,10);
 		dsc.write(accessCode);
 	}
