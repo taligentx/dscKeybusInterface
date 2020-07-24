@@ -142,7 +142,7 @@ void alarm_trigger_panic () {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
 		dsc.write(cmd);
-		itoa(code,accessCode,10);
+		sprintf(accessCode,"%04u",code);
 		dsc.write(accessCode);
 	}
 	// Fire command
@@ -160,7 +160,7 @@ void alarm_trigger_panic () {
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		itoa(code,accessCode,10);
+		sprintf(accessCode,"%04u",code);
 		dsc.write(accessCode);
 	}
 	
@@ -190,7 +190,7 @@ void alarm_trigger_panic () {
 		// Sends the access code when needed by the panel for arming
 		if (dsc.accessCodePrompt && dsc.writeReady) {
 			dsc.accessCodePrompt = false;
-			itoa(id(accesscode),accessCode,10);
+			sprintf(accessCode,"%04u",id(accesscode));
 			dsc.write(accessCode);
 		}
 
