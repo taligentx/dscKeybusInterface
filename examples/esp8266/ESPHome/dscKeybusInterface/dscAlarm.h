@@ -38,6 +38,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   const std::string STATUS_NOT_READY = "not_ready";
   const std::string MSG_ZONE_BYPASS = "zone_bypass_entered";
   const std::string MSG_ARMED_BYPASS = "armed_custom_bypass";
+  const std::string MSG_NO_ENTRY_DELAY = "no_entry_delay";
   const std::string MSG_NONE = "no_messages";
  
   uint8_t zone;
@@ -49,7 +50,6 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onPartitionStatusChange(std::function<void (uint8_t partition,std::string status)> callback) { partitionStatusChangeCallback = callback; }
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
-  char accessCode[4];
   byte lastStatus[dscPartitions];
   
   void setup() override {
@@ -57,7 +57,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
     register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state"});
 	register_service(&DSCkeybushome::alarm_disarm,"alarm_disarm",{"code"});
 	register_service(&DSCkeybushome::alarm_arm_home,"alarm_arm_home");
-	register_service(&DSCkeybushome::alarm_arm_night,"alarm_arm_night");
+	register_service(&DSCkeybushome::alarm_arm_night,"alarm_arm_night",{"code"});
 	register_service(&DSCkeybushome::alarm_arm_away,"alarm_arm_away");
 	register_service(&DSCkeybushome::alarm_trigger_panic,"alarm_trigger_panic");
 	register_service(&DSCkeybushome::alarm_trigger_fire,"alarm_trigger_fire");
@@ -71,7 +71,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   }
   
   
-void alarm_disarm (int code=0) {
+void alarm_disarm (std::string code="") {
 	
 	set_alarm_state(1,"D",code);
 	
@@ -83,9 +83,9 @@ void alarm_arm_home () {
 	
 }
 
-void alarm_arm_night () {
+void alarm_arm_night (std::string code="") {
 	
-	set_alarm_state(1,"N");
+	set_alarm_state(1,"N",code);
 	
 }
 
@@ -114,14 +114,16 @@ void alarm_trigger_panic () {
  }		
   
 
- void set_alarm_state(int partition,std::string state,int code=0) {
+ void set_alarm_state(int partition,std::string state,std::string code="") {
 	
-	if (partition) partition = partition-1;
+	const char* accessCode=code.c_str();
+	if (partition) partition = partition-1; // adjust to 0-xx range
 
     // Arm stay
     if (state.compare("S") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
       dsc.writePartition = partition+1;         // Sets writes to the partition number
 	  dsc.write('s');                             // Virtual keypad arm stay
+	  
     }
 	
     // Arm away
@@ -142,8 +144,9 @@ void alarm_trigger_panic () {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
 		dsc.write(cmd);
-		sprintf(accessCode,"%04u",code);
-		dsc.write(accessCode);
+		if (strlen(accessCode) == 4) { // ensure we get 4 digit code
+			dsc.write(accessCode);
+		}
 	}
 	// Fire command
 	else if (state.compare("F") == 0 && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
@@ -160,8 +163,10 @@ void alarm_trigger_panic () {
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		sprintf(accessCode,"%04u",code);
-		dsc.write(accessCode);
+		if (strlen(accessCode) == 4) { // ensure we get 4 digit code
+			dsc.write(accessCode);
+		}
+		
 	}
 	
 
@@ -170,8 +175,7 @@ void alarm_trigger_panic () {
 
   void loop() override {
     	 
-		
-    if ( !forceDisconnect && dsc.loop() && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
+    if ( !forceDisconnect & dsc.loop() && dsc.statusChanged ) {   // Processes data only when a valid Keybus command has been read
 		dsc.statusChanged = false;                   // Reset the status tracking flag
 			 
 		// If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
@@ -188,10 +192,12 @@ void alarm_trigger_panic () {
 		}
 
 		// Sends the access code when needed by the panel for arming
-		if (dsc.accessCodePrompt && dsc.writeReady) {
+		if (dsc.accessCodePrompt && dsc.writeReady) { 
 			dsc.accessCodePrompt = false;
+			char accessCode[4];
 			sprintf(accessCode,"%04u",id(accesscode));
 			dsc.write(accessCode);
+			ESP_LOGD("Debug","got arming access code prompt");
 		}
 
 		if (dsc.troubleChanged ) {
@@ -207,7 +213,7 @@ void alarm_trigger_panic () {
 			
 			if (lastStatus[partition] != dsc.status[partition] ) {
 				lastStatus[partition]=dsc.status[partition];
-				//ESP_LOGD("Debug","Msg %02X: %02X",partition,dsc.status[partition]);
+			
 				if ( dsc.status[partition] == 0xA0 ) {
 					partitionMsgChangeCallback(partition+1,MSG_ZONE_BYPASS );
 				}	
@@ -217,19 +223,22 @@ void alarm_trigger_panic () {
 				else if ( dsc.status[partition] == 0x04 ) {
 					partitionMsgChangeCallback(partition+1,STATUS_STAY );
 				}	
-				else if (dsc.status[partition] == 0x3e ) {
+				else if ( dsc.status[partition] == 0x06 || dsc.status[partition] == 0x16 ) {
+					partitionMsgChangeCallback(partition+1,MSG_NO_ENTRY_DELAY );
+				}	
+				else if (dsc.status[partition] == 0x3E ) {
 					partitionMsgChangeCallback(partition+1,MSG_NONE );
 				}
 			}
 			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
-				
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
 					if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
 					else if (dsc.armedAway[partition]) partitionStatusChangeCallback(partition+1,STATUS_ARM);
 					else if (dsc.armedStay[partition]) partitionStatusChangeCallback(partition+1,STATUS_STAY );
+					//if (dsc.status[partition] == 0x15) partitionStatusChangeCallback(partition+1,MSG_ARMED_BYPASS );
 				} else {
 					partitionStatusChangeCallback(partition+1,STATUS_OFF );
 					
@@ -246,8 +255,9 @@ void alarm_trigger_panic () {
 			if (dsc.readyChanged[partition] ) {
 				dsc.readyChanged[partition] = false;  // Resets the partition alarm status flag
 				if (dsc.ready[partition] ) {
-					partitionStatusChangeCallback(partition+1,STATUS_OFF );
+					partitionStatusChangeCallback(partition+1,STATUS_OFF ); //instead of ready for HA template 
 				} else if (!dsc.armed[partition]) partitionStatusChangeCallback(partition+1,STATUS_NOT_READY );
+				
 			}
 
 			// Publishes alarm status
