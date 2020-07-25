@@ -108,7 +108,7 @@ void alarm_trigger_panic () {
 }
 
  void alarm_keypress(std::string keystring) {
-	   const char* keys =  strcpy(new char[code.length() +1],keystring.c_str());
+	   const char* keys =  strcpy(new char[keystring.length() +1],keystring.c_str());
 	   ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }		
