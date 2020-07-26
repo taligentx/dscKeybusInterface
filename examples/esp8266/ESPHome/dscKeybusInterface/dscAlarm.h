@@ -107,15 +107,25 @@ void alarm_trigger_panic () {
 	
 }
 
+
  void alarm_keypress(std::string keystring) {
 	   const char* keys =  strcpy(new char[keystring.length() +1],keystring.c_str());
 	   ESP_LOGD("Debug","Writing keys: %s",keystring.c_str());
 	   dsc.write(keys);
  }		
+ 
+ 
+bool isInt(std::string s, int base){
+   if(s.empty() || std::isspace(s[0])) return false ;
+   char * p ;
+   strtol(s.c_str(), &p, base) ;
+   return (*p == 0) ;
+}  
   
-
+  
  void set_alarm_state(int partition,std::string state,std::string code="") {
 	
+	if (code.length() != 4 || !isInt(code,10) ) code=""; // ensure we get a numeric 4 digit code
 	const char* accessCode =  strcpy(new char[code.length() +1],code.c_str());
 	if (partition) partition = partition-1; // adjust to 0-xx range
 
@@ -144,7 +154,7 @@ void alarm_trigger_panic () {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
 		dsc.write(cmd);
-		if (code.length() == 4) { // ensure we get 4 digit code
+		if (code.length() == 4 ) { // ensure we get a 4 digit code
 			dsc.write(accessCode);
 		}
 	}
@@ -163,13 +173,11 @@ void alarm_trigger_panic () {
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		if (code.length()) == 4) { // ensure we get 4 digit code
+		if (code.length()) == 4) { // ensure we get a 4 digit code
 			dsc.write(accessCode);
 		}
-		
 	}
 	
-
 }
 	 
 
