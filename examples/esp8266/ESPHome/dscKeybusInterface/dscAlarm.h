@@ -150,11 +150,11 @@ bool isInt(std::string s, int base){
 	*/
 	// Arm night
 	else if (state.compare("N") == 0 && !dsc.armed[partition] &&  !dsc.exitDelay[partition]) {
-		char cmd[2];
+		char cmd[3];
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
 		strcpy(cmd,"*9");
-		dsc.write(cmd);
 		if (code.length() == 4 ) { // ensure we get a 4 digit code
+			dsc.write(cmd);
 			dsc.write(accessCode);
 		}
 	}
