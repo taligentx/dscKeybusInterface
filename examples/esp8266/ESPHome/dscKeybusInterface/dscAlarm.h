@@ -51,6 +51,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   void onPartitionMsgChange(std::function<void (uint8_t partition,std::string msg)> callback) { partitionMsgChangeCallback = callback; }
   
   byte lastStatus[dscPartitions];
+  std::string access_code="";
   
   void setup() override {
 
@@ -71,7 +72,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   }
   
   
-void alarm_disarm (std::string code="") {
+void alarm_disarm (std::string code) {
 	
 	set_alarm_state(1,"D",code);
 	
@@ -83,7 +84,7 @@ void alarm_arm_home () {
 	
 }
 
-void alarm_arm_night (std::string code="") {
+void alarm_arm_night (std::string code) {
 	
 	set_alarm_state(1,"N",code);
 	
@@ -173,7 +174,7 @@ bool isInt(std::string s, int base){
     // Disarm
     else if (state.compare("D") == 0 && (dsc.armed[partition] || dsc.exitDelay[partition])) {
 		dsc.writePartition = partition+1;         // Sets writes to the partition number
-		if (code.length()) == 4) { // ensure we get a 4 digit code
+		if (code.length() == 4) { // ensure we get a 4 digit code
 			dsc.write(accessCode);
 		}
 	}
@@ -200,12 +201,11 @@ bool isInt(std::string s, int base){
 		}
 
 		// Sends the access code when needed by the panel for arming
-		if (dsc.accessCodePrompt && dsc.writeReady) { 
+		if (dsc.accessCodePrompt && dsc.writeReady) {
 			dsc.accessCodePrompt = false;
-			char accessCode[4];
-			sprintf(accessCode,"%04u",id(accesscode));
+			const char* accessCode = access_code.c_str();
 			dsc.write(accessCode);
-			ESP_LOGD("Debug","got arming access code prompt");
+			ESP_LOGD("Debug","got access code prompt");
 		}
 
 		if (dsc.troubleChanged ) {

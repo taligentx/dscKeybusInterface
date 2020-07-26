@@ -1,7 +1,5 @@
-globals:
-  - id: accesscode
-    type: int
-    initial_value: !secret access_code
+substitutions:
+  access_code: !secret access_code
  
 esphome:
   name: alarm
@@ -38,6 +36,8 @@ status_led:
 custom_component:
 - lambda: |-
     auto DSCkeybus = new DSCkeybushome();
+    
+    DSCkeybus->access_code="$access_code";
     
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
