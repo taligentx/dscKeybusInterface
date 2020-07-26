@@ -54,7 +54,7 @@ class DSCkeybushome : public Component, public CustomAPIDevice {
   
   void setup() override {
 
-    register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state"});
+    register_service(&DSCkeybushome::set_alarm_state,"set_alarm_state", {"partition","state","code"});
 	register_service(&DSCkeybushome::alarm_disarm,"alarm_disarm",{"code"});
 	register_service(&DSCkeybushome::alarm_arm_home,"alarm_arm_home");
 	register_service(&DSCkeybushome::alarm_arm_night,"alarm_arm_night",{"code"});
