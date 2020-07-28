@@ -1,3 +1,4 @@
+#for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
   access_code: !secret access_code
  

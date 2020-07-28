@@ -1,5 +1,7 @@
 #include "esphome.h"
 
+#for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
+
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
@@ -241,6 +243,7 @@ bool isInt(std::string s, int base){
 			
 			// Publishes armed/disarmed status
 			if (dsc.armedChanged[partition] ) {
+				dsc.readyChanged[partition] = false; // no need to update the ready status since we update the current status here
 				dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 				if (dsc.armed[partition]) {
 					if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) partitionStatusChangeCallback(partition+1,STATUS_NIGHT);
