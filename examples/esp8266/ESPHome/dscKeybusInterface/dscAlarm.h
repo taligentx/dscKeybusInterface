@@ -1,6 +1,6 @@
 #include "esphome.h"
 
-#for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
+//for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
