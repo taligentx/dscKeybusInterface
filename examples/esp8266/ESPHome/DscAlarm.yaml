@@ -1,9 +1,9 @@
 #for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
 substitutions:
-  access_code: !secret access_code
- 
+  accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming eg. night mode
+
 esphome:
-  name: alarm
+  name: dscalarm
   platform: ESP8266
   board: nodemcuv2
   
@@ -38,12 +38,11 @@ custom_component:
 - lambda: |-
     auto DSCkeybus = new DSCkeybushome();
     
-    DSCkeybus->access_code="$access_code";
-    
+    DSCkeybus->accessCode="$accessCode";
+
     DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
        id(system_status).publish_state(statusCode);
     });
-    
     DSCkeybus->onPartitionStatusChange([&](uint8_t partition,std::string statusCode) {
        switch(partition) {
          case 1: id(p1).publish_state(statusCode); break;
@@ -56,17 +55,16 @@ custom_component:
          case 2: id(m2).publish_state(msg); break;
       }
     });
-    
-     DSCkeybus->onTroubleStatusChange([&](bool open) {
-        id(trouble_status).publish_state(open);
+     DSCkeybus->onTroubleStatusChange([&](uint8_t partition, bool open) {
+        switch (partition) {
+          case 1: id(t1).publish_state(open); break;
+      }
     });
-    
     DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
       switch (partition) {
           case 1: id(f1).publish_state(open); break;
       }
     });
-    
     DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
       switch (zone) {
         case 1: id(z1).publish_state(open); break;
@@ -82,91 +80,143 @@ custom_component:
         case 11: id(z11).publish_state(open); break;
       }
     });
+    DSCkeybus->onZoneAlarmChange([&](uint8_t zone, bool open) {
+      switch (zone) {
+        case 1: id(za1).publish_state(open); break;
+        case 2: id(za2).publish_state(open); break;
+        case 3: id(za3).publish_state(open); break;
+        case 4: id(za4).publish_state(open); break;
+        case 5: id(za5).publish_state(open); break;
+        case 6: id(za6).publish_state(open); break;
+        case 7: id(za7).publish_state(open); break;
+        case 8: id(za8).publish_state(open); break;
+        case 9: id(za9).publish_state(open); break;
+        case 10: id(za10).publish_state(open); break;
+        case 11: id(za11).publish_state(open); break;
+      }
+    });
     return {DSCkeybus};
 
 binary_sensor:
+    #zone status
   - platform: template
     id: z1
-    name: "Front door"
+    name: "Zone Front door"
     device_class: door
   - platform: template
     id: z2
-    name: "Garage door"
+    name: "Zone Garage door"
     device_class: door
   - platform: template
     id: z3
-    name: "Back door"
+    name: "Zone Back door"
     device_class: door
   - platform: template
     id: z4
-    name: "Living room window"
+    name: "Zone Living room window"
     device_class: window
   - platform: template
     id: z5
-    name: "Dining room window"
+    name: "Zone Dining room window"
     device_class: window
   - platform: template
     id: z6
-    name: "Family room window LF"
+    name: "Zone Family room window LF"
     device_class: window
   - platform: template
     id: z7
-    name: "Family room window RF"
+    name: "Zone Family room window RF"
     device_class: window
   - platform: template
     id: z8
-    name: "Basement windows"
+    name: "Zone Basement windows"
     device_class: window
   - platform: template
     id: z9
-    name: "Upstairs motion"
+    name: "Zone Upstairs motion"
     device_class: motion
   - platform: template
     id: z10
-    name: "Basement motion"
+    name: "Zone Basement motion"
     device_class: motion
   - platform: template
     id: z11
-    name: "Main floor motion"
+    name: "Zone Main floor motion"
     device_class: motion
+    
+    #zone alarm status
   - platform: template
-    id: trouble_status
-    name: "Trouble Status"
+    id: za1
+    name: "Zone Front door alarm"
+  - platform: template
+    id: za2
+    name: "Zone Garage door alarm"
+  - platform: template
+    id: za3
+    name: "Zone Back door alarm"
+  - platform: template
+    id: za4
+    name: "Zone Living room window alarm"
+  - platform: template
+    id: za5
+    name: "Zone Dining room window alarm"
+  - platform: template
+    id: za6
+    name: "Zone Family room window LF alarm"
+  - platform: template
+    id: za7
+    name: "Zone Family room window RF alarm"
+  - platform: template
+    id: za8
+    name: "Zone Basement windows alarm"
+  - platform: template
+    id: za9
+    name: "Zone Upstairs motion alarm"
+  - platform: template
+    id: za10
+    name: "Zone Basement motion alarm"
+  - platform: template
+    id: za11
+    name: "Zone Main floor motion alarm"
+    
+  - platform: template
+    id: t1
+    name: "Zone Trouble Status"
     device_class: problem
+    
   - platform: template
     id: f1
     device_class: safety
-    name: "Fire Status"
+    name: "Zone Fire Status"
   
 text_sensor:
   - platform: template
     id: system_status
-    name: "System Status"
+    name: "Zone System Status"
     icon: "mdi:shield"
   - platform: template
     id: p1
-    name: "Partition 1 Status "
+    name: "Zone Partition 1 Status "
     icon: "mdi:shield"
   - platform: template
     id: p2
-    name: "Partition 2 Status "
+    name: "Zone Partition 2 Status "
     icon: "mdi:shield"  
   - platform: template
     id: m1
-    name: "Partition 1 Msg "
+    name: "Zone Partition 1 Msg "
     icon: "mdi:alert-box"
   - platform: template
     id: m2
-    name: "Partition 2 Msg "
+    name: "Zone Partition 2 Msg "
     icon: "mdi:alert-box"
      
-      
 switch:
   - platform: template
-    name: "Alarm Connection"
+    name: "DSC Alarm Connection"
     id: connection_status_switch
     lambda: |-
-      return getKeybusConnectionStatus();
+      return dsc.keybusConnected;
     icon: "mdi:shield-link-variant"
     turn_on_action:
       - switch.toggle: restart_switch
