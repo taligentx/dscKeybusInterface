@@ -56,6 +56,7 @@ volatile byte dscKeybusInterface::currentCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
+unsigned long dscKeybusInterface::cmdWaitTime;
 
 #if defined(ESP32)
 hw_timer_t *timer0 = NULL;
@@ -497,13 +498,22 @@ bool dscKeybusInterface::handleModule() {
 
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
-
+	
+  static unsigned long waitTime;
+  waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
+	if (millis() - waitTime > 10000) { // timeout after no response from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	}
   }
 
   setWriteKey(receivedKey);
@@ -512,13 +522,22 @@ void dscKeybusInterface::write(const char receivedKey) {
 
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
-
+	
+  static unsigned long waitTime;
+  waitTime=millis();
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
     yield();
     #endif
+	if (millis() - waitTime > 10000) { // timeout after no response from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	}
   }
 
   writeKeysArray = receivedKeys;
@@ -536,6 +555,13 @@ void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
       #if defined(ESP8266)
       yield();
       #endif
+	   if (millis() - waitTime > 10000) { // timeout after no response for 3 seconds from * write
+		writeKeysPending = false;
+		wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
+        writeAsterisk = false;
+        writeKeyPending = false;
+		return;
+	  }
     }
   }
   else writeKeys(writeKeysArray);
@@ -815,7 +841,9 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #endif
 
   static bool skipData = false;
-
+  static bool goodCmd = false;
+  static unsigned long cmdTime;
+	
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
 
@@ -908,13 +936,33 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
         case 0x05:  // Status: partitions 1-4
-          if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
+		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
+			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
+				 skipData=false;
+				 goodCmd=true;
+			 }
+			 else skipData = true;
+		  } else {
+			 cmdTime = millis();
+			 skipData=true;
+			 goodCmd=false;
+		  }
           break;
 
         case 0x1B:  // Status: partitions 5-8
-          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData = true;
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
+			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
+				 skipData=false;
+				 goodCmd=true;
+			 }
+			 else skipData = true;
+		  } else {
+			 cmdTime = millis();
+			 skipData=true;
+			 goodCmd=false;
+		  }
           break;
-      }
+            }
 
       // Stores new panel data in the panel buffer
       currentCmd = isrPanelData[0];

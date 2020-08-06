@@ -134,6 +134,7 @@ class dscKeybusInterface {
     // printPanelLights() in dscKeybusPrintData.cpp to see how this data translates to the status message and LED status.
     byte status[dscPartitions];
     byte lights[dscPartitions];
+	static unsigned long cmdWaitTime;
 
     // Process keypad and module data, returns true if data is available
     bool handleModule();
