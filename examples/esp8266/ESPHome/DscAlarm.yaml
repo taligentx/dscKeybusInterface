@@ -1,0 +1,239 @@
+#for documentation see project at https://github.com/Dilbert66/esphome-dsckeybus
+substitutions:
+  accessCode: !secret access_code #Only comes into effect if a password prompt occurs when arming eg. night mode
+ 
+ esphome:
+  name: dscalarm
+  platform: ESP8266
+  board: nodemcuv2
+  
+  includes:
+    - dscKeybusInterface/
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "DSCalarm"
+    password: !secret wifi_password
+
+logger:
+  baud_rate: 0
+  level: verbose
+
+api:
+   password: !secret api_password  
+      
+   
+ota:
+   password: !secret ota_password
+   safe_mode: True
+   
+status_led:
+  pin:
+    number: D4
+    inverted: yes
+
+custom_component:
+- lambda: |-
+    auto DSCkeybus = new DSCkeybushome();
+    
+    DSCkeybus->accessCode="$accessCode";
+    DSCkeybus->debug=0; // 0 = off, 1 = status change data, 2 = + 05/27 packets, 3 = + all packets received
+    
+    DSCkeybus->onSystemStatusChange([&](std::string statusCode) {
+       id(system_status).publish_state(statusCode);
+    });
+    DSCkeybus->onPartitionStatusChange([&](uint8_t partition,std::string statusCode) {
+       switch(partition) {
+         case 1: id(p1).publish_state(statusCode); break;
+         case 2: id(p2).publish_state(statusCode); break;
+      }
+    });
+    DSCkeybus->onPartitionMsgChange([&](uint8_t partition,std::string msg) {
+       switch(partition) {
+         case 1: id(m1).publish_state(msg); break;
+         case 2: id(m2).publish_state(msg); break;
+      }
+    });
+    DSCkeybus->onTroubleStatusChange([&](bool open) {
+        id(t1).publish_state(open);
+    });
+    DSCkeybus->onFireStatusChange([&](uint8_t partition, bool open) {
+      switch (partition) {
+          case 1: id(f1).publish_state(open); break;
+      }
+    });
+    DSCkeybus->onZoneStatusChange([&](uint8_t zone, bool open) {
+      switch (zone) {
+        case 1: id(z1).publish_state(open); break;
+        case 2: id(z2).publish_state(open); break;
+        case 3: id(z3).publish_state(open); break;
+        case 4: id(z4).publish_state(open); break;
+        case 5: id(z5).publish_state(open); break;
+        case 6: id(z6).publish_state(open); break;
+        case 7: id(z7).publish_state(open); break;
+        case 8: id(z8).publish_state(open); break;
+        case 9: id(z9).publish_state(open); break;
+        case 10: id(z10).publish_state(open); break;
+        case 11: id(z11).publish_state(open); break;
+      }
+    });
+    DSCkeybus->onZoneAlarmChange([&](uint8_t zone, bool open) {
+      switch (zone) {
+        case 1: id(za1).publish_state(open); break;
+        case 2: id(za2).publish_state(open); break;
+        case 3: id(za3).publish_state(open); break;
+        case 4: id(za4).publish_state(open); break;
+        case 5: id(za5).publish_state(open); break;
+        case 6: id(za6).publish_state(open); break;
+        case 7: id(za7).publish_state(open); break;
+        case 8: id(za8).publish_state(open); break;
+        case 9: id(za9).publish_state(open); break;
+        case 10: id(za10).publish_state(open); break;
+        case 11: id(za11).publish_state(open); break;
+      }
+    });
+    return {DSCkeybus};
+
+binary_sensor:
+    #zone status
+  - platform: template
+    id: z1
+    name: "Zone Front door"
+    device_class: door
+  - platform: template
+    id: z2
+    name: "Zone Garage door"
+    device_class: door
+  - platform: template
+    id: z3
+    name: "Zone Back door"
+    device_class: door
+  - platform: template
+    id: z4
+    name: "Zone Living room window"
+    device_class: window
+  - platform: template
+    id: z5
+    name: "Zone Dining room window"
+    device_class: window
+  - platform: template
+    id: z6
+    name: "Zone Family room window LF"
+    device_class: window
+  - platform: template
+    id: z7
+    name: "Zone Family room window RF"
+    device_class: window
+  - platform: template
+    id: z8
+    name: "Zone Basement windows"
+    device_class: window
+  - platform: template
+    id: z9
+    name: "Zone Upstairs motion"
+    device_class: motion
+  - platform: template
+    id: z10
+    name: "Zone Basement motion"
+    device_class: motion
+  - platform: template
+    id: z11
+    name: "Zone Main floor motion"
+    device_class: motion
+    
+    #zone alarm status
+  - platform: template
+    id: za1
+    name: "Zone Front door alarm"
+    #device_class: safety
+  - platform: template
+    id: za2
+    name: "Zone Garage door alarm"
+    #device_class: safety
+  - platform: template
+    id: za3
+    name: "Zone Back door alarm"
+    #device_class: safety
+  - platform: template
+    id: za4
+    name: "Zone Living room window alarm"
+    #device_class: safety
+  - platform: template
+    id: za5
+    name: "Zone Dining room window alarm"
+    #device_class: safety
+  - platform: template
+    id: za6
+    name: "Zone Family room window LF alarm"
+    #device_class: safety
+  - platform: template
+    id: za7
+    name: "Zone Family room window RF alarm"
+    #device_class: safety
+  - platform: template
+    id: za8
+    name: "Zone Basement windows alarm"
+    #device_class: safety
+  - platform: template
+    id: za9
+    name: "Zone Upstairs motion alarm"
+    #device_class: safety
+  - platform: template
+    id: za10
+    name: "Zone Basement motion alarm"
+    #device_class: safety
+  - platform: template
+    id: za11
+    name: "Zone Main floor motion alarm"
+    #device_class: safety
+    
+  - platform: template
+    id: t1
+    name: "DSCAlarm Trouble Status"
+    device_class: problem
+    
+  - platform: template
+    id: f1
+    device_class: safety
+    name: "DSCAlarm Partition1 Fire Status"
+  
+text_sensor:
+  - platform: template
+    id: system_status
+    name: "DSCAlarm System Status"
+    icon: "mdi:shield"
+  - platform: template
+    id: p1
+    name: "DSCAlarm Partition 1 Status "
+    icon: "mdi:shield"
+  - platform: template
+    id: p2
+    name: "DSCAlarm Partition 2 Status "
+    icon: "mdi:shield"  
+  - platform: template
+    id: m1
+    name: "DSCAlarm Partition 1 Msg "
+    icon: "mdi:alert-box"
+  - platform: template
+    id: m2
+    name: "DSCAlarm Partition 2 Msg "
+    icon: "mdi:alert-box"
+     
+switch:
+  - platform: template
+    name: "DSCAlarm Connection"
+    id: connection_status_switch
+    lambda: |-
+      return dsc.keybusConnected;
+    icon: "mdi:shield-link-variant"
+    turn_on_action:
+      - switch.toggle: restart_switch
+    turn_off_action:
+      - lambda: |-
+          disconnectKeybus();
+  - platform: restart
+    id: restart_switch
+
