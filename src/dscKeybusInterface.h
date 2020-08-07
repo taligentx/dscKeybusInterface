@@ -117,6 +117,7 @@ class dscKeybusInterface {
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
+    static unsigned long cmdWaitTime; // time to delay treating 05/1b command as valid in ms
 
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -128,13 +129,13 @@ class dscKeybusInterface {
     //            ^ Byte 1 (stop bit)
     static byte panelData[dscReadSize];
     static volatile byte moduleData[dscReadSize];
-
+	
     // status[] and lights[] store the current status message and LED state for each partition.  These can be accessed
     // directly in the sketch to get data that is not already tracked in the library.  See printPanelMessages() and
     // printPanelLights() in dscKeybusPrintData.cpp to see how this data translates to the status message and LED status.
     byte status[dscPartitions];
     byte lights[dscPartitions];
-
+    
     // Process keypad and module data, returns true if data is available
     bool handleModule();
 
@@ -241,17 +242,18 @@ class dscKeybusInterface {
     bool writeArm[dscPartitions];
     bool queryResponse;
     bool previousTrouble;
+	
     bool previousKeybus;
     byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
-    bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
+	bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
     byte previousExitState[dscPartitions];
     bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
-
+	
     static byte dscClockPin;
     static byte dscReadPin;
     static byte dscWritePin;
@@ -262,7 +264,7 @@ class dscKeybusInterface {
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
-    static volatile unsigned long clockHighTime, keybusTime;
+	static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
