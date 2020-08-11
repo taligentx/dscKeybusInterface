@@ -785,7 +785,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         if (!pauseStatus) statusChanged = true;
         return;
       }
-      default: return;
+      //default: return;
     }
   }
 
