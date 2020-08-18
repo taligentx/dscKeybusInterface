@@ -786,6 +786,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         return;
       }
       //default: return;
+	  default: if (partition == 0) return;
     }
   }
 
