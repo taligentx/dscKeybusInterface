@@ -798,6 +798,7 @@ void dscKeybusInterface::printPanel_0x16() {
 
     switch (panelData[3]) {
       case 0x10: stream->print(F("PC5015 ")); break;
+	  case 0x11: stream->print(F("PC5016 ")); break;
       case 0x23: stream->print(F("PC1555MX ")); break;
       case 0x41: stream->print(F("PC1832 ")); break;
       case 0x42: stream->print(F("PC1864 ")); break;
