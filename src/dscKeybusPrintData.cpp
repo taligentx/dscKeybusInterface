@@ -51,7 +51,8 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32
     case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming
     case 0xA5: printPanel_0xA5(); return;  // Date, time, system status messages - partitions 1-2
-    case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
+    case 0xAA: printPanel_0xAA(); return;  // buffe event memory - seem to be index message
+	case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
     case 0xBB: printPanel_0xBB(); return;  // Bell
     case 0xC3: printPanel_0xC3(); return;  // Keypad status
     case 0xCE: printPanel_0xCE(); return;  // Unknown command
@@ -1490,6 +1491,60 @@ void dscKeybusInterface::printPanel_0xA5() {
   }
 }
 
+
+
+/*
+ *  0xAA: buffe event memory - seem to be index message
+ *  Interval: 
+ *  CRC: yes
+ *  Bytes 2-5: partition 1
+ *  Bytes 6-9: partition 2
+ *
+ *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 000 : system | 12:19a 09/20/20
+ *  10101010 0 00100000 01100110 10000000 01001110 11100110 00000000 11100100 [0xAA] index 255 : system | 08:09a 01/16/21
+ *  10101010 0 00100001 01000110 00001011 00111100 00111100 10010111 00101011 [0xAA] index 151 : system | 11:15 01/16/21
+ *
+ */
+void dscKeybusInterface::printPanel_0xAA() {
+  if (!validCRC()) {
+    stream->print(F("[CRC Error]"));
+    return;
+  }
+
+  byte dscYear3 = panelData[3] >> 4;
+  byte dscYear4 = panelData[3] & 0x0F;
+  byte dscMonth = panelData[4] << 2; dscMonth >>=4;
+  byte dscDay1 = panelData[4] << 6; dscDay1 >>= 3;
+  byte dscDay2 = panelData[5] >> 5;
+  byte dscDay = dscDay1 | dscDay2;
+  byte dscHour = panelData[5] & 0x1F;
+  byte dscMinute = panelData[6] >> 2;
+
+  if (dscYear3 >= 7) stream->print(F("19"));
+  else stream->print(F("20"));
+  stream->print(dscYear3);
+  stream->print(dscYear4);
+  stream->print(F("."));
+  if (dscMonth < 10) stream->print("0");
+  stream->print(dscMonth);
+  stream->print(F("."));
+  if (dscDay < 10) stream->print("0");
+  stream->print(dscDay);
+  stream->print(F(" "));
+  if (dscHour < 10) stream->print("0");
+  stream->print(dscHour);
+  stream->print(F(":"));
+  if (dscMinute < 10) stream->print("0");
+  stream->print(dscMinute);
+
+  if (panelData[2] == 0) stream->print(F(" | "));
+  else {
+    stream->print(F(" | Partition "));
+    printPanelBitNumbers(2,1);
+    stream->print(F("| "));
+  }
+  
+}
 
 /*
  *  0xB1: Enabled zones 1-32, partitions 1,2
