@@ -1500,6 +1500,7 @@ void dscKeybusInterface::printPanel_0xA5() {
  *  Bytes 2-5: partition 1
  *  Bytes 6-9: partition 2
  *
+ *  --cmd---   YYY1YYY2   MMMMDD DDDHHHHH MMMMMM            -INDEX--
  *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 255 : system | 08:09a 01/16/21
  *  10101010 0 00100000 01100110 10000000 01001110 11100110 00000000 11100100 [0xAA] index 000 : system | 12:19a 09/20/20
  *  10101010 0 00100001 01000110 00001011 00111100 00111100 10010111 00101011 [0xAA] index 151 : system | 11:15 01/16/21
@@ -1511,6 +1512,14 @@ void dscKeybusInterface::printPanel_0xAA() {
     return;
   }
 
+  sream->print("Memory Buffer Index = ");
+  sream->print("Memory Buffer Index = ");
+  float index = panelData[7];
+  if (index < 10) client.print("00");
+  else if (index < 100) client.print("0");
+  sream->print(index);
+  sream->print(F(" | "));
+  
   byte dscYear3 = panelData[2] >> 4;
   byte dscYear4 = panelData[2] & 0x0F;
   byte dscMonth = panelData[3] << 2; dscMonth >>=4;
