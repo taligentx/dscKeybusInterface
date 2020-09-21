@@ -1500,11 +1500,36 @@ void dscKeybusInterface::printPanel_0xA5() {
  *  Bytes 2-5: partition 1
  *  Bytes 6-9: partition 2
  *
- *  --cmd---   YYY1YYY2   MMMMDD DDDHHHHH MMMMMM            -INDEX--
+ *  --cmd---   YYY1YYY2   MMMMDD DDDHHHHH MMMMMM            -INDEX-- --CRC---
  *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 255 : system | 08:09a 01/16/21
- *  10101010 0 00100000 01100110 10000000 01001110 11100110 00000000 11100100 [0xAA] index 000 : system | 12:19a 09/20/20
- *  10101010 0 00100001 01000110 00001011 00111100 00111100 10010111 00101011 [0xAA] index 151 : system | 11:15 01/16/21
- *
+ *  10101010 0 00100000 01100110 10001101 00111000 10011001 00001000 10010110 [0xAA] Memory Buffer Index 008 | 2020.09.20 13:14 | Fermeture par code Util. 1
+ *  10101010 0 00100000 01100110 10001101 10011000 10011010 00000011 11110010 [0xAA] Memory Buffer Index 003 | 2020.09.20 13:38 | Fermeture par code Util. 2
+ *  10101010 0 00100000 01100110 10001110 11011000 10011100 00000011 00110101 [0xAA] Memory Buffer Index 003 | 2020.09.20 14:54 | Fermeture par code Util. 4
+ *  10101010 0 00100000 01100110 10001111 00011100 10011101 00000010 01111010 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:07 | Fermeture par code Util. 5
+ *  10101010 0 00100000 01100110 10001111 00001100 10100000 00000010 01101101 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:03 | Fermeture par code Util. 8
+ *  10101010 0 00100000 01100110 10001111 10000000 10101000 00000010 11101001 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:32 | Fermeture par code Util. 16
+ *  10101010 0 00100000 01100110 10001111 10001100 10111000 00000010 00000101 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:35 | Fermeture par code Util. 32
+ *  10101010 0 00100000 01100110 10001101 11000000 10111011 00000010 00111010 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:48 | Fermeture par code Util. 40
+ *  10101010 0 00100000 01100110 10001100 11010000 10111111 00000110 01010001 [0xAA] Memory Buffer Index 006 | 2020.09.20 12:52 | fermeture Speciale (quick arm / auto arm / ...)
+ *  10101010 0 00100000 01100110 10001101 00111000 11000000 00000010 10110111 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:14 | Ouverture par Code util. 1
+ *  10101010 0 00100000 01100110 10001101 10011000 11000001 00000010 00011000 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:38 | Ouverture par Code util. 2
+ *  10101010 0 00100000 01100110 10001101 11000100 11000011 00000001 01000101 [0xAA] Memory Buffer Index 001 | 2020.09.20 13:49 | Ouverture par Code util. 4
+ *  10101010 0 00100000 01100110 10001111 00001100 11000111 00000001 10010011 [0xAA] Memory Buffer Index 001 | 2020.09.20 15:03 | Ouverture par Code util. 8
+ *  10101010 0 00100000 01100110 10001100 11010000 11100010 00000010 01110000 [0xAA] Memory Buffer Index 002 | 2020.09.20 12:52 | Ouverture par Code util. 40
+ *  10101010 0 00100000 01100110 10101101 10101110 01100110 00000001 11110010 [0xAA] Memory Buffer Index 001 | 2020.09.21 13:43 | [*1] accès par utilisateur                                                                                                                            | [*1] accès ??
+ *  10101010 0 00100000 01100110 10001101 00110010 11000011 00001001 10111011 [0xAA] Memory Buffer Index 009 | 2020.09.20 13:12 | [*5] accès par Util. 40
+ *  10101010 0 00100000 01100110 10001100 11010110 11100110 00000000 01111000 [0xAA] Memory Buffer Index 000 | 2020.09.20 12:53 | [*6] accès par Util. 40 
+ *  10101010 0 00100000 01100110 10001100 11010000 01001010 00000001 11010111 [0xAA] Memory Buffer Index 001 | 2020.09.20 12:52 | Ouverture après alarme
+ *  10101010 0 00100000 01100110 10001100 11010000 00101011 00000011 10111010 [0xAA] Memory Buffer Index 003 | 2020.09.20 12:52 | Alarme Rétablie Zone 3
+ *  10101010 0 00100000 01100110 10001100 11010000 01001011 00000100 11011011 [0xAA] Memory Buffer Index 004 | 2020.09.20 12:52 | Fermet. Récente
+ *  10101010 0 00100000 01100110 10001100 11010000 00001011 00000101 10011100 [0xAA] Memory Buffer Index 005 | 2020.09.20 12:52 | Alarme Zone 3
+ *  10101010 0 00100000 01100110 10001100 11010010 10011011 00000111 00110000 [0xAA] Memory Buffer Index 007 | 2020.09.20 12:52 | Armement Mode Départ.
+ *  10101010 0 00100000 01100110 10001101 00111000 01111000 00000100 01110001 [0xAA] Memory Buffer Index 004 | 2020.09.20 13:14 | Sabotage Rétabli Zone 3
+ *  10101010 0 00100000 01100110 10001101 00111000 01011000 00000111 01010100 [0xAA] Memory Buffer Index 007 | 2020.09.20 13:14 | Sabotage Zone 3
+ *  10101010 0 00100000 01100110 10101101 10010001 00101011 00000011 10011100 [0xAA] Memory Buffer Index 003 | 2020.09.21 13:36 | Unknown header: 0x4 (automatiquement fermé)
+ *  10101010 0 00100000 01100110 10101101 11000101 10101101 00000010 01010001 [0xAA] Memory Buffer Index 002 | 2020.09.21 13:49 | Unknown header: 0x6 installateur code d'entête (entrée dans *8+code)
+ *  10101010 0 00100000 01100110 10101101 11000101 10101100 00000001 01001111 [0xAA] Memory Buffer Index 001 | 2020.09.21 13:49 | Unknown header: 0x6 installateur code de fin (sortie programmation)
+ *  
  */
 void dscKeybusInterface::printPanel_0xAA() {
   if (!validCRC()) {
@@ -1517,7 +1542,7 @@ void dscKeybusInterface::printPanel_0xAA() {
   if (index < 10) stream->print("00");
   else if (index < 100) stream->print("0");
   stream->print(index,0);
-  stream->print(F(" | "));
+  stream->print(F(" at "));
   
   byte dscYear3 = panelData[2] >> 4;
   byte dscYear4 = panelData[2] & 0x0F;
@@ -1545,8 +1570,47 @@ void dscKeybusInterface::printPanel_0xAA() {
   if (dscMinute < 10) stream->print("0");
   stream->print(dscMinute);
   
+  stream->print(F(" | "));
   
+  byte logUser = 0;
+  byte header1 = (panelData[5] & 0x03) << 2;
+  byte header2 = panelData[6] >> 6;
+  byte header = header1 | header2;
   
+  switch (header) {
+    case 0x02:
+	  logUser = panelData[6] & 0x3F;
+	  logUser = logUser - 24; // don't know with, the user code is with an offset of 24.
+	  // user start from 1 to 34 and 40 to 42
+	  if(logUser > 32) {
+        logUser = logUser + 5;
+	  }
+	  
+	  if((logUser > 0) && (logUser <= 37)) {
+	    stream->print(F("Fermeture par Code util. "));
+	    stream->print(logUser);
+	  }
+	  if(logUser = 39) {
+        stream->print(F("Fermeture Special"));
+	  }
+	  break;
+	case 0x03:
+	  stream->print(F("Ouverture par Code util. "));
+	  logUser = panelData[6] & 0x3F;
+	  // user start from 1 to 34 and 40 to 42 (coded from 0 to 33 and 34 to 36)
+	  if(logUser <= 33) {
+        logUser = logUser + 1; 
+	  }
+	  else {
+		logUser = logUser + 6;
+	  }
+	  stream->print(logUser);
+	  break;
+    default:
+      stream->print(F("Unknown header: 0x"));
+      stream->print(header, HEX);
+      break;
+  }
 }
 
 /*
@@ -2283,6 +2347,9 @@ void dscKeybusInterface::printModule_Keys() {
     case 0x2D: stream->print(F("#")); break;
     case 0x52: stream->print(F("Identified voice prompt help")); break;
     case 0x70: stream->print(F("Command output 3")); break;
+    case 0x82: stream->print(F("Enter in buffer memory")); break; // from *6 menu to go into buffer memory read ?
+    case 0x87: stream->print(F("Right arrow")); break; //only in buffer memory read ?
+    case 0x88: stream->print(F("Left arrow")); break; //only in buffer memory read ?
     case 0xAF: stream->print(F("Arm stay")); break;
     case 0xB1: stream->print(F("Arm away")); break;
     case 0xB6: stream->print(F("*9 No entry delay arm, requires access code")); break;
@@ -2300,7 +2367,7 @@ void dscKeybusInterface::printModule_Keys() {
     case 0xE6: stream->print(F("Activate stay/away zones")); break;
     case 0xEB: stream->print(F("Function key [20] Future Use")); break;
     case 0xEC: stream->print(F("Command output 4")); break;
-    case 0xF7: stream->print(F("Left/right arrow")); break;
+    case 0xF7: stream->print(F("Left/right arrow / *switch display ")); break; // from *6 menu in buffer memory read : char send when "*" is pressed (switch display between date/time event and details)
     default:
       stream->print(F("Unknown key: 0x"));
       stream->print(moduleData[keyByte], HEX);
