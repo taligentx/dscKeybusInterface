@@ -52,7 +52,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming
     case 0xA5: printPanel_0xA5(); return;  // Date, time, system status messages - partitions 1-2
     case 0xAA: printPanel_0xAA(); return;  // buffe event memory - seem to be index message
-	case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
+    case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32
     case 0xBB: printPanel_0xBB(); return;  // Bell
     case 0xC3: printPanel_0xC3(); return;  // Keypad status
     case 0xCE: printPanel_0xCE(); return;  // Unknown command
