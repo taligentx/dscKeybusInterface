@@ -1500,8 +1500,8 @@ void dscKeybusInterface::printPanel_0xA5() {
  *  Bytes 2-5: partition 1
  *  Bytes 6-9: partition 2
  *
- *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 000 : system | 12:19a 09/20/20
- *  10101010 0 00100000 01100110 10000000 01001110 11100110 00000000 11100100 [0xAA] index 255 : system | 08:09a 01/16/21
+ *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 255 : system | 08:09a 01/16/21
+ *  10101010 0 00100000 01100110 10000000 01001110 11100110 00000000 11100100 [0xAA] index 000 : system | 12:19a 09/20/20
  *  10101010 0 00100001 01000110 00001011 00111100 00111100 10010111 00101011 [0xAA] index 151 : system | 11:15 01/16/21
  *
  */
@@ -1511,14 +1511,14 @@ void dscKeybusInterface::printPanel_0xAA() {
     return;
   }
 
-  byte dscYear3 = panelData[3] >> 4;
-  byte dscYear4 = panelData[3] & 0x0F;
-  byte dscMonth = panelData[4] << 2; dscMonth >>=4;
-  byte dscDay1 = panelData[4] << 6; dscDay1 >>= 3;
-  byte dscDay2 = panelData[5] >> 5;
+  byte dscYear3 = panelData[2] >> 4;
+  byte dscYear4 = panelData[2] & 0x0F;
+  byte dscMonth = panelData[3] << 2; dscMonth >>=4;
+  byte dscDay1 = panelData[3] << 6; dscDay1 >>= 3;
+  byte dscDay2 = panelData[4] >> 5;
   byte dscDay = dscDay1 | dscDay2;
-  byte dscHour = panelData[5] & 0x1F;
-  byte dscMinute = panelData[6] >> 2;
+  byte dscHour = panelData[4] & 0x1F;
+  byte dscMinute = panelData[5] >> 2;
 
   if (dscYear3 >= 7) stream->print(F("19"));
   else stream->print(F("20"));
@@ -1536,13 +1536,8 @@ void dscKeybusInterface::printPanel_0xAA() {
   stream->print(F(":"));
   if (dscMinute < 10) stream->print("0");
   stream->print(dscMinute);
-
-  if (panelData[2] == 0) stream->print(F(" | "));
-  else {
-    stream->print(F(" | Partition "));
-    printPanelBitNumbers(2,1);
-    stream->print(F("| "));
-  }
+  
+  
   
 }
 
