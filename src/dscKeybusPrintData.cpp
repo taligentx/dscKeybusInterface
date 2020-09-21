@@ -1512,12 +1512,11 @@ void dscKeybusInterface::printPanel_0xAA() {
     return;
   }
 
-  stream->print("Memory Buffer Index = ");
-  stream->print("Memory Buffer Index = ");
+  stream->print("Memory Buffer Index ");
   float index = panelData[7];
   if (index < 10) stream->print("00");
   else if (index < 100) stream->print("0");
-  stream->print(index);
+  stream->print(index,0);
   stream->print(F(" | "));
   
   byte dscYear3 = panelData[2] >> 4;
