@@ -1515,8 +1515,8 @@ void dscKeybusInterface::printPanel_0xAA() {
   sream->print("Memory Buffer Index = ");
   sream->print("Memory Buffer Index = ");
   float index = panelData[7];
-  if (index < 10) client.print("00");
-  else if (index < 100) client.print("0");
+  if (index < 10) stream->print("00");
+  else if (index < 100) stream->print("0");
   sream->print(index);
   sream->print(F(" | "));
   
