@@ -1583,42 +1583,94 @@ void dscKeybusInterface::printPanel_0xAA() {
   stream->print(F(" | "));
   
   byte logUser = 0;
-  byte header1 = (panelData[5] & 0x03) << 2;
-  byte header2 = panelData[6] >> 6;
-  byte header = header1 | header2;
   
-  switch (header) {
-    case 0x02:
-	  logUser = panelData[6] & 0x3F;
-	  logUser = logUser - 24; // don't know with, the user code is with an offset of 24.
-	  // user start from 1 to 34 and 40 to 42
-	  if(logUser > 32) {
+  stream->print(F("DATA "));
+  int data1 = (panelData[5] & 0x03);
+   stream->print(data1);
+   stream->print(F(" - "));
+  int data2 = panelData[6];
+   stream->print(data2);
+   stream->print(F(" - "));
+  int data = ((int)(data1) << 8 | (int)(data2));
+  stream->print(data);
+  stream->print(F(" | "));
+  
+  switch (data) {
+    case 9 ... 40:
+      // alarme Zone 1 to 32
+      stream->print(F("Alarm Zone "));
+      stream->print(data - 8, DEC);
+      break;
+    case 41 ... 72:
+      // alarme Zone 1 to 32
+      stream->print(F("Alarm Restored Zone "));
+      stream->print(data - 40, DEC);
+      break;
+    
+    case 74:  stream->print(F("Open after alarm")); break;
+    case 75:  stream->print(F("Recent closed")); break;
+    
+    case 86 ... 117:
+      // Tamper zone 1 to 32
+      stream->print(F("Tamper Zone "));
+      stream->print(data - 85, DEC);
+      break;
+    case 118 ... 149:
+      // Tamper restored zone 1 to 32
+      stream->print(F("Tamper restored Zone "));
+      stream->print(data - 117, DEC);
+      break;    
+      
+    case 153 ... 189:
+      // Closed by user code 1 to 34, 40 to 42
+      logUser = data - 152;
+      if(logUser > 34){
         logUser = logUser + 5;
-	  }
-	  
-	  if((logUser > 0) && (logUser <= 37)) {
-	    stream->print(F("Closed by user code "));
-	    stream->print(logUser);
-	  }
-	  if(logUser = 39) {
-        stream->print(F("Special closed"));
-	  }
-	  break;
-	case 0x03:
-	  stream->print(F("Open by user code "));
-	  logUser = panelData[6] & 0x3F;
-	  // user start from 1 to 34 and 40 to 42 (coded from 0 to 33 and 34 to 36)
-	  if(logUser <= 33) {
-        logUser = logUser + 1; 
-	  }
-	  else {
-		logUser = logUser + 6;
-	  }
-	  stream->print(logUser);
-	  break;
+      }
+      stream->print(F("Closed by user code "));
+      stream->print(logUser, DEC);
+      break;    
+      
+    case 191:  stream->print(F("Special closed (quick arm / auto arm / ...")); break;
+    case 192 ... 228:
+      // Open by user code 1 to 34, 40 to 42
+      logUser = data - 191;
+      if(logUser > 34){
+        logUser = logUser + 5;
+      }
+      stream->print(F("Open by user code "));
+      stream->print(logUser, DEC);
+      break;    
+    
+    case 299:  stream->print(F("Auto closed")); break;
+    
+    case 364 ... 395:
+      // Error restored Zone 1 to 32
+      stream->print(F("Error restored Zone "));
+      stream->print(data - 363, DEC);
+      break;    
+    case 396 ... 427:
+      // Error Zone 1 to 32
+      stream->print(F("Error Zone "));
+      stream->print(data - 395, DEC);
+      break; 
+    
+    case 428:  stream->print(F("Exit installer menu")); break;    // message send just afer exit installer menu
+    case 429:  stream->print(F("installer user code")); break;    // message send just afer *8 + code
+      
+    case 614:  stream->print(F("[*1] access by user")); break;
+    
+    case 667:  stream->print(F("Arming Leave mode")); break;
+    
+    case 707:  stream->print(F("[*5] access by user 40")); break;
+    
+    case 742:  stream->print(F("[*6] access by user 40")); break;
+      
     default:
-      stream->print(F("Unknown header: 0x"));
-      stream->print(header, HEX);
+      stream->print(F("Unknown data: 0x"));
+      stream->print(data, HEX);
+      stream->print(F(" - "));
+      stream->print(data, DEC);
       break;
   }
 }
