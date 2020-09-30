@@ -155,7 +155,7 @@ bool dscKeybusInterface::loop() {
   noInterrupts();
   #endif
 
-  if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
+  if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
 
   #if defined(ESP32)
@@ -316,7 +316,7 @@ bool dscKeybusInterface::handlePanel() {
   noInterrupts();
   #endif
 
-  if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
+  if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
 
   #if defined(ESP32)

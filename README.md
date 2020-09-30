@@ -1,10 +1,11 @@
 # DSC Keybus Interface
-This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and usage as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
+This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and direct control as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
-* Home automation: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
+* Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
 * Notifications: [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), MQTT, E-mail
-* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app, installer code unlocking
+* Direct control: Web interface, [Blynk](https://www.blynk.cc) mobile app
+* Installer code: automatic code search to unlock panels with unknown installer codes
 
 See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
@@ -220,19 +221,19 @@ DSC Aux(+) ---+--- Arduino Vin pin
 
 DSC Aux(-) --- Arduino/esp8266/esp32 Ground
 
-                    Arduino/esp8266    +--- dscClockPin (Arduino Uno: 2,3 / esp8266: D1,D2,D8)
+                        Arduino        +--- dscClockPin (Arduino Uno: 2,3)
 DSC Yellow ---+--- 15k ohm resistor ---|
               |                        +--- 10k ohm resistor --- Ground
               |
-              |         esp32          +--- dscClockPin (esp32: 4,13,16-39)
+              |     esp8266/esp32      +--- dscClockPin (esp8266: D1,D2,D8 / esp32: 4,13,16-39)
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
 
-                    Arduino/esp8266    +--- dscReadPin (Arduino Uno: 2-12 / esp8266: D1,D2,D8)
+                        Arduino        +--- dscReadPin (Arduino Uno: 2-12)
 DSC Green ----+--- 15k ohm resistor ---|
               |                        +--- 10k ohm resistor --- Ground
               |
-              |         esp32          +--- dscReadPin (esp32: 4,13,16-39)
+              |     esp8266/esp32      +--- dscReadPin (esp8266: D1,D2,D8 / esp32: 4,13,16-39)
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
  
@@ -243,9 +244,11 @@ DSC Green ---- NPN collector --\
 ```
 
 * The DSC Keybus operates at ~12.6v, a pair of resistors per data line will bring this down to an appropriate voltage for each microcontroller.
-    * Arduino: connect the DSC Yellow (Clock) line to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 or 3.  The DSC Green (Data) line can be connected to any of the remaining digital pins 2-12.
-    * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).
-    * esp32: connect the DSC lines to GPIO pins that do not send signals at boot: 4, 13, 16-39.  For virtual keypad, use pins 4, 13, 16-33 - pins 34-39 are input only and cannot be used.
+    * Arduino:
+      * The DSC yellow (clock) line connects to a [hardware interrupt pin](https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/) - for the Uno, these are pins 2 or 3.  The example sketches use dscClockPin: 3.
+      * The DSC green (data) line can be connected to any of the remaining digital pins 2-12.  The examples sketches use dscReadPin: 5 and dscWritePin: 6.
+    * esp8266: connect the DSC lines to GPIO pins that are normally low to avoid putting spurious data on the Keybus: D1 (GPIO5), D2 (GPIO4) and D8 (GPIO15).  The example sketches use dscClockPin: D1, dscReadPin: D2, dscWritePin: D8.
+    * esp32: connect the DSC lines to GPIO pins that do not send signals at boot: 4, 13, 16-39.  For virtual keypad, use pins 4, 13, 16-33 - pins 34-39 are input only and cannot be used.  The example sketches use dscClockPin: 18, dscReadPin: 19, dscWritePin: 21.
 * Virtual keypad uses an NPN transistor and a resistor to write to the Keybus.  Most small signal NPN transistors should be suitable, for example:
   * 2N3904
   * BC547, BC548, BC549
@@ -309,7 +312,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 ## Troubleshooting
 If you are running into issues:
 1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.  
-    * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.
+    * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.  Breadboards can cause issues, connections should be soldered instead.
 2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.  
     * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
 3. Run the `Status` example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.
