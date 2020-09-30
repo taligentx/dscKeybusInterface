@@ -50,7 +50,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - Does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
 * Supported security systems:
   - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify)
-  - Verified panels: PC585, PC1555MX, PC1565, PC5005, PC5015, PC1616, PC1808, PC1832, PC1864.
+  - Verified panels: PC585, PC1555MX, PC1565, PC5005, PC5010, PC5015, PC1616, PC1808, PC1832, PC1864.
   - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Supported microcontrollers:
