@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.1 (esp8266)
+ *  VirtualKeypad-Web 1.2 (esp8266)
  *
  *  Provides a virtual keypad web interface using the esp8266 as a standalone web server.
  *
@@ -23,6 +23,7 @@
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.1 - New: Fire, alarm, panic, stay arm, away arm, door chime buttons are now functional
  *          Bugfix: Set mDNS to update in loop()
  *          Updated: ArduinoOTA no longer included by default
@@ -34,11 +35,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

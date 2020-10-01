@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.0 (esp32)
+ *  OpenHAB-MQTT 1.1 (esp32)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates sending the panel status as a
@@ -18,9 +18,6 @@
  *    4. Upload the sketch.
  *    5. Install the OpenHAB MQTT binding.
  *    6. Copy the example configuration to OpenHAB and customize.
- *
- *  Release notes:
- *    1.0 - Initial release
  *
  *  Example OpenHAB configuration:
  *
@@ -81,6 +78,10 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  Release notes:
+ *    1.1 - Removed partition exit delay MQTT message, not used in this OpenHAB example
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
@@ -240,13 +241,8 @@ void loop() {
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
-        // Exit delay in progress
-        if (dsc.exitDelay[partition]) {
-            publishState(mqttPartitionTopic, partition, "P");
-        }
-
         // Disarmed during exit delay
-        else if (!dsc.armed[partition]) {
+        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
           publishState(mqttPartitionTopic, partition, "D");
         }
       }

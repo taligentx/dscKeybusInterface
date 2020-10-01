@@ -17,14 +17,6 @@
  *    4. Upload the sketch.
  *    5. Restart Homebridge.
  *
- *  Release notes:
- *    1.2 - Resolved handling HomeKit target states
- *          Added status update on initial MQTT connection and reconnection
- *          Added publishState() to simplify sketch
- *          Removed writeReady check, moved into library
- *    1.1 - Add "getTargetState" to the Homebridge config.json example
- *    1.0 - Initial release
- *
  *  Example Homebridge config.json "accessories" configuration:
 
         {
@@ -121,6 +113,14 @@
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  Release notes:
+ *    1.2 - Resolved handling HomeKit target states
+ *          Added status update on initial MQTT connection and reconnection
+ *          Added publishState() to simplify sketch
+ *          Removed writeReady check, moved into library
+ *    1.1 - Add "getTargetState" to the Homebridge config.json example
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- Arduino Vin pin

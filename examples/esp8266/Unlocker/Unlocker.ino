@@ -1,12 +1,11 @@
 /*
- *  DSC Unlocker 1.0 (esp8266)
- *
- *  Feedback requested, post your results at: https://github.com/taligentx/dscKeybusInterface/issues/101
+ *  DSC Unlocker 1.1 (esp8266)
  *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
  *  built-in LED - each digit is indicated by the number of blinks, a long blink indicates "0".  This
- *  esp8266 example tests codes by general frequency: https://www.datagenetics.com/blog/september32012/
+ *  esp8266 example tests codes in order of most commonly used general 4-digit codes:
+ *  https://www.datagenetics.com/blog/september32012/
  *
  *  If keypad lockout has been enabled by the installer, the sketch waits for the lockout to expire
  *  before continuing the code search.  The physical keypads may beep when this occurs, the keypads can
@@ -44,6 +43,7 @@
  *      `startPosition`.
  *
  *  Release notes:
+ *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -55,11 +55,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad:

@@ -1,5 +1,5 @@
 /*
- *  Email Notification 1.2 (esp8266)
+ *  Email Notification 1.3 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendEmail().
@@ -9,11 +9,12 @@
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
- *  1.2 - Check if WiFi disconnects and wait to send updates until reconnection
- *        Add appendPartition() to simplify sketch
- *        esp8266 Arduino Core version check for BearSSL
- *  1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
- *  1.0 - Initial release
+ *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection
+ *          Add appendPartition() to simplify sketch
+ *          esp8266 Arduino Core version check for BearSSL
+ *    1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
@@ -21,11 +22,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

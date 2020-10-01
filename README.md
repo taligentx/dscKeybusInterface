@@ -48,11 +48,22 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
 * Panel installer code unlocking - determine the 4-digit panel installer code
 * Direct Keybus interface:
   - Does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
+* Designed for reliable data decoding and performance:
+  - Pin change and timer interrupts for accurate data capture timing
+  - Data buffering: helps prevent lost Keybus data if the sketch is busy
+  - Extensive data decoding: the majority of Keybus data as seen in the [DSC IT-100 Data Interface developer's guide](https://cms.dsc.com/download.php?t=1&id=16238) has been reverse engineered and documented in [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp).
+  - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
 * Supported security systems:
   - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify)
   - Verified panels: PC585, PC1555MX, PC1565, PC5005, PC5010, PC5015, PC1616, PC1808, PC1832, PC1864.
   - All PowerSeries series are supported, please [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you have a different panel (PC5020, etc) and have tested the interface to update this list.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
+* Unsupported security systems:
+  - DSC Classic series ([PC1500, PC1550, etc](https://www.dsc.com/?n=enduser&o=identify)) use a different data protocol, though support is possible.
+  - DSC Alexor (PC9155) is all wireless and does not have an accessible Keybus interface.
+  - DSC Neo series use a higher speed encrypted data protocol (Corbus) that is not currently possible to support.
+  - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use different protocols and are not supported.
+    * For the Honeywell Ademco Vista 15P/20P, check out [Dilbert66's esphome-vistaECP](https://github.com/Dilbert66/esphome-vistaECP) library!
 * Supported microcontrollers:
     - [Arduino](https://www.arduino.cc/en/Main/Products):
       * Boards: Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
@@ -63,15 +74,6 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
     - esp32:
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
       * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
-* Designed for reliable data decoding and performance:
-  - Pin change and timer interrupts for accurate data capture timing
-  - Data buffering: helps prevent lost Keybus data if the sketch is busy
-  - Extensive data decoding: the majority of Keybus data as seen in the [DSC IT-100 Data Interface developer's guide](https://cms.dsc.com/download.php?t=1&id=16238) has been reverse engineered and documented in [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp).
-  - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
-* Unsupported security systems:
-  - DSC Classic series ([PC1500, PC1550, etc](https://www.dsc.com/?n=enduser&o=identify)) use a different data protocol, though support is possible.
-  - DSC Neo series use a higher speed encrypted data protocol (Corbus) that is not currently possible to support.
-  - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use different protocols and are not supported.
 * Possible features (PRs welcome!):
   - Virtual zone expander: Add new zones to the DSC panel emulated by the microcontroller based on GPIO pin states or software-based states.  Requires decoding the DSC PC5108 zone expander data.
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
@@ -208,8 +210,9 @@ The included examples demonstrate how to use the library and can be used as-is o
 
   See [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp) for all currently known Keybus protocol commands and messages.  Issues and pull requests with additions/corrections are welcome!
 
-## External examples
+## More DSC projects
 * **[dscalarm-mqtt](https://github.com/jimtng/dscalarm-mqtt)**: implementation of the [Homie](https://homieiot.github.io) MQTT convention
+* **[esphome-dsckeybus](https://github.com/Dilbert66/esphome-dsckeybus)**: implementation of this library as an ESPHome custom component
 
 ## Wiring
 

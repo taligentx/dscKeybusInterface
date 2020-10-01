@@ -5,7 +5,7 @@
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com
  *
  *  Release notes:
- *  1.0 - Initial release
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin

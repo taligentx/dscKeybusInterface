@@ -18,9 +18,6 @@
  *    5. Install the OpenHAB MQTT binding.
  *    6. Copy the example configuration to OpenHAB and customize.
  *
- *  Release notes:
- *    1.0 - Initial release
- *
  *  Example OpenHAB configuration:
  *
  *  1. Create a "things" file for the MQTT broker as (OpenHAB configuration directory)/things/mymqtt.things:
@@ -78,6 +75,9 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  Release notes:
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)

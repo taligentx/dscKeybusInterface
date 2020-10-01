@@ -1,9 +1,13 @@
 /*
- *  DSC Keybus Reader 1.0 (esp8266)
+ *  DSC Keybus Reader 1.1 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
+ *
+ *  Release notes:
+ *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
@@ -11,11 +15,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
