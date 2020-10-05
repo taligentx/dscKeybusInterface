@@ -62,8 +62,9 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - DSC Classic series ([PC1500, PC1550, etc](https://www.dsc.com/?n=enduser&o=identify)) use a different data protocol, though support is possible.
   - DSC Alexor (PC9155) is all wireless and does not have an accessible Keybus interface.
   - DSC Neo series use a higher speed encrypted data protocol (Corbus) that is not currently possible to support.
-  - Honeywell, Ademco, and other brands (that are not rebranded DSC systems) use different protocols and are not supported.
-    * For the Honeywell Ademco Vista 15P/20P, check out [Dilbert66's esphome-vistaECP](https://github.com/Dilbert66/esphome-vistaECP) library!
+  - Other brands (that are not rebranded DSC systems) use different protocols and are not supported.
+    * For Honeywell Ademco Vista 15P/20P, see [Dilbert66's esphome-vistaECP](https://github.com/Dilbert66/esphome-vistaECP) project
+    * For Paradox systems, see [liaan's paradox-esp8266](https://github.com/liaan/paradox_esp8266) project
 * Supported microcontrollers:
     - [Arduino](https://www.arduino.cc/en/Main/Products):
       * Boards: Uno, Mega, Leonardo, Mini, Micro, Nano, Pro, Pro Mini
