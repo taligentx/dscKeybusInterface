@@ -663,7 +663,14 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
 }
 
 
+#if defined(__AVR__)
 bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP8266)
+bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP32)
+bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#endif
+
   bool redundantData = true;
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
