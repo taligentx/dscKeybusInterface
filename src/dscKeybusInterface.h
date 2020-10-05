@@ -31,6 +31,10 @@ const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
+const byte maxModules = 10;
+const byte zoneOpen=3; //fault 
+const byte zoneClosed=2;// Normal  
+const byte updateQueueSize=10; //zone pending update queue
 #endif
 
 // Maximum bytes of a Keybus command
@@ -40,6 +44,20 @@ const byte dscReadSize = 16;
 #define DSC_EXIT_STAY 1
 #define DSC_EXIT_AWAY 2
 #define DSC_EXIT_NO_ENTRY_DELAY 3
+
+struct zoneMaskType {
+    byte idx;
+    byte mask;
+};
+
+
+struct moduleType {
+    byte address;
+    byte fields[4];
+    byte faultBuffer[5];
+    byte zoneStatusMask;
+    byte zoneStatusByte;
+};
 
 
 class dscKeybusInterface {
@@ -117,7 +135,16 @@ class dscKeybusInterface {
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
-
+    static unsigned long cmdWaitTime; // time to delay treating 05/1b command as valid in ms
+    void setZoneFault(byte zone,bool fault) ;
+    void addEmulatedZone(byte address);
+    void removeEmulatedZone(byte address);
+    bool relayStatusChanged;
+    byte relayChannels,previousRelayChannels;
+    void addModule(byte address); //add zone expanders
+    void addRelayModule(); 
+    void clearZoneRanges();
+    
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
     // tracked in the library.  See dscKeybusPrintData-RTOS.c for the currently known DSC commands and data.
@@ -128,13 +155,13 @@ class dscKeybusInterface {
     //            ^ Byte 1 (stop bit)
     static byte panelData[dscReadSize];
     static volatile byte moduleData[dscReadSize];
-
+	
     // status[] and lights[] store the current status message and LED state for each partition.  These can be accessed
     // directly in the sketch to get data that is not already tracked in the library.  See printPanelMessages() and
     // printPanelLights() in dscKeybusPrintData.cpp to see how this data translates to the status message and LED status.
     byte status[dscPartitions];
     byte lights[dscPartitions];
-
+    
     // Process keypad and module data, returns true if data is available
     bool handleModule();
 
@@ -143,12 +170,12 @@ class dscKeybusInterface {
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer2
     static void dscDataInterrupt();
-
+    //static void dscDataInterrupt(dscKeybusInterface *dscPointer);
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
 
   private:
-
+    
     void processPanelStatus();
     void processPanelStatus0(byte partition, byte panelByte);
     void processPanelStatus2(byte partition, byte panelByte);
@@ -164,6 +191,7 @@ class dscKeybusInterface {
     void processPanel_0xE6_0x0D();
     void processPanel_0xE6_0x0F();
     void processPanel_0xEB();
+    void processPanel_0x87();
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
@@ -183,9 +211,7 @@ class dscKeybusInterface {
     void printPanel_0x27();
     void printPanel_0x28();
     void printPanel_0x2D();
-    void printPanel_0x33();
     void printPanel_0x34();
-    void printPanel_0x39();
     void printPanel_0x3E();
     void printPanel_0x4C();
     void printPanel_0x58();
@@ -208,13 +234,9 @@ class dscKeybusInterface {
     void printPanel_0xD5();
     void printPanel_0xE6();
     void printPanel_0xE6_0x03();
-    void printPanel_0xE6_0x08();
     void printPanel_0xE6_0x09();
-    void printPanel_0xE6_0x0A();
     void printPanel_0xE6_0x0B();
-    void printPanel_0xE6_0x0C();
     void printPanel_0xE6_0x0D();
-    void printPanel_0xE6_0x0E();
     void printPanel_0xE6_0x0F();
     void printPanel_0xE6_0x17();
     void printPanel_0xE6_0x18();
@@ -234,7 +256,23 @@ class dscKeybusInterface {
     void printModule_Panel_0xD5();
     void printModule_Notification();
     void printModule_Keys();
+    
+    void removeModule(byte address);
+    static void setPendingZoneUpdate();
+    static void processModuleResponse(byte cmd);
+    static void processModuleResponse_0xE6(byte cmd);
+    static void addRequestToQueue(byte slot);
+    static void setSupervisorySlot(byte slot,bool set);
+    static byte getPendingUpdate();
+    static zoneMaskType getUpdateMask(byte address);
 
+    static volatile byte updateQueue[updateQueueSize];
+    static byte outIdx,inIdx;
+    static byte moduleIdx; 
+    static moduleType modules[maxModules];
+    static byte moduleSlots[6];
+    volatile static byte pendingZoneStatus[6];
+    volatile static byte writeModuleBuffer[6];
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
@@ -246,34 +284,36 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool writeArm[dscPartitions];
     bool queryResponse;
-    bool previousTrouble;
+    //bool previousTrouble;
+	
     bool previousKeybus;
     byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
-    bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
+	bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
     byte previousExitState[dscPartitions];
     bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
+	bool previousTrouble;
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
-
+   
     static byte dscClockPin;
     static byte dscReadPin;
     static byte dscWritePin;
-    static byte writeByte, writeBit;
+    static byte writeByte, writeBit,writeModuleBit;
     static bool virtualKeypad;
     static char writeKey;
     static byte panelBitCount, panelByteCount;
-    static volatile bool writeKeyPending;
+    static volatile bool writeKeyPending,writeModulePending,pendingDeviceUpdate;
     static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
     static volatile bool moduleDataCaptured;
-    static volatile unsigned long clockHighTime, keybusTime;
-    static volatile byte panelBufferLength;
+	static volatile unsigned long clockHighTime, keybusTime;
+    static volatile byte panelBufferLength,moduleBufferLength,currentModuleIdx;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd;
+    static volatile byte currentCmd, statusCmd,moduleCmd,moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
