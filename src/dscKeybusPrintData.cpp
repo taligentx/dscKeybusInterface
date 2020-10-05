@@ -29,7 +29,7 @@ void dscKeybusInterface::printPanelMessage() {
   switch (panelData[0]) {
     case 0x05: printPanel_0x05(); return;  // Panel status: partitions 1-4
     case 0x0A: printPanel_0x0A(); return;  // Panel status in alarm/programming, partitions 1-4
-    case 0x11: printPanel_0x11(); return;  // Module query
+    case 0x11: printPanel_0x11(); return;  // Module supervision query
     case 0x16: printPanel_0x16(); return;  // Zone wiring
     case 0x1B: printPanel_0x1B(); return;  // Panel status: partitions 5-8
     case 0x1C: printPanel_0x1C(); return;  // Verify keypad Fire/Auxiliary/Panic
@@ -81,9 +81,9 @@ void dscKeybusInterface::printModuleMessage() {
     case 0xDD: printModule_0xDD(); return;  // Keypad panic alarm
   }
 
-  // Keypad and module responses to panel queries
+  // Module responses to panel queries
   switch (currentCmd) {
-    case 0x11: printModule_Panel_0x11(); return;  // Keypad slot query response
+    case 0x11: printModule_Panel_0x11(); return;  // Module supervision query response
     case 0xD5: printModule_Panel_0xD5(); return;  // Keypad zone query response
   }
 
@@ -758,16 +758,18 @@ void dscKeybusInterface::printPanel_0x0A() {
 
 
 /*
- *  0x11: Module query
+ *  0x11: Module supervision query
  *  Interval: 30s
  *  CRC: no
  *
- *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Module query
- *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1
- *  11111111 1 11111111 11111100 11111111 11111111 11111111 [Keypad] Slot 8
+ *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Module supervision query  // PC1555MX
+ *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slot 1                  // PC1555MX
+ *  11111111 1 11111111 11111100 11111111 11111111 11111111 [Keypad] Slot 8                  // PC1555MX
+ *  00010001 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x11] Module supervision query  // PC5010
+ *  11111111 1 00111111 11111111 11111111 11001111 11111111 11111111 11111111 [Keypad] Slots active: 1         // PC5010
  */
 void dscKeybusInterface::printPanel_0x11() {
-  stream->print(F("Module query"));
+  stream->print(F("Module supervision query"));
 }
 
 
@@ -2174,14 +2176,14 @@ void dscKeybusInterface::printModule_Notification() {
 
 
 /*
- *  Module query response
+ *  Module supervision query response
  *
- *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Module query
+ *  00010001 0 10101010 10101010 10101010 10101010 10101010 [0x11] Module supervision query
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 [Keypad] Slots active: 1
  */
 void dscKeybusInterface::printModule_Panel_0x11() {
   if (moduleData[2] != 0xFF || moduleData[3] != 0xFF) {
-    stream->print(F("[Keypad] Slots active: "));
+    stream->print(F("[Keypad] Slots: "));
     if ((moduleData[2] & 0xC0) == 0) stream->print(F("1 "));
     if ((moduleData[2] & 0x30) == 0) stream->print(F("2 "));
     if ((moduleData[2] & 0x0C) == 0) stream->print(F("3 "));
@@ -2192,8 +2194,14 @@ void dscKeybusInterface::printModule_Panel_0x11() {
     if ((moduleData[3] & 0x03) == 0) stream->print(F("8 "));
   }
 
-  if (moduleData[4] != 0xFF || moduleData[5] != 0xFF) {
-    stream->print(F(" [Expander Module Response]"));
+  if (moduleData[4] != 0xFF || (moduleData[5] != 0xFF && moduleData[5] != 0xF3)) {
+    stream->print(F(" [Zone Expander] Modules: "));
+    if ((moduleData[4] & 0xC0) == 0) stream->print(F("1 "));
+    if ((moduleData[4] & 0x30) == 0) stream->print(F("2 "));
+    if ((moduleData[4] & 0x0C) == 0) stream->print(F("3 "));
+    if ((moduleData[4] & 0x03) == 0) stream->print(F("4 "));
+    if ((moduleData[5] & 0xC0) == 0) stream->print(F("5 "));
+    if ((moduleData[5] & 0x30) == 0) stream->print(F("6 "));
   }
 }
 

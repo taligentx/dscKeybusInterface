@@ -466,7 +466,7 @@ bool dscKeybusInterface::handleModule() {
 
   if (moduleBitCount < 8) return false;
 
-  // Skips periodic keypad slot query responses
+  // Skips periodic module supervision query responses
   if (!processRedundantData && currentCmd == 0x11) {
     bool redundantData = true;
     byte checkedBytes = dscReadSize;
