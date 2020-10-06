@@ -99,7 +99,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   maxZones=32;
   maxFields05=5;
   maxFields11=4;
-  maxDeviceAddress=11;
+  maxDeviceAddress=16;
 
   for (int x=0;x<6;x++) { //clear all statuses
      pendingZoneStatus[x]=0xff;
@@ -144,15 +144,13 @@ void dscKeybusInterface::begin(Stream &_stream) {
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
   //adjust values to match system maximums
   
-  //if maxzones is changed on setup, we adjust max values here
+  //if maxzones is changed on setup, we adjust max values here. There is a sanity check to prevent misconfiguration later
   if (maxZones > 32) {
      maxFields05=6;
      maxFields11=6;
-     maxDeviceAddress=16;
   } else {
-     maxFields05=5;
-     maxFields11=4;
-     maxDeviceAddress=11;
+     maxFields05=4;
+     maxFields11=5;
   }
   
 }
@@ -258,6 +256,13 @@ bool dscKeybusInterface::loop() {
     if ((validCRC() || panelData[0] == 0x05) && panelData[0] != 0) {
       firstClockCycle = false;
       writeReady = true;
+
+      //sanity check - we make sure that our module responses fit the cmd size
+        if (panelByteCount < 9) {
+            maxFields05=4; 
+            maxFields11=5; 
+        }
+  
     }
     else return false;
   }
@@ -654,8 +659,9 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             case 12:  moduleSlots[2]=set?moduleSlots[2]&0xfc:moduleSlots[2]|~0xfc;break; //pc5108
             case 13:  moduleSlots[3]=set?moduleSlots[3]&0x3f:moduleSlots[3]|~0x3f;break; //pc5108
             case 14:  moduleSlots[3]=set?moduleSlots[3]&0xcf:moduleSlots[3]|~0xcf;break; //pc5108
-            case 15:  moduleSlots[3]=set?moduleSlots[3]&0xf3:moduleSlots[3]|~0xf3;break;  // pc5208 relay board         
-            case 16:  moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;break; //pc5108
+            case 15:  moduleSlots[5]=set?moduleSlots[5]&0x3f:moduleSlots[5]|~0x3f;break; //pc5108 (shows on slot24)// reports as 16 in panel
+            //reports as 18 in panel
+            case 16:  moduleSlots[3]=set?moduleSlots[3]&0xfc:moduleSlots[3]|~0xfc;break;  // pc5208 relay board 
             default: return;
         }
     
@@ -674,13 +680,21 @@ zoneMaskType dscKeybusInterface::getUpdateMask(byte address) {
         //11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 (9)
         zoneMaskType zm;
         switch (address) {
-            case 9:  zm.idx=2;zm.mask=0xbf; break;
-            case 10: zm.idx=2;zm.mask=0xdf; break;
-            case 11: zm.idx=2;zm.mask=0xef; break;
+            case 9:  zm.idx=2;zm.mask=0xbf; break; //5208
+            case 10: zm.idx=2;zm.mask=0xdf; break; //5208
+            case 11: zm.idx=2;zm.mask=0xef; break;//5208
             case 12: zm.idx=5;zm.mask=0x7f; break;
             case 13: zm.idx=5;zm.mask=0xbf; break;
             case 14: zm.idx=5;zm.mask=0xdf; break;
-            case 16: zm.idx=5;zm.mask=0xef; break;
+            case 15: zm.idx=5;zm.mask=0xef; break;//5208 sends to slot 15
+            /*
+            //this needs to be tested on a smaller/older system to see if this works for the zone ranges
+            case 12: if (maxZones>32) {zm.idx=5;zm.mask=0x7f} else {zm.idx=2;zm.mask=0xf7}; break;
+            case 13: if (maxZones>32) {zm.idx=5;zm.mask=0xbf} else {zm.idx=2;zm.mask=0xfb}; break;
+            case 14: if (maxZones>32) {zm.idx=5;zm.mask=0xdf} else {zm.idx=2;zm.mask=0xfd}; break;
+            case 15: if (maxZones>32) {zm.idx=5;zm.mask=0xef} else {zm.idx=2;zm.mask=0xfe}; break;//5208
+            */
+            case 16: zm.idx=2;zm.mask=0xfe; break; //relay board 5108 sends to slot 16
         }
         return zm;
 }
@@ -738,7 +752,7 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
     bool change=false;
     
     //we try and do as much setup here so that the ISR functions do the mimimal work.
-    
+    if (zone > maxZones) return;
     //get address and channel from zone range
     if (zone > 8 && zone < 17) {
         address=9;
@@ -831,7 +845,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
        case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
                     moduleCmd=cmd;
                     moduleSubCmd=0; //setup to send our pending update message to the panel
-                    moduleBufferLength=maxFields05;//4
+                    moduleBufferLength=maxFields05;
                     currentModuleIdx=0;
                     writeModuleBit=9;
                     for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
@@ -842,7 +856,7 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   moduleCmd=cmd; //return our supervision slot data
                     moduleSubCmd=0;
-                    moduleBufferLength=maxFields11; //5
+                    moduleBufferLength=maxFields11;
                     currentModuleIdx=0;
                     writeModuleBit=9;
                     for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
