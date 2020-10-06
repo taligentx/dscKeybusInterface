@@ -148,7 +148,7 @@ class dscKeybusInterface {
     void addModule(byte address); //add zone expanders
     void addRelayModule(); 
     void clearZoneRanges();
-    byte maxZones;
+    static byte maxZones;
     
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
