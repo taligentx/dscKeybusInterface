@@ -60,6 +60,8 @@ moduleType dscKeybusInterface::modules[maxModules];
 byte dscKeybusInterface::moduleIdx;
 byte dscKeybusInterface::inIdx;
 byte dscKeybusInterface::outIdx;
+byte dscKeybusInterface::maxFields05; 
+byte dscKeybusInterface::maxFields11;
 volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
@@ -94,12 +96,15 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   processModuleData = false;
   writePartition = 1;
   pauseStatus = false;
+  maxZones=32;
+  maxFields05=5;
+  maxFields11=4;
+  maxDeviceAddress=11;
 
   for (int x=0;x<6;x++) { //clear all statuses
      pendingZoneStatus[x]=0xff;
      moduleSlots[x]=0xff;
   }
-
 
 }
 
@@ -109,6 +114,8 @@ void dscKeybusInterface::begin(Stream &_stream) {
   pinMode(dscReadPin, INPUT);
   if (virtualKeypad) pinMode(dscWritePin, OUTPUT);
   stream = &_stream;
+
+
 
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
@@ -135,6 +142,19 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
+  //adjust values to match system maximums
+  
+  //if maxzones is changed on setup, we adjust max values here
+  if (maxZones > 32) {
+     maxFields05=6;
+     maxFields11=6;
+     maxDeviceAddress=16;
+  } else {
+     maxFields05=5;
+     maxFields11=4;
+     maxDeviceAddress=11;
+  }
+  
 }
 
 
@@ -680,6 +700,9 @@ for (int x=0;x<moduleIdx;x++) {
 }
 
 void dscKeybusInterface::addModule(byte address) {
+ //this is the main filter to block invalid device addresses.  
+ if (address > maxDeviceAddress) return;   
+ 
  if (moduleIdx < maxModules) {
     modules[moduleIdx].address=address;
     for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
@@ -793,24 +816,36 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleRespon
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #endif
-    
+
+/*
+11111111 1 11111111 11111111 10111111 11111111 11111111 11111111 11111111 11111111 9
+11111111 1 11111111 11111111 11011111 11111111 11111111 11111111 11111111 11111111 10
+11111111 1 11111111 11111111 11101111 11111111 11111111 11111111 11111111 11111111 11
+11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 12
+11111111 1 11111111 11111111 11111111 11111111 11111111 10111111 11111111 11111111 13
+11111111 1 11111111 11111111 11111111 11111111 11111111 11011111 11111111 11111111 14
+11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 16
+*/
      byte address=0;
      switch (cmd) {
        case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
                     moduleCmd=cmd;
                     moduleSubCmd=0; //setup to send our pending update message to the panel
-                    moduleBufferLength=6;
+                    moduleBufferLength=maxFields05;//4
                     currentModuleIdx=0;
                     writeModuleBit=9;
-                    for(int x=0;x<6;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
+                    for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
                     writeModulePending=true;
                     return;
+//11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
+//11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
+//11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   moduleCmd=cmd; //return our supervision slot data
                     moduleSubCmd=0;
-                    moduleBufferLength=6;
+                    moduleBufferLength=maxFields11; //5
                     currentModuleIdx=0;
                     writeModuleBit=9;
-                    for(int x=0;x<6;x++) writeModuleBuffer[x]=moduleSlots[x];
+                    for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
                     writeModulePending=true;
                     return;
        case 0x28:   address=9;break;  // the address will depend on the panel request command.

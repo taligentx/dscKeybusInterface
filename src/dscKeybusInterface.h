@@ -27,18 +27,22 @@
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
+const byte maxModules = 4;
+const byte updateQueueSize=5; //zone pending update queue
 #elif defined(ESP8266) || defined(ESP32)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
 const byte maxModules = 10;
-const byte zoneOpen=3; //fault 
-const byte zoneClosed=2;// Normal  
 const byte updateQueueSize=10; //zone pending update queue
-#endif
 
+#endif
+const byte zoneOpen=3; //fault 
+const byte zoneClosed=2;// Normal 
 // Maximum bytes of a Keybus command
 const byte dscReadSize = 16;
+const byte cmd11msgsize = 6; //5 on some systems
+const byte cmd05msgsize = 6; //4 on some systems
 
 // Exit delay target states
 #define DSC_EXIT_STAY 1
@@ -144,6 +148,7 @@ class dscKeybusInterface {
     void addModule(byte address); //add zone expanders
     void addRelayModule(); 
     void clearZoneRanges();
+    byte maxZones;
     
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -284,7 +289,9 @@ class dscKeybusInterface {
     bool writeKeysPending;
     bool writeArm[dscPartitions];
     bool queryResponse;
-    //bool previousTrouble;
+    static byte maxFields05; 
+    static byte maxFields11;
+    byte maxDeviceAddress;
 	
     bool previousKeybus;
     byte previousAccessCode[dscPartitions];
