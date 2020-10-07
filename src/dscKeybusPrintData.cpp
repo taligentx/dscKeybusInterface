@@ -1685,13 +1685,13 @@ void dscKeybusInterface::printPanel_0xE6() {
 
   switch (panelData[2]) {
     case 0x03: printPanel_0xE6_0x03(); break;  // Status in alarm/programming, partitions 5-8
-    case 0x08: printPanel_0xE6_0x08(); break;  // Zone expander zones 33-40 query
+  //  case 0x08: printPanel_0xE6_0x08(); break;  // Zone expander zones 33-40 query
     case 0x09: printPanel_0xE6_0x09(); break;  // Zones 33-40 status
-    case 0x0A: printPanel_0xE6_0x0A(); break;  // Zone expander zones 41-48 query
+  //  case 0x0A: printPanel_0xE6_0x0A(); break;  // Zone expander zones 41-48 query
     case 0x0B: printPanel_0xE6_0x0B(); break;  // Zones 41-48 status
-    case 0x0C: printPanel_0xE6_0x0C(); break;  // Zone expander zones 49-56 query
+   // case 0x0C: printPanel_0xE6_0x0C(); break;  // Zone expander zones 49-56 query
     case 0x0D: printPanel_0xE6_0x0D(); break;  // Zones 49-56 status
-    case 0x0E: printPanel_0xE6_0x0E(); break;  // Zone expander zones 57-64 query
+   // case 0x0E: printPanel_0xE6_0x0E(); break;  // Zone expander zones 57-64 query
     case 0x0F: printPanel_0xE6_0x0F(); break;  // Zones 57-64 status
     case 0x17: printPanel_0xE6_0x17(); break;  // Flash panel lights: status and zones 1-32, partitions 1-8
     case 0x18: printPanel_0xE6_0x18(); break;  // Flash panel lights: status and zones 33-64, partitions 1-8

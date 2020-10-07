@@ -217,7 +217,9 @@ class dscKeybusInterface {
     void printPanel_0x27();
     void printPanel_0x28();
     void printPanel_0x2D();
+    void printPanel_0x33();
     void printPanel_0x34();
+    void printPanel_0x39();    
     void printPanel_0x3E();
     void printPanel_0x4C();
     void printPanel_0x58();
@@ -240,9 +242,13 @@ class dscKeybusInterface {
     void printPanel_0xD5();
     void printPanel_0xE6();
     void printPanel_0xE6_0x03();
+    void printPanel_0xE6_0x08();    
     void printPanel_0xE6_0x09();
+    void printPanel_0xE6_0x0A();    
     void printPanel_0xE6_0x0B();
+    void printPanel_0xE6_0x0C();    
     void printPanel_0xE6_0x0D();
+    void printPanel_0xE6_0x0E();    
     void printPanel_0xE6_0x0F();
     void printPanel_0xE6_0x17();
     void printPanel_0xE6_0x18();
