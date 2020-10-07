@@ -33,7 +33,7 @@ const byte updateQueueSize=5; //zone pending update queue
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
-const byte maxModules = 10;
+const byte maxModules = 4;
 const byte updateQueueSize=10; //zone pending update queue
 
 #endif
@@ -149,6 +149,7 @@ class dscKeybusInterface {
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;
+    static byte panelVersion;
     
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -291,7 +292,6 @@ class dscKeybusInterface {
     bool queryResponse;
     static byte maxFields05; 
     static byte maxFields11;
-    byte maxDeviceAddress;
 	
     bool previousKeybus;
     byte previousAccessCode[dscPartitions];
