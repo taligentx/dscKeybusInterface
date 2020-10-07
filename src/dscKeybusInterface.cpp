@@ -99,7 +99,7 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   writePartition = 1;
   pauseStatus = false;
   maxZones=32;
-  panelVersion=3; //newer.  Version 2 uses older alternate zone addressing
+  panelVersion=2; //newer.  Version 2 uses older alternate zone addressing
   maxFields05=4;
   maxFields11=4;
 
@@ -263,7 +263,13 @@ bool dscKeybusInterface::loop() {
         if (panelByteCount < 9) {
             maxFields05=4; 
             maxFields11=4; 
+            panelVersion=2;
+        } else {
+            maxFields05=6; 
+            maxFields11=6; 
+            panelVersion=3;
         }
+            
   
     }
     else return false;
@@ -304,7 +310,6 @@ bool dscKeybusInterface::loop() {
     static byte previousCmdC3[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
-      
         if (redundantPanelData(previousCmd11, panelData)) return true;
         break;
 
@@ -377,6 +382,7 @@ bool dscKeybusInterface::handleModule() {
 
   // Skips periodic keypad slot query responses
   if (!processRedundantData && currentCmd == 0x11) {
+    
     bool redundantData = false;
     byte checkedBytes = dscReadSize;
     static byte previousSlotData[dscReadSize];
