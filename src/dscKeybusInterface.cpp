@@ -724,7 +724,7 @@ void dscKeybusInterface::addModule(byte address) {
 }
 
 void dscKeybusInterface::addRelayModule() {
-    setSupervisorySlot(16,true);
+    setSupervisorySlot(18,true);
 }
 
 void dscKeybusInterface::removeModule(byte address) {
