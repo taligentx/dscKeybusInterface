@@ -146,6 +146,7 @@ class dscKeybusInterface {
     bool relayStatusChanged;
     byte relayChannels,previousRelayChannels;
     void addModule(byte address); //add zone expanders
+    void updateModules();
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;

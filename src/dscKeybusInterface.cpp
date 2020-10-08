@@ -269,8 +269,9 @@ bool dscKeybusInterface::loop() {
             maxFields11=6; 
             panelVersion=3;
         }
-            
-  
+     //ok we should know what panel version and zones we have so we can init the module data with the correct slot info
+     updateModules();
+
     }
     else return false;
   }
@@ -738,19 +739,25 @@ for (int x=0;x<moduleIdx;x++) {
       }
 }
 
-void dscKeybusInterface::addModule(byte address) {
- if (!address) return;
-
- if (moduleIdx < maxModules ) {
-    modules[moduleIdx].address=address;
-    for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
-    //fetch the byte offset and mask for the 0x05 request to update response and store it with the module data
-    zoneMaskType zm=getUpdateMask(address);
-    modules[moduleIdx].zoneStatusByte=zm.idx;
-    modules[moduleIdx].zoneStatusMask=zm.mask;
-    setSupervisorySlot(address,true);
-    moduleIdx++;
+//once we know what panelversion we have, we can then update the modules with the correct info here
+void dscKeybusInterface::updateModules() {
+    for (int x=0;x<moduleIdx;x++) {
+        zoneMaskType zm=getUpdateMask(modules[x].address);
+        modules[x].zoneStatusByte=zm.idx;
+        modules[x].zoneStatusMask=zm.mask;
+        setSupervisorySlot(modules[x].address,true);
     }
+}
+
+//add new expander modules and init zone fields
+void dscKeybusInterface::addModule(byte address) {
+    
+ if (!address) return;
+ if (moduleIdx < maxModules ) {
+   modules[moduleIdx].address=address;
+   for (int x=0;x<4;x++) modules[moduleIdx].fields[x]=0x55;//set our zones as closed by default (01 per channel)
+   moduleIdx++;
+ }
 }
 
 void dscKeybusInterface::addRelayModule() {
