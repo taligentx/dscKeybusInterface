@@ -120,7 +120,7 @@ class dscKeybusInterface {
 
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
-    // tracked in the library.  See dscKeybusPrintData-RTOS.c for the currently known DSC commands and data.
+    // tracked in the library.  See dscKeybusPrintData.cpp for the currently known DSC commands and data.
     //
     // panelData[] example:
     //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
