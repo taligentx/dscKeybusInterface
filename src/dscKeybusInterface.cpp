@@ -383,7 +383,7 @@ bool dscKeybusInterface::handleModule() {
   // Skips periodic keypad slot query responses
   if (!processRedundantData && currentCmd == 0x11) {
     
-    bool redundantData = false;
+    bool redundantData = true;
     byte checkedBytes = dscReadSize;
     static byte previousSlotData[dscReadSize];
     for (byte i = 0; i < checkedBytes; i++) {
@@ -739,7 +739,7 @@ for (int x=0;x<moduleIdx;x++) {
 }
 
 void dscKeybusInterface::addModule(byte address) {
- //this is the main filter to block invalid device addresses.  
+ if (!address) return;
 
  if (moduleIdx < maxModules ) {
     modules[moduleIdx].address=address;
@@ -846,11 +846,10 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
          modules[idx].fields[3]=modules[idx].fields[2];  //copy current channel values to previous
          change=true;
     }
-
     if (!change) return;  //nothing changed in our zones so return
     if (modules[idx].zoneStatusByte) {
         pendingZoneStatus[modules[idx].zoneStatusByte]&=modules[idx].zoneStatusMask; //set update slot
-        addRequestToQueue(idx);  //update queue to indicate pending request
+        addRequestToQueue(address);  //update queue to indicate pending request
     }
 }
  
