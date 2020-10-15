@@ -661,7 +661,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
             switch (address) {
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 16
             //11111111 1 00111111 11111111 11111111 00111111 11111111 11111111 11111111 13
-            // 1111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
+            //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 slots 16
              //for older versions we need to set 2 slots since they expect groups of 4 zones per slot
             case 9:   moduleSlots[2]=set?moduleSlots[2]&0x3f:moduleSlots[2]|~0x3f; //pc5108 
@@ -681,7 +681,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
         switch (address) {
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 16
             //11111111 1 00111111 11111111 11111111 00111111 11111111 11111111 11111111 13
-            // 1111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
+            //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111 slots 9
             //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 slots 16
             case 9:   moduleSlots[2]=set?moduleSlots[2]&0x3f:moduleSlots[2]|~0x3f;break; //pc5108 
             case 10:  moduleSlots[2]=set?moduleSlots[2]&0xcf:moduleSlots[2]|~0xcf;break; //pc5108

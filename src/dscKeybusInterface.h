@@ -222,6 +222,7 @@ class dscKeybusInterface {
     void printPanel_0x34();
     void printPanel_0x39();    
     void printPanel_0x3E();
+    void printPanel_0x41();
     void printPanel_0x4C();
     void printPanel_0x58();
     void printPanel_0x5D();
@@ -265,10 +266,14 @@ class dscKeybusInterface {
     void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
+    void printModule_Panel_Status();
     void printModule_Panel_0x11();
+    void printModule_Panel_0x41();
     void printModule_Panel_0xD5();
-    void printModule_Notification();
     void printModule_Keys();
+    void printModule_KeyCodes(byte keyByte);
+    void printModule_Expander();
+    void printModule_ExpanderZoneState(byte zoneByte, byte zoneMask, byte zoneMaskShift);
     
     void removeModule(byte address);
     static void setPendingZoneUpdate();
