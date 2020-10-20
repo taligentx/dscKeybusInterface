@@ -259,10 +259,11 @@ DSC Green ---- NPN collector --\
   * That random NPN at the bottom of your parts bin (my choice)
 * Power:
   * Arduino boards can be powered directly from the DSC panel
-  * esp8266/esp32 development boards should use a 5v voltage regulator:
-    - LM2596-based step-down buck converter modules are reasonably efficient and commonly available for under $1USD shipped (eBay, Aliexpress, etc).
+  * esp8266/esp32 development boards should use an external voltage regulator set to 5v to the 5v pin:
+    - LM2596-based step-down buck converter modules are reasonably efficient and commonly available for under $1USD shipped (eBay, Aliexpress, etc) - these are the modules I use.
     - MP2307-based step-down buck converter modules (aka Mini360) are also available but some versions run hot with an efficiency nearly as poor as linear regulators.
     - Linear voltage regulators (LM7805, etc) will work but are inefficient and run hot - these may need a heatsink.
+  * esp8266/esp32 boards can also use an external voltage regulator set to 3.3v to the 3.3v pin - this bypasses the module's onboard voltage regulator.  For example, some Wemos D1 mini clones use [low current voltage regulators](https://www.letscontrolit.com/forum/viewtopic.php?t=6603) that can cause stability issues.  NodeMCU boards are not affected as they use the more powerful AMS1117 regulator.
 * Connections should be soldered, breadboards can cause issues.
 
 ## Virtual keypad
