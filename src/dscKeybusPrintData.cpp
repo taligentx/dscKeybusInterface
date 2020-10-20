@@ -30,7 +30,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x05: printPanel_0x05(); return;  // Panel status: partitions 1-4
     case 0x0A: printPanel_0x0A(); return;  // Panel status in alarm/programming, partitions 1-4
     case 0x11: printPanel_0x11(); return;  // Module supervision query
-    case 0x16: printPanel_0x16(); return;  // Zone wiring
+    case 0x16: printPanel_0x16(); return;  // Panel configuration
     case 0x1B: printPanel_0x1B(); return;  // Panel status: partitions 5-8
     case 0x1C: printPanel_0x1C(); return;  // Verify keypad Fire/Auxiliary/Panic
     case 0x22: printPanel_0x22(); return;  // Zone expander slot 8 query
@@ -780,12 +780,16 @@ void dscKeybusInterface::printPanel_0x11() {
 
 
 /*
- *  0x16: Zone wiring
+ *  0x16: Panel configuration
  *  Interval: 4min
  *  CRC: yes
- *  Byte 2: TBD, identical with PC1555MX, PC5015, PC1832
- *  Byte 3: TBD, different between PC1555MX, PC5015, PC1832
- *  Byte 4 bits 2-7: TBD, identical with PC1555MX and PC5015
+ *  Byte 2: Unknown, identical with all tested panels
+ *  Byte 3: Panel version
+ *  Byte 4 bits 0,1: Zone wiring resistors configuration
+ *  Byte 4 bit 2: Unknown
+ *  Byte 4 bit 3: Code length flag
+ *  Byte 4 bit 4: *8 programming mode flag (?), possible signal to disable other keypads while programming
+ *  Byte 4 bits 5-7: Unknown
  *
  *  00010110 0 00001110 00100011 11010001 00011001 [0x16] PC1555MX | Zone wiring: NC | Exit *8 programming
  *  00010110 0 00001110 00100011 11010010 00011001 [0x16] PC1555MX | Zone wiring: EOL | Exit *8 programming
@@ -807,33 +811,43 @@ void dscKeybusInterface::printPanel_0x16() {
 
   if (panelData[2] == 0x0E) {
 
+    stream->print(F("Panel version: "));
     switch (panelData[3]) {
-      case 0x10: stream->print(F("PC5015 ")); break;
-      case 0x11: stream->print(F("PC5016 ")); break;
-      case 0x22: stream->print(F("PC1565 ")); break;
-      case 0x23: stream->print(F("PC1555MX ")); break;
-      case 0x32: stream->print(F("PC5005 ")); break;
-      case 0x41: stream->print(F("PC1832 ")); break;
-      case 0x42: stream->print(F("PC1864 ")); break;
-      default: stream->print(F("Unknown panel ")); break;
+      case 0x10: stream->print(F("v1.0")); break;
+      case 0x11: stream->print(F("v1.1")); break;
+      case 0x20: stream->print(F("v2.0")); break;
+      case 0x21: stream->print(F("v2.1")); break;
+      case 0x22: stream->print(F("v2.2")); break;
+      case 0x23: stream->print(F("v2.3")); break;
+      case 0x24: stream->print(F("v2.4")); break;
+      case 0x25: stream->print(F("v2.5")); break;
+      case 0x28: stream->print(F("v2.8")); break;
+      case 0x30: stream->print(F("v3.0")); break;
+      case 0x32: stream->print(F("v3.2")); break;
+      case 0x41: stream->print(F("v4.1")); break;
+      case 0x42: stream->print(F("v4.2")); break;
+      case 0x45: stream->print(F("v4.5")); break;
+      case 0x46: stream->print(F("v4.6")); break;
+      case 0x47: stream->print(F("v4.7")); break;
+      default: stream->print(F("Unknown")); break;
     }
 
     switch (panelData[4] & 0x03) {
-      case 0x01: stream->print(F("| Zone wiring: NC ")); break;
-      case 0x02: stream->print(F("| Zone wiring: EOL ")); break;
-      case 0x03: stream->print(F("| Zone wiring: DEOL ")); break;
+      case 0x01: stream->print(F(" | Zone wiring: NC ")); break;
+      case 0x02: stream->print(F(" | Zone wiring: EOL ")); break;
+      case 0x03: stream->print(F(" | Zone wiring: DEOL ")); break;
     }
 
-    switch (panelData[4] >> 2) {
-      case 0x2C: stream->print(F("| Armed")); break;
-      case 0x2D: stream->print(F("| Interval 4m")); break;
-      case 0x34: stream->print(F("| Exit installer programming")); break;
-      case 0x39: stream->print(F("| Installer programming")); break;
-      case 0x3C: stream->print(F("| Armed, Exit *8 +15s, Power-on +2m")); break;
-      case 0x3D: stream->print(F("| Interval 4m")); break;
-      default: stream->print(F("| Unknown data")); break;
-    }
+    stream->print(F("| Code length: "));
+    if (panelData[4] & 0x08) stream->print(F("6"));
+    else stream->print(F("4"));
+    stream->print(F(" digits "));
+
+    stream->print(F("| *8 programming: "));
+    if (panelData[4] & 0x10) stream->print(F("no "));
+    else stream->print(F("yes "));
   }
+
   else stream->print(F("Unknown data"));
 }
 
