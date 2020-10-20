@@ -1261,22 +1261,5 @@ void dscKeybusInterface::processPanel_0xE6_0x0F() {
     }
   }
 }
-// 10000111 0 00000001 00000010 10001010 [0x87] 
-// Relay module 
-void dscKeybusInterface::processPanel_0x87() {
-  if (!validCRC()) return;
-
-  // Open zones 9-16 status is stored in openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
-  relayChannels = panelData[2];
-  byte relaysChanged = relayChannels ^ previousRelayChannels;
-  if (relaysChanged != 0) {
-    previousRelayChannels = relayChannels;
-    relayStatusChanged = true;
-    if (!pauseStatus) statusChanged = true;
-
-
-  }
-  
-}
 
 

@@ -143,14 +143,13 @@ class dscKeybusInterface {
     void setZoneFault(byte zone,bool fault) ;
     void addEmulatedZone(byte address);
     void removeEmulatedZone(byte address);
-    bool relayStatusChanged;
-    byte relayChannels,previousRelayChannels;
     void addModule(byte address); //add zone expanders
     void updateModules();
     void addRelayModule(); 
     void clearZoneRanges();
     static byte maxZones;
     static byte panelVersion;
+    static bool enableModuleSupervision;
     
     // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
     // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -198,7 +197,6 @@ class dscKeybusInterface {
     void processPanel_0xE6_0x0D();
     void processPanel_0xE6_0x0F();
     void processPanel_0xEB();
-    void processPanel_0x87();
 
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
@@ -223,7 +221,6 @@ class dscKeybusInterface {
     void printPanel_0x34();
     void printPanel_0x39();    
     void printPanel_0x3E();
-    void printPanel_0x41();
     void printPanel_0x4C();
     void printPanel_0x58();
     void printPanel_0x5D();
@@ -267,14 +264,10 @@ class dscKeybusInterface {
     void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
-    void printModule_Panel_Status();
     void printModule_Panel_0x11();
-    void printModule_Panel_0x41();
     void printModule_Panel_0xD5();
+    void printModule_Notification();
     void printModule_Keys();
-    void printModule_KeyCodes(byte keyByte);
-    void printModule_Expander();
-    void printModule_ExpanderZoneState(byte zoneByte, byte zoneMask, byte zoneMaskShift);
     
     void removeModule(byte address);
     static void setPendingZoneUpdate();
