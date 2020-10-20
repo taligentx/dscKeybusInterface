@@ -310,7 +310,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
    */
   if (panelData[panelByte] >= 0x56 && panelData[panelByte] <= 0x75) {
     stream->print(F("Zone tamper: "));
-    stream->print(panelData[6] - 0x55);
+    stream->print(panelData[panelByte] - 0x55);
     return;
   }
 
