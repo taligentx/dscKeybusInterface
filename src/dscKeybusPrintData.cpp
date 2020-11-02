@@ -268,7 +268,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0xE5: stream->print(F("Auto-arm cancelled")); break;
     case 0xE6: stream->print(F("Disarmed special: keyswitch/wireless key/DLS")); break;
     case 0xE7: stream->print(F("Panel battery trouble")); break;
-    case 0xE8: stream->print(F("Panel AC power failure")); break;
+    case 0xE8: stream->print(F("Panel AC power trouble")); break;
     case 0xE9: stream->print(F("Bell trouble")); break;
     case 0xEA: stream->print(F("Power on +16s")); break;
     case 0xEC: stream->print(F("Telephone line trouble")); break;
@@ -1688,7 +1688,7 @@ void dscKeybusInterface::printPanel_0xCE() {
   }
   else {
     stream->print(F("Unknown data"));
-    stream->print(F(" [Byte 3/0x"));
+    stream->print(F(" [Byte 2/0x"));
     if (panelData[2] < 16) stream->print("0");
     stream->print(panelData[2], HEX);
     stream->print(F("] "));
@@ -1940,8 +1940,30 @@ void dscKeybusInterface::printPanel_0xE6_0x19() {
     01110101 0 00000000 01110101 [0x75] Partition 1 | Tone: off
  */
 void dscKeybusInterface::printPanel_0xE6_0x1A() {
-  stream->print(F("0x1A: "));
-  stream->print(F("Unknown data"));
+  bool printSeparator = false;
+
+  if (panelData[6] & 0x08) {
+    printSeparator = true;
+    stream->print(F("Loss of system time "));
+  }
+
+  if (panelData[6] & 0x10) {
+    if (printSeparator) stream->print(F("| "));
+    printSeparator = true;
+    stream->print(F("AC power trouble "));
+  }
+
+  if (panelData[6] & 0x40) {
+    if (printSeparator) stream->print(F("| "));
+    printSeparator = true;
+    stream->print(F("Fail to communicate "));
+  }
+
+  if (panelData[6] & 0x80) {
+    if (printSeparator) stream->print(F("| "));
+    printSeparator = true;
+    stream->print(F("Bell on (?) "));
+  }
 }
 
 
