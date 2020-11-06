@@ -200,7 +200,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
 }
 
 
-// Status messages for commands 0xA5, 0xEB
+// Status messages for commands 0xA5, 0xCE, 0xEB
 void dscKeybusInterface::printPanelStatus0(byte panelByte) {
   bool decoded = true;
   switch (panelData[panelByte]) {
