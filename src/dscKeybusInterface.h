@@ -180,11 +180,15 @@ class dscKeybusInterface {
     void printPanel_0x16();
     void printPanel_0x1B();
     void printPanel_0x1C();
+    void printPanel_0x22();
     void printPanel_0x27();
     void printPanel_0x28();
     void printPanel_0x2D();
+    void printPanel_0x33();
     void printPanel_0x34();
+    void printPanel_0x39();
     void printPanel_0x3E();
+    void printPanel_0x41();
     void printPanel_0x4C();
     void printPanel_0x58();
     void printPanel_0x5D();
@@ -206,9 +210,13 @@ class dscKeybusInterface {
     void printPanel_0xD5();
     void printPanel_0xE6();
     void printPanel_0xE6_0x03();
+    void printPanel_0xE6_0x08();
     void printPanel_0xE6_0x09();
+    void printPanel_0xE6_0x0A();
     void printPanel_0xE6_0x0B();
+    void printPanel_0xE6_0x0C();
     void printPanel_0xE6_0x0D();
+    void printPanel_0xE6_0x0E();
     void printPanel_0xE6_0x0F();
     void printPanel_0xE6_0x17();
     void printPanel_0xE6_0x18();
@@ -224,10 +232,14 @@ class dscKeybusInterface {
     void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
+    void printModule_Panel_Status();
     void printModule_Panel_0x11();
+    void printModule_Panel_0x41();
     void printModule_Panel_0xD5();
-    void printModule_Notification();
     void printModule_Keys();
+    void printModule_KeyCodes(byte keyByte);
+    void printModule_Expander();
+    void printModule_ExpanderZoneState(byte zoneByte, byte zoneMask, byte zoneMaskShift);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
@@ -271,5 +283,27 @@ class dscKeybusInterface {
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
+
+#if defined(DSC_ARDUINO32K)
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega32U4__)
+#define PSTR(str) \
+  (__extension__({ \
+    PGM_P ptr;  \
+    asm volatile \
+    ( \
+      ".pushsection .progmem.data, \"SM\", @progbits, 1" "\n\t" \
+      "0: .string " #str                                 "\n\t" \
+      ".popsection"                                      "\n\t" \
+    ); \
+    asm volatile \
+    ( \
+      "ldi %A0, lo8(0b)"                                 "\n\t" \
+      "ldi %B0, hi8(0b)"                                 "\n\t" \
+      : "=d" (ptr) \
+    ); \
+    ptr; \
+  }))
+#endif
+#endif
 
 #endif  // dscKeybusInterface_h

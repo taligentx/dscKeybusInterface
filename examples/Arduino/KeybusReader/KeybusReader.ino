@@ -37,6 +37,8 @@
  *  This example code is in the public domain.
  */
 
+#define DSC_ARDUINO32K  // Reduces flash memory usage for Arduino UNO and similar boards
+
 #include <dscKeybusInterface.h>
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
