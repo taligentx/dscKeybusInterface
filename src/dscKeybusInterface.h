@@ -118,14 +118,15 @@ class dscKeybusInterface {
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
 
-    // panelData[] and moduleData[] store panel and keypad data in an array: command [0], stop bit by itself [1],
-    // followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
-    // tracked in the library.  See dscKeybusPrintData.cpp for the currently known DSC commands and data.
-    //
-    // panelData[] example:
-    //   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
-    //   00000101 0 10000001 00000001 10010001 11000111 [0x05] Status lights: Ready Backlight | Partition ready
-    //            ^ Byte 1 (stop bit)
+    /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
+     * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
+     * tracked in the library.  See dscKeybusPrintData.cpp for the currently known DSC commands and data.
+     *
+     * panelData[] example:
+     *   Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
+     *   00000101 0 10000001 00000001 10010001 11000111 [0x05] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled
+     *            ^ Byte 1 (stop bit)
+     */
     static byte panelData[dscReadSize];
     static volatile byte moduleData[dscReadSize];
 
@@ -168,10 +169,10 @@ class dscKeybusInterface {
     void printPanelLights(byte panelByte);
     void printPanelMessages(byte panelByte);
     void printPanelBitNumbers(byte panelByte, byte startNumber);
+    void printPanelBeeps(byte panelByte);
     void printPanelStatus0(byte panelByte);
     void printPanelStatus1(byte panelByte);
     void printPanelStatus2(byte panelByte);
-    void printPanelStatus3(byte panelByte);
     void printPanelStatus4(byte panelByte);
     void printPanelStatus14(byte panelByte);
     void printPanel_0x05();
@@ -303,7 +304,7 @@ class dscKeybusInterface {
     ); \
     ptr; \
   }))
-#endif
-#endif
+#endif  // __AVR_ATmega328P__ || __AVR_ATmega32U4__
+#endif  // DSC_ARDUINO32K
 
 #endif  // dscKeybusInterface_h
