@@ -166,15 +166,24 @@ class dscKeybusInterface {
     void processPanel_0xE6_0x0F();
     void processPanel_0xEB();
 
-    void printPanelLights(byte panelByte);
-    void printPanelMessages(byte panelByte);
-    void printPanelBitNumbers(byte panelByte, byte startNumber);
-    void printPanelBeeps(byte panelByte);
+    void printPanelStatus(byte panelByte);
     void printPanelStatus0(byte panelByte);
     void printPanelStatus1(byte panelByte);
     void printPanelStatus2(byte panelByte);
     void printPanelStatus4(byte panelByte);
     void printPanelStatus14(byte panelByte);
+    void printPanelMessages(byte panelByte);
+    void printPanelTime(byte panelByte);
+    void printPanelBeeps(byte panelByte);
+    void printPanelTone(byte panelByte);
+    void printPanelBuzzer(byte panelByte);
+    bool printPanelZones(byte inputByte, byte startZone);
+    void printPanelLights(byte panelByte, bool printMessage = true);
+    void printPanelAccessCode(byte dscCode);
+    void printPanelBitNumbers(byte panelByte, byte startNumber);
+    void printNumberSpace(byte number);
+    void printNumberOffset(byte panelByte, int numberOffset);
+    void printUnknownData();
     void printPanel_0x05();
     void printPanel_0x0A();
     void printPanel_0x11();
@@ -284,27 +293,5 @@ class dscKeybusInterface {
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
-
-#if defined(DSC_ARDUINO32K)
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega32U4__)
-#define PSTR(str) \
-  (__extension__({ \
-    PGM_P ptr;  \
-    asm volatile \
-    ( \
-      ".pushsection .progmem.data, \"SM\", @progbits, 1" "\n\t" \
-      "0: .string " #str                                 "\n\t" \
-      ".popsection"                                      "\n\t" \
-    ); \
-    asm volatile \
-    ( \
-      "ldi %A0, lo8(0b)"                                 "\n\t" \
-      "ldi %B0, hi8(0b)"                                 "\n\t" \
-      : "=d" (ptr) \
-    ); \
-    ptr; \
-  }))
-#endif  // __AVR_ATmega328P__ || __AVR_ATmega32U4__
-#endif  // DSC_ARDUINO32K
 
 #endif  // dscKeybusInterface_h
