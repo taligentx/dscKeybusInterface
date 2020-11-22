@@ -179,7 +179,8 @@ class dscKeybusInterface {
     //static void dscDataInterrupt(dscKeybusInterface *dscPointer);
     // Deprecated
     bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
-
+    static volatile byte currentCmd;
+    
   private:
     
     void processPanelStatus();
@@ -213,7 +214,6 @@ class dscKeybusInterface {
     void printPanel_0x16();
     void printPanel_0x1B();
     void printPanel_0x1C();
-    void printPanel_0x22();
     void printPanel_0x27();
     void printPanel_0x28();
     void printPanel_0x2D();
@@ -221,7 +221,6 @@ class dscKeybusInterface {
     void printPanel_0x34();
     void printPanel_0x39();    
     void printPanel_0x3E();
-    void printPanel_0x41();
     void printPanel_0x4C();
     void printPanel_0x58();
     void printPanel_0x5D();
@@ -265,15 +264,10 @@ class dscKeybusInterface {
     void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
-    void printModule_Panel_Status();
     void printModule_Panel_0x11();
-    void printModule_Panel_0x41();
     void printModule_Panel_0xD5();
     void printModule_Notification();
     void printModule_Keys();
-    void printModule_KeyCodes(byte keyByte);
-    void printModule_Expander();
-    void printModule_ExpanderZoneState(byte zoneByte, byte zoneMask, byte zoneMaskShift);
     
     void removeModule(byte address);
     static void setPendingZoneUpdate();
@@ -282,9 +276,11 @@ class dscKeybusInterface {
     static void addRequestToQueue(byte slot);
     static void setSupervisorySlot(byte slot,bool set);
     static byte getPendingUpdate();
+    static void fillBuffer(byte* src,int len);
     static zoneMaskType getUpdateMask(byte address);
-
-    static volatile byte updateQueue[updateQueueSize];
+    static void prepareResponse(byte);
+   // static void setBuffer(const void* src,int len);
+    //static volatile byte updateQueue[updateQueueSize];
     static byte outIdx,inIdx;
     static byte moduleIdx; 
     static moduleType modules[maxModules];
@@ -332,7 +328,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd,moduleCmd,moduleSubCmd;
+    static volatile byte statusCmd,moduleCmd,moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
