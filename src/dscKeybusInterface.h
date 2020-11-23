@@ -170,6 +170,7 @@ class dscKeybusInterface {
     void printPanelStatus0(byte panelByte);
     void printPanelStatus1(byte panelByte);
     void printPanelStatus2(byte panelByte);
+    void printPanelStatus3(byte panelByte);
     void printPanelStatus4(byte panelByte);
     void printPanelStatus14(byte panelByte);
     void printPanelMessages(byte panelByte);
@@ -245,11 +246,14 @@ class dscKeybusInterface {
     void printModule_Panel_Status();
     void printModule_Panel_0x11();
     void printModule_Panel_0x41();
+    void printModule_Panel_0x4C();
+    void printModule_Panel_0x58();
     void printModule_Panel_0xD5();
     void printModule_Keys();
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
     void printModule_ExpanderZoneState(byte zoneByte, byte zoneMask, byte zoneMaskShift);
+    void printModuleZoneSlot(byte startCount, byte startByte, byte endByte, byte bitMask, byte bitShift);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
