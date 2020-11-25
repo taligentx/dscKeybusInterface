@@ -315,7 +315,7 @@ bool dscKeybusInterface::loop() {
     static byte previousCmdC3[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
-        if (redundantPanelData(previousCmd11, panelData)) return true;
+        if (redundantPanelData(previousCmd11, panelData)) return false;
         break;
 
       case 0x16:  // Zone wiring
@@ -629,7 +629,7 @@ bool  IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volat
     for (byte i = 0; i < dscReadSize; i++) previousCmd[i] = currentCmd[i];
     return false;
   }
- return redundantData;
+
 }
 
 
@@ -1205,16 +1205,14 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         static byte previousCmd1B[dscReadSize];
         case 0x05:  // Status: partitions 1-4
 		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
-              /*
               if (skipFirst) {
                   skipData=false;
                   skipFirst=false;
               } else 
                   skipData=true;
           } else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
-          */
                skipData=true;
-               //skipFirst=true;
+               skipFirst=true;
            }
               /*
 			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
@@ -1234,17 +1232,14 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
         case 0x1B:  // Status: partitions 5-8
           if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
-              /*
               if (skipFirst) {
                   skipData=false;
                   skipFirst=false;
               } else 
                   skipData=true;
           } else {  // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
-          */
                skipData=true;
-               
-              // skipFirst=true;
+               skipFirst=true;
           }
            /*
 			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
