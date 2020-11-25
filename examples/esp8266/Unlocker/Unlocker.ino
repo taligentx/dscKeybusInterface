@@ -646,7 +646,7 @@ void loop() {
       dsc.write('0');
 
       // Loops until the panel sends a status command (0x05) or a long beep command (0x7F)
-      while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F) {
+     while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F && dsc.panelData[0] != 0xE6) {
         dsc.loop();
         yield();
       }
@@ -660,7 +660,7 @@ void loop() {
       }
 
       // Entered keypad programming, code is valid - exits the installer menu and outputs the code via serial and LED blinking
-      else if (dsc.status[0] == 0xF8) {
+      else if (dsc.status[0] == 0xF8 || dsc.status[0] == 0xE4 ) {
         printTimestamp();
         Serial.print("Installer code: ");
         Serial.println(testCode);

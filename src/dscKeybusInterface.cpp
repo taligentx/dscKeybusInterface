@@ -35,7 +35,6 @@ bool dscKeybusInterface::processModuleData;
 byte dscKeybusInterface::panelData[dscReadSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
-unsigned long dscKeybusInterface::cmdWaitTime;
 volatile bool dscKeybusInterface::writeKeyPending;
 volatile bool dscKeybusInterface::writeModulePending;
 volatile bool dscKeybusInterface::pendingDeviceUpdate;
@@ -75,6 +74,7 @@ volatile byte dscKeybusInterface::isrModuleByteCount;
 volatile byte dscKeybusInterface::isrModuleBitCount;
 volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
+bool dscKeybusInterface::debounce05;
 volatile byte dscKeybusInterface::moduleCmd;
 volatile byte dscKeybusInterface::moduleSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
@@ -1205,54 +1205,21 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         static byte previousCmd1B[dscReadSize];
         case 0x05:  // Status: partitions 1-4
 		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
-              if (skipFirst) {
+              
+              if (skipFirst && debounce05) {
                   skipData=false;
                   skipFirst=false;
               } else 
                   skipData=true;
-          } else { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
+          } else if (debounce05) { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
                skipData=true;
                skipFirst=true;
            }
-              /*
-			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
-				 skipData=false;
-				 goodCmd=true;
-			 }
-			 else skipData = true;
-		  } else {
-			 cmdTime = millis();
-			 skipData=true;
-			 goodCmd=false;
-          }
-             */
-             
-		  
+
           break;
 
         case 0x1B:  // Status: partitions 5-8
-          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
-              if (skipFirst) {
-                  skipData=false;
-                  skipFirst=false;
-              } else 
-                  skipData=true;
-          } else {  // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
-               skipData=true;
-               skipFirst=true;
-          }
-           /*
-			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
-				 skipData=false;
-				 goodCmd=true;
-			 }
-			 else skipData = true;
-		  } else {
-			 cmdTime = millis();
-			 skipData=true;
-			 goodCmd=false;
-		  }
-          */
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData=true;
           break;
       }
 
