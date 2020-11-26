@@ -613,6 +613,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
       case ']': writeKey = 0xDA; break;                                       // Command output 2
       case '{': writeKey = 0x70; break;                                       // Command output 3
       case '}': writeKey = 0xEC; break;                                       // Command output 4
+      case 'b':
+      case 'B': writeKey = 0x82; break;                                       // 0x82 - "Enter in buffer memory"
+      case '>': writeKey = 0x87; break;                                       // "Right arrow" - only in buffer memory read ?
+      case '<': writeKey = 0x88; break;                                       // "Left arrow" - only in buffer memory read ?
       default: {
         validKey = false;
         break;
