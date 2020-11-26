@@ -1031,8 +1031,8 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
       
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      //else if ( writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
-       else if ( writeKeyPending && !wroteAsterisk && writeCmd) {
+      else if ( writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+       //else if ( writeKeyPending && !wroteAsterisk && writeCmd) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
         if (isrPanelBitTotal == writeBit || (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7)) {
           writeStart=true; // Resolves a timing issue where some writes do not begin at the correct bit
