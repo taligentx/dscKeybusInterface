@@ -1029,14 +1029,14 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           }
         }
       }
-
+      
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if ( writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+      //else if ( writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+       else if ( writeKeyPending && !wroteAsterisk && writeCmd) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
         if (isrPanelBitTotal == writeBit || (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7)) {
           writeStart=true; // Resolves a timing issue where some writes do not begin at the correct bit
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
-
           // Resets counters when the write is complete
           if (isrPanelBitTotal == writeBit + 7) {
             if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
@@ -1045,8 +1045,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           }
         }
       } 
-      else if (isrPanelData[0]==moduleCmd && writeModulePending ) {
-        // Writes the first bit by shifting the key data right 7 bits and checking bit 0
+      else if (isrPanelData[0]==moduleCmd && writeModulePending && !wroteAsterisk ) {
         if (isrPanelBitTotal == writeModuleBit || (writeStart && isrPanelBitTotal > writeModuleBit && isrPanelBitTotal <= writeModuleBit + (moduleBufferLength * 8))) {
            writeStart=true;
           if (!((writeModuleBuffer[currentModuleIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
@@ -1096,7 +1095,6 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
   static bool skipData = false;
   static bool skipFirst = false;
-//  static unsigned long cmdTime;
 
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
@@ -1211,7 +1209,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
                   skipFirst=false;
               } else 
                   skipData=true;
-          } else if (debounce05) { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported by on a pc5005
+          } else if (debounce05) { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
                skipData=true;
                skipFirst=true;
            }
