@@ -1501,7 +1501,7 @@ void dscKeybusInterface::printPanel_0x94() {
  *  Byte 4 bit 0-4: Hour
  *  Byte 4 bit 5-7: Day digit part 2
  *  Byte 5 bit 0-1: Selects set of status commands
- *  Byte 6: Status, printPanelStatus0...printPanelStatus2
+ *  Byte 6: Status, printPanelStatus0...printPanelStatus3
  *  Byte 7: Unknown
  *  Byte 8: CRC
  *
@@ -1535,188 +1535,85 @@ void dscKeybusInterface::printPanel_0xA5() {
 }
 
 
-
 /*
- *  0xAA: buffe event memory - seem to be index message
- *  Interval: 
+ *  0xAA: Event buffer
  *  CRC: yes
- *  Bytes 2-5: partition 1
- *  Bytes 6-9: partition 2
+ *  Structure decoding: *incomplete
+ *  Content decoding: *incomplete
  *
- *  --cmd---   YYY1YYY2 ??MMMMDD DDDHHHHH MMMMMM---data---- -INDEX-- --CRC---
- *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] index 255 : system | 08:09a 01/16/21
- *  10101010 0 00100000 01100110 10001101 00111000 10011001 00001000 10010110 [0xAA] Memory Buffer Index 008 | 2020.09.20 13:14 | Closed by user code 1
- *  10101010 0 00100000 01100110 10001101 10011000 10011010 00000011 11110010 [0xAA] Memory Buffer Index 003 | 2020.09.20 13:38 | Closed by user code 2
- *  10101010 0 00100000 01100110 10001110 11011000 10011100 00000011 00110101 [0xAA] Memory Buffer Index 003 | 2020.09.20 14:54 | Closed by user code 4
- *  10101010 0 00100000 01100110 10001111 00011100 10011101 00000010 01111010 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:07 | Closed by user code 5
- *  10101010 0 00100000 01100110 10001111 00001100 10100000 00000010 01101101 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:03 | Closed by user code 8
- *  10101010 0 00100000 01100110 10001111 10000000 10101000 00000010 11101001 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:32 | Closed by user code 16
- *  10101010 0 00100000 01100110 10001111 10001100 10111000 00000010 00000101 [0xAA] Memory Buffer Index 002 | 2020.09.20 15:35 | Closed by user code 32
- *  10101010 0 00100000 01100110 10001101 11000000 10111011 00000010 00111010 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:48 | Closed by user code 40
- *  10101010 0 00100000 01100110 10001100 11010000 10111111 00000110 01010001 [0xAA] Memory Buffer Index 006 | 2020.09.20 12:52 | Special closed (quick arm / auto arm / ...)
- *  10101010 0 00100000 01100110 10001101 00111000 11000000 00000010 10110111 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:14 | Open by user code 1
- *  10101010 0 00100000 01100110 10001101 10011000 11000001 00000010 00011000 [0xAA] Memory Buffer Index 002 | 2020.09.20 13:38 | Open by user code 2
- *  10101010 0 00100000 01100110 10001101 11000100 11000011 00000001 01000101 [0xAA] Memory Buffer Index 001 | 2020.09.20 13:49 | Open by user code 4
- *  10101010 0 00100000 01100110 10001111 00001100 11000111 00000001 10010011 [0xAA] Memory Buffer Index 001 | 2020.09.20 15:03 | Open by user code 8
- *  10101010 0 00100000 01100110 10001100 11010000 11100010 00000010 01110000 [0xAA] Memory Buffer Index 002 | 2020.09.20 12:52 | Open by user code 40
- *  10101010 0 00100000 01100110 10001100 11010000 00001011 00000101 10011100 [0xAA] Memory Buffer Index 005 | 2020.09.20 12:52 | Alarm Zone 3
- *  10101010 0 00100000 01100111 10001001 10101000 00001100 00000110 01110100 [0xAA] Memory Buffer Index 006 | 2020.09.28 09:42 | Alarm Zone 4
- *  10101010 0 00100000 01100111 10001001 11000000 00010000 00000101 10001111 [0xAA] Memory Buffer Index 005 | 2020.09.28 09:48 | Alarm Zone 8
- *  10101010 0 00100000 01100110 10001100 11010000 00101011 00000011 10111010 [0xAA] Memory Buffer Index 003 | 2020.09.20 12:52 | Alarm restored Zone 3
- *  10101010 0 00100000 01100111 10001001 10101000 00101100 00000010 10010000 [0xAA] Memory Buffer Index 002 | 2020.09.28 09:42 | Alarm restored Zone 4
- *  10101010 0 00100000 01100111 10001001 11001000 00110000 00000100 10110110 [0xAA] Memory Buffer Index 004 | 2020.09.28 09:50 | Alarm restored Zone 8
- *  10101010 0 00100000 01100110 10001100 11010000 01001010 00000001 11010111 [0xAA] Memory Buffer Index 001 | 2020.09.20 12:52 | Open after alarm
- *  10101010 0 00100000 01100110 10001100 11010000 01001011 00000100 11011011 [0xAA] Memory Buffer Index 004 | 2020.09.20 12:52 | Recent closed
- *  10101010 0 00100000 01100110 10001101 00111000 01011000 00000111 01010100 [0xAA] Memory Buffer Index 007 | 2020.09.20 13:14 | Tamper Zone 3
- *  10101010 0 00100000 01100111 10001001 10101000 01011001 00000111 11000010 [0xAA] Memory Buffer Index 007 | 2020.09.28 09:42 | Tamper Zone 4
- *  10101010 0 00100000 01100111 10001001 11001000 01011101 00001010 11101001 [0xAA] Memory Buffer Index 010 | 2020.09.28 09:50 | Tamper Zone 8
- *  10101010 0 00100000 01100110 10001101 00111000 01111000 00000100 01110001 [0xAA] Memory Buffer Index 004 | 2020.09.20 13:14 | Tamper restored Zone 3
- *  10101010 0 00100000 01100111 10001001 10101000 01111001 00000001 11011100 [0xAA] Memory Buffer Index 001 | 2020.09.28 09:42 | Tamper restored Zone 4
- *  10101010 0 00100000 01100111 10001001 11001000 01111101 00000001 00000000 [0xAA] Memory Buffer Index 001 | 2020.09.28 09:50 | Tamper restored Zone 8 
- *  10101010 0 00100000 01100111 10001001 11001001 10010011 00000011 00011001 [0xAA] Memory Buffer Index 003 | 2020.09.28 09:50 | Error Zone 8
- *  10101010 0 00100000 01100111 10001001 11001001 01110011 00000010 11111000 [0xAA] Memory Buffer Index 002 | 2020.09.28 09:50 | Error restored Zone 8
- *  10101010 0 00100000 01100110 10001100 11010010 10011011 00000111 00110000 [0xAA] Memory Buffer Index 007 | 2020.09.20 12:52 | Arming Leave mode
- *  10101010 0 00100000 01100110 10101101 10101110 01100110 00000001 11110010 [0xAA] Memory Buffer Index 001 | 2020.09.21 13:43 | [*1] access by user                                                                                                                            | [*1] accès ??
- *  10101010 0 00100000 01100110 10001101 00110010 11000011 00001001 10111011 [0xAA] Memory Buffer Index 009 | 2020.09.20 13:12 | [*5] access by user 40
- *  10101010 0 00100000 01100110 10001100 11010110 11100110 00000000 01111000 [0xAA] Memory Buffer Index 000 | 2020.09.20 12:53 | [*6] accses by user 40 
- *  10101010 0 00100000 01100110 10101101 10010001 00101011 00000011 10011100 [0xAA] Memory Buffer Index 003 | 2020.09.21 13:36 | Unknown header: 0x4 (auto closed)
- *  10101010 0 00100000 01100110 10101101 11000101 10101101 00000010 01010001 [0xAA] Memory Buffer Index 002 | 2020.09.21 13:49 | Unknown header: 0x6 installer user code (just after *8+code)
- *  10101010 0 00100000 01100110 10101101 11000101 10101100 00000001 01001111 [0xAA] Memory Buffer Index 001 | 2020.09.21 13:49 | Unknown header: 0x6 installer exit (leave intaller menu)
- *  
+ *  Byte 2 bit 0-3: Year digit 2
+ *  Byte 2 bit 4-7: Year digit 1
+ *  Byte 3 bit 0-1: Day digit part 1
+ *  Byte 3 bit 2-5: Month
+ *  Byte 3 bit 6-7: Partition (?)
+ *  Byte 4 bit 0-4: Hour
+ *  Byte 4 bit 5-7: Day digit part 2
+ *  Byte 5 bit 0-1: Selects set of status commands
+ *  Byte 6: Status, printPanelStatus0...printPanelStatus3
+ *  Byte 7: Index (?)
+ *  Byte 8: CRC
+ *
+ *             YYY1YYY2   MMMMDD DDDHHHHH MMMMMM
+ *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] Event buffer: 255 | 2021.01.16 08:09 | Zone alarm: 20
+ *  10101010 0 00100000 01100110 10001101 00111000 10011001 00001000 10010110 [0xAA] Event buffer: 008 | 2020.09.20 13:14 | Armed by user code 1
+ *  10101010 0 00100000 01100110 10001101 10011000 10011010 00000011 11110010 [0xAA] Event buffer: 003 | 2020.09.20 13:38 | Armed by user code 2
+ *  10101010 0 00100000 01100110 10001110 11011000 10011100 00000011 00110101 [0xAA] Event buffer: 003 | 2020.09.20 14:54 | Armed by user code 4
+ *  10101010 0 00100000 01100110 10001111 00011100 10011101 00000010 01111010 [0xAA] Event buffer: 002 | 2020.09.20 15:07 | Armed by user code 5
+ *  10101010 0 00100000 01100110 10001111 00001100 10100000 00000010 01101101 [0xAA] Event buffer: 002 | 2020.09.20 15:03 | Armed by user code 8
+ *  10101010 0 00100000 01100110 10001111 10000000 10101000 00000010 11101001 [0xAA] Event buffer: 002 | 2020.09.20 15:32 | Armed by user code 16
+ *  10101010 0 00100000 01100110 10001111 10001100 10111000 00000010 00000101 [0xAA] Event buffer: 002 | 2020.09.20 15:35 | Armed by user code 32
+ *  10101010 0 00100000 01100110 10001101 11000000 10111011 00000010 00111010 [0xAA] Event buffer: 002 | 2020.09.20 13:48 | Armed by master code 40
+ *  10101010 0 00100000 01100110 10001100 11010000 10111111 00000110 01010001 [0xAA] Event buffer: 006 | 2020.09.20 12:52 | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS
+ *  10101010 0 00100000 01100110 10001101 00111000 11000000 00000010 10110111 [0xAA] Event buffer: 002 | 2020.09.20 13:14 | Disarmed by user code 1
+ *  10101010 0 00100000 01100110 10001101 10011000 11000001 00000010 00011000 [0xAA] Event buffer: 002 | 2020.09.20 13:38 | Disarmed by user code 2
+ *  10101010 0 00100000 01100110 10001101 11000100 11000011 00000001 01000101 [0xAA] Event buffer: 001 | 2020.09.20 13:49 | Disarmed by user code 4
+ *  10101010 0 00100000 01100110 10001111 00001100 11000111 00000001 10010011 [0xAA] Event buffer: 001 | 2020.09.20 15:03 | Disarmed by user code 8
+ *  10101010 0 00100000 01100110 10001100 11010000 11100010 00000010 01110000 [0xAA] Event buffer: 002 | 2020.09.20 12:52 | Disarmed by master code 40
+ *  10101010 0 00100000 01100110 10001100 11010000 00001011 00000101 10011100 [0xAA] Event buffer: 005 | 2020.09.20 12:52 | Zone alarm: 3
+ *  10101010 0 00100000 01100111 10001001 10101000 00001100 00000110 01110100 [0xAA] Event buffer: 006 | 2020.09.28 09:42 | Zone alarm: 4
+ *  10101010 0 00100000 01100111 10001001 11000000 00010000 00000101 10001111 [0xAA] Event buffer: 005 | 2020.09.28 09:48 | Zone alarm: 8
+ *  10101010 0 00100000 01100110 10001100 11010000 00101011 00000011 10111010 [0xAA] Event buffer: 003 | 2020.09.20 12:52 | Zone alarm restored: 3
+ *  10101010 0 00100000 01100111 10001001 10101000 00101100 00000010 10010000 [0xAA] Event buffer: 002 | 2020.09.28 09:42 | Zone alarm restored: 4
+ *  10101010 0 00100000 01100111 10001001 11001000 00110000 00000100 10110110 [0xAA] Event buffer: 004 | 2020.09.28 09:50 | Zone alarm restored: 8
+ *  10101010 0 00100000 01100110 10001100 11010000 01001010 00000001 11010111 [0xAA] Event buffer: 001 | 2020.09.20 12:52 | Disarmed after alarm in memory
+ *  10101010 0 00100000 01100110 10001100 11010000 01001011 00000100 11011011 [0xAA] Event buffer: 004 | 2020.09.20 12:52 | Partition in alarm
+ *  10101010 0 00100000 01100110 10001101 00111000 01011000 00000111 01010100 [0xAA] Event buffer: 007 | 2020.09.20 13:14 | Zone tamper: 3
+ *  10101010 0 00100000 01100111 10001001 10101000 01011001 00000111 11000010 [0xAA] Event buffer: 007 | 2020.09.28 09:42 | Zone tamper: 4
+ *  10101010 0 00100000 01100111 10001001 11001000 01011101 00001010 11101001 [0xAA] Event buffer: 010 | 2020.09.28 09:50 | Zone tamper: 8
+ *  10101010 0 00100000 01100110 10001101 00111000 01111000 00000100 01110001 [0xAA] Event buffer: 004 | 2020.09.20 13:14 | Zone tamper restored: 3
+ *  10101010 0 00100000 01100111 10001001 10101000 01111001 00000001 11011100 [0xAA] Event buffer: 001 | 2020.09.28 09:42 | Zone tamper restored: 4
+ *  10101010 0 00100000 01100111 10001001 11001000 01111101 00000001 00000000 [0xAA] Event buffer: 001 | 2020.09.28 09:50 | Zone tamper restored: 8
+ *  10101010 0 00100000 01100111 10001001 11001001 10010011 00000011 00011001 [0xAA] Event buffer: 003 | 2020.09.28 09:50 | Zone fault: 8
+ *  10101010 0 00100000 01100111 10001001 11001001 01110011 00000010 11111000 [0xAA] Event buffer: 002 | 2020.09.28 09:50 | Zone fault restored: 8
+ *  10101010 0 00100000 01100110 10001100 11010010 10011011 00000111 00110000 [0xAA] Event buffer: 007 | 2020.09.20 12:52 | Armed: away
+ *  10101010 0 00100000 01100110 10101101 10101110 01100110 00000001 11110010 [0xAA] Event buffer: 001 | 2020.09.21 13:43 | Enter *1 zone bypass programming
+ *  10101010 0 00100000 01100110 10001101 00110010 11000011 00001001 10111011 [0xAA] Event buffer: 009 | 2020.09.20 13:12 | Enter *5 programming
+ *  10101010 0 00100000 01100110 10001100 11010110 11100110 00000000 01111000 [0xAA] Event buffer: 000 | 2020.09.20 12:53 | Enter *6 programming
+ *  10101010 0 00100000 01100110 10101101 10010001 00101011 00000011 10011100 [0xAA] Event buffer: 003 | 2020.09.21 13:36 | Armed by auto-arm
+ *  10101010 0 00100000 01100110 10101101 11000101 10101101 00000010 01010001 [0xAA] Event buffer: 002 | 2020.09.21 13:49 | Enter *8 programming
+ *  10101010 0 00100000 01100110 10101101 11000101 10101100 00000001 01001111 [0xAA] Event buffer: 001 | 2020.09.21 13:49 | Exit *8 programming
+ *
  */
 void dscKeybusInterface::printPanel_0xAA() {
-  if (!validCRC()) {
-    stream->print(F("[CRC Error]"));
-    return;
-  }
 
-  stream->print("Memory Buffer Index ");
-  float index = panelData[7];
-  if (index < 10) stream->print("00");
-  else if (index < 100) stream->print("0");
-  stream->print(index,0);
-  stream->print(F(" at "));
-  
-  byte dscYear3 = panelData[2] >> 4;
-  byte dscYear4 = panelData[2] & 0x0F;
-  byte dscMonth = panelData[3] << 2; dscMonth >>=4;
-  byte dscDay1 = panelData[3] << 6; dscDay1 >>= 3;
-  byte dscDay2 = panelData[4] >> 5;
-  byte dscDay = dscDay1 | dscDay2;
-  byte dscHour = panelData[4] & 0x1F;
-  byte dscMinute = panelData[5] >> 2;
+  stream->print(F("Event buffer: "));
+  if (panelData[7] < 10) stream->print("00");
+  else if (panelData[7] < 100) stream->print("0");
+  stream->print(panelData[7], 0);
+  stream->print(F(" | "));
 
-  if (dscYear3 >= 7) stream->print(F("19"));
-  else stream->print(F("20"));
-  stream->print(dscYear3);
-  stream->print(dscYear4);
-  stream->print(F("."));
-  if (dscMonth < 10) stream->print("0");
-  stream->print(dscMonth);
-  stream->print(F("."));
-  if (dscDay < 10) stream->print("0");
-  stream->print(dscDay);
-  stream->print(F(" "));
-  if (dscHour < 10) stream->print("0");
-  stream->print(dscHour);
-  stream->print(F(":"));
-  if (dscMinute < 10) stream->print("0");
-  stream->print(dscMinute);
-  
+  printPanelTime(2);
+
   stream->print(F(" | "));
-  
-  byte logUser = 0;
-  
-  stream->print(F("DATA "));
-  int data1 = (panelData[5] & 0x03);
-   stream->print(data1);
-   stream->print(F(" - "));
-  int data2 = panelData[6];
-   stream->print(data2);
-   stream->print(F(" - "));
-  int data = ((int)(data1) << 8 | (int)(data2));
-  stream->print(data);
-  stream->print(F(" | "));
-  
-  switch (data) {
-    case 9 ... 40:
-      // alarme Zone 1 to 32
-      stream->print(F("Alarm Zone "));
-      stream->print(data - 8, DEC);
-      break;
-    case 41 ... 72:
-      // alarme Zone 1 to 32
-      stream->print(F("Alarm Restored Zone "));
-      stream->print(data - 40, DEC);
-      break;
-    
-    case 74:  stream->print(F("Open after alarm")); break;
-    case 75:  stream->print(F("Recent closed")); break;
-    
-    case 86 ... 117:
-      // Tamper zone 1 to 32
-      stream->print(F("Tamper Zone "));
-      stream->print(data - 85, DEC);
-      break;
-    case 118 ... 149:
-      // Tamper restored zone 1 to 32
-      stream->print(F("Tamper restored Zone "));
-      stream->print(data - 117, DEC);
-      break;    
-      
-    case 153 ... 189:
-      // Closed by user code 1 to 34, 40 to 42
-      logUser = data - 152;
-      if(logUser > 34){
-        logUser = logUser + 5;
-      }
-      stream->print(F("Closed by user code "));
-      stream->print(logUser, DEC);
-      break;    
-      
-    case 191:  stream->print(F("Special closed (quick arm / auto arm / ...")); break;
-    case 192 ... 228:
-      // Open by user code 1 to 34, 40 to 42
-      logUser = data - 191;
-      if(logUser > 34){
-        logUser = logUser + 5;
-      }
-      stream->print(F("Open by user code "));
-      stream->print(logUser, DEC);
-      break;    
-    
-    case 299:  stream->print(F("Auto closed")); break;
-    
-    case 364 ... 395:
-      // Error restored Zone 1 to 32
-      stream->print(F("Error restored Zone "));
-      stream->print(data - 363, DEC);
-      break;    
-    case 396 ... 427:
-      // Error Zone 1 to 32
-      stream->print(F("Error Zone "));
-      stream->print(data - 395, DEC);
-      break; 
-    
-    case 428:  stream->print(F("Exit installer menu")); break;    // message send just afer exit installer menu
-    case 429:  stream->print(F("installer user code")); break;    // message send just afer *8 + code
-      
-    case 614:  stream->print(F("[*1] access by user")); break;
-    
-    case 667:  stream->print(F("Arming Leave mode")); break;
-    
-    case 707:  stream->print(F("[*5] access by user 40")); break;
-    
-    case 742:  stream->print(F("[*6] access by user 40")); break;
-      
-    default:
-      stream->print(F("Unknown data: 0x"));
-      stream->print(data, HEX);
-      stream->print(F(" - "));
-      stream->print(data, DEC);
-      break;
+
+  switch (panelData[5] & 0x03) {
+    case 0x00: printPanelStatus0(6); return;
+    case 0x01: printPanelStatus1(6); return;
+    case 0x02: printPanelStatus2(6); return;
+    case 0x03: printPanelStatus3(6); return;
   }
 }
+
 
 /*
  *  0xB1: Enabled zones 1-32, partitions 1,2
