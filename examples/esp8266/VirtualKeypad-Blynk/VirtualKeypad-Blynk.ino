@@ -1,16 +1,16 @@
 /*
- *  VirtualKeypad-Blynk 1.1 (esp8266)
+ *  VirtualKeypad-Blynk 1.2 (esp8266)
  *
  *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android.
  *
  *  Usage:
- *  1. Scan one of the following QR codes from within the Blynk app for an example keypad layout:
- *    16 zones: https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png
- *    32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
- *  2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
- *  3. Select "Refresh" to generate a new auth token.
- *  4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
- *  5. Add the auth token to the sketch below.
+ *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+ *      16 zones: https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png
+ *      32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
+ *    2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
+ *    3. Select "Refresh" to generate a new auth token.
+ *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
+ *    5. Add the auth token to the sketch below.
  *
  *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
  *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
@@ -37,17 +37,21 @@
  *    V56 - LED Fire
  *    V61 - Zone 1 ... V124 - Zone 64
  *
+ *  Release notes:
+ *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.0 - Initial release
+ *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

@@ -13,14 +13,6 @@
  *    4. Upload the sketch.
  *    5. Restart Home Assistant.
  *
- *  Release notes
- *    1.2 - Added night arm (arming with no entry delay)
- *          Added status update on initial MQTT connection and reconnection
- *          Add appendPartition() to simplify sketch
- *          Removed writeReady check, moved into library
- *    1.1 - Added status update on initial MQTT connection and reconnection
- *    1.0 - Initial release
- *
  *  Example Home Assistant configuration.yaml for 2 partitions, 3 zones:
 
 # https://www.home-assistant.io/components/mqtt/
@@ -129,6 +121,14 @@ binary_sensor:
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  Release notes
+ *    1.2 - Added night arm (arming with no entry delay)
+ *          Added status update on initial MQTT connection and reconnection
+ *          Add appendPartition() to simplify sketch
+ *          Removed writeReady check, moved into library
+ *    1.1 - Added status update on initial MQTT connection and reconnection
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- Arduino Vin pin

@@ -9,7 +9,7 @@
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
- *  1.0 - Initial release
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin

@@ -6,7 +6,8 @@
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
  *  built-in LED - each digit is indicated by the number of blinks, a long blink indicates "0".  This
- *  esp32 example tests codes by general frequency: https://www.datagenetics.com/blog/september32012/
+ *  esp32 example tests codes in order of most commonly used general 4-digit codes:
+ *  https://www.datagenetics.com/blog/september32012/
  *
  *  If keypad lockout has been enabled by the installer, the sketch waits for the lockout to expire
  *  before continuing the code search.  The physical keypads may beep when this occurs, the keypads can

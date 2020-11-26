@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.2 (esp8266)
+ *  HomeAssistant-MQTT 1.3 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -13,16 +13,6 @@
  *    4. Copy the example configuration to Home Assistant's configuration.yaml and customize.
  *    5. Upload the sketch.
  *    6. Restart Home Assistant.
- *
- *  Release notes:
- *    1.2 - Added sensor component to display partition status messages
- *          Added night arm (arming with no entry delay)
- *          Added status update on initial MQTT connection and reconnection
- *          Add appendPartition() to simplify sketch
- *          Removed writeReady check, moved into library
- *    1.1 - Merged: availability status
- *          Updated: availability status based on Keybus connection status
- *    1.0 - Initial release
  *
  *  Example Home Assistant configuration.yaml for 2 partitions, 3 zones:
 
@@ -133,17 +123,28 @@ binary_sensor:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
+ *  Release notes:
+ *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.2 - Added sensor component to display partition status messages
+ *          Added night arm (arming with no entry delay)
+ *          Added status update on initial MQTT connection and reconnection
+ *          Add appendPartition() to simplify sketch
+ *          Removed writeReady check, moved into library
+ *    1.1 - Merged: availability status
+ *          Updated: availability status based on Keybus connection status
+ *    1.0 - Initial release
+ *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

@@ -5,6 +5,9 @@
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
+ *  Release notes:
+ *    1.0 - Initial release
+ *
  *  Wiring:
  *      DSC Aux(+) --- Arduino Vin pin
  *

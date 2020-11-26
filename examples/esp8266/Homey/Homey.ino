@@ -1,5 +1,5 @@
 /*
- *  Homey 1.1 (esp8266)
+ *  Homey 1.2 (esp8266)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -12,6 +12,7 @@
  *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Release notes:
+ *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.1 - Added status update on WiFi reconnection
  *          Removed writeReady check, moved into library
  *    1.0 - Initial release
@@ -22,11 +23,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

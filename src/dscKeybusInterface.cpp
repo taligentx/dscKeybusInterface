@@ -53,6 +53,7 @@ volatile byte dscKeybusInterface::isrModuleByteCount;
 volatile byte dscKeybusInterface::isrModuleBitCount;
 volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
+volatile byte dscKeybusInterface::currentSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
@@ -155,7 +156,7 @@ bool dscKeybusInterface::loop() {
   noInterrupts();
   #endif
 
-  if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
+  if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
 
   #if defined(ESP32)
@@ -316,7 +317,7 @@ bool dscKeybusInterface::handlePanel() {
   noInterrupts();
   #endif
 
-  if (millis() - keybusTime > 3000) keybusConnected = false;  // dataTime is set in dscDataInterrupt() when the clock resets
+  if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
   else keybusConnected = true;
 
   #if defined(ESP32)
@@ -667,7 +668,14 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
 }
 
 
+#if defined(__AVR__)
 bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP8266)
+bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#elif defined(ESP32)
+bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+#endif
+
   bool redundantData = true;
   for (byte i = 0; i < checkedBytes; i++) {
     if (previousCmd[i] != currentCmd[i]) {
@@ -836,6 +844,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
 
       if (isrPanelBitTotal == 8) {
+
         // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
           case 0x05:
@@ -922,6 +931,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
       // Stores new panel data in the panel buffer
       currentCmd = isrPanelData[0];
+      currentSubCmd = isrPanelData[2];
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];

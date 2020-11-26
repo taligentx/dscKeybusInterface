@@ -18,9 +18,6 @@
  *    5. Upload the sketch.
  *    6. Restart Homebridge.
  *
- *  Release notes:
- *    1.0 - Initial release
- *
  *  Example Homebridge config.json "accessories" configuration:
 
         {
@@ -117,6 +114,9 @@
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  Release notes:
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin

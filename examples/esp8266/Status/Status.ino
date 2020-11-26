@@ -1,11 +1,12 @@
 /*
- *  DSC Status 1.1 (esp8266)
+ *  DSC Status 1.2 (esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Release notes:
+ *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.1 - Added partition ready, access code, and timestamp status
  *    1.0 - Initial release
  *
@@ -15,11 +16,11 @@
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):

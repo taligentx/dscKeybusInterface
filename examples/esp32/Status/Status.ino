@@ -5,6 +5,9 @@
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
+ *  Release notes:
+ *    1.0 - Initial release
+ *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
