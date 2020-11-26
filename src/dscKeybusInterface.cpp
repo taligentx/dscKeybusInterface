@@ -53,6 +53,7 @@ volatile byte dscKeybusInterface::isrModuleByteCount;
 volatile byte dscKeybusInterface::isrModuleBitCount;
 volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
+volatile byte dscKeybusInterface::currentSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
@@ -839,6 +840,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
 
       if (isrPanelBitTotal == 8) {
+
         // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
         switch (isrPanelData[0]) {
           case 0x05:
@@ -925,6 +927,7 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
       // Stores new panel data in the panel buffer
       currentCmd = isrPanelData[0];
+      currentSubCmd = isrPanelData[2];
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];

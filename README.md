@@ -10,19 +10,19 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
 Screenshots:
-* [Apple Home & Siri](https://www.apple.com/ios/home/):  
+* [Apple Home & Siri](https://www.apple.com/ios/home/):
   ![HomeKit](https://user-images.githubusercontent.com/12835671/61570833-c9bb9780-aa54-11e9-9477-8e0853609e91.png)
-* [Home Assistant](https://www.home-assistant.io):  
+* [Home Assistant](https://www.home-assistant.io):
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/61985900-38f33780-afd1-11e9-9d43-ab0b681b7b03.png)
-* [OpenHAB](https://www.openhab.org):  
+* [OpenHAB](https://www.openhab.org):
   ![OpenHAB](https://user-images.githubusercontent.com/12835671/61560425-daa6e180-aa31-11e9-9efe-0fcb44d2106a.png)
-* [Blynk](https://www.blynk.cc) app virtual keypad:  
+* [Blynk](https://www.blynk.cc) app virtual keypad:
   ![VirtualKeypad-Blynk](https://user-images.githubusercontent.com/12835671/61568638-9fb0a800-aa49-11e9-94d0-e598431ea2ed.png)
-* Web virtual keypad:  
+* Web virtual keypad:
   ![VirtualKeypad-Web](https://user-images.githubusercontent.com/12835671/61570049-e43f4200-aa4f-11e9-96bc-3448b6630990.png)
 
 ## Why?
-**I Had**: _A DSC security system not being monitored by a third-party service._  
+**I Had**: _A DSC security system not being monitored by a third-party service._
 **I Wanted**: _Notification if the alarm triggered._
 
 I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel, keypads, and other modules.  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) and [FreeRTOS](https://www.freertos.org) (via [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos)) platforms.
@@ -136,9 +136,9 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: [Athom Homey](https://www.athom.com/en/) integration example sketch, thanks to [MagnusPer](https://github.com/MagnusPer) for this contribution!
   - New: PCB layouts, contributed by [sjlouw](https://github.com/sj-louw)
   - New: Configurable number of partitions and zones to customize memory usage: `dscPartitions` and `dscZones` in `dscKeybusInterface.h`
-  - New: KeybusReader decoding of commands `0xE6` and `0xEB` 
+  - New: KeybusReader decoding of commands `0xE6` and `0xEB`
   - Changed: Split examples by platform
-  - Changed: Arduino sketches no longer use pin 4 to avoid a conflict with the SD card on Ethernet shields. 
+  - Changed: Arduino sketches no longer use pin 4 to avoid a conflict with the SD card on Ethernet shields.
   - Changed: MQTT examples updated with username and password fields
   - Changed: `processRedundantData` now true by default to prevent storing repetitive data, reduces memory usage.
   - Note: This release changes the library methods to accommodate multiple partitions, existing sketches will need to be updated to match the new example sketches.
@@ -214,6 +214,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 ## More DSC projects
 * **[dscalarm-mqtt](https://github.com/jimtng/dscalarm-mqtt)**: implementation of the [Homie](https://homieiot.github.io) MQTT convention
 * **[esphome-dsckeybus](https://github.com/Dilbert66/esphome-dsckeybus)**: implementation of this library as an ESPHome custom component
+* **[PC1500KeybusReader](https://github.com/polishedmarvin/dscKeybusInterface)**: MQTT HomeKit example for the PC1500 and ESP32 using [dougkpowers/pc1550-interface](https://github.com/dougkpowers/pc1550-interface)
 
 ## Wiring
 
@@ -240,7 +241,7 @@ DSC Green ----+--- 15k ohm resistor ---|
               |     esp8266/esp32      +--- dscReadPin (esp8266: D1,D2,D8 / esp32: 4,13,16-39)
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
- 
+
 Virtual keypad (optional):
 DSC Green ---- NPN collector --\
                                 |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12 / esp8266: D1,D2,D8 / esp32: 4,13,16-33)
@@ -295,7 +296,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 * PC1555MX/5015 section `370`, PC1616/PC1832/PC1864 section `377`:
   - Swinger shutdown: By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a third-party monitoring service, and also affects this interface.  As I do not use a monitoring service, I disable swinger shutdown by setting this to `000`.
 
-  - AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.  
+  - AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.
 
 ## Notes
 * For OTA updates on esp8266 and esp32, you may need to stop the interface using `dsc.stop();`:
@@ -316,9 +317,9 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 
 ## Troubleshooting
 If you are running into issues:
-1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.  
+1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.
     * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.  Breadboards can cause issues, connections should be soldered instead.
-2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.  
+2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
     * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
 3. Run the `Status` example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.
 
