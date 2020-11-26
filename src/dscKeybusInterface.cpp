@@ -35,7 +35,6 @@ bool dscKeybusInterface::processModuleData;
 byte dscKeybusInterface::panelData[dscReadSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
-unsigned long dscKeybusInterface::cmdWaitTime;
 volatile bool dscKeybusInterface::writeKeyPending;
 volatile bool dscKeybusInterface::writeModulePending;
 volatile bool dscKeybusInterface::pendingDeviceUpdate;
@@ -65,7 +64,7 @@ byte dscKeybusInterface::maxFields11;
 byte dscKeybusInterface::maxZones;
 byte dscKeybusInterface::panelVersion;
 bool dscKeybusInterface::enableModuleSupervision;
-volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
+//volatile byte  dscKeybusInterface::updateQueue[updateQueueSize];
 volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
@@ -75,6 +74,7 @@ volatile byte dscKeybusInterface::isrModuleByteCount;
 volatile byte dscKeybusInterface::isrModuleBitCount;
 volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
+bool dscKeybusInterface::debounce05;
 volatile byte dscKeybusInterface::moduleCmd;
 volatile byte dscKeybusInterface::moduleSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
@@ -315,7 +315,7 @@ bool dscKeybusInterface::loop() {
     static byte previousCmdC3[dscReadSize];
     switch (panelData[0]) {
       case 0x11:  // Keypad slot query
-        if (redundantPanelData(previousCmd11, panelData)) return true;
+        if (redundantPanelData(previousCmd11, panelData)) return false;
         break;
 
       case 0x16:  // Zone wiring
@@ -629,7 +629,7 @@ bool  IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volat
     for (byte i = 0; i < dscReadSize; i++) previousCmd[i] = currentCmd[i];
     return false;
   }
- return redundantData;
+
 }
 
 
@@ -641,20 +641,6 @@ bool dscKeybusInterface::validCRC() {
   }
   if (dataSum % 256 == panelData[byteCount]) return true;
   else return false;
-}
-
-#if defined(__AVR__)
-byte dscKeybusInterface::getPendingUpdate() { 
-#elif defined(ESP8266)
-byte ICACHE_RAM_ATTR dscKeybusInterface::getPendingUpdate() { 
-#elif defined(ESP32)
-byte  IRAM_ATTR dscKeybusInterface::getPendingUpdate() { 
-#endif
-//check for a pending update flag and clear it
-	if (inIdx == outIdx) return 0;
-    byte addr = updateQueue[outIdx];
-	outIdx = (outIdx + 1) % updateQueueSize;
-	return addr;
 }
 
 
@@ -703,7 +689,7 @@ void dscKeybusInterface::setSupervisorySlot(byte address,bool set=true) {
 
 void dscKeybusInterface::addRequestToQueue(byte address) {
             if (!address) return;
-            updateQueue[inIdx]=address;
+           // updateQueue[inIdx]=address;
             inIdx=(inIdx + 1) % updateQueueSize;
 }
 
@@ -875,7 +861,38 @@ void dscKeybusInterface::setZoneFault(byte zone,bool fault) {
         addRequestToQueue(address);  //update queue to indicate pending request
     }
 }
+
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::fillBuffer(byte *src,int len) {
+#endif
+  moduleBufferLength=len;
+  for(byte x=0;x<len;x++) writeModuleBuffer[x]=src[x];
+  writeModulePending=true;   //set flag to send it  
+}
+
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::prepareResponse(byte address) {
+#endif
+    if (!address) return; //cmds 05/11 return here
+    for (int idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
+        if (modules[idx].address==address) {
+             pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
+             fillBuffer((byte*) modules[idx].faultBuffer,5);
+            return;
+        }
+    }
+
  
+}
+
 #if defined(__AVR__)
 void dscKeybusInterface::dscKeybusInterface::processModuleResponse(byte cmd) {
 #elif defined(ESP8266)
@@ -895,43 +912,29 @@ void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processModuleResponse(byt
 */
      byte address=0;
      switch (cmd) {
-       case 0x05:   if (!getPendingUpdate()) return;  //if nothing in queue for a zone update return
-                    moduleBufferLength=maxFields05;
-                    //for(int x=0;x<maxFields05;x++) writeModuleBuffer[x]=pendingZoneStatus[x];
-                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields05);
-                    writeModulePending=true;
+       case 0x05:   if (inIdx == outIdx) return;
+                    outIdx = (outIdx + 1) % updateQueueSize;
+                    fillBuffer((byte*) pendingZoneStatus,maxFields05);
                     break;
 //11111111 1 00111111 11111111 11111111 11111111 11111111 11111100 11111111 device 16 in slot 24  
 //11111111 1 00111111 11111111 11110011 11111111 11111111 11111111 11111111  slot 11   
 //11111111 1 00111111 11111111 00111111 11111111 11111111 11111111 11111111    slot 9     
        case 0x11:   if (!enableModuleSupervision) return;
-                    moduleBufferLength=maxFields11;
-                    //for(int x=0;x<maxFields11;x++) writeModuleBuffer[x]=moduleSlots[x];
-                    memcpy((void*) writeModuleBuffer,(void*) pendingZoneStatus,maxFields11);
-                    writeModulePending=true;
+                    fillBuffer((byte*) pendingZoneStatus,maxFields11);
                     break;
        case 0x28:   address=9;break;  // the address will depend on the panel request command.
        case 0x33:   address=10;break;
        case 0x39:   address=11;break;
        default:     return;            
     }
+    
     moduleCmd=cmd; //set command to respond on
     moduleSubCmd=0;
     currentModuleIdx=0;
     writeModuleBit=9; //set bit location where we start sending our own data on the command
-    if (!address) return; //cmds 0x11/0x05 return here
     
-    int idx;   
-    for (idx=0;idx<moduleIdx;idx++) {  //get the buffer data from the module record that matches the address we need
-        if (modules[idx].address==address) break;
-    }
-    if (idx==moduleIdx) return; //not found so not for us
-   // for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //get the fault data for that emulated board
-    memcpy((void*)writeModuleBuffer,(void*) modules[idx].faultBuffer,5); //get the fault data for that emulated board
-    moduleBufferLength=5;
-    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
-    writeModulePending=true;    //set flag that we need to write buffer data 
- 
+    prepareResponse(address);
+
 }
 
 
@@ -955,16 +958,8 @@ void IRAM_ATTR dscKeybusInterface::processModuleResponse_0xE6(byte subcmd) {
     moduleSubCmd=subcmd;
     currentModuleIdx=0;
     writeModuleBit=17;
-    int idx;  
-    for (idx=0;idx<moduleIdx;idx++) {
-        if (modules[idx].address==address) break;
-    }
-    if (idx==moduleIdx) return; //not found so return
-    //for(int x=0;x<5;x++) writeModuleBuffer[x]=modules[idx].faultBuffer[x]; //wet get our zone fault data 
-    memcpy((void*)writeModuleBuffer,(void*)modules[idx].faultBuffer,5);
-    moduleBufferLength=5;
-    pendingZoneStatus[modules[idx].zoneStatusByte]|=~modules[idx].zoneStatusMask; //clear update slot
-    writeModulePending=true;   //set flag to send it
+    prepareResponse(address);
+
 }
 
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
@@ -1013,21 +1008,14 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
       if (writePartition <= 4 && statusCmd == 0x05) writeCmd = true;
       else if (writePartition > 4 && statusCmd == 0x1B) writeCmd = true;
-      else writeCmd = false;
+      else writeCmd = false; // Resolves a timing issue where some writes do not begin at the correct bit
 
       // Writes a F/A/P alarm key and repeats the key on the next immediate command from the panel (0x1C verification)
       if ((writeAlarm && writeKeyPending) || writeRepeat) {
 
         // Writes the first bit by shifting the alarm key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == 1) {
-          if (!((writeKey >> 7) & 0x01)) {
-            digitalWrite(dscWritePin, HIGH);
-          }
-          writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
-        }
-
-        // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal > 1 && isrPanelBitTotal <= 8) {
+       if (isrPanelBitTotal == 1 || (writeStart && isrPanelBitTotal > 1 && isrPanelBitTotal <= 8)) {
+          writeStart = true; // Resolves a timing issue where some writes do not begin at the correct bit
           if (!((writeKey >> (8 - isrPanelBitTotal)) & 0x01)) digitalWrite(dscWritePin, HIGH);
           // Resets counters when the write is complete
           if (isrPanelBitTotal == 8) {
@@ -1041,19 +1029,14 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           }
         }
       }
-
+      
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (!writeModulePending && writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+      else if ( writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+       //else if ( writeKeyPending && !wroteAsterisk && writeCmd) {
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == writeBit) {
-          if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
-          writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
-        }
-
-        // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7) {
+        if (isrPanelBitTotal == writeBit || (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7)) {
+          writeStart=true; // Resolves a timing issue where some writes do not begin at the correct bit
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
-
           // Resets counters when the write is complete
           if (isrPanelBitTotal == writeBit + 7) {
             if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
@@ -1062,17 +1045,10 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
           }
         }
       } 
-      else if (isrPanelData[0]==moduleCmd && writeModulePending ) {
-        // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == writeModuleBit) {
-          if (moduleSubCmd && moduleSubCmd!=isrPanelData[2]) return; //if e6 and not correct subcommand, we exit
-          if (!((writeModuleBuffer[currentModuleIdx] >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
-          writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
-        }
-
-        // Writes the remaining module data
-        else if (writeStart && isrPanelBitTotal > writeModuleBit && isrPanelBitTotal <= writeModuleBit + (moduleBufferLength * 8)) {
-           if (!((writeModuleBuffer[currentModuleIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
+      else if (isrPanelData[0]==moduleCmd && writeModulePending && !wroteAsterisk ) {
+        if (isrPanelBitTotal == writeModuleBit || (writeStart && isrPanelBitTotal > writeModuleBit && isrPanelBitTotal <= writeModuleBit + (moduleBufferLength * 8))) {
+           writeStart=true;
+          if (!((writeModuleBuffer[currentModuleIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
           // Resets counters when the write is complete
           if (isrPanelBitTotal == writeModuleBit + (moduleBufferLength * 8)) {
                 writeStart = false;
@@ -1118,14 +1094,14 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #endif
 
   static bool skipData = false;
-  static bool goodCmd = false;
-  static unsigned long cmdTime;
+  static bool skipFirst = false;
 
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
 
     // Stops processing Keybus data at the dscReadSize limit
-    if (isrPanelByteCount >= dscReadSize) skipData = true;
+    if (isrPanelByteCount >= dscReadSize) 
+        skipData = true;
 
     else {
       if (isrPanelBitCount < 8) {
@@ -1219,42 +1195,36 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
       // Skips incomplete and redundant data from status commands - these are sent constantly on the keybus at a high
       // rate, so they are always skipped.  Checking is required in the ISR to prevent flooding the buffer.
-      if (isrPanelBitTotal < 8) skipData = true;
-      else switch (isrPanelData[0]) {
+      if (isrPanelBitTotal < 8) 
+          skipData = true;
+      else 
+          switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
         case 0x05:  // Status: partitions 1-4
 		  if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)){
-			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
-				 skipData=false;
-				 goodCmd=true;
-			 }
-			 else skipData = true;
-		  } else {
-			 cmdTime = millis();
-			 skipData=true;
-			 goodCmd=false;
-		  }
+              
+              if (skipFirst && debounce05) {
+                  skipData=false;
+                  skipFirst=false;
+              } else 
+                  skipData=true;
+          } else if (debounce05) { // we skip the first cmd to remove spurious invalid ones during a changeover. Reported on a pc5005
+               skipData=true;
+               skipFirst=true;
+           }
+
           break;
 
         case 0x1B:  // Status: partitions 5-8
-          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)){
-			 if (!goodCmd && (millis() - cmdTime) > cmdWaitTime) {
-				 skipData=false;
-				 goodCmd=true;
-			 }
-			 else skipData = true;
-		  } else {
-			 cmdTime = millis();
-			 skipData=true;
-			 goodCmd=false;
-		  }
+          if (redundantPanelData(previousCmd1B, isrPanelData, isrPanelByteCount)) skipData=true;
           break;
       }
 
       // Stores new panel data in the panel buffer
       currentCmd = isrPanelData[0];
-      if (panelBufferLength == dscBufferSize) bufferOverflow = true;
+      if (panelBufferLength == dscBufferSize) 
+          bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
         panelBufferBitCount[panelBufferLength] = isrPanelBitTotal;
