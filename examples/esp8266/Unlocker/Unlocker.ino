@@ -1,5 +1,5 @@
 /*
- *  DSC Unlocker 1.1 (esp8266)
+ *  DSC Unlocker 1.2 (esp8266)
  *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
@@ -43,6 +43,7 @@
  *      `startPosition`.
  *
  *  Release notes:
+ *    1.2 - Check for valid panel state at startup
  *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
  *
@@ -511,6 +512,10 @@ void setup() {
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
   Serial.println(F("DSC Keybus Interface is online."));
+
+  // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
+  // "Stay/away zones open" (0x02), or "Zones open" (0x03)
+  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) dsc.loop();
 }
 
 

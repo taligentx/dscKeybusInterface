@@ -1,5 +1,5 @@
 /*
- *  DSC Unlocker 1.0 (Arduino)
+ *  DSC Unlocker 1.2 (Arduino)
  *
  *  Feedback requested, post your results at: https://github.com/taligentx/dscKeybusInterface/issues/101
  *
@@ -38,6 +38,7 @@
  *      `startingCode`.
  *
  *  Release notes:
+ *    1.2 - Check for valid panel state at startup
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -121,6 +122,10 @@ void setup() {
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
   Serial.println(F("DSC Keybus Interface is online."));
+
+  // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
+  // "Stay/away zones open" (0x02), or "Zones open" (0x03)
+  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) dsc.loop();
 }
 
 
