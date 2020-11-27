@@ -2747,7 +2747,7 @@ bool dscKeybusInterface::printModule_Keys() {
   if (hideKeypadDigits && (moduleData[2] <= 0x27 || moduleData[3] <= 0x27 || (moduleByteCount > 6 && (moduleData[8] <= 0x27 || moduleData[9] <= 0x27)))) {
     printedMessage = true;
     stream->print(F("[Digit]"));
-    return;
+    return printedMessage;
   }
 
   if (currentCmd == 0x05) {

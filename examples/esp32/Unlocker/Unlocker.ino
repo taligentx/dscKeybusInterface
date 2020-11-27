@@ -1,8 +1,6 @@
 /*
  *  DSC Unlocker 1.2 (esp32)
  *
- *  Feedback requested, post your results at: https://github.com/taligentx/dscKeybusInterface/issues/101
- *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
  *  built-in LED - each digit is indicated by the number of blinks, a long blink indicates "0".  This
