@@ -181,10 +181,11 @@ class dscKeybusInterface {
     bool printPanelZones(byte inputByte, byte startZone);
     void printPanelLights(byte panelByte, bool printMessage = true);
     void printPanelAccessCode(byte dscCode);
-    void printPanelBitNumbers(byte panelByte, byte startNumber);
+    void printPanelBitNumbers(byte panelByte, byte startNumber, byte startBit = 0, byte stopBit = 7, bool printNone = true);
     void printNumberSpace(byte number);
     void printNumberOffset(byte panelByte, int numberOffset);
     void printUnknownData();
+    void printPartition();
     void printPanel_0x05();
     void printPanel_0x0A();
     void printPanel_0x11();
@@ -236,11 +237,13 @@ class dscKeybusInterface {
     void printPanel_0xE6_0x19();
     void printPanel_0xE6_0x1A();
     void printPanel_0xE6_0x1D();
+    void printPanel_0xE6_0x1F();
     void printPanel_0xE6_0x20();
     void printPanel_0xE6_0x2B();
     void printPanel_0xE6_0x2C();
     void printPanel_0xE6_0x41();
     void printPanel_0xEB();
+    void printPanel_0xEC();
 
     void printModule_0x77();
     void printModule_0xBB();
@@ -254,7 +257,7 @@ class dscKeybusInterface {
     bool printModule_Keys();
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
-    void printModuleZoneSlot(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift);
+    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
