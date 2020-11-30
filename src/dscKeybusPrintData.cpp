@@ -2507,7 +2507,7 @@ void dscKeybusInterface::printModule_Panel_0x11() {
     printModuleSlots(1, 2, 3, 0xC0, 0, 2, 0);
   }
 
-  if (moduleData[4] != 0xFF || (moduleData[5] != 0xFF && moduleData[5] != 0xF3) || ((moduleByteCount > 7) && (moduleData[7] != 0xFF))) {
+  if (moduleData[4] != 0xFF || (moduleData[5] & 0xF0) != 0xF0 || ((moduleByteCount > 7) && (moduleData[7] != 0xFF))) {
     stream->print(F("| Zone expander slots: "));
     if (moduleByteCount > 7) {
       printModuleSlots(9, 4, 5, 0xC0, 0x30, 2, 0);
