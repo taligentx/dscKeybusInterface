@@ -1,11 +1,12 @@
 /*
- *  DSC Keybus Reader 1.0 (esp32)
+ *  DSC Keybus Reader 1.2 (esp32)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
  *  Release notes:
+ *    1.2 - Show redundant data by default
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -56,7 +57,7 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs
-  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed
+  dsc.processRedundantData = true;   // Controls if repeated periodic commands are processed and displayed
   dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
 

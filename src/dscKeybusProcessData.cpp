@@ -785,8 +785,8 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
         if (!pauseStatus) statusChanged = true;
         return;
       }
-      //default: return;
-	  default: if (partition == 0) return;
+
+	    default: if (partition == 0) return;
     }
   }
 
@@ -826,7 +826,7 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     return;
   }
 
-  // Partition in alarm
+  // Recent closing alarm
   if (panelData[panelByte] == 0x4B) {
     alarm[partitionIndex] = true;
     if (alarm[partitionIndex] != previousAlarm[partitionIndex]) {

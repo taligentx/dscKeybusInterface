@@ -172,7 +172,7 @@ class dscKeybusInterface {
     void printPanelStatus2(byte panelByte);
     void printPanelStatus3(byte panelByte);
     void printPanelStatus4(byte panelByte);
-    void printPanelStatus14(byte panelByte);
+    void printPanelStatus1X(byte panelByte);
     void printPanelMessages(byte panelByte);
     void printPanelTime(byte panelByte);
     void printPanelBeeps(byte panelByte);

@@ -1,5 +1,5 @@
 /*
- *  DSC Keybus Reader IP 1.1 (esp8266)
+ *  DSC Keybus Reader IP 1.2 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a TCP connection including virtual keyboard over IP. This is
  *  primarily to help decode the Keybus protocol - see the Status example to put the interface to productive use.
@@ -9,6 +9,7 @@
  *    2. For macOS/Linux, use netcat to connect: nc dsc.local 80
  *
  *  Release notes:
+ *    1.2 - Show redundant data by default
  *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
  *
@@ -92,7 +93,7 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: true)
+  dsc.processRedundantData = true;   // Controls if repeated periodic commands are processed and displayed (default: true)
   dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
