@@ -3146,7 +3146,7 @@ void dscKeybusInterface::printPanelPartitionStatus(byte startPartition, byte sta
     stream->print(partitionCount);
     stream->print(": ");
 
-    if (panelData[statusByte] == 0xC7 || panelData[statusByte] == 0xFF) stream->print(F("disabled"));
+    if (panelData[statusByte] == 0 || panelData[statusByte] == 0xC7 || panelData[statusByte] == 0xFF) stream->print(F("disabled"));
     else printPanelLights(statusByte - 1);
 
     partitionCount++;
