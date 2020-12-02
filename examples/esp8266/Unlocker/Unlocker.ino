@@ -515,7 +515,10 @@ void setup() {
 
   // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
   // "Stay/away zones open" (0x02), or "Zones open" (0x03)
-  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) dsc.loop();
+  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) {
+    dsc.loop();
+    yield();
+  }
 }
 
 
