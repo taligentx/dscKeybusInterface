@@ -865,15 +865,44 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
  *  11101011 0 00000000 00000001 00000100 01100000 00001100 00010100 01011111 11111111 11001110 [0xEB] 2001.01.03 00:03 | Zone fault restored: 64
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
-void dscKeybusInterface::printPanelStatus1X(byte panelByte) {
+ 
+void dscKeybusInterface::printPanelStatus5(byte panelByte) {
+/*
+ *  Access codes 35-39 and 43-95 for disarming/arming/*9 arming
+ *  0x00 ... arming with user code 35
+ *  0x3A ... disarming with user code 35
+ */
+  printUnknownData();
+}
+
+void dscKeybusInterface::printPanelStatus14(byte panelByte) {
   switch (panelData[panelByte]) {
-    // 0x00 - 0x24: *2: Access code
-    // 0x25 - 0x49: *3: Access code
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
-    case 0xF1: stream->print(F("System reset transmission")); return;
+  }
+  printUnknownData();
+}
+
+void dscKeybusInterface::printPanelStatus17(byte panelByte) {
+  /*
+   * 0x00 - 0x24: *2: Access code 1-32, 40, 41, 42
+   * 0x25 - 0x49: *3: Access code 1-32, 40, 41, 42
+   * 0x4A - 0x83: *1: User codes 35..39 and 43..95
+   * 0x84 - 0xBD: *2: User codes 35..39 and 43..95
+   * 0xBE - 0xF7: *3: User codes 35..39 and 43..95   
+   */
+     
+
+  /*
+   *  *1: Access code
+   */
+  if (panelData[panelByte] >= 0x4F && panelData[panelByte] <= 0x83) {
+    byte dscCode = panelData[panelByte] - 0x29;
+    stream->print(F("*1: "));
+    printPanelAccessCode(dscCode);
+    return;
   }
 
   /*
@@ -881,6 +910,12 @@ void dscKeybusInterface::printPanelStatus1X(byte panelByte) {
    */
   if (panelData[panelByte] >= 0 && panelData[panelByte] <= 0x24) {
     byte dscCode = panelData[panelByte] + 1;
+    stream->print(F("*2: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+  if (panelData[panelByte] >= 0x89 && panelData[panelByte] <= 0xBD) {
+    byte dscCode = panelData[panelByte] - 0x63;
     stream->print(F("*2: "));
     printPanelAccessCode(dscCode);
     return;
@@ -895,10 +930,63 @@ void dscKeybusInterface::printPanelStatus1X(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
+  if (panelData[panelByte] >= 0xC3 && panelData[panelByte] <= 0xF7) {
+    byte dscCode = panelData[panelByte] - 0x9D;
+    stream->print(F("*3: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+  
+  printUnknownData();
+}
+
+void dscKeybusInterface::printPanelStatus18(byte panelByte) {
+  /*
+   * 0x00 - 0x39: *7/*User codes 35..39 and 43..95
+   * 0x5C - 0x95: *5: User codes 35..39 and 43..95
+   * 0xB8 - 0xF1: *6: User codes 35..39 and 43..95
+   */
+
+  /*
+   *  *7: Access code
+   */
+  if (panelData[panelByte] >= 0x05 && panelData[panelByte] <= 0x39) {
+    byte dscCode = panelData[panelByte] + 0x21;
+    stream->print(F("User code: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
+  /*
+   *  *5: Access code
+   */
+  if (panelData[panelByte] >= 0x61 && panelData[panelByte] <= 0x95) {
+    byte dscCode = panelData[panelByte] - 0x3B;
+    stream->print(F("*5: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
+  /*
+   *  *6: Access code
+   */
+  if (panelData[panelByte] >= 0xBD && panelData[panelByte] <= 0xF1) {
+    byte dscCode = panelData[panelByte] - 0x97;
+    stream->print(F("*6: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
 
   printUnknownData();
 }
 
+void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
+  switch (panelData[panelByte]) {
+    case 0xF1: stream->print(F("System reset transmission")); return;
+  }
+
+  printUnknownData();
+}
 
 /*
  *  0x05: Status - partitions 1-4
@@ -2489,9 +2577,11 @@ void dscKeybusInterface::printPanel_0xEB() {
     case 0x02: printPanelStatus2(8); return;
     case 0x03: printPanelStatus3(8); return;
     case 0x04: printPanelStatus4(8); return;
-    case 0x14:
-    case 0x17:
-    case 0x1B: printPanelStatus1X(8); return;
+    case 0x05: printPanelStatus5(8); return;
+    case 0x14: printPanelStatus14(8); return;
+    case 0x17: printPanelStatus17(8); return;
+    case 0x18: printPanelStatus18(8); return;
+    case 0x1B: printPanelStatus1B(8); return;
   }
 }
 
@@ -2545,9 +2635,11 @@ void dscKeybusInterface::printPanel_0xEC() {
     case 0x02: printPanelStatus2(8); return;
     case 0x03: printPanelStatus3(8); return;
     case 0x04: printPanelStatus4(8); return;
-    case 0x14:
-    case 0x17:
-    case 0x1B: printPanelStatus1X(8); return;
+    case 0x05: printPanelStatus5(8); return;
+    case 0x14: printPanelStatus14(8); return;
+    case 0x17: printPanelStatus17(8); return;
+    case 0x18: printPanelStatus18(8); return;
+    case 0x1B: printPanelStatus1B(8); return;
   }
 }
 
