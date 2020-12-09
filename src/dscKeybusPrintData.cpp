@@ -622,7 +622,7 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     case 0x9B: stream->print(F("Armed: Away")); return;
     case 0x9C: stream->print(F("Armed: No entry delay")); return;
     // 0x9E - 0xC2: *1: access code
-    case 0xC3: stream->print(F("*5 programming")); return;
+    // 0xC3 - 0xC5: *5: access code 40-42
     // 0xC6 - 0xE5: User code
     // 0xE6 - 0xE8: *6: access code 40-42
     // 0xE9 - 0xF0: Keypad restored: Slots 1-8
@@ -640,6 +640,17 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
+
+  /*
+   *  *5: Access code
+   */
+  if (panelData[panelByte] >= 0xC3 && panelData[panelByte] <= 0xC5) {
+    byte dscCode = panelData[panelByte] - 0xA0;
+    stream->print(F("*5 programming: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
 
   /*
    *  *6: Access code
