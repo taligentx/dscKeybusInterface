@@ -622,9 +622,9 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     case 0x9B: stream->print(F("Armed: Away")); return;
     case 0x9C: stream->print(F("Armed: No entry delay")); return;
     // 0x9E - 0xC2: *1: access code
-    case 0xC3: stream->print(F("*5 programming")); return;
+    // 0xC3 - 0xC5: *5: access code 40-42
     // 0xC6 - 0xE5: User code
-    case 0xE6: stream->print(F("*6 programming")); return;
+    // 0xE6 - 0xE8: *6: access code 40-42
     // 0xE9 - 0xF0: Keypad restored: Slots 1-8
     // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
     // 0xF9 - 0xFE: Zone expander restored: 1-6
@@ -637,6 +637,27 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
   if (panelData[panelByte] >= 0x9E && panelData[panelByte] <= 0xC2) {
     byte dscCode = panelData[panelByte] - 0x9D;
     stream->print(F("*1: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
+  /*
+   *  *5: Access code
+   */
+  if (panelData[panelByte] >= 0xC3 && panelData[panelByte] <= 0xC5) {
+    byte dscCode = panelData[panelByte] - 0xA0;
+    stream->print(F("*5 programming: "));
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
+
+  /*
+   *  *6: Access code
+   */
+  if (panelData[panelByte] >= 0xE6 && panelData[panelByte] <= 0xE8) {
+    byte dscCode = panelData[panelByte] - 0xC3;
+    stream->print(F("*6 programming: "));
     printPanelAccessCode(dscCode);
     return;
   }
@@ -719,6 +740,8 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     case 0x06: stream->print(F("RF5132: Supervisory trouble")); return;
     case 0x09: stream->print(F("PC5204: Supervisory restored")); return;
     case 0x0A: stream->print(F("PC5204: Supervisory trouble")); return;
+    case 0x17: stream->print(F("Zone expander restored: 7")); return;
+    case 0x18: stream->print(F("Zone expander trouble: 7")); return;
     // 0x35 - 0x3A: Module tamper restored, slots 9-14
     // 0x3B - 0x40: Module tamper, slots 9-14
     case 0x41: stream->print(F("RF5132: Tamper restored")); return;
@@ -3207,6 +3230,7 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x27: printNumberSpace(9); break;
     case 0x28: stream->print(F("* ")); break;
     case 0x2D: stream->print(F("# ")); break;
+    case 0x46: stream->print(F("Wireless key disarm ")); break;
     case 0x52: stream->print(F("Identified voice prompt help ")); break;
     case 0x70: stream->print(F("Command output 3 ")); break;
     case 0x82: stream->print(F("Enter ")); break;
