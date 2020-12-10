@@ -235,7 +235,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xA4: stream->print(F("Door chime disabled")); break;
     case 0xA5: stream->print(F("Enter master code")); break;
     case 0xA6: stream->print(F("*5: Access codes")); break;
-    case 0xA7: stream->print(F("*5: Enter new code")); break;
+    case 0xA7: stream->print(F("*5: Enter new 4-digit code")); break;
     case 0xA9: stream->print(F("*6: User functions")); break;
     case 0xAA: stream->print(F("*6: Time and date")); break;
     case 0xAB: stream->print(F("*6: Auto-arm time")); break;
@@ -248,6 +248,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB8: stream->print(F("Key * while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
+    case 0xBC: stream->print(F("*5: Enter new 6-digit code")); break;    
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     // case 0xCD: Enter DLS (?)
@@ -272,6 +273,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF5: stream->print(F("Wireless module placement test")); break;
     case 0xF7: stream->print(F("Installer programming subsection")); break;
     case 0xF8: stream->print(F("Keypad programming")); break;
+    case 0xFA: stream->print(F("Input 6 digits")); break;    
     default:
       printUnknownData();
       stream->print(F(": 0x"));
