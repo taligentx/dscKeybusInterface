@@ -176,8 +176,7 @@ class dscKeybusInterface {
     void printPanelStatus14(byte panelByte);
     void printPanelStatus17(byte panelByte);
     void printPanelStatus18(byte panelByte);
-    void printPanelStatus1B(byte panelByte);
-  
+    void printPanelStatus1B(byte panelByte);  
 
     void printPanelMessages(byte panelByte);
     void printPanelLights(byte panelByte, bool printMessage = true);
@@ -186,7 +185,7 @@ class dscKeybusInterface {
     void printPanelTone(byte panelByte);
     void printPanelBuzzer(byte panelByte);
     bool printPanelZones(byte inputByte, byte startZone);
-    void printPanelAccessCode(byte dscCode);
+    void printPanelAccessCode(byte dscCode, bool accessIncrease = true);
     void printPanelBitNumbers(byte panelByte, byte startNumber, byte startBit = 0, byte stopBit = 7, bool printNone = true);
     void printNumberSpace(byte number);
     void printNumberOffset(byte panelByte, int numberOffset);
@@ -223,7 +222,7 @@ class dscKeybusInterface {
     void printPanel_0x94();
     void printPanel_0x9E();
     void printPanel_0xA5();
-	void printPanel_0xAA();
+    void printPanel_0xAA();
     void printPanel_0xB1();
     void printPanel_0xBB();
     void printPanel_0xC3();
