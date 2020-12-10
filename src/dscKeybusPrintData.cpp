@@ -868,10 +868,30 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
  
 void dscKeybusInterface::printPanelStatus5(byte panelByte) {
 /*
- *  Access codes 35-39 and 43-95 for disarming/arming/*9 arming
- *  0x00 ... arming with user code 35
- *  0x3A ... disarming with user code 35
+ *  Armed by access code
+ *  0x00 ... 0x04 user 35..39  
+ *  0x05 ... 0x39 user 43..95
  */
+
+  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+    byte dscCode = panelData[panelByte] + 0x23;
+    stream->print(F("Armed: "));
+    printPanelAccessCode(dscCode, false);
+    return;
+  }
+
+  /*
+   *  Disarmed by access code
+   *  0x3A ... 0x3E user 35..39
+   *  0x3F ... 0x73 user 43..95
+   */
+  if (panelData[panelByte] >= 0x3A && panelData[panelByte] <= 0x73) {
+    byte dscCode = panelData[panelByte] - 0x17;
+    stream->print(F("Disarmed: "));
+    printPanelAccessCode(dscCode, false);
+    return;
+  }
+ 
   printUnknownData();
 }
 
@@ -887,26 +907,20 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
 
 void dscKeybusInterface::printPanelStatus17(byte panelByte) {
   /*
-   * 0x00 - 0x24: *2: Access code 1-32, 40, 41, 42
-   * 0x25 - 0x49: *3: Access code 1-32, 40, 41, 42
-   * 0x4A - 0x83: *1: User codes 35..39 and 43..95
-   * 0x84 - 0xBD: *2: User codes 35..39 and 43..95
-   * 0xBE - 0xF7: *3: User codes 35..39 and 43..95   
-   */
-     
-
-  /*
    *  *1: Access code
+   *  0x4A - 0x83: *1: User codes 35..39 and 43..95
    */
-  if (panelData[panelByte] >= 0x4F && panelData[panelByte] <= 0x83) {
-    byte dscCode = panelData[panelByte] - 0x29;
+  if (panelData[panelByte] >= 0x4A && panelData[panelByte] <= 0x83) {
+    byte dscCode = panelData[panelByte] - 0x27;
     stream->print(F("*1: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
 
   /*
    *  *2: Access code
+   *  0x00 - 0x24: *2: Access code 1-32, 40, 41, 42
+   *  0x84 - 0xBD: *2: User codes 35..39 and 43..95
    */
   if (panelData[panelByte] >= 0 && panelData[panelByte] <= 0x24) {
     byte dscCode = panelData[panelByte] + 1;
@@ -914,15 +928,17 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
-  if (panelData[panelByte] >= 0x89 && panelData[panelByte] <= 0xBD) {
-    byte dscCode = panelData[panelByte] - 0x63;
+  if (panelData[panelByte] >= 0x84 && panelData[panelByte] <= 0xBD) {
+    byte dscCode = panelData[panelByte] - 0x61;
     stream->print(F("*2: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
 
   /*
    *  *3: Access code
+   *  0x25 - 0x49: *3: Access code 1-32, 40, 41, 42
+   *  0xBE - 0xF7: *3: User codes 35..39 and 43..95 
    */
   if (panelData[panelByte] >= 0x25 && panelData[panelByte] <= 0x49) {
     byte dscCode = panelData[panelByte] - 0x24;
@@ -930,10 +946,10 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
-  if (panelData[panelByte] >= 0xC3 && panelData[panelByte] <= 0xF7) {
-    byte dscCode = panelData[panelByte] - 0x9D;
+  if (panelData[panelByte] >= 0xBE && panelData[panelByte] <= 0xF7) {
+    byte dscCode = panelData[panelByte] - 0x9B;
     stream->print(F("*3: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
   
@@ -942,38 +958,41 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
 
 void dscKeybusInterface::printPanelStatus18(byte panelByte) {
   /*
-   * 0x00 - 0x39: *7/*User codes 35..39 and 43..95
-   * 0x5C - 0x95: *5: User codes 35..39 and 43..95
-   * 0xB8 - 0xF1: *6: User codes 35..39 and 43..95
+   *  *7/User/Auto-arm cancel by Access code
+   *  
+   * 0x00 - 0x04: *7/*User codes 35..39
+   * 0x05 - 0x39: *7/*User codes 43..95
    */
-
-  /*
-   *  *7: Access code
-   */
-  if (panelData[panelByte] >= 0x05 && panelData[panelByte] <= 0x39) {
-    byte dscCode = panelData[panelByte] + 0x21;
+  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+    byte dscCode = panelData[panelByte] + 0x23;
     stream->print(F("User code: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
 
   /*
    *  *5: Access code
+   *  
+   * 0x3A - 0x60: *5: User codes 1..39    
+   * 0x61 - 0x95: *5: User codes 43..95
    */
-  if (panelData[panelByte] >= 0x61 && panelData[panelByte] <= 0x95) {
-    byte dscCode = panelData[panelByte] - 0x3B;
+  if (panelData[panelByte] >= 0x3A && panelData[panelByte] <= 0x95) {
+    byte dscCode = panelData[panelByte] - 0x39;
     stream->print(F("*5: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
 
   /*
    *  *6: Access code
+   *  
+   * 0x96 - 0xBC: *6: User codes 1..39
+   * 0xBD - 0xF1: *6: User codes 43..95  
    */
-  if (panelData[panelByte] >= 0xBD && panelData[panelByte] <= 0xF1) {
-    byte dscCode = panelData[panelByte] - 0x97;
+  if (panelData[panelByte] >= 0x96 && panelData[panelByte] <= 0xF1) {
+    byte dscCode = panelData[panelByte] - 0x95;
     stream->print(F("*6: "));
-    printPanelAccessCode(dscCode);
+    printPanelAccessCode(dscCode, false);
     return;
   }
 
@@ -3493,8 +3512,15 @@ void dscKeybusInterface::printPanelTime(byte panelByte) {
  *  Structure decoding: complete
  *  Content decoding: complete
  */
-void dscKeybusInterface::printPanelAccessCode(byte dscCode) {
-  if (dscCode >= 35) dscCode += 5;
+void dscKeybusInterface::printPanelAccessCode(byte dscCode, bool accessIncrease) {
+  
+  if (accessIncrease) {
+    if (dscCode >= 35) dscCode += 5;
+  }  
+  else {
+    if (dscCode >= 40) dscCode += 3;
+  }
+  
 
   switch (dscCode) {
     case 33: stream->print(F("Duress ")); break;
