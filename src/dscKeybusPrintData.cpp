@@ -212,6 +212,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x0E: stream->print(F("Function not available")); break;
     case 0x10: stream->print(F("Keypad lockout")); break;
     case 0x11: stream->print(F("Partition in alarm")); break;
+    case 0x12: stream->print(F("Battery check in progress")); break;
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed with no entry delay")); break;
@@ -1690,7 +1691,8 @@ void dscKeybusInterface::printPanel_0x82() {
  *  Byte 2 bit 7: PGM 10
  *  Byte 3 bit 0: PGM 1
  *  Byte 3 bit 1: PGM 2
- *  Byte 3 bit 2-3: Unknown
+ *  Byte 3 bit 2: Activates at midnight
+ *  Byte 3 bit 3: Battery check when arming
  *  Byte 3 bit 4: PGM 11
  *  Byte 3 bit 5: PGM 12
  *  Byte 3 bit 6: PGM 13
@@ -1710,7 +1712,8 @@ void dscKeybusInterface::printPanel_0x82() {
  */
 void dscKeybusInterface::printPanel_0x87() {
   stream->print(F("PGM outputs enabled: "));
-
+  if (panelData[3] & 0x04) stream->print(F("Midnight | "));
+  if (panelData[3] & 0x08) stream->print(F("Battery check | "));
   if (panelData[2] == 0 && panelData[3] == 0) stream->print(F("none"));
   else {
     printPanelBitNumbers(3, 1, 0, 1, false);
@@ -2820,10 +2823,10 @@ void dscKeybusInterface::printModule_Status() {
     printedMessage = true;
   }
 
-  //Unknown notification
+  //Keypad going idle notification
   if (moduleByteCount > 6 && (moduleData[7] & 0x08) == 0) {
     if (printedMessage) stream->print("| ");
-    stream->print(F("Unknown notification "));
+    stream->print(F("Keypad idle notification "));
     printedMessage = true;
   }
 
@@ -3346,10 +3349,11 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x46: stream->print(F("Wireless key disarm ")); break;
     case 0x52: stream->print(F("Identified voice prompt help ")); break;
     case 0x70: stream->print(F("Command output 3 ")); break;
+    case 0x75: stream->print(F("Entered *1/*2/*3 menu (?) ")); break;
     case 0x82: stream->print(F("Enter ")); break;
     case 0x87: stream->print(F("Right arrow ")); break;
     case 0x88: stream->print(F("Left arrow ")); break;
-    case 0x94: stream->print(F("Global label broadcast start ")); break;
+    case 0x94: stream->print(F("Label broadcast announce ")); break;
     case 0xA5: stream->print(F("Data successfully received ")); break;
     case 0xAF: stream->print(F("Arm: Stay ")); break;
     case 0xB1: stream->print(F("Arm: Away ")); break;
