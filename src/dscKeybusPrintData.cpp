@@ -355,11 +355,13 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0xE7: stream->print(F("Panel battery trouble")); break;
     case 0xE8: stream->print(F("Panel AC power trouble")); break;
     case 0xE9: stream->print(F("Bell trouble")); break;
+    case 0xEA: stream->print(F("PGM2 input trouble")); break;
     case 0xEB: stream->print(F("Panel aux supply trouble")); break;
     case 0xEC: stream->print(F("Telephone line trouble")); break;
     case 0xEF: stream->print(F("Panel battery restored")); break;
     case 0xF0: stream->print(F("Panel AC power restored")); break;
     case 0xF1: stream->print(F("Bell restored")); break;
+    case 0xF2: stream->print(F("PGM2 input restored")); break;
     case 0xF3: stream->print(F("Panel aux supply restored")); break;
     case 0xF4: stream->print(F("Telephone line restored")); break;
     case 0xF7: stream->print(F("Phone 1 FTC")); break;
