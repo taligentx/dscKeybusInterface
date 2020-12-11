@@ -3349,6 +3349,8 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x82: stream->print(F("Enter ")); break;
     case 0x87: stream->print(F("Right arrow ")); break;
     case 0x88: stream->print(F("Left arrow ")); break;
+    case 0x94: stream->print(F("Global label broadcast start ")); break;
+    case 0xA5: stream->print(F("Data successfully received ")); break;
     case 0xAF: stream->print(F("Arm: Stay ")); break;
     case 0xB1: stream->print(F("Arm: Away ")); break;
     case 0xB6: stream->print(F("Arm: No entry delay ")); break;
@@ -3514,9 +3516,9 @@ void dscKeybusInterface::printPanelTime(byte panelByte) {
  *  Structure decoding: complete
  *  Content decoding: complete
  */
-void dscKeybusInterface::printPanelAccessCode(byte dscCode, bool accessIncrease) {
+void dscKeybusInterface::printPanelAccessCode(byte dscCode, bool accessCodeIncrease) {
   
-  if (accessIncrease) {
+  if (accessCodeIncrease) {
     if (dscCode >= 35) dscCode += 5;
   }  
   else {
