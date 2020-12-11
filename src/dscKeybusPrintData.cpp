@@ -1972,6 +1972,8 @@ void dscKeybusInterface::printPanel_0xBB() {
  *  Content decoding: *incomplete
  *
  *  Byte 2: Keypad status, incomplete
+ *  Byte 2: bit3 and 4 active when dialer attempt begin
+ *  Byte 2: bit4 active after dialer attempt finished
  *  Byte 3: Unknown, always observed as 11111111
  *  Byte 4: CRC
  *
@@ -1986,6 +1988,8 @@ void dscKeybusInterface::printPanel_0xC3() {
   if (panelData[3] == 0xFF) {
     switch (panelData[2]) {
       case 0x00: stream->print(F("Keypad ready")); break;
+      case 0x10: stream->print(F("Dialer finished")); break;
+      case 0x18: stream->print(F("Dialer attempt")); break;
       case 0x30:
       case 0x40: stream->print(F("Keypad lockout")); break;
       default: printUnknownData(); break;
