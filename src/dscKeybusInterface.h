@@ -185,7 +185,7 @@ class dscKeybusInterface {
     void printPanelTone(byte panelByte);
     void printPanelBuzzer(byte panelByte);
     bool printPanelZones(byte inputByte, byte startZone);
-    void printPanelAccessCode(byte dscCode, bool accessIncrease = true);
+    void printPanelAccessCode(byte dscCode, bool accessCodeIncrease = true);
     void printPanelBitNumbers(byte panelByte, byte startNumber, byte startBit = 0, byte stopBit = 7, bool printNone = true);
     void printNumberSpace(byte number);
     void printNumberOffset(byte panelByte, int numberOffset);
