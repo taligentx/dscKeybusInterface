@@ -219,6 +219,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     //case 0x17: break;  // Observed in logs, unknown message
     case 0x19: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x22: stream->print(F("Recent closing")); break;
+    case 0x2F: stream->print(F("Keypad LCD screen pixel test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
@@ -252,6 +253,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xBC: stream->print(F("*5: Enter new 6-digit code")); break;    
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
+    case 0xCE: stream->print(F("Active camera monitor selection")); break;    
     // case 0xCD: Enter DLS (?)
     case 0xD0: stream->print(F("*2: Handheld keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Wireless keys with low batteries")); break;
@@ -355,17 +357,18 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0xE7: stream->print(F("Panel battery trouble")); break;
     case 0xE8: stream->print(F("Panel AC power trouble")); break;
     case 0xE9: stream->print(F("Bell trouble")); break;
-    case 0xEA: stream->print(F("PGM2 input trouble")); break;
+    case 0xEA: stream->print(F("Fire zone trouble")); break;
     case 0xEB: stream->print(F("Panel aux supply trouble")); break;
     case 0xEC: stream->print(F("Telephone line trouble")); break;
     case 0xEF: stream->print(F("Panel battery restored")); break;
     case 0xF0: stream->print(F("Panel AC power restored")); break;
     case 0xF1: stream->print(F("Bell restored")); break;
-    case 0xF2: stream->print(F("PGM2 input restored")); break;
+    case 0xF2: stream->print(F("Fire zone trouble restored")); break;
     case 0xF3: stream->print(F("Panel aux supply restored")); break;
     case 0xF4: stream->print(F("Telephone line restored")); break;
     case 0xF7: stream->print(F("Phone 1 FTC")); break;
     case 0xF8: stream->print(F("Phone 2 FTC")); break;
+    case 0xF9: stream->print(F("Event buffer treshold (75% full since last DLS upload)")); break;
     case 0xFA: stream->print(F("DLS lead-in")); break;
     case 0xFB: stream->print(F("DLS lead-out")); break;
     case 0xFE: stream->print(F("Periodic test transmission")); break;
@@ -3355,12 +3358,17 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x2D: stream->print(F("# ")); break;
     case 0x46: stream->print(F("Wireless key disarm ")); break;
     case 0x52: stream->print(F("Identified voice prompt help ")); break;
+    case 0x6E: stream->print(F("Global away arm ")); break;
     case 0x70: stream->print(F("Command output 3 ")); break;
+    case 0x7A: stream->print(F("Time and date programming ")); break;
     case 0x75: stream->print(F("Entered *1/*2/*3 menu (?) ")); break;
     case 0x82: stream->print(F("Enter ")); break;
     case 0x87: stream->print(F("Right arrow ")); break;
     case 0x88: stream->print(F("Left arrow ")); break;
+    case 0x8D: stream->print(F("Bypass recall ")); break;
+    case 0x93: stream->print(F("Recall bypass group ")); break;
     case 0x94: stream->print(F("Label broadcast announce ")); break;
+    case 0x99: stream->print(F("Function key [25] Future Use ")); break;
     case 0xA5: stream->print(F("Data successfully received ")); break;
     case 0xAF: stream->print(F("Arm: Stay ")); break;
     case 0xB1: stream->print(F("Arm: Away ")); break;
@@ -3374,11 +3382,12 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0xD0: stream->print(F("*6 Programming ")); break;
     case 0xD5: stream->print(F("Command output 1 ")); break;
     case 0xDA: stream->print(F("Reset / Command output 2 ")); break;
-    case 0xDF: stream->print(F("General voice prompt help ")); break;
+    case 0xDF: stream->print(F("Global stay arm ")); break; //General voice prompt help on panels v4.1 and below
     case 0xE1: stream->print(F("Quick exit ")); break;
     case 0xE6: stream->print(F("Activate stay/away zones ")); break;
-    case 0xEB: stream->print(F("Function key [20] Future Use ")); break;
+    case 0xEB: stream->print(F("LCD display pixel test ")); break;
     case 0xEC: stream->print(F("Command output 4 ")); break;
+    case 0xF2: stream->print(F("Global disarm ")); break;
     case 0xF7: stream->print(F("Menu navigation ")); break;
   }
 }
