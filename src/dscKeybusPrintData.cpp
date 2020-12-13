@@ -219,7 +219,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     //case 0x17: break;  // Observed in logs, unknown message
     case 0x19: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x22: stream->print(F("Recent closing")); break;
-    case 0x2F: stream->print(F("Keypad LCD screen pixel test")); break;
+    case 0x2F: stream->print(F("Keypad LCD test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
@@ -255,8 +255,8 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     case 0xCE: stream->print(F("Active camera monitor selection")); break;    
     // case 0xCD: Enter DLS (?)
-    case 0xD0: stream->print(F("*2: Handheld keypads with low batteries")); break;
-    case 0xD1: stream->print(F("*2: Wireless keys with low batteries")); break;
+    case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
+    case 0xD1: stream->print(F("*2: Keysfobs with low batteries")); break;
     case 0xE4: stream->print(F("*8: Installer programming")); break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input 2 digits")); break;
@@ -274,6 +274,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF3: stream->print(F("Function key 4")); break;
     case 0xF4: stream->print(F("Function key 5")); break;
     case 0xF5: stream->print(F("Wireless module placement test")); break;
+    case 0xF6: stream->print(F("Activate device for test")); break;
     case 0xF7: stream->print(F("Installer programming subsection")); break;
     case 0xF8: stream->print(F("Keypad programming")); break;
     case 0xFA: stream->print(F("Input 6 digits")); break;    
@@ -368,7 +369,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0xF4: stream->print(F("Telephone line restored")); break;
     case 0xF7: stream->print(F("Phone 1 FTC")); break;
     case 0xF8: stream->print(F("Phone 2 FTC")); break;
-    case 0xF9: stream->print(F("Event buffer treshold (75% full since last DLS upload)")); break;
+    case 0xF9: stream->print(F("Event buffer treshold")); break; //75% full since last DLS upload
     case 0xFA: stream->print(F("DLS lead-in")); break;
     case 0xFB: stream->print(F("DLS lead-out")); break;
     case 0xFE: stream->print(F("Periodic test transmission")); break;
@@ -500,15 +501,19 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     case 0x03: stream->print(F("Cross zone alarm")); return;
     case 0x04: stream->print(F("Delinquency alarm")); return;
     // 0x24 - 0x28: Access code
+    case 0x29: stream->print(F("Downloading forced answer")); return;
     case 0x2B: stream->print(F("Armed: Auto-arm")); return;
     // 0x6C - 0x8B: Zone fault restored, zones 1-32
     // 0x8C - 0xAB: Zone fault, zones 1-32
     case 0xAC: stream->print(F("Exit installer programming")); return;
     case 0xAD: stream->print(F("Enter installer programming")); return;
+    case 0xAE: stream->print(F("Walk test end")); return;
+    case 0xAF: stream->print(F("Walk test begin")); return;
     // 0xB0 - 0xCF: Zones bypassed, zones 1-32
     case 0xD0: stream->print(F("Command output 4")); return;
     case 0xD1: stream->print(F("Exit fault pre-alert")); return;
     case 0xD2: stream->print(F("Armed with no entry delay cancelled")); return;
+    case 0xD3: stream->print(F("Downlook remote trigger")); return;
   }
 
   /*
@@ -1730,6 +1735,7 @@ void dscKeybusInterface::printPanel_0x87() {
 
 /*
  *  0x8D: User code programming key response, codes 17-32
+ *  Note: Wireless keys 1-16 are assigned to user codes 17-32
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
@@ -1752,10 +1758,38 @@ void dscKeybusInterface::printPanel_0x87() {
  *  10001101 0 00110001 00100101 00000000 00001001 11111111 11111111 11111111 11101001 [0x8D] User code programming key response  // Code 29 Key 0
  *  10001101 0 00110001 00100101 00000000 00000001 11111111 11111111 11111111 11100001 [0x8D] User code programming key response  // Code 29 Key 1
  *  10001101 0 00110001 00110000 00000000 00000000 11111111 11111111 11111111 11101011 [0x8D] User code programming key response  // Message after 4th key entered
+ *  10001101 0 00010001 01000001 00000001 00000111 01010101 11111111 11111111 00111010 [0x8D] Wls programming key response	  // Before WLS zone 4 placement test
+ *  10001101 0 00010001 01000001 00000001 00001001 01010101 11111111 11111111 00111100 [0x8D] Wls programming key response	  // Before WLS zone 5 placement test
+ *  10001101 0 00010001 01000001 00000001 00001011 01010101 11111111 11111111 00111110 [0x8D] Wls programming key response	  // Before WLS zone 6 placement test
+ *  10001101 0 00010001 01000001 00000001 00001101 01010101 11111111 11111111 01000000 [0x8D] Wls programming key response   	  // Before WLS zone 7 placement test
+ *  10001101 0 00010001 01000001 00000001 00100001 01010101 11111111 11111111 01010100 [0x8D] Wls programming key response	  // Before WLS zone 17 placement test
+ *  10001101 0 00010001 01000001 00000001 00111111 01010101 11111111 11111111 01110010 [0x8D] Wls programming key response	  // Before WLS zone 32 placement test
+ *  10001101 0 00010001 01000001 00000001 01111111 01010101 11111111 11111111 10110010 [0x8D] Wls programming key response	  // Before WLS zone 64 placement test
+ *  10001101 0 00010001 01000011 00000000 00000001 11111111 11111111 11111111 11011111 [0x8D] Wls programming key response	  // Location is good, same for all zones
+ *  10001101 0 00010001 01000001 00000001 11111111 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Wireless zone is not-assigned
+ *  10001101 0 00010001 10100100 00000000 00000011 11111111 11111111 11111111 01000010 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 1
+ *  10001101 0 00010001 10100101 00000000 00000100 11111111 11111111 11111111 01000100 [0x8D] Wls programming key response	  // Enter 04 for [804][61] function 2
+ *  10001101 0 00010001 10100101 00000000 00000011 11111111 11111111 11111111 01000011 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 2
+ *  10001101 0 00010001 10101000 00000000 00000011 11111111 11111111 11111111 01000110 [0x8D] Wls programming key response	  // Enter 03 for [804][62] function 1
+ *  10001101 0 00010001 10101001 00000000 00000100 11111111 11111111 11111111 01001000 [0x8D] Wls programming key response	  // Enter 04 for [804][62] function 2
+ *  10001101 0 00010001 11000000 00000000 00000011 11111111 11111111 11111111 01011110 [0x8D] Wls programming key response	  // Enter 03 for [804][68] function 1
+ *  10001101 0 00010001 11000011 00000000 00110000 11111111 11111111 11111111 10001110 [0x8D] Wls programming key response	  // Enter 30 for [804][68] function 4
+ *  10001101 0 00010001 00111000 00000000 00010000 11111111 11111111 11111111 11100011 [0x8D] Wls programming key response	  // Enter 10 for [804][81] Wls supervisory window
+ *  10001101 0 00010001 00111000 00000000 10010110 11111111 11111111 11111111 01101001 [0x8D] Wls programming key response	  // Enter 96 for [804][81] Wls supervisory window
+ *  10001101 0 00010001 11000100 00000000 00000001 11111111 11111111 11111111 01100000 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 1 partition assigment
+ *  10001101 0 00010001 11000101 00000000 00000001 11111111 11111111 11111111 01100001 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 2 partition assigment
+ *  10001101 0 00010001 11000110 00000000 00000010 11111111 11111111 11111111 01100011 [0x8D] Wls programming key response	  // Enter 02 for [804][69] Keyfob 3 partition assigment
+ *  10001101 0 00010001 11010100 00000000 11111111 11111111 11111111 11111111 01101110 [0x8D] Wls programming key response	  // All 1-8 enabled in [804][82] supervision options
+ *  10001101 0 00010001 11010100 00000000 11110000 11111111 11111111 11111111 01011111 [0x8D] Wls programming key response	  // 5-8 zones enabled in [804][82] supervisiory options
+ *  10001101 0 00010001 11010101 00000000 00001111 11111111 11111111 11111111 01111111 [0x8D] Wls programming key response	  // 1-4 zones enabled in [804][83] supervisiory options
+ *  10001101 0 00010001 11010111 00000000 01111111 11111111 11111111 11111111 11110001 [0x8D] Wls programming key response	  // 1-7 zones enabled in [804][85] supervisiory options
+ *  10001101 0 00010001 00111010 00000000 01000000 11111111 11111111 11111111 00010101 [0x8D] Wls programming key response	  // Only option 7 enabled in [804][90] options
+ *  10001101 0 00010001 00111001 00000000 00001000 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Set RF jamming zone 08 in [804][93] subsection
+ *  10001101 0 00010001 00111001 00000000 00000111 11111111 11111111 11111111 11011011 [0x8D] Wls programming key response	  // Set RF jamming zone 07 in [804][93] subsection
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
 void dscKeybusInterface::printPanel_0x8D() {
-  stream->print(F("User code programming key response"));
+  stream->print(F("Wls programming key response"));
 }
 
 
@@ -3354,41 +3388,41 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x1C: printNumberSpace(7); break;
     case 0x22: printNumberSpace(8); break;
     case 0x27: printNumberSpace(9); break;
-    case 0x28: stream->print(F("* ")); break;
-    case 0x2D: stream->print(F("# ")); break;
-    case 0x46: stream->print(F("Wireless key disarm ")); break;
-    case 0x52: stream->print(F("Identified voice prompt help ")); break;
-    case 0x6E: stream->print(F("Global away arm ")); break;
-    case 0x70: stream->print(F("Command output 3 ")); break;
-    case 0x7A: stream->print(F("Time and date programming ")); break;
-    case 0x75: stream->print(F("Entered *1/*2/*3 menu (?) ")); break;
-    case 0x82: stream->print(F("Enter ")); break;
-    case 0x87: stream->print(F("Right arrow ")); break;
-    case 0x88: stream->print(F("Left arrow ")); break;
-    case 0x8D: stream->print(F("Bypass recall ")); break;
-    case 0x93: stream->print(F("Recall bypass group ")); break;
-    case 0x94: stream->print(F("Label broadcast announce ")); break;
-    case 0x99: stream->print(F("Function key [25] Future Use ")); break;
-    case 0xA5: stream->print(F("Data successfully received ")); break;
-    case 0xAF: stream->print(F("Arm: Stay ")); break;
-    case 0xB1: stream->print(F("Arm: Away ")); break;
-    case 0xB6: stream->print(F("Arm: No entry delay ")); break;
-    case 0xBB: stream->print(F("Door chime configuration ")); break;
-    case 0xBC: stream->print(F("*6 System test ")); break;
-    case 0xC3: stream->print(F("*1 Zone bypass programming ")); break;
-    case 0xC4: stream->print(F("*2 Trouble menu ")); break;
-    case 0xC9: stream->print(F("*3 Alarm memory display ")); break;
-    case 0xCE: stream->print(F("*5 Programming ")); break;
-    case 0xD0: stream->print(F("*6 Programming ")); break;
-    case 0xD5: stream->print(F("Command output 1 ")); break;
-    case 0xDA: stream->print(F("Reset / Command output 2 ")); break;
-    case 0xDF: stream->print(F("Global stay arm ")); break; //General voice prompt help on panels v4.1 and below
-    case 0xE1: stream->print(F("Quick exit ")); break;
-    case 0xE6: stream->print(F("Activate stay/away zones ")); break;
-    case 0xEB: stream->print(F("LCD display pixel test ")); break;
-    case 0xEC: stream->print(F("Command output 4 ")); break;
-    case 0xF2: stream->print(F("Global disarm ")); break;
-    case 0xF7: stream->print(F("Menu navigation ")); break;
+    case 0x28: stream->print(F("*")); break;
+    case 0x2D: stream->print(F("#")); break;
+    case 0x46: stream->print(F("Wireless key disarm")); break;
+    case 0x52: stream->print(F("Identified voice prompt help")); break;
+    case 0x6E: stream->print(F("Global away arm")); break;
+    case 0x70: stream->print(F("Command output 3")); break;
+    case 0x7A: stream->print(F("Time and date programming")); break;
+    case 0x75: stream->print(F("Entered *1/*2/*3 ?")); break;
+    case 0x82: stream->print(F("Enter")); break;
+    case 0x87: stream->print(F("Right arrow")); break;
+    case 0x88: stream->print(F("Left arrow")); break;
+    case 0x8D: stream->print(F("Bypass recall")); break;
+    case 0x93: stream->print(F("Recall bypass group")); break;
+    case 0x94: stream->print(F("Label broadcast announce")); break;
+    case 0x99: stream->print(F("Function key [25] Future Use")); break;
+    case 0xA5: stream->print(F("Data successfully received")); break;
+    case 0xAF: stream->print(F("Arm: Stay")); break;
+    case 0xB1: stream->print(F("Arm: Away")); break;
+    case 0xB6: stream->print(F("Arm: No entry delay")); break;
+    case 0xBB: stream->print(F("Door chime configuration")); break;
+    case 0xBC: stream->print(F("*6 System test")); break;
+    case 0xC3: stream->print(F("*1 Zone bypass programming")); break;
+    case 0xC4: stream->print(F("*2 Trouble menu")); break;
+    case 0xC9: stream->print(F("*3 Alarm memory display")); break;
+    case 0xCE: stream->print(F("*5 Programming")); break;
+    case 0xD0: stream->print(F("*6 Programming")); break;
+    case 0xD5: stream->print(F("Command output 1")); break;
+    case 0xDA: stream->print(F("Reset / Command output 2")); break;
+    case 0xDF: stream->print(F("Global stay arm")); break;
+    case 0xE1: stream->print(F("Quick exit")); break;
+    case 0xE6: stream->print(F("Activate stay/away zones")); break;
+    case 0xEB: stream->print(F("LCD pixel test")); break;
+    case 0xEC: stream->print(F("Command output 4")); break;
+    case 0xF2: stream->print(F("Global disarm")); break;
+    case 0xF7: stream->print(F("Menu navigation")); break;
   }
 }
 
