@@ -773,14 +773,18 @@ void setStatus(byte partition) {
     case 0x0B: lcd.print(0,1, "                "); lcd.print(0,1, "Quick exit"); break;
     case 0x0C: lcd.print(0,1, "                "); lcd.print(0,1, "Entry delay"); break;
     case 0x0D: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm memory"); break;
+    case 0x0E: lcd.print(0,1, "                "); lcd.print(0,1, "Not available"); break;    
     case 0x10: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad lockout"); break;
     case 0x11: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm"); break;
+    case 0x12: lcd.print(0,1, "                "); lcd.print(0,1, "Battery check"); break;    
     case 0x14: lcd.print(0,1, "                "); lcd.print(0,1, "Auto-arm"); break;
     case 0x15: lcd.print(0,1, "                "); lcd.print(0,1, "Arm with bypass"); break;
     case 0x16: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); break;
-    case 0x22: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm memory"); break;
+    case 0x19: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm occured"); break;    
+    case 0x22: lcd.print(0,1, "                "); lcd.print(0,1, "Recent closing"); break;
+    case 0x2F: lcd.print(0,1, "                "); lcd.print(0,1, "LCD Pixel check"); break;
     case 0x33: lcd.print(0,1, "                "); lcd.print(0,1, "Busy"); break;
-    case 0x3D: lcd.print(0,1, "                "); lcd.print(0,1, "Disarmed"); break;
+    case 0x3D: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm occured"); break;
     case 0x3E: lcd.print(0,1, "                "); lcd.print(0,1, "Disarmed"); break;
     case 0x40: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad blanked"); break;
     case 0x8A: lcd.print(0,1, "                "); lcd.print(0,1, "Activate zones"); break;
@@ -796,7 +800,7 @@ void setStatus(byte partition) {
     case 0xA4: lcd.print(0,1, "                "); lcd.print(0,1, "Door chime off"); break;
     case 0xA5: lcd.print(0,1, "                "); lcd.print(0,1, "Master code"); break;
     case 0xA6: lcd.print(0,1, "                "); lcd.print(0,1, "Access codes"); break;
-    case 0xA7: lcd.print(0,1, "                "); lcd.print(0,1, "Enter new code"); break;
+    case 0xA7: lcd.print(0,1, "                "); lcd.print(0,1, "New 4-digit code"); break;
     case 0xA9: lcd.print(0,1, "                "); lcd.print(0,1, "User function"); break;
     case 0xAA: lcd.print(0,1, "                "); lcd.print(0,1, "Time and Date"); break;
     case 0xAB: lcd.print(0,1, "                "); lcd.print(0,1, "Auto-arm time"); break;
@@ -809,8 +813,10 @@ void setStatus(byte partition) {
     case 0xB8: lcd.print(0,1, "                "); lcd.print(0,1, "Enter * code"); break;
     case 0xB9: lcd.print(0,1, "                "); lcd.print(0,1, "Zone tamper"); break;
     case 0xBA: lcd.print(0,1, "                "); lcd.print(0,1, "Zones low batt."); break;
+    case 0xBC: lcd.print(0,1, "                "); lcd.print(0,1, "New 6-digit code"); break;    
     case 0xC6: lcd.print(0,1, "                "); lcd.print(0,1, "Zone fault menu"); break;
     case 0xC8: lcd.print(0,1, "                "); lcd.print(0,1, "Service required"); break;
+    case 0xCE: lcd.print(0,1, "                "); lcd.print(0,1, "Active cam. mon."); break;    
     case 0xD0: lcd.print(0,1, "                "); lcd.print(0,1, "Keypads low batt"); break;
     case 0xD1: lcd.print(0,1, "                "); lcd.print(0,1, "Wireless low bat"); break;
     case 0xE4: lcd.print(0,1, "                "); lcd.print(0,1, "Installer menu"); break;
@@ -823,12 +829,17 @@ void setStatus(byte partition) {
     case 0xEC: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 6 digits"); break;
     case 0xED: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 32 digits"); break;
     case 0xEE: lcd.print(0,1, "                "); lcd.print(0,1, "Input: option"); break;
+    case 0xEF: lcd.print(0,1, "                "); lcd.print(0,1, "Supv. modules"); break;    
     case 0xF0: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 1"); break;
     case 0xF1: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 2"); break;
     case 0xF2: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 3"); break;
     case 0xF3: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 4"); break;
     case 0xF4: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 5"); break;
+    case 0xF5: lcd.print(0,1, "                "); lcd.print(0,1, "Wls. place. test"); break; 
+    case 0xF6: lcd.print(0,1, "                "); lcd.print(0,1, "Activate device"); break; 
+    case 0xF7: lcd.print(0,1, "                "); lcd.print(0,1, "*8PGM subsection"); break;
     case 0xF8: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad program"); break;
+    case 0xFA: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 6 digits"); break;    
     default: return;
   }
 }
