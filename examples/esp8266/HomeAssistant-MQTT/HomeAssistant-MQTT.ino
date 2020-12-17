@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.3 (esp8266)
+ *  HomeAssistant-MQTT 1.4 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -93,6 +93,16 @@ binary_sensor:
     device_class: "motion"
     payload_on: "1"
     payload_off: "0"
+  - platform: mqtt
+    name: "PGM 1"
+    state_topic: "dsc/Get/PGM1"
+    payload_on: "1"
+    payload_off: "0"
+  - platform: mqtt
+    name: "PGM 8"
+    state_topic: "dsc/Get/PGM8"
+    payload_on: "1"
+    payload_off: "0"
 
  *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a prefix to the command:
  *    Partition 1 disarm: "1D"
@@ -123,7 +133,13 @@ binary_sensor:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
+ *  PGM outputs states are published as an integer in a separate topic per PGM with the configured mqttPgmTopic
+ *  appended with the PGM output number:
+ *    Open: "1"
+ *    Closed: "0"
+ *
  *  Release notes:
+ *    1.4 - Added PGM outputs 1-14 status
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Added sensor component to display partition status messages
  *          Added night arm (arming with no entry delay)
@@ -182,6 +198,7 @@ const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm 
 const char* mqttPartitionMessageSuffix = "/Message";   // Sends partition status messages: dsc/Get/Partition1/Message ... dsc/Get/Partition8/Message
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
 const char* mqttBirthMessage = "online";
@@ -338,6 +355,33 @@ void loop() {
               mqtt.publish(zonePublishTopic, "1", true);            // Zone open
             }
             else mqtt.publish(zonePublishTopic, "0", true);         // Zone closed
+          }
+        }
+      }
+    }
+
+    // Publishes PGM outputs 1-14 status in a separate topic per zone
+    // PGM status is stored in the pgmOutputs[] and pgmOutputsChanged[] arrays using 1 bit per PGM output:
+    //   pgmOutputs[0] and pgmOutputsChanged[0]: Bit 0 = PGM 1 ... Bit 7 = PGM 8
+    //   pgmOutputs[1] and pgmOutputsChanged[1]: Bit 0 = PGM 9 ... Bit 5 = PGM 14
+    if (dsc.pgmOutputsStatusChanged) {
+      dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag
+      for (byte pgmGroup = 0; pgmGroup < 2; pgmGroup++) {
+        for (byte pgmBit = 0; pgmBit < 8; pgmBit++) {
+          if (bitRead(dsc.pgmOutputsChanged[pgmGroup], pgmBit)) {  // Checks an individual PGM output status flag
+            bitWrite(dsc.pgmOutputsChanged[pgmGroup], pgmBit, 0);  // Resets the individual PGM output status flag
+
+            // Appends the mqttPgmTopic with the PGM number
+            char pgmPublishTopic[strlen(mqttPgmTopic) + 3];
+            char pgm[3];
+            strcpy(pgmPublishTopic, mqttPgmTopic);
+            itoa(pgmBit + 1 + (pgmGroup * 8), pgm, 10);
+            strcat(pgmPublishTopic, pgm);
+
+            if (bitRead(dsc.pgmOutputs[pgmGroup], pgmBit)) {
+              mqtt.publish(pgmPublishTopic, "1", true);           // PGM enabled
+            }
+            else mqtt.publish(pgmPublishTopic, "0", true);        // PGM disabled
           }
         }
       }

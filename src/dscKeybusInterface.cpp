@@ -298,6 +298,7 @@ bool dscKeybusInterface::loop() {
     case 0x2D: processPanel_0x2D(); break;
     case 0x34: processPanel_0x34(); break;
     case 0x3E: processPanel_0x3E(); break;
+    case 0x87: processPanel_0x87(); break;
     case 0xA5: processPanel_0xA5(); break;
     case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
     case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;

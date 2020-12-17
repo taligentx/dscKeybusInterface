@@ -1,11 +1,12 @@
 /*
- *  DSC Status 1.0 (esp32)
+ *  DSC Status 1.3 (esp32)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Release notes:
+ *    1.3 - Added PGM outputs 1-14 status
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -182,7 +183,7 @@ void loop() {
         if (dsc.fire[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" fire alarm on"));
+          Serial.println(F(" fire alarm"));
         }
         else {
           Serial.print(F("Partition "));
@@ -192,8 +193,7 @@ void loop() {
       }
     }
 
-    // Checks for open zones
-    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    // Zone status is stored in the openZones[] and openZonesChanged[] arrays using 1 bit per zone, up to 64 zones:
     //   openZones[0] and openZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
     //   ...
@@ -205,7 +205,7 @@ void loop() {
           if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {       // Zone open
-              Serial.print(F("Zone open: "));
+              Serial.print(F("Zone opened: "));
               Serial.println(zoneBit + 1 + (zoneGroup * 8));        // Determines the zone number
             }
             else {                                                  // Zone closed
@@ -217,8 +217,7 @@ void loop() {
       }
     }
 
-    // Checks for zones in alarm
-    // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones
+    // Zone alarm status is stored in the alarmZones[] and alarmZonesChanged[] arrays using 1 bit per zone, up to 64 zones:
     //   alarmZones[0] and alarmZonesChanged[0]: Bit 0 = Zone 1 ... Bit 7 = Zone 8
     //   alarmZones[1] and alarmZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
     //   ...
@@ -236,6 +235,28 @@ void loop() {
             else {
               Serial.print(F("Zone alarm restored: "));
               Serial.println(zoneBit + 1 + (zoneGroup * 8));         // Determines the zone number
+            }
+          }
+        }
+      }
+    }
+
+    // PGM outputs 1-14 status is stored in the pgmOutputs[] and pgmOutputsChanged[] arrays using 1 bit per PGM output:
+    //   pgmOutputs[0] and pgmOutputsChanged[0]: Bit 0 = PGM 1 ... Bit 7 = PGM 8
+    //   pgmOutputs[1] and pgmOutputsChanged[1]: Bit 0 = PGM 9 ... Bit 5 = PGM 14
+    if (dsc.pgmOutputsStatusChanged) {
+      dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag
+      for (byte pgmGroup = 0; pgmGroup < 2; pgmGroup++) {
+        for (byte pgmBit = 0; pgmBit < 8; pgmBit++) {
+          if (bitRead(dsc.pgmOutputsChanged[pgmGroup], pgmBit)) {  // Checks an individual PGM output status flag
+            bitWrite(dsc.pgmOutputsChanged[pgmGroup], pgmBit, 0);  // Resets the individual PGM output status flag
+            if (bitRead(dsc.pgmOutputs[pgmGroup], pgmBit)) {       // PGM enabled
+              Serial.print(F("PGM enabled: "));
+              Serial.println(pgmBit + 1 + (pgmGroup * 8));         // Determines the PGM output number
+            }
+            else {                                                 // PGM disabled
+              Serial.print(F("PGM disabled: "));
+              Serial.println(pgmBit + 1 + (pgmGroup * 8));         // Determines the PGM output number
             }
           }
         }

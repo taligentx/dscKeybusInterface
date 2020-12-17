@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.0 (esp32)
+ *  Homebridge-MQTT 1.4 (esp32)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
  *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
@@ -89,6 +89,28 @@
                 "getContactSensorState": "dsc/Get/Zone2"
             },
             "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "PGM 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/PGM1"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "PGM 8",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/PGM8"
+            },
+            "integerValue": "true"
         }
 
  *  The commands to set the alarm state are setup in Homebridge with the partition number (1-8) as a prefix to the command:
@@ -115,7 +137,13 @@
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
  *
+ *  PGM outputs states are published as an integer in a separate topic per PGM with the configured mqttPgmTopic appended
+ *  with the PGM output number:
+ *    Open: "1"
+ *    Closed: "0"
+ *
  *  Release notes:
+ *    1.4 - Added PGM outputs 1-14 status
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -165,6 +193,7 @@ const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
@@ -345,6 +374,33 @@ void loop() {
               mqtt.publish(zonePublishTopic, "1", true);            // Zone open
             }
             else mqtt.publish(zonePublishTopic, "0", true);         // Zone closed
+          }
+        }
+      }
+    }
+
+    // Publishes PGM outputs 1-14 status in a separate topic per zone
+    // PGM status is stored in the pgmOutputs[] and pgmOutputsChanged[] arrays using 1 bit per PGM output:
+    //   pgmOutputs[0] and pgmOutputsChanged[0]: Bit 0 = PGM 1 ... Bit 7 = PGM 8
+    //   pgmOutputs[1] and pgmOutputsChanged[1]: Bit 0 = PGM 9 ... Bit 5 = PGM 14
+    if (dsc.pgmOutputsStatusChanged) {
+      dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag
+      for (byte pgmGroup = 0; pgmGroup < 2; pgmGroup++) {
+        for (byte pgmBit = 0; pgmBit < 8; pgmBit++) {
+          if (bitRead(dsc.pgmOutputsChanged[pgmGroup], pgmBit)) {  // Checks an individual PGM output status flag
+            bitWrite(dsc.pgmOutputsChanged[pgmGroup], pgmBit, 0);  // Resets the individual PGM output status flag
+
+            // Appends the mqttPgmTopic with the PGM number
+            char pgmPublishTopic[strlen(mqttPgmTopic) + 3];
+            char pgm[3];
+            strcpy(pgmPublishTopic, mqttPgmTopic);
+            itoa(pgmBit + 1 + (pgmGroup * 8), pgm, 10);
+            strcat(pgmPublishTopic, pgm);
+
+            if (bitRead(dsc.pgmOutputs[pgmGroup], pgmBit)) {
+              mqtt.publish(pgmPublishTopic, "1", true);           // PGM enabled
+            }
+            else mqtt.publish(pgmPublishTopic, "0", true);        // PGM disabled
           }
         }
       }

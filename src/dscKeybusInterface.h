@@ -117,6 +117,8 @@ class dscKeybusInterface {
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones
     bool alarmZonesStatusChanged;
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
+    bool pgmOutputsStatusChanged;
+    byte pgmOutputs[2], pgmOutputsChanged[2];
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
      * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -158,13 +160,24 @@ class dscKeybusInterface {
     void processPanel_0x2D();
     void processPanel_0x34();
     void processPanel_0x3E();
+    void processPanel_0x87();
     void processPanel_0xA5();
     void processPanel_0xE6();
     void processPanel_0xE6_0x09();
     void processPanel_0xE6_0x0B();
     void processPanel_0xE6_0x0D();
     void processPanel_0xE6_0x0F();
+    void processPanel_0xE6_0x1A();
     void processPanel_0xEB();
+    void processReadyStatus(byte partitionIndex, bool status);
+    void processAlarmStatus(byte partitionIndex, bool status);
+    void processExitDelayStatus(byte partitionIndex, bool status);
+    void processEntryDelayStatus(byte partitionIndex, bool status);
+    void processZoneStatus(byte zonesByte, byte panelByte);
+    void processTime(byte panelByte);
+    void processAlarmZones(byte panelByte, byte startByte, byte zoneCountOffset, byte writeValue);
+    void processAlarmZonesStatus(byte zonesByte, byte zoneCount, byte writeValue);
+    void processArmed(byte partitionIndex, bool armedStatus);
 
     void printPanelPartitionStatus(byte startPartition, byte startByte, byte endByte);
     void printPanelStatus0(byte panelByte);
@@ -274,6 +287,7 @@ class dscKeybusInterface {
     bool queryResponse;
     bool previousTrouble;
     bool previousKeybus;
+    bool previousPower;
     byte previousAccessCode[dscPartitions];
     byte previousLights[dscPartitions], previousStatus[dscPartitions];
     bool previousReady[dscPartitions];
@@ -283,6 +297,7 @@ class dscKeybusInterface {
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
+    byte previousPgmOutputs[2];
 
     static byte dscClockPin;
     static byte dscReadPin;

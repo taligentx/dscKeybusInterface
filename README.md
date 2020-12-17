@@ -42,6 +42,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - Zones open/closed, zones in alarm
 * Monitor system status:
   - Ready, trouble, AC power, battery
+* Monitor PGM outputs 1-14 status
 * Virtual keypad:
   - Write keys to the panel for all partitions
 * Panel time - retrieve current panel date/time and set a new date/time
@@ -90,6 +91,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: Features for sketches:
       * `ready` and `disabled` track partition status
       * `setTime()` sets the panel date and time
+      * `pgmOutputs[]` tracks the status of PGM outputs 1-14
       * `timestampChanged` tracks when the panel sends a timestamp
       * `accessCode` tracks the access code used to arm/disarm
       * `resetStatus()` triggers a full status update of all partitions and zones - for example, after initialization or a lost network connection.
@@ -97,6 +99,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `stop()` disables the interface - for example, prior to starting OTA updates
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
+  - Updated: `HomeAssistant-MQTT, Homebridge-MQTT, OpenHAB-MQTT` include PGM outputs 1-14 status
   - Updated: Virtual keypad writes
       * `write()` for multiple keys can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
       * Checking `writeReady` is typically no longer needed in the sketch, the library will block if a previous write is in progress - this can be checked if the sketch needs to wait until the library can perform a nonblocking write

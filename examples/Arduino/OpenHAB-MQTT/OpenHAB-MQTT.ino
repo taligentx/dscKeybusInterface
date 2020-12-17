@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.0 (Arduino with Ethernet)
+ *  OpenHAB-MQTT 1.2 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates using panel and partition states
@@ -35,6 +35,8 @@ Thing mqtt:topic:mymqtt:dsc "DSC Security System" (mqtt:broker:mymqtt) @ "Home" 
         Type switch : partition1_fire "Partition 1 Fire" [stateTopic="dsc/Get/Fire1", on="1", off="0"]
         Type switch : panel_online "Panel Online" [stateTopic="dsc/Status", on="online", off="offline"]
         Type switch : panel_trouble "Panel Trouble" [stateTopic="dsc/Get/Trouble", on="1", off="0"]
+        Type switch : pgm1 "PGM 1" [stateTopic="dsc/Get/PGM 1", on="1", off="0"]
+        Type switch : pgm8 "PGM 8" [stateTopic="dsc/Get/PGM 8", on="1", off="0"]
         Type contact : zone1 "Zone 1" [stateTopic="dsc/Get/Zone1", on="1", off="0"]
         Type contact : zone2 "Zone 2" [stateTopic="dsc/Get/Zone2", on="1", off="0"]
         Type contact : zone3 "Zone 3" [stateTopic="dsc/Get/Zone3", on="1", off="0"]
@@ -49,6 +51,8 @@ Switch partition1_triggered "Partition 1 Alarm" <alarm> {channel="mqtt:topic:mym
 Switch partition1_fire "Partition 1 Fire" <fire> {channel="mqtt:topic:mymqtt:dsc:partition1_fire"}
 Switch panel_online "Panel Online" <switch> {channel="mqtt:topic:mymqtt:dsc:panel_online"}
 Switch panel_trouble "Panel Trouble" <error> {channel="mqtt:topic:mymqtt:dsc:panel_trouble"}
+Switch pgm1 "PGM 1" <switch> {channel="mqtt:topic:mymqtt:dsc:pgm1"}
+Switch pgm8 "PGM 8" <switch> {channel="mqtt:topic:mymqtt:dsc:pgm8"}
 Contact zone1 "Zone 1" <door> {channel="mqtt:topic:mymqtt:dsc:zone1"}
 Contact zone2 "Zone 2" <window> {channel="mqtt:topic:mymqtt:dsc:zone2"}
 Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
@@ -77,6 +81,8 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *    Fire alarm restored: "0"
  *
  *  Release notes:
+ *    1.2 - Added PGM outputs 1-14 status
+ *          Removed partition exit delay MQTT message, not used in this OpenHAB example
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -126,6 +132,7 @@ const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
 const char* mqttBirthMessage = "online";
@@ -237,13 +244,8 @@ void loop() {
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
-        // Exit delay in progress
-        if (dsc.exitDelay[partition]) {
-            publishState(mqttPartitionTopic, partition, "P");
-        }
-
         // Disarmed during exit delay
-        else if (!dsc.armed[partition]) {
+        if (!dsc.armed[partition]) {
           publishState(mqttPartitionTopic, partition, "D");
         }
       }
@@ -293,6 +295,33 @@ void loop() {
               mqtt.publish(zonePublishTopic, "1", true);            // Zone open
             }
             else mqtt.publish(zonePublishTopic, "0", true);         // Zone closed
+          }
+        }
+      }
+    }
+
+    // Publishes PGM outputs 1-14 status in a separate topic per zone
+    // PGM status is stored in the pgmOutputs[] and pgmOutputsChanged[] arrays using 1 bit per PGM output:
+    //   pgmOutputs[0] and pgmOutputsChanged[0]: Bit 0 = PGM 1 ... Bit 7 = PGM 8
+    //   pgmOutputs[1] and pgmOutputsChanged[1]: Bit 0 = PGM 9 ... Bit 5 = PGM 14
+    if (dsc.pgmOutputsStatusChanged) {
+      dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag
+      for (byte pgmGroup = 0; pgmGroup < 2; pgmGroup++) {
+        for (byte pgmBit = 0; pgmBit < 8; pgmBit++) {
+          if (bitRead(dsc.pgmOutputsChanged[pgmGroup], pgmBit)) {  // Checks an individual PGM output status flag
+            bitWrite(dsc.pgmOutputsChanged[pgmGroup], pgmBit, 0);  // Resets the individual PGM output status flag
+
+            // Appends the mqttPgmTopic with the PGM number
+            char pgmPublishTopic[strlen(mqttPgmTopic) + 3];
+            char pgm[3];
+            strcpy(pgmPublishTopic, mqttPgmTopic);
+            itoa(pgmBit + 1 + (pgmGroup * 8), pgm, 10);
+            strcat(pgmPublishTopic, pgm);
+
+            if (bitRead(dsc.pgmOutputs[pgmGroup], pgmBit)) {
+              mqtt.publish(pgmPublishTopic, "1", true);           // PGM enabled
+            }
+            else mqtt.publish(pgmPublishTopic, "0", true);        // PGM disabled
           }
         }
       }
