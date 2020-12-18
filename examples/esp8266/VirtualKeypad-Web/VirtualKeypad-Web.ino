@@ -287,13 +287,17 @@ void setStatus(byte partition) {
       case 0x0B: root["lcd_lower"] = "Quick exit"; break;
       case 0x0C: root["lcd_lower"] = "Entry delay"; break;
       case 0x0D: root["lcd_lower"] = "Alarm memory"; break;
+      case 0x0E: root["lcd_lower"] = "Not available"; break;      
       case 0x10: root["lcd_lower"] = "Keypad lockout"; break;
       case 0x11: root["lcd_lower"] = "Alarm"; break;
+      case 0x12: root["lcd_lower"] = "Battery check"; break;      
       case 0x14: root["lcd_lower"] = "Auto-arm"; break;
       case 0x16: root["lcd_lower"] = "No entry delay"; break;
-      case 0x22: root["lcd_lower"] = "Alarm memory"; break;
+      case 0x19: root["lcd_lower"] = "Alarm occured"; break;      
+      case 0x22: root["lcd_lower"] = "Recent closing"; break;
+      case 0x2F: root["lcd_lower"] = "LCD Pixel check"; break;
       case 0x33: root["lcd_lower"] = "Busy"; break;
-      case 0x3D: root["lcd_lower"] = "Disarmed"; break;
+      case 0x3D: root["lcd_lower"] = "Alarm occured"; break;
       case 0x3E: root["lcd_lower"] = "Disarmed"; break;
       case 0x40: root["lcd_lower"] = "Keypad blanked"; break;
       case 0x8A: root["lcd_lower"] = "Activate zones"; break;
@@ -309,7 +313,7 @@ void setStatus(byte partition) {
       case 0xA4: root["lcd_lower"] = "Door chime off"; break;
       case 0xA5: root["lcd_lower"] = "Master code"; break;
       case 0xA6: root["lcd_lower"] = "Access codes"; break;
-      case 0xA7: root["lcd_lower"] = "Enter new code"; break;
+      case 0xA7: root["lcd_lower"] = "New 4-digit code"; break;
       case 0xA9: root["lcd_lower"] = "User function"; break;
       case 0xAA: root["lcd_lower"] = "Time and Date"; break;
       case 0xAB: root["lcd_lower"] = "Auto-arm time"; break;
@@ -322,6 +326,8 @@ void setStatus(byte partition) {
       case 0xB8: root["lcd_lower"] = "Enter * code"; break;
       case 0xB9: root["lcd_lower"] = "Zone tamper"; break;
       case 0xBA: root["lcd_lower"] = "Zones low batt."; break;
+      case 0xBC: root["lcd_lower"] = "New 6-digit code"; break;      
+      case 0xCE: root["lcd_lower"] = "Active cam. mon."; break;      
       case 0xC6: root["lcd_lower"] = "Zone fault menu"; break;
       case 0xC8: root["lcd_lower"] = "Service required"; break;
       case 0xD0: root["lcd_lower"] = "Keypads low batt"; break;
@@ -336,12 +342,17 @@ void setStatus(byte partition) {
       case 0xEC: root["lcd_lower"] = "Input: 6 digits"; break;
       case 0xED: root["lcd_lower"] = "Input: 32 digits"; break;
       case 0xEE: root["lcd_lower"] = "Input: option"; break;
+      case 0xEF: root["lcd_lower"] = "Supv. modules"; break;      
       case 0xF0: root["lcd_lower"] = "Function key 1"; break;
       case 0xF1: root["lcd_lower"] = "Function key 2"; break;
       case 0xF2: root["lcd_lower"] = "Function key 3"; break;
       case 0xF3: root["lcd_lower"] = "Function key 4"; break;
       case 0xF4: root["lcd_lower"] = "Function key 5"; break;
+      case 0xF5: root["lcd_lower"] = "Wls. place. test"; break;
+      case 0xF6: root["lcd_lower"] = "Activate device"; break;
+      case 0xF7: root["lcd_lower"] = "*8PGM subsection"; break;      
       case 0xF8: root["lcd_lower"] = "Keypad program"; break;
+      case 0xFA: root["lcd_lower"] = "Input: 6 digits"; break;      
       default: root["lcd_lower"] = dsc.status[partition];
     }
     serializeJson(root, outas);
