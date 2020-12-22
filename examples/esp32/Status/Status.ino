@@ -52,13 +52,13 @@ dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -99,29 +99,32 @@ void loop() {
         if (dsc.ready[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" ready"));
+          Serial.println(F(": Ready"));
         }
         else {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" not ready"));
+          Serial.println(F(": Not ready"));
         }
       }
 
       // Checks armed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.print(F(" armed"));
-          if (dsc.armedAway[partition]) Serial.println(F(" away"));
-          if (dsc.armedStay[partition]) Serial.println(F(" stay"));
+          Serial.print(F(": Armed "));
+
+          if (dsc.armedAway[partition]) Serial.print(F("away"));
+          else if (dsc.armedStay[partition]) Serial.print(F("stay"));
+
+          if (dsc.noEntryDelay[partition]) Serial.println(F(" with no entry delay"));
+          else Serial.println();
         }
         else {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" disarmed"));
+          Serial.println(F(": Disarmed"));
         }
       }
 
@@ -131,9 +134,15 @@ void loop() {
         if (dsc.alarm[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" in alarm"));
+          Serial.println(F(": Alarm"));
+        }
+        else if (!dsc.armedChanged[partition]) {
+          Serial.print(F("Partition "));
+          Serial.print(partition + 1);
+          Serial.println(F(": Disarmed"));
         }
       }
+      if (dsc.armedChanged[partition]) dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Checks exit delay status
       if (dsc.exitDelayChanged[partition]) {
@@ -141,12 +150,12 @@ void loop() {
         if (dsc.exitDelay[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" exit delay in progress"));
+          Serial.println(F(": Exit delay in progress"));
         }
         else if (!dsc.armed[partition]) {  // Checks for disarm during exit delay
           Serial.print(F("Partition "));
-          Serial.print(partition +1);
-          Serial.println(F(" disarmed"));
+          Serial.print(partition + 1);
+          Serial.println(F(": Disarmed"));
         }
       }
 
@@ -156,22 +165,22 @@ void loop() {
         if (dsc.entryDelay[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" entry delay in progress"));
+          Serial.println(F(": Entry delay in progress"));
         }
       }
 
-      // Checks if an access code is used to arm or disarm
+      // Checks the access code used to arm or disarm
       if (dsc.accessCodeChanged[partition]) {
         dsc.accessCodeChanged[partition] = false;  // Resets the access code status flag
         Serial.print(F("Partition "));
         Serial.print(partition + 1);
         switch (dsc.accessCode[partition]) {
-          case 33: Serial.print(F(" duress")); break;
-          case 34: Serial.print(F(" duress")); break;
-          case 40: Serial.print(F(" master")); break;
-          case 41: Serial.print(F(" supervisor")); break;
-          case 42: Serial.print(F(" supervisor")); break;
-          default: Serial.print(F(" user")); break;
+          case 33: Serial.print(F(": Duress")); break;
+          case 34: Serial.print(F(": Duress")); break;
+          case 40: Serial.print(F(": Master")); break;
+          case 41: Serial.print(F(": Supervisor")); break;
+          case 42: Serial.print(F(": Supervisor")); break;
+          default: Serial.print(F(": User")); break;
         }
         Serial.print(F(" code "));
         Serial.println(dsc.accessCode[partition]);
@@ -183,12 +192,12 @@ void loop() {
         if (dsc.fire[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" fire alarm"));
+          Serial.println(F(": Fire alarm"));
         }
         else {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" fire alarm restored"));
+          Serial.println(F(": Fire alarm restored"));
         }
       }
     }
@@ -310,19 +319,19 @@ void loop() {
     // Checks keypad fire alarm triggered
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      Serial.println(F("Keypad fire alarm"));
+      Serial.println(F("Keypad Fire alarm"));
     }
 
     // Checks keypad auxiliary alarm triggered
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      Serial.println(F("Keypad aux alarm"));
+      Serial.println(F("Keypad Aux alarm"));
     }
 
     // Checks keypad panic alarm triggered
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      Serial.println(F("Keypad panic alarm"));
+      Serial.println(F("Keypad Panic alarm"));
     }
   }
 }

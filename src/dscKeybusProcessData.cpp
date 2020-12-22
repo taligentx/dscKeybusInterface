@@ -98,7 +98,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
 void dscKeybusInterface::processPanelStatus() {
 
   // Trouble status
-  if (panelData[3] <= 0x05) {  // Ignores trouble light status in intermittent states
+  if (panelData[3] <= 0x06) {  // Ignores trouble light status in intermittent states
     if (bitRead(panelData[2],4)) trouble = true;
     else trouble = false;
     if (trouble != previousTrouble) {
@@ -273,6 +273,7 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       // Partition armed with no entry delay
+      case 0x06:
       case 0x16: {
         noEntryDelay[partitionIndex] = true;
 
@@ -376,7 +377,7 @@ void dscKeybusInterface::processPanel_0x27() {
     }
 
     // Armed with no entry delay
-    else if (panelData[messageByte] == 0x16) {
+    else if (panelData[messageByte] == 0x06 || panelData[messageByte] == 0x16) {
       noEntryDelay[partitionIndex] = true;
 
       // Sets an armed mode if not already set, used if interface is initialized while the panel is armed

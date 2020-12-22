@@ -148,7 +148,7 @@ class dscKeybusInterface {
     static void dscDataInterrupt();
 
     // Deprecated
-    bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
+    bool handlePanel();  // Returns true if valid panel data is available.  Relabeled to loop()
 
   private:
 
@@ -189,7 +189,7 @@ class dscKeybusInterface {
     void printPanelStatus14(byte panelByte);
     void printPanelStatus17(byte panelByte);
     void printPanelStatus18(byte panelByte);
-    void printPanelStatus1B(byte panelByte);  
+    void printPanelStatus1B(byte panelByte);
 
     void printPanelMessages(byte panelByte);
     void printPanelLights(byte panelByte, bool printMessage = true);
@@ -277,7 +277,7 @@ class dscKeybusInterface {
     bool printModule_Keys();
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
-    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue);
+    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);

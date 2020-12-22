@@ -97,7 +97,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x7A: printPanel_0x7A(); return;  // Tone, partition 2 | Structure: complete | Content: complete
     case 0x7F: printPanel_0x7F(); return;  // Buzzer, partition 1 | Structure: complete | Content: complete
     case 0x82: printPanel_0x82(); return;  // Buzzer, partition 2 | Structure: complete | Content: complete
-    case 0x87: printPanel_0x87(); return;  // PGM outputs | Structure: *incomplete | Content: *incomplete
+    case 0x87: printPanel_0x87(); return;  // PGM outputs | Structure: complete | Content: complete
     case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32 | Structure: *incomplete | Content: *incomplete
     case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming | Structure: *incomplete | Content: *incomplete
     case 0x9E: printPanel_0x9E(); return;  // DLS query | Structure: complete | Content: complete
@@ -201,8 +201,9 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x01: stream->print(F("Partition ready")); break;
     case 0x02: stream->print(F("Stay zones open")); break;
     case 0x03: stream->print(F("Zones open")); break;
-    case 0x04: stream->print(F("Armed stay")); break;
-    case 0x05: stream->print(F("Armed away")); break;
+    case 0x04: stream->print(F("Armed: Stay")); break;
+    case 0x05: stream->print(F("Armed: Away")); break;
+    case 0x06: stream->print(F("Armed: No entry delay")); break;
     case 0x07: stream->print(F("Failed to arm")); break;
     case 0x08: stream->print(F("Exit delay in progress")); break;
     case 0x09: stream->print(F("Arming with no entry delay")); break;
@@ -215,13 +216,13 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x12: stream->print(F("Battery check in progress")); break;
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
-    case 0x16: stream->print(F("Armed with no entry delay")); break;
+    case 0x16: stream->print(F("Armed: No entry delay")); break;
     //case 0x17: break;  // Observed in logs, unknown message
-    case 0x19: stream->print(F("Disarmed after alarm in memory")); break;
+    case 0x19: stream->print(F("Disarmed after alarm")); break;
     case 0x22: stream->print(F("Recent closing")); break;
     case 0x2F: stream->print(F("Keypad LCD test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
-    case 0x3D: stream->print(F("Disarmed after alarm in memory")); break;
+    case 0x3D: stream->print(F("Disarmed after alarm")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
@@ -237,7 +238,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xA4: stream->print(F("Door chime disabled")); break;
     case 0xA5: stream->print(F("Enter master code")); break;
     case 0xA6: stream->print(F("*5: Access codes")); break;
-    case 0xA7: stream->print(F("*5: Enter new 4-digit code")); break;
+    case 0xA7: stream->print(F("*5: Enter 4-digit code")); break;
     case 0xA9: stream->print(F("*6: User functions")); break;
     case 0xAA: stream->print(F("*6: Time and date")); break;
     case 0xAB: stream->print(F("*6: Auto-arm time")); break;
@@ -250,13 +251,13 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB8: stream->print(F("Key * while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
-    case 0xBC: stream->print(F("*5: Enter new 6-digit code")); break;    
+    case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
-    case 0xCE: stream->print(F("Active camera monitor selection")); break;    
+    case 0xCE: stream->print(F("Active camera monitor selection")); break;
     // case 0xCD: Enter DLS (?)
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
-    case 0xD1: stream->print(F("*2: Keysfobs with low batteries")); break;
+    case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xE4: stream->print(F("*8: Installer programming")); break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input 2 digits")); break;
@@ -277,7 +278,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF6: stream->print(F("Activate device for test")); break;
     case 0xF7: stream->print(F("Installer programming subsection")); break;
     case 0xF8: stream->print(F("Keypad programming")); break;
-    case 0xFA: stream->print(F("Input 6 digits")); break;    
+    case 0xFA: stream->print(F("Input 6 digits")); break;
     default:
       printUnknownData();
       stream->print(F(": 0x"));
@@ -349,10 +350,10 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     // 0x56 - 0x75: Zone tamper, zones 1-32
     // 0x76 - 0x95: Zone tamper restored, zones 1-32
     case 0x98: stream->print(F("Keypad lockout")); break;
-    // 0x99 - 0xBD: Armed: Access code
+    // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42
     case 0xBE: stream->print(F("Armed partial: Zones bypassed")); break;
     case 0xBF: stream->print(F("Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); break;
-    // 0xC0 - 0xE4: Disarmed: Access code
+    // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42
     case 0xE5: stream->print(F("Auto-arm cancelled")); break;
     case 0xE6: stream->print(F("Disarmed special: Keyswitch/wireless key/DLS")); break;
     case 0xE7: stream->print(F("Panel battery trouble")); break;
@@ -369,7 +370,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0xF4: stream->print(F("Telephone line restored")); break;
     case 0xF7: stream->print(F("Phone 1 FTC")); break;
     case 0xF8: stream->print(F("Phone 2 FTC")); break;
-    case 0xF9: stream->print(F("Event buffer treshold")); break; //75% full since last DLS upload
+    case 0xF9: stream->print(F("Event buffer threshold")); break;  //75% full since last DLS upload
     case 0xFA: stream->print(F("DLS lead-in")); break;
     case 0xFB: stream->print(F("DLS lead-out")); break;
     case 0xFE: stream->print(F("Periodic test transmission")); break;
@@ -438,11 +439,11 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
   }
 
   /*
-   *  Armed by access code
+   *  Armed by access codes 1-34, 40-42
    *
    *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
-   *  10100101 0 00011000 01001101 00001000 10010000 10011001 11111111 00111010 [0xA5] 2018.03.08 08:36 | Partition 1 | Armed by user code 1
-   *  10100101 0 00011000 01001101 00001000 10111100 10111011 11111111 10001000 [0xA5] 2018.03.08 08:47 | Partition 1 | Armed by master code 40
+   *  10100101 0 00011000 01001101 00001000 10010000 10011001 11111111 00111010 [0xA5] 2018.03.08 08:36 | Partition 1 | Armed: User code 1
+   *  10100101 0 00011000 01001101 00001000 10111100 10111011 11111111 10001000 [0xA5] 2018.03.08 08:47 | Partition 1 | Armed: Master code 40
    *  Byte 0   1    2        3        4        5        6        7        8
    */
   if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
@@ -453,11 +454,11 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
   }
 
   /*
-   *  Disarmed by access code
+   *  Disarmed by access codes 1-34, 40-42
    *
    *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
-   *  10100101 0 00011000 01001101 00001000 11101100 11000000 11111111 10111101 [0xA5] 2018.03.08 08:59 | Partition 1 | Disarmed by user code 1
-   *  10100101 0 00011000 01001101 00001000 10110100 11100010 11111111 10100111 [0xA5] 2018.03.08 08:45 | Partition 1 | Disarmed by master code 40
+   *  10100101 0 00011000 01001101 00001000 11101100 11000000 11111111 10111101 [0xA5] 2018.03.08 08:59 | Partition 1 | Disarmed: User code 1
+   *  10100101 0 00011000 01001101 00001000 10110100 11100010 11111111 10100111 [0xA5] 2018.03.08 08:45 | Partition 1 | Disarmed: Master code 40
    *  Byte 0   1    2        3        4        5        6        7        8
    */
   if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
@@ -498,9 +499,9 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
      *  10100101 0 00010110 01010110 00101011 11010001 11010010 00000000 11011111 [0xA5] 2016.05.17 11:52 | Partition 1 | Armed with no entry delay cancelled
      *  Byte 0   1    2        3        4        5        6        7        8
      */
-    case 0x03: stream->print(F("Police code")); return;
+    case 0x03: stream->print(F("Cross zone alarm")); return;
     case 0x04: stream->print(F("Delinquency alarm")); return;
-    // 0x24 - 0x28: Access code
+    // 0x24 - 0x28: Access codes 33-34, 40-42
     case 0x29: stream->print(F("Downloading forced answer")); return;
     case 0x2B: stream->print(F("Armed: Auto-arm")); return;
     // 0x2C - 0x4B: Zone battery restored, zones 1-32
@@ -515,11 +516,11 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     case 0xD0: stream->print(F("Command output 4")); return;
     case 0xD1: stream->print(F("Exit fault pre-alert")); return;
     case 0xD2: stream->print(F("Armed with no entry delay cancelled")); return;
-    case 0xD3: stream->print(F("Downlook remote trigger")); return;
+    case 0xD3: stream->print(F("Download remote trigger")); return;
   }
 
   /*
-   *  Access code
+   *  Access codes 33-34, 40-42
    *
    *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
    *  10100101 0 00010001 01101101 01100000 10101001 00100100 00000000 01010000 [0xA5] 2011.11.11 00:42 | Partition 1 | Duress code 33
@@ -654,10 +655,10 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     case 0x9A: stream->print(F("Armed: Stay")); return;
     case 0x9B: stream->print(F("Armed: Away")); return;
     case 0x9C: stream->print(F("Armed: No entry delay")); return;
-    // 0x9E - 0xC2: *1: access code
-    // 0xC3 - 0xC5: *5: access code 40-42
-    // 0xC6 - 0xE5: User code
-    // 0xE6 - 0xE8: *6: access code 40-42
+    // 0x9E - 0xC2: *1: Access codes 1-34, 40-42
+    // 0xC3 - 0xC5: *5: Access codes 40-42
+    // 0xC6 - 0xE5: Access codes 1-34, 40-42
+    // 0xE6 - 0xE8: *6: Access codes 40-42
     // 0xE9 - 0xF0: Keypad restored: Slots 1-8
     // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
     // 0xF9 - 0xFE: Zone expander restored: 1-6
@@ -665,7 +666,7 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
   }
 
   /*
-   *  *1: Access code
+   *  *1: Access codes 1-34, 40-42
    */
   if (panelData[panelByte] >= 0x9E && panelData[panelByte] <= 0xC2) {
     byte dscCode = panelData[panelByte] - 0x9D;
@@ -675,28 +676,17 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
   }
 
   /*
-   *  *5: Access code
+   *  *5: Access codes 40-42
    */
   if (panelData[panelByte] >= 0xC3 && panelData[panelByte] <= 0xC5) {
     byte dscCode = panelData[panelByte] - 0xA0;
-    stream->print(F("*5 programming: "));
-    printPanelAccessCode(dscCode);
-    return;
-  }
-
-
-  /*
-   *  *6: Access code
-   */
-  if (panelData[panelByte] >= 0xE6 && panelData[panelByte] <= 0xE8) {
-    byte dscCode = panelData[panelByte] - 0xC3;
-    stream->print(F("*6 programming: "));
+    stream->print(F("*5: "));
     printPanelAccessCode(dscCode);
     return;
   }
 
   /*
-   *  User code
+   *  Access codes 1-32
    *
    *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
    *  10100101 0 00010001 01101101 01100000 00111110 11000110 00000000 10000111 [0xA5] 2011.11.11 00:15 | Partition 1 | User code 1
@@ -705,6 +695,16 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
    */
   if (panelData[panelByte] >= 0xC6 && panelData[panelByte] <= 0xE5) {
     byte dscCode = panelData[panelByte] - 0xC5;
+    printPanelAccessCode(dscCode);
+    return;
+  }
+
+  /*
+   *  *6: Access codes 40-42
+   */
+  if (panelData[panelByte] >= 0xE6 && panelData[panelByte] <= 0xE8) {
+    byte dscCode = panelData[panelByte] - 0xC3;
+    stream->print(F("*6: "));
     printPanelAccessCode(dscCode);
     return;
   }
@@ -844,7 +844,7 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
  *  the numerical list of messages.
  *
  *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
- *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1X.
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
  *
  *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
  *  11101011 0 00000001 00011000 00011000 10001111 00101000 00000100 00000000 10010001 01101000 [0xEB] 2018.06.04 15:10 | Partition 1 | Zone alarm: 33
@@ -885,28 +885,21 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
 
 
 /*
- *  Status messages set 0x14, 0x17, 0x1B for panel commands: 0xEB, 0xEC
+ *  Status messages set 0x05 for panel commands: 0xEB, 0xEC
  *  Structure decoding: complete
  *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
  *  the numerical list of messages.
  *
  *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
- *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1X.
- *
- *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
- *  11101011 0 00000000 00000001 00000100 01100000 01001000 00010100 01100000 10000001 10001101 [0xEB] 2001.01.03 00:18 | Zone fault: 33
- *  11101011 0 00000000 00000001 00000100 01100000 01001100 00010100 01000000 11111111 11101111 [0xEB] 2001.01.03 00:19 | Zone fault restored: 33
- *  11101011 0 00000000 00000001 00000100 01100000 00001100 00010100 01011111 11111111 11001110 [0xEB] 2001.01.03 00:03 | Zone fault restored: 64
- *  Byte 0   1    2        3        4        5        6        7        8        9        10
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
  */
- 
 void dscKeybusInterface::printPanelStatus5(byte panelByte) {
-/*
- *  Armed by access code
- *  0x00 ... 0x04 user 35..39  
- *  0x05 ... 0x39 user 43..95
- */
 
+  /*
+   *  Armed by access codes 35-95
+   *  0x00 - 0x04: Access codes 35-39
+   *  0x05 - 0x39: Access codes 43-95
+   */
   if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
     byte dscCode = panelData[panelByte] + 0x23;
     stream->print(F("Armed: "));
@@ -915,9 +908,9 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
   }
 
   /*
-   *  Disarmed by access code
-   *  0x3A ... 0x3E user 35..39
-   *  0x3F ... 0x73 user 43..95
+   *  Disarmed by access codes 35-95
+   *  0x3A - 0x3E: Access codes 35-39
+   *  0x3F - 0x73: Access codes 43-95
    */
   if (panelData[panelByte] >= 0x3A && panelData[panelByte] <= 0x73) {
     byte dscCode = panelData[panelByte] - 0x17;
@@ -925,10 +918,20 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
     printPanelAccessCode(dscCode, false);
     return;
   }
- 
+
   printUnknownData();
 }
 
+
+/*
+ *  Status messages set 0x14 for panel commands: 0xEB, 0xEC
+ *  Structure decoding: complete
+ *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
+ *  the numerical list of messages.
+ *
+ *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
+ */
 void dscKeybusInterface::printPanelStatus14(byte panelByte) {
   switch (panelData[panelByte]) {
     case 0xC0: stream->print(F("TLink com fault")); return;
@@ -936,13 +939,25 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
   }
+
   printUnknownData();
 }
 
+
+/*
+ *  Status messages set 0x17 for panel commands: 0xEB, 0xEC
+ *  Structure decoding: complete
+ *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
+ *  the numerical list of messages.
+ *
+ *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
+ */
 void dscKeybusInterface::printPanelStatus17(byte panelByte) {
+
   /*
-   *  *1: Access code
-   *  0x4A - 0x83: *1: User codes 35..39 and 43..95
+   *  *1: Access codes 35-95
+   *  0x4A - 0x83: *1: Access codes 35-39, 43-95
    */
   if (panelData[panelByte] >= 0x4A && panelData[panelByte] <= 0x83) {
     byte dscCode = panelData[panelByte] - 0x27;
@@ -952,9 +967,9 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
   }
 
   /*
-   *  *2: Access code
-   *  0x00 - 0x24: *2: Access code 1-32, 40, 41, 42
-   *  0x84 - 0xBD: *2: User codes 35..39 and 43..95
+   *  *2: Access codes 1-95
+   *  0x00 - 0x24: *2: Access code 1-32, 40-42
+   *  0x84 - 0xBD: *2: Access codes 35-39, 43-95
    */
   if (panelData[panelByte] >= 0 && panelData[panelByte] <= 0x24) {
     byte dscCode = panelData[panelByte] + 1;
@@ -962,6 +977,7 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
+
   if (panelData[panelByte] >= 0x84 && panelData[panelByte] <= 0xBD) {
     byte dscCode = panelData[panelByte] - 0x61;
     stream->print(F("*2: "));
@@ -970,9 +986,9 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
   }
 
   /*
-   *  *3: Access code
-   *  0x25 - 0x49: *3: Access code 1-32, 40, 41, 42
-   *  0xBE - 0xF7: *3: User codes 35..39 and 43..95 
+   *  *3: Access codes 1-95
+   *  0x25 - 0x49: *3: Access code 1-32, 40-42
+   *  0xBE - 0xF7: *3: Access codes 35-39, 43-95
    */
   if (panelData[panelByte] >= 0x25 && panelData[panelByte] <= 0x49) {
     byte dscCode = panelData[panelByte] - 0x24;
@@ -980,35 +996,46 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
     printPanelAccessCode(dscCode);
     return;
   }
+
   if (panelData[panelByte] >= 0xBE && panelData[panelByte] <= 0xF7) {
     byte dscCode = panelData[panelByte] - 0x9B;
     stream->print(F("*3: "));
     printPanelAccessCode(dscCode, false);
     return;
   }
-  
+
   printUnknownData();
 }
 
+
+/*
+ *  Status messages set 0x18 for panel commands: 0xEB, 0xEC
+ *  Structure decoding: complete
+ *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
+ *  the numerical list of messages.
+ *
+ *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
+ */
 void dscKeybusInterface::printPanelStatus18(byte panelByte) {
+
   /*
-   *  *7/User/Auto-arm cancel by Access code
-   *  
-   * 0x00 - 0x04: *7/*User codes 35..39
-   * 0x05 - 0x39: *7/*User codes 43..95
+   *  *7/User/Auto-arm cancel by access codes 35-95
+   *
+   *  0x00 - 0x04: *7/*Access codes 35-39
+   *  0x05 - 0x39: *7/*Access codes 43-95
    */
   if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
     byte dscCode = panelData[panelByte] + 0x23;
-    stream->print(F("User code: "));
     printPanelAccessCode(dscCode, false);
     return;
   }
 
   /*
-   *  *5: Access code
-   *  
-   * 0x3A - 0x60: *5: User codes 1..39    
-   * 0x61 - 0x95: *5: User codes 43..95
+   *  *5: Access codes 1-95
+   *
+   *  0x3A - 0x60: *5: Access codes 1-39
+   *  0x61 - 0x95: *5: Access codes 43-95
    */
   if (panelData[panelByte] >= 0x3A && panelData[panelByte] <= 0x95) {
     byte dscCode = panelData[panelByte] - 0x39;
@@ -1018,10 +1045,10 @@ void dscKeybusInterface::printPanelStatus18(byte panelByte) {
   }
 
   /*
-   *  *6: Access code
-   *  
-   * 0x96 - 0xBC: *6: User codes 1..39
-   * 0xBD - 0xF1: *6: User codes 43..95  
+   *  *6: Access codes 1-95
+   *
+   *  0x96 - 0xBC: *6: Access codes 1-39
+   *  0xBD - 0xF1: *6: Access codes 43-95
    */
   if (panelData[panelByte] >= 0x96 && panelData[panelByte] <= 0xF1) {
     byte dscCode = panelData[panelByte] - 0x95;
@@ -1033,6 +1060,16 @@ void dscKeybusInterface::printPanelStatus18(byte panelByte) {
   printUnknownData();
 }
 
+
+/*
+ *  Status messages set 0x18 for panel commands: 0xEB, 0xEC
+ *  Structure decoding: complete
+ *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
+ *  the numerical list of messages.
+ *
+ *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
+ */
 void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
   switch (panelData[panelByte]) {
     case 0xF1: stream->print(F("System reset transmission")); return;
@@ -1040,6 +1077,7 @@ void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
 
   printUnknownData();
 }
+
 
 /*
  *  0x05: Status - partitions 1-4
@@ -1709,8 +1747,8 @@ void dscKeybusInterface::printPanel_0x82() {
 /*
  *  0x87: PGM outputs
  *  CRC: yes
- *  Structure decoding: *incomplete
- *  Content decoding: *incomplete
+ *  Structure decoding: complete
+ *  Content decoding: complete
  *
  *  Byte 2 bit 0: PGM 3
  *  Byte 2 bit 1: PGM 4
@@ -1743,14 +1781,15 @@ void dscKeybusInterface::printPanel_0x82() {
  */
 void dscKeybusInterface::printPanel_0x87() {
   stream->print(F("PGM outputs enabled: "));
-  if (panelData[3] & 0x04) stream->print(F("Midnight | "));
-  if (panelData[3] & 0x08) stream->print(F("Battery check | "));
-  if (panelData[2] == 0 && panelData[3] == 0) stream->print(F("none"));
+  if (panelData[2] == 0 && panelData[3] == 0) stream->print(F("none "));
   else {
     printPanelBitNumbers(3, 1, 0, 1, false);
     printPanelBitNumbers(2, 3, 0, 7, false);
     printPanelBitNumbers(3, 11, 4, 7, false);
   }
+
+  if (panelData[3] & 0x04) stream->print(F("| Midnight "));
+  if (panelData[3] & 0x08) stream->print(F("| Battery check"));
 }
 
 
@@ -2803,7 +2842,8 @@ void dscKeybusInterface::printModule_0xDD() {
  *
  *  Later generation panels:
  *  Byte 6: Unknown
- *  Byte 7 bit 0-3: Unknown
+ *  Byte 7 bit 0-2: Unknown
+ *  Byte 7 bit 3: Keypad idle notification, panel response: 0x1B, keypad responds on byte 4 with its partition number
  *  Byte 7 bit 4: Zone expander 7 notification, panel response: 0xE6.0E Zone expander 7 query
  *  Byte 7 bit 5: Zone expander 6 notification, panel response: 0xE6.0C Zone expander 6 query
  *  Byte 7 bit 6: Zone expander 5 notification, panel response: 0xE6.0A Zone expander 5 query
@@ -2842,35 +2882,45 @@ void dscKeybusInterface::printModule_0xDD() {
  */
 void dscKeybusInterface::printModule_Status() {
   bool printedMessage = false;
+  static bool keypadIdle = false;
 
   // Keypad keys
   if (printModule_Keys()) printedMessage = true;
 
-  // Zone expander notification
-  if ((moduleData[4] & 0xF0) != 0xF0 || (moduleByteCount > 6 && (moduleData[7] & 0xF0) != 0xF0)) {
-    if (printedMessage) stream->print("| ");
-    stream->print(F("Zone expander notification: "));
+  // Keypad idle partition
+  if (keypadIdle) {
+    stream->print(F("Keypad partition: "));
+    printModuleSlots(1, 4, 4, 0x80, 0, 1, 0, true);
+    keypadIdle = false;
     printedMessage = true;
+  }
+  else {
+    // Zone expander notification
+    if ((moduleData[4] & 0xF0) != 0xF0 || (moduleByteCount > 6 && (moduleData[7] & 0xF0) != 0xF0)) {
+      if (printedMessage) stream->print("| ");
+      stream->print(F("Zone expander notification: "));
+      printedMessage = true;
 
-    printModuleSlots(0, 4, 4, 0x80, 0x10, 1, 0);
-    if (moduleByteCount > 6) {
-      printModuleSlots(4, 7, 7, 0x80, 0x20, 1, 0);
-      if ((moduleData[7] & 0x10) == 0) printNumberSpace(7);
+      printModuleSlots(0, 4, 4, 0x80, 0x10, 1, 0);
+      if (moduleByteCount > 6) {
+        printModuleSlots(4, 7, 7, 0x80, 0x20, 1, 0);
+        if ((moduleData[7] & 0x10) == 0) printNumberSpace(7);
+      }
     }
-  }
 
-  // Module tamper notification, panel responds with 0x4C query
-  if ((moduleData[4] & 0x01) == 0) {
-    if (printedMessage) stream->print("| ");
-    stream->print(F("Module tamper notification "));
-    printedMessage = true;
-  }
+    // Module tamper notification, panel responds with 0x4C query
+    if ((moduleData[4] & 0x01) == 0) {
+      if (printedMessage) stream->print("| ");
+      stream->print(F("Module tamper notification "));
+      printedMessage = true;
+    }
 
-  // Wireless module battery notification
-  if ((moduleData[4] & 0x08) == 0) {
-    if (printedMessage) stream->print("| ");
-    stream->print(F("Wireless module battery notification "));
-    printedMessage = true;
+    // Wireless module battery notification
+    if ((moduleData[4] & 0x08) == 0) {
+      if (printedMessage) stream->print("| ");
+      stream->print(F("Wireless module battery notification "));
+      printedMessage = true;
+    }
   }
 
   //Keypad zone notification, panel responds with 0xD5 query
@@ -2898,6 +2948,7 @@ void dscKeybusInterface::printModule_Status() {
   if (moduleByteCount > 6 && (moduleData[7] & 0x08) == 0) {
     if (printedMessage) stream->print("| ");
     stream->print(F("Keypad idle notification "));
+    keypadIdle = true;
     printedMessage = true;
   }
 
@@ -3195,16 +3246,16 @@ void dscKeybusInterface::printModule_0x4C() {
 void dscKeybusInterface::printModule_0x57() {
   bool printedMessage = false;
 
-  if (printModuleSlots(255, 2, 5, 0xC0, 0, 2, 0x02)) {
+  if (printModuleSlots(255, 2, 5, 0xC0, 0, 2, 0x02, true)) {
     stream->print(F("Wireless key low battery: "));
-    printModuleSlots(1, 2, 5, 0xC0, 0, 2, 0x02);
+    printModuleSlots(1, 2, 5, 0xC0, 0, 2, 0x02, true);
     printedMessage = true;
   }
 
-  if (printModuleSlots(255, 2, 5, 0xC0, 0, 2, 0x01)) {
+  if (printModuleSlots(255, 2, 5, 0xC0, 0, 2, 0x01, true)) {
     if (printedMessage) stream->print(F("| "));
     stream->print(F("Wireless key battery restored: "));
-    printModuleSlots(1, 2, 5, 0xC0, 0, 2, 0x01);
+    printModuleSlots(1, 2, 5, 0xC0, 0, 2, 0x01, true);
   }
 }
 
@@ -3510,7 +3561,7 @@ void dscKeybusInterface::printModule_Expander() {
  *  If outputNumber is set to 0, printModuleSlots() will return 'true' if any of the specified
  *  bytes contains data - this is used to selectively print a label only if data is present.
  */
-bool dscKeybusInterface::printModuleSlots(byte outputNumber, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue) {
+bool dscKeybusInterface::printModuleSlots(byte outputNumber, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse) {
   for (byte testByte = startByte; testByte <= endByte; testByte++) {
     byte matchShift = 8 - bitShift;
     for (byte testMask = startMask; testMask != 0; testMask >>= bitShift) {
@@ -3518,8 +3569,8 @@ bool dscKeybusInterface::printModuleSlots(byte outputNumber, byte startByte, byt
 
       byte testData = moduleData[testByte];
 
-      // Reverses the bit order of 0x57 wireless key data
-      if (currentCmd == 0x57) {
+      // Reverses the bit order
+      if (reverse) {
         testData = 0;
         for (byte i = 0; i < 8; i++) testData |= ((moduleData[testByte] >> i) & 1) << (7 - i);
       }
@@ -3593,19 +3644,19 @@ void dscKeybusInterface::printPanelTime(byte panelByte) {
 
 
 /*
- *  Prints access codes for printPanelStatus0()...printPanelStatus1X() status messages
+ *  Prints access codes for printPanelStatus0()...printPanelStatus1B() status messages
  *  Structure decoding: complete
  *  Content decoding: complete
  */
 void dscKeybusInterface::printPanelAccessCode(byte dscCode, bool accessCodeIncrease) {
-  
+
   if (accessCodeIncrease) {
     if (dscCode >= 35) dscCode += 5;
-  }  
+  }
   else {
     if (dscCode >= 40) dscCode += 3;
   }
-  
+
 
   switch (dscCode) {
     case 33: stream->print(F("Duress ")); break;

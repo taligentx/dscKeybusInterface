@@ -52,6 +52,7 @@ dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
@@ -64,7 +65,6 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 

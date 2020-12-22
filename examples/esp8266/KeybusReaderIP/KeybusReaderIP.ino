@@ -69,13 +69,18 @@ bool newClient = true;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(100);
-  Serial.print(F("WiFi connected: "));
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   if (!MDNS.begin(dnsHostname)) {

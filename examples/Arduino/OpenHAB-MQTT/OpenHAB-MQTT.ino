@@ -154,17 +154,17 @@ unsigned long mqttPreviousTime;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
   // Initializes ethernet with DHCP
-  Serial.print(F("Initializing Ethernet..."));
+  Serial.print(F("Ethernet...."));
   while(!Ethernet.begin(mac)) {
       Serial.println(F("DHCP failed.  Retrying..."));
       delay(5000);
   }
-  Serial.println(F("success!"));
-  Serial.print(F("IP address: "));
+  Serial.print(F("connected: "));
   Serial.println(Ethernet.localIP());
 
   mqtt.setCallback(mqttCallback);
@@ -174,7 +174,6 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -221,8 +220,6 @@ void loop() {
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-
         if (dsc.armed[partition]) {
 
           // Armed away
@@ -256,7 +253,9 @@ void loop() {
         if (dsc.alarm[partition]) {
           publishState(mqttPartitionTopic, partition, "T");
         }
+        else if (!dsc.armedChanged[partition]) publishState(mqttPartitionTopic, partition, "D");
       }
+      if (dsc.armedChanged[partition]) dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
@@ -370,7 +369,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Disarm
-  if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
+  if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write(accessCode);
     return;
@@ -396,13 +395,14 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
+  Serial.print(F("MQTT...."));
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
-    Serial.print(F("MQTT connected: "));
+    Serial.print(F("connected: "));
     Serial.println(mqttServer);
     dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
-    Serial.print(F("MQTT connection failed: "));
+    Serial.print(F("connection error: "));
     Serial.println(mqttServer);
   }
   return mqtt.connected();
