@@ -209,7 +209,7 @@ class dscKeybusInterface {
     void printPartition();
     void printStatusLights();
     void printStatusLightsFlashing();
-    void printZoneLights();
+    void printZoneLights(bool lowerRange = true);
     void printPanel_0x05();
     void printPanel_0x0A_0F();
     void printPanel_0x11();
@@ -228,6 +228,8 @@ class dscKeybusInterface {
     void printPanel_0x5D_63();
     void printPanel_0x64();
     void printPanel_0x69();
+    void printPanel_0x6E();
+    void printPanel_0x70();
     void printPanel_0x75();
     void printPanel_0x7A();
     void printPanel_0x7F();
@@ -244,7 +246,7 @@ class dscKeybusInterface {
     void printPanel_0xCE();
     void printPanel_0xD5();
     void printPanel_0xE6();
-    void printPanel_0xE6_0x01_06();
+    void printPanel_0xE6_0x01_06_20_21();
     void printPanel_0xE6_0x08_0A_0C_0E();
     void printPanel_0xE6_0x09();
     void printPanel_0xE6_0x0B();
@@ -256,8 +258,6 @@ class dscKeybusInterface {
     void printPanel_0xE6_0x1A();
     void printPanel_0xE6_0x1D();
     void printPanel_0xE6_0x1F();
-    void printPanel_0xE6_0x20();
-    void printPanel_0xE6_0x21();
     void printPanel_0xE6_0x2B();
     void printPanel_0xE6_0x2C();
     void printPanel_0xE6_0x41();
@@ -273,6 +273,7 @@ class dscKeybusInterface {
     void printModule_0x4C();
     void printModule_0x57();
     void printModule_0x58();
+    void printModule_0x70();
     void printModule_0xD5();
     bool printModule_Keys();
     void printModule_KeyCodes(byte keyByte);
