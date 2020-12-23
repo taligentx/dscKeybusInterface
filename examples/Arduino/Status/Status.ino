@@ -176,12 +176,8 @@ void loop() {
         Serial.print(F("Partition "));
         Serial.print(partition + 1);
         switch (dsc.accessCode[partition]) {
-          case 33: Serial.print(F(": Duress")); break;
-          case 34: Serial.print(F(": Duress")); break;
           case 40: Serial.print(F(": Master")); break;
-          case 41: Serial.print(F(": Supervisor")); break;
-          case 42: Serial.print(F(": Supervisor")); break;
-          default: Serial.print(F(": User")); break;
+          default: Serial.print(F(": Access")); break;
         }
         Serial.print(F(" code "));
         Serial.println(dsc.accessCode[partition]);
