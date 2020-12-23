@@ -21,7 +21,19 @@ Screenshots:
 * Web virtual keypad:
   ![VirtualKeypad-Web](https://user-images.githubusercontent.com/12835671/61570049-e43f4200-aa4f-11e9-96bc-3448b6630990.png)
 * [Telegram](https://www.telegram.org) bot:
-  ![Telegram](https://user-images.githubusercontent.com/12835671/102907524-c8598000-443b-11eb-81f0-18bc42306cbb.png)
+  ![Telegram](https://user-images.githubusercontent.com/12835671/102932636-47fc4480-4466-11eb-844b-baa767b92157.png)
+
+## Quick start
+1. Install the DSC Keybus Interface library:
+    * Arduino IDE: Search for `DSC` in the Library Manager - `Sketch > Include Library > Manage Libraries`
+      ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
+    * PlatformIO IDE: Search for `DSC` in the [PlatformIO Library Registry](https://platformio.org/lib/show/5499/dscKeybusInterface)
+      ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
+    * PlatformIO CLI: `platformio lib install "dscKeybusInterface"`
+    * Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
+2. Select, configure, and upload one of the example sketches to the microcontroller:
+      ![Examples](https://user-images.githubusercontent.com/12835671/102936214-61ed5580-446d-11eb-9d70-0eae40fe5757.png)
+3. Connect the microcontroller to the DSC Keybus per the wiring diagram with the appropriate resistors (and a transistor if you'd like to control the system).
 
 ## Why?
 **I Had**: _A DSC security system not being monitored by a third-party service._
@@ -100,6 +112,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `pauseStatus` pauses status updates if set to `true` - for example, holding status changes during a lost network connection
       * `stop()` disables the interface - for example, prior to starting OTA updates
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
+      * `panelVersion` tracks the panel version number
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
   - Updated: `HomeAssistant-MQTT, Homebridge-MQTT, OpenHAB-MQTT` include PGM outputs 1-14 status
   - Updated: Virtual keypad writes
@@ -152,14 +165,6 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: [Home Assistant](https://www.home-assistant.io) integration example sketch
   - New: Panel data buffering, adds `dscBufferSize` to `dscKeybusInterface.h` to allow configuration of how many panel commands are buffered to customize memory usage (uses 18 bytes of memory per command buffered).
 * 0.1 - Initial release
-
-## Installation
-* Arduino IDE: Search for `DSC` in the Library Manager - `Sketch > Include Library > Manage Libraries`
-  ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
-* PlatformIO IDE: Search for `DSC` in the [PlatformIO Library Registry](https://platformio.org/lib/show/5499/dscKeybusInterface)
-  ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
-* PlatformIO CLI: `platformio lib install "dscKeybusInterface"`
-* Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
 
 ## Examples
 The included examples demonstrate how to use the library and can be used as-is or adapted to integrate with other software.  Post an issue/pull request if you've developed (and would like to share) a sketch/integration that others can use.

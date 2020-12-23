@@ -333,5 +333,13 @@ void loop() {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
       Serial.println(F("Keypad Panic alarm"));
     }
+
+    // Checks panel version
+    static bool setVersion = false;
+    if (!setVersion && dsc.panelVersion != 0) {
+      setVersion = true;
+      Serial.print(F("Panel version: "));
+      Serial.println(dsc.panelVersion);
+    }
   }
 }

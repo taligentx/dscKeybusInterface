@@ -71,46 +71,47 @@ void dscKeybusInterface::printPanelMessage() {
 
   // Processes known panel commands from the first byte of the panel message: panelData[0]
   switch (panelData[0]) {
-    case 0x05: printPanel_0x05(); return;  // Panel status: partitions 1-4 | Structure: complete | Content: *incomplete
-    case 0x0A: printPanel_0x0A(); return;  // Panel status in alarm/programming, partitions 1-4 | Structure: complete | Content: *incomplete
-    case 0x11: printPanel_0x11(); return;  // Module supervision query | Structure: complete | Content: complete
-    case 0x16: printPanel_0x16(); return;  // Panel configuration | Structure: *incomplete | Content: *incomplete
-    case 0x1B: printPanel_0x1B(); return;  // Panel status: partitions 5-8 | Structure: complete | Content: *incomplete
-    case 0x1C: printPanel_0x1C(); return;  // Verify keypad Fire/Auxiliary/Panic | Structure: complete | Content: complete
-    case 0x22: printPanel_0x22(); return;  // Zone expander 0 query | Structure: complete | Content: complete
-    case 0x27: printPanel_0x27(); return;  // Panel status and zones 1-8 status | Structure: complete | Content: *incomplete
-    case 0x28: printPanel_0x28(); return;  // Zone expander 1 query | Structure: complete | Content: complete
-    case 0x2D: printPanel_0x2D(); return;  // Panel status and zones 9-16 status | Structure: complete | Content: *incomplete
-    case 0x33: printPanel_0x33(); return;  // Zone expander 2 query | Structure: complete | Content: complete
-    case 0x34: printPanel_0x34(); return;  // Panel status and zones 17-24 status | Structure: complete | Content: *incomplete
-    case 0x39: printPanel_0x39(); return;  // Zone expander 3 query | Structure: complete | Content: complete
-    case 0x3E: printPanel_0x3E(); return;  // Panel status and zones 25-32 status | Structure: complete | Content: *incomplete
-    case 0x41: printPanel_0x41(); return;  // Wireless module query | Structure: complete | Content: complete
-    case 0x4C: printPanel_0x4C(); return;  // Module tamper query | Structure: complete | Content: *incomplete
-    case 0x57: printPanel_0x57(); return;  // Wireless key query | Structure: complete | Content: *incomplete
-    case 0x58: printPanel_0x58(); return;  // Module status query | Structure: complete | Content: *incomplete
-    case 0x5D: printPanel_0x5D(); return;  // Flash panel lights: status and zones 1-32, partition 1 | Structure: complete | Content: complete
-    case 0x63: printPanel_0x63(); return;  // Flash panel lights: status and zones 1-32, partition 2 | Structure: complete | Content: complete
-    case 0x64: printPanel_0x64(); return;  // Beep, partition 1 | Structure: complete | Content: complete
-    case 0x69: printPanel_0x69(); return;  // Beep, partition 2 | Structure: complete | Content: complete
-    case 0x75: printPanel_0x75(); return;  // Tone, partition 1 | Structure: complete | Content: complete
-    case 0x7A: printPanel_0x7A(); return;  // Tone, partition 2 | Structure: complete | Content: complete
-    case 0x7F: printPanel_0x7F(); return;  // Buzzer, partition 1 | Structure: complete | Content: complete
-    case 0x82: printPanel_0x82(); return;  // Buzzer, partition 2 | Structure: complete | Content: complete
-    case 0x87: printPanel_0x87(); return;  // PGM outputs | Structure: complete | Content: complete
-    case 0x8D: printPanel_0x8D(); return;  // User code programming key response, codes 17-32 | Structure: *incomplete | Content: *incomplete
-    case 0x94: printPanel_0x94(); return;  // Unknown - immediate after entering *5 programming | Structure: *incomplete | Content: *incomplete
-    case 0x9E: printPanel_0x9E(); return;  // DLS query | Structure: complete | Content: complete
-    case 0xA5: printPanel_0xA5(); return;  // Date, time, system status messages - partitions 1-2 | Structure: *incomplete | Content: *incomplete
-    case 0xAA: printPanel_0xAA(); return;  // Event buffer messages | Structure: complete | Content: *incomplete
-    case 0xB1: printPanel_0xB1(); return;  // Enabled zones 1-32 | Structure: complete | Content: complete
-    case 0xBB: printPanel_0xBB(); return;  // Bell | Structure: *incomplete | Content: *incomplete
-    case 0xC3: printPanel_0xC3(); return;  // Keypad status | Structure: *incomplete | Content: *incomplete
-    case 0xCE: printPanel_0xCE(); return;  // Panel status | Structure: *incomplete | Content: *incomplete
-    case 0xD5: printPanel_0xD5(); return;  // Keypad zone query | Structure: complete | Content: complete
-    case 0xE6: printPanel_0xE6(); return;  // Extended status command split into multiple subcommands to handle up to 8 partitions/64 zones | Structure: *incomplete | Content: *incomplete
-    case 0xEB: printPanel_0xEB(); return;  // Date, time, system status messages - partitions 1-8 | Structure: *incomplete | Content: *incomplete
-    case 0xEC: printPanel_0xEC(); return;  // Event buffer messages | Structure: *incomplete | Content: *incomplete
+    case 0x05: printPanel_0x05(); return;           // Panel status: partitions 1-4 | Structure: complete | Content: *incomplete
+    case 0x0A:
+    case 0x0F: printPanel_0x0A_0F(); return;        // Panel status in alarm/programming, partitions 1-2 | Structure: complete | Content: *incomplete
+    case 0x11: printPanel_0x11(); return;           // Module supervision query | Structure: complete | Content: complete
+    case 0x16: printPanel_0x16(); return;           // Panel configuration | Structure: *incomplete | Content: *incomplete
+    case 0x1B: printPanel_0x1B(); return;           // Panel status: partitions 5-8 | Structure: complete | Content: *incomplete
+    case 0x1C: printPanel_0x1C(); return;           // Verify keypad Fire/Auxiliary/Panic | Structure: complete | Content: complete
+    case 0x22:
+    case 0x28:
+    case 0x33:
+    case 0x39: printPanel_0x22_28_33_39(); return;  // Zone expanders 0-3 query | Structure: complete | Content: complete
+    case 0x27: printPanel_0x27(); return;           // Panel status and zones 1-8 status | Structure: complete | Content: *incomplete
+    case 0x2D: printPanel_0x2D(); return;           // Panel status and zones 9-16 status | Structure: complete | Content: *incomplete
+    case 0x34: printPanel_0x34(); return;           // Panel status and zones 17-24 status | Structure: complete | Content: *incomplete
+    case 0x3E: printPanel_0x3E(); return;           // Panel status and zones 25-32 status | Structure: complete | Content: *incomplete
+    case 0x41: printPanel_0x41(); return;           // Wireless module query | Structure: complete | Content: complete
+    case 0x4C: printPanel_0x4C(); return;           // Module tamper query | Structure: complete | Content: *incomplete
+    case 0x57: printPanel_0x57(); return;           // Wireless key query | Structure: complete | Content: *incomplete
+    case 0x58: printPanel_0x58(); return;           // Module status query | Structure: complete | Content: *incomplete
+    case 0x5D:
+    case 0x63: printPanel_0x5D_63(); return;        // Flash panel lights: status and zones 1-32, partition 2 | Structure: complete | Content: complete
+    case 0x64: printPanel_0x64(); return;           // Beep, partition 1 | Structure: complete | Content: complete
+    case 0x69: printPanel_0x69(); return;           // Beep, partition 2 | Structure: complete | Content: complete
+    case 0x75: printPanel_0x75(); return;           // Tone, partition 1 | Structure: complete | Content: complete
+    case 0x7A: printPanel_0x7A(); return;           // Tone, partition 2 | Structure: complete | Content: complete
+    case 0x7F: printPanel_0x7F(); return;           // Buzzer, partition 1 | Structure: complete | Content: complete
+    case 0x82: printPanel_0x82(); return;           // Buzzer, partition 2 | Structure: complete | Content: complete
+    case 0x87: printPanel_0x87(); return;           // PGM outputs | Structure: complete | Content: complete
+    case 0x8D: printPanel_0x8D(); return;           // User code programming key response, codes 17-32 | Structure: *incomplete | Content: *incomplete
+    case 0x94: printPanel_0x94(); return;           // Unknown - immediate after entering *5 programming | Structure: *incomplete | Content: *incomplete
+    case 0x9E: printPanel_0x9E(); return;           // DLS query | Structure: complete | Content: complete
+    case 0xA5: printPanel_0xA5(); return;           // Date, time, system status messages - partitions 1-2 | Structure: *incomplete | Content: *incomplete
+    case 0xAA: printPanel_0xAA(); return;           // Event buffer messages | Structure: complete | Content: *incomplete
+    case 0xB1: printPanel_0xB1(); return;           // Enabled zones 1-32 | Structure: complete | Content: complete
+    case 0xBB: printPanel_0xBB(); return;           // Bell | Structure: *incomplete | Content: *incomplete
+    case 0xC3: printPanel_0xC3(); return;           // Keypad and dialer status | Structure: *incomplete | Content: *incomplete
+    case 0xCE: printPanel_0xCE(); return;           // Panel status | Structure: *incomplete | Content: *incomplete
+    case 0xD5: printPanel_0xD5(); return;           // Keypad zone query | Structure: complete | Content: complete
+    case 0xE6: printPanel_0xE6(); return;           // Extended status command split into multiple subcommands to handle up to 8 partitions/64 zones | Structure: *incomplete | Content: *incomplete
+    case 0xEB: printPanel_0xEB(); return;           // Date, time, system status messages - partitions 1-8 | Structure: *incomplete | Content: *incomplete
+    case 0xEC: printPanel_0xEC(); return;           // Event buffer messages | Structure: *incomplete | Content: *incomplete
     default: {
       stream->print(F("Unknown data"));
       return;
@@ -128,12 +129,12 @@ void dscKeybusInterface::printModuleMessage() {
   }
 
   stream->print(F("[Module/0x"));
-  if (currentCmd < 16) stream->print("0");
-  stream->print(currentCmd, HEX);
+  if (moduleCmd < 16) stream->print("0");
+  stream->print(moduleCmd, HEX);
   stream->print(F("] "));
 
   // Keypad and module responses to panel queries
-  switch (currentCmd) {
+  switch (moduleCmd) {
     case 0x05:
     case 0x0A:
     case 0x1B: printModule_Status(); return;    // Module notifications sent during panel status commands | Structure: *incomplete | Content: *incomplete
@@ -148,7 +149,7 @@ void dscKeybusInterface::printModuleMessage() {
     case 0x33:
     case 0x39: printModule_Expander(); return;  // Zone expanders 1-3 response
     case 0xE6: {
-      switch (currentSubCmd) {
+      switch (moduleSubCmd) {
         case 0x08:
         case 0x0A:
         case 0x0C:
@@ -335,7 +336,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     // 0x09 - 0x28: Zone alarm, zones 1-32
     // 0x29 - 0x48: Zone alarm restored, zones 1-32
     case 0x49: stream->print(F("Duress alarm")); break;
-    case 0x4A: stream->print(F("Disarmed after alarm")); break;
+    case 0x4A: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x4B: stream->print(F("Recent closing alarm")); break;
     case 0x4C: stream->print(F("Zone expander supervisory alarm")); break;
     case 0x4D: stream->print(F("Zone expander supervisory restored")); break;
@@ -351,11 +352,11 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     // 0x76 - 0x95: Zone tamper restored, zones 1-32
     case 0x98: stream->print(F("Keypad lockout")); break;
     // 0x99 - 0xBD: Armed: Access codes 1-34, 40-42
-    case 0xBE: stream->print(F("Armed partial: Zones bypassed")); break;
-    case 0xBF: stream->print(F("Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS")); break;
+    case 0xBE: stream->print(F("Armed: Partial")); break;
+    case 0xBF: stream->print(F("Armed: Special")); break;
     // 0xC0 - 0xE4: Disarmed: Access codes 1-34, 40-42
     case 0xE5: stream->print(F("Auto-arm cancelled")); break;
-    case 0xE6: stream->print(F("Disarmed special: Keyswitch/wireless key/DLS")); break;
+    case 0xE6: stream->print(F("Disarmed: Special")); break;
     case 0xE7: stream->print(F("Panel battery trouble")); break;
     case 0xE8: stream->print(F("Panel AC power trouble")); break;
     case 0xE9: stream->print(F("Bell trouble")); break;
@@ -1123,15 +1124,15 @@ void dscKeybusInterface::printPanel_0x05() {
 
 
 /*
- *  0x0A: Status in alarm, programming
+ *  0x0A_0F: Status in programming, partitions 1-2
  *  Interval: constant in *8 programming
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *    printPanelMessages() 0x17: Unknown
  *
- *  Byte 2: Partition 1 lights, printPanelLights()
- *  Byte 3: Partition 1 status, printPanelMessages()
+ *  Byte 2: Partition lights, printPanelLights()
+ *  Byte 3: Partition status, printPanelMessages()
  *  Byte 4: Zone lights 1-8
  *  Byte 5: Zone lights 9-16
  *  Byte 6: Zone lights 17-24
@@ -1144,10 +1145,16 @@ void dscKeybusInterface::printPanel_0x05() {
  *  00001010 0 10000001 11101110 01100101 00000000 00000000 00000000 00000000 11011110 [0x0A] Ready Backlight - *8: Input required: 1 option per zone | Zone lights: 1 3 6 7
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
-void dscKeybusInterface::printPanel_0x0A() {
-  printPanelLights(2);
+void dscKeybusInterface::printPanel_0x0A_0F() {
+  byte partition;
+  switch (panelData[0]) {
+    case 0x0A: partition = 1; break;
+    case 0x0F: partition = 2; break;
+  }
 
-  stream->print(F(" | Zone lights: "));
+  printPanelPartitionStatus(partition, 3, 3);
+
+  printZoneLights();
   bool zoneLights = printPanelZones(4, 1);
 
   if (panelData[8] != 0 && panelData[8] != 128) {
@@ -1305,10 +1312,22 @@ void dscKeybusInterface::printPanel_0x1C() {
  *  11111111 1 11111111 11111111 01111111 11111111 [Module/0x05] Zone expander notification: 0
  *  00100010 0 11111111 11111111 11111111 11111111 11111111 [0x22] Zone expander query: 0
  *  11111111 1 01011001 01010101 01010101 01010101 10000100 [Module/0x22] Zone expander: 0 | Zones changed: 2 tamper
+ *
+ *  11111111 1 11111111 11111111 10111111 11111111 [Module/0x05] Zone expander notification: 1
+ *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query: 1
+ *  11111111 1 01010111 01010101 11111111 11111111 01101111 [Module/0x28] Zone expander: 1 | Zones changed: 9 open (D/EOL)
  *  Byte 0   1    2        3        4        5        6
  */
-void dscKeybusInterface::printPanel_0x22() {
-  stream->print(F("Zone expander query: 0"));
+void dscKeybusInterface::printPanel_0x22_28_33_39() {
+  byte expander;
+  switch (panelData[0]) {
+    case 0x22: expander = 0; break;
+    case 0x28: expander = 1; break;
+    case 0x33: expander = 2; break;
+    case 0x39: expander = 3; break;
+  }
+  stream->print(F("Zone expander query: "));
+  stream->print(expander);
 }
 
 
@@ -1355,25 +1374,6 @@ void dscKeybusInterface::printPanel_0x27() {
 
 
 /*
- *  0x28: Zone expander 1 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 2-6: 11111111
- *
- *  11111111 1 11111111 11111111 10111111 11111111 [Module/0x05] Zone expander notification: 1
- *  00101000 0 11111111 11111111 11111111 11111111 11111111 [0x28] Zone expander query: 1
- *  11111111 1 01010111 01010101 11111111 11111111 01101111 [Module/0x28] Zone expander: 1 | Zones changed: 9 open (D/EOL)
- *  Byte 0   1    2        3        4        5        6
- */
-void dscKeybusInterface::printPanel_0x28() {
-  stream->print(F("Zone expander query: 1"));
-}
-
-
-/*
  *  0x2D: Status with zones 9-16
  *  Interval: 4m
  *  CRC: yes
@@ -1402,20 +1402,6 @@ void dscKeybusInterface::printPanel_0x2D() {
 
 
 /*
- *  0x33: Zone expander 2 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 2-6: 11111111
- */
-void dscKeybusInterface::printPanel_0x33() {
-  stream->print(F("Zone expander query: 2"));
-}
-
-
-/*
  *  0x34: Status with zones 17-24
  *  Interval: 4m
  *  CRC: yes
@@ -1435,20 +1421,6 @@ void dscKeybusInterface::printPanel_0x34() {
 
   stream->print(F(" | Zones 17-24 open: "));
   printPanelBitNumbers(6, 17);
-}
-
-
-/*
- *  0x39: Zone expander 3 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 2-6: 11111111
- */
-void dscKeybusInterface::printPanel_0x39() {
-  stream->print(F("Zone expander query: 3"));
 }
 
 
@@ -1559,7 +1531,7 @@ void dscKeybusInterface::printPanel_0x58() {
 
 
 /*
- *  0x5D: Flash panel lights: status and zones 1-32, partition 1
+ *  0x5D_63: Flash panel lights: status and zones 1-32, partitions 1-2
  *  Interval: 30s
  *  CRC: yes
  *  Structure decoding: complete
@@ -1578,40 +1550,21 @@ void dscKeybusInterface::printPanel_0x58() {
  *  01011101 0 00000000 00100000 00000000 00000000 00000000 01111101 [0x5D] Partition 1 | Status lights flashing: none | Zones 1-32 flashing: 6
  *  01011101 0 00000100 00100000 00000000 00000000 00000000 10000001 [0x5D] Partition 1 | Status lights flashing: Memory | Zones 1-32 flashing: 6
  *  01011101 0 00000000 00000000 00000001 00000000 00000000 01011110 [0x5D] Partition 1 | Status lights flashing: none | Zones 1-32 flashing: 9
- *  Byte 0   1    2        3        4        5        6        7
- */
-void dscKeybusInterface::printPanel_0x5D() {
-
-  stream->print(F("Partition 1 | Status lights flashing: "));
-  printPanelLights(2, false);
-
-  stream->print(F("| Zones 1-32 flashing: "));
-  printPanelZones(3, 1);
-}
-
-
-/*
- *  0x63: Flash panel lights: status and zones 1-32, partition 2
- *  Interval: 30s
- *  CRC: yes
- *  Structure decoding: complete
- *  Content decoding: complete
  *
- *  Byte 2: Status lights
- *  Byte 3: Zones 1-8
- *  Byte 4: Zones 9-16
- *  Byte 5: Zones 17-24
- *  Byte 6: Zones 25-32
- *  Byte 7: CRC
- *
- *  Command    1:Lights Zones1+  Zones9+  Zones17+ Zones25+   CRC
  *  01100011 0 00000000 00000000 00000000 00000000 00000000 01100011 [0x63] Partition 2 | Status lights flashing: none | Zones 1-32 flashing: none
  *  01100011 0 00000100 10000000 00000000 00000000 00000000 11100111 [0x63] Partition 2 | Status lights flashing: Memory | Zones 1-32 flashing: 8
  *  Byte 0   1    2        3        4        5        6        7
  */
-void dscKeybusInterface::printPanel_0x63() {
+void dscKeybusInterface::printPanel_0x5D_63() {
+  byte partition;
+  switch (panelData[0]) {
+    case 0x5D: partition = 1; break;
+    case 0x63: partition = 2; break;
+  }
+  printPartition();
+  printNumberSpace(partition);
 
-  stream->print(F("Partition 2 | Status lights flashing: "));
+  printStatusLightsFlashing();
   printPanelLights(2, false);
 
   stream->print(F("| Zones 1-32 flashing: "));
@@ -2065,7 +2018,7 @@ void dscKeybusInterface::printPanel_0xBB() {
 
 
 /*
- *  0xC3: Keypad status
+ *  0xC3: Keypad and dialer status
  *  Interval: 30s (PC1616/PC1832/PC1864)
  *  CRC: yes
  *  Structure decoding: *incomplete
@@ -2189,14 +2142,19 @@ void dscKeybusInterface::printPanel_0xE6() {
   }
 
   switch (panelData[2]) {
-    case 0x03: printPanel_0xE6_0x03(); break;  // Status in alarm/programming, partitions 5-8 | Structure: *incomplete | Content: *incomplete
-    case 0x08: printPanel_0xE6_0x08(); break;  // Zone expander 4 query | Structure: complete | Content: complete
+    case 0x01:
+    case 0x02:
+    case 0x03:
+    case 0x04:
+    case 0x05:
+    case 0x06: printPanel_0xE6_0x01_06(); break;  // Partition 8 status in programming | Structure: *incomplete | Content: *incomplete
+    case 0x08:
+    case 0x0A:
+    case 0x0C:
+    case 0x0E: printPanel_0xE6_0x08_0A_0C_0E(); break;  // Zone expander 4-7 query | Structure: complete | Content: complete
     case 0x09: printPanel_0xE6_0x09(); break;  // Zones 33-40 status | Structure: complete | Content: complete
-    case 0x0A: printPanel_0xE6_0x0A(); break;  // Zone expander 5 query | Structure: complete | Content: complete
     case 0x0B: printPanel_0xE6_0x0B(); break;  // Zones 41-48 status | Structure: complete | Content: complete
-    case 0x0C: printPanel_0xE6_0x0C(); break;  // Zone expander 6 query | Structure: complete | Content: complete
     case 0x0D: printPanel_0xE6_0x0D(); break;  // Zones 49-56 status | Structure: complete | Content: complete
-    case 0x0E: printPanel_0xE6_0x0E(); break;  // Zone expander 7 query | Structure: complete | Content: complete
     case 0x0F: printPanel_0xE6_0x0F(); break;  // Zones 57-64 status | Structure: complete | Content: complete
     case 0x17: printPanel_0xE6_0x17(); break;  // Flash panel lights: status and zones 1-32, partitions 1-8 | Structure: complete | Content: complete
     case 0x18: printPanel_0xE6_0x18(); break;  // Flash panel lights: status and zones 33-64, partitions 1-8 | Structure: complete | Content: complete
@@ -2204,7 +2162,8 @@ void dscKeybusInterface::printPanel_0xE6() {
     case 0x1A: printPanel_0xE6_0x1A(); break;  // Panel status | Structure: *incomplete | Content: *incomplete
     case 0x1D: printPanel_0xE6_0x1D(); break;  // Tone, partitions 3-8 | Structure: complete | Content: complete
     case 0x1F: printPanel_0xE6_0x1F(); break;  // Buzzer, partitions 3-8 | Structure: complete | Content: complete
-    case 0x20: printPanel_0xE6_0x20(); break;  // Status in programming, zone lights 33-64 | Structure: *incomplete | Content: *incomplete
+    case 0x20: printPanel_0xE6_0x20(); break;  // Partition 1 status in programming, zone lights 33-64 | Structure: *incomplete | Content: *incomplete
+    case 0x21: printPanel_0xE6_0x21(); break;  // Partition 2 status in programming, zone lights 33-64 | Structure: *incomplete | Content: *incomplete
     case 0x2B: printPanel_0xE6_0x2B(); break;  // Enabled zones 1-32, partitions 1-8 | Structure: complete | Content: complete
     case 0x2C: printPanel_0xE6_0x2C(); break;  // Enabled zones 33-64, partitions 1-8 | Structure: complete | Content: complete
     case 0x41: printPanel_0xE6_0x41(); break;  // Status in access code programming, zone lights 65-95| Structure: *incomplete | Content: *incomplete
@@ -2214,20 +2173,31 @@ void dscKeybusInterface::printPanel_0xE6() {
 
 
 /*
- *  0xE6.03: Status in alarm/programming, partitions 5-8
+ *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 3-8
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  (log data samples needed)
+ *  Command  Subcommand  Lights   Status                                                 CRC
+ *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
-void dscKeybusInterface::printPanel_0xE6_0x03() {
-  printPanelLights(2);
+void dscKeybusInterface::printPanel_0xE6_0x01_06() {
+  byte partition;
+  switch(panelData[2]) {
+    case 0x01: partition = 3; break;
+    case 0x02: partition = 4; break;
+    case 0x03: partition = 5; break;
+    case 0x04: partition = 6; break;
+    case 0x05: partition = 7; break;
+    case 0x06: partition = 8; break;
+  }
+
+  printPanelPartitionStatus(partition, 4, 4);
 }
 
 
 /*
- *  0xE6.08: Zone expander 4 query
+ *  0xE6.08,0A,0C,0E: Zone expander 4-7 query
  *  Interval: immediate after zone expander status notification
  *  CRC: no
  *  Structure decoding: complete
@@ -2238,10 +2208,30 @@ void dscKeybusInterface::printPanel_0xE6_0x03() {
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 01111111 11111111 11111111 [Module/0x05] Zone expander notification: 4
  *  11100110 0 00001000 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.08] Zone expander query: 4
  *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 4 | Zones changed: 34 open
+ *
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 10111111 11111111 11111111 [Module/0x05] Zone expander notification: 5
+ *  11100110 0 00001010 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0A] Zone expander query: 5
+ *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 5 | Zones changed: 42 open
+ *
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11011111 11111111 11111111 [Module/0x05] Zone expander notification: 6
+ *  11100110 0 00001100 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0C] Zone expander query: 6
+ *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 6 | Zones changed: 50 open
+ *
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 [Module/0x05] Zone expander notification: 7
+ *  11100110 0 00001110 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0E] Zone expander query: 7
+ *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 7 | Zones changed: 58 open
  *  Byte 0   1    2        3        4        5        6        7        8
  */
-void dscKeybusInterface::printPanel_0xE6_0x08() {
-  stream->print(F("Zone expander query: 4"));
+void dscKeybusInterface::printPanel_0xE6_0x08_0A_0C_0E() {
+  byte expander;
+  switch (panelData[2]) {
+    case 0x08: expander = 4; break;
+    case 0x0A: expander = 5; break;
+    case 0x0C: expander = 6; break;
+    case 0x0E: expander = 7; break;
+  }
+  stream->print(F("Zone expander query: "));
+  stream->print(expander);
 }
 
 
@@ -2265,25 +2255,6 @@ void dscKeybusInterface::printPanel_0xE6_0x09() {
 
 
 /*
- *  0xE6.0A: Zone expander 5 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 3-8: 11111111
- *
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 10111111 11111111 11111111 [Module/0x05] Zone expander notification: 5
- *  11100110 0 00001010 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0A] Zone expander query: 5
- *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 5 | Zones changed: 42 open
- *  Byte 0   1    2        3        4        5        6        7        8
- */
-void dscKeybusInterface::printPanel_0xE6_0x0A() {
-  stream->print(F("Zone expander query: 5"));
-}
-
-
-/*
  *  0xE6.0B: Zones 41-48 status
  *  CRC: yes
  *  Structure decoding: complete
@@ -2303,25 +2274,6 @@ void dscKeybusInterface::printPanel_0xE6_0x0B() {
 
 
 /*
- *  0xE6.0C: Zone expander 6 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 3-8: 11111111
- *
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11011111 11111111 11111111 [Module/0x05] Zone expander notification: 6
- *  11100110 0 00001100 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0C] Zone expander query: 6
- *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 6 | Zones changed: 50 open
- *  Byte 0   1    2        3        4        5        6        7        8
- */
-void dscKeybusInterface::printPanel_0xE6_0x0C() {
-  stream->print(F("Zone expander query: 6"));
-}
-
-
-/*
  *  0xE6.0D: Zones 49-56 status
  *  CRC: yes
  *  Structure decoding: complete
@@ -2337,25 +2289,6 @@ void dscKeybusInterface::printPanel_0xE6_0x0C() {
 void dscKeybusInterface::printPanel_0xE6_0x0D() {
   stream->print(F("Zones 49-56 open: "));
   printPanelBitNumbers(3, 49);
-}
-
-
-/*
- *  0xE6.0E: Zone expander 7 query
- *  Interval: immediate after zone expander status notification
- *  CRC: no
- *  Structure decoding: complete
- *  Content decoding: complete
- *
- *  Bytes 3-8: 11111111
- *
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11101111 11111111 11111111 [Module/0x05] Zone expander notification: 7
- *  11100110 0 00001110 11111111 11111111 11111111 11111111 11111111 11111111 [0xE6.0E] Zone expander query: 7
- *  11111111 1 11111111 11000011 11001111 11111111 11111111 10101111 11111111 [Module/0xE6] Zone expander: 7 | Zones changed: 58 open
- *  Byte 0   1    2        3        4        5        6        7        8
- */
-void dscKeybusInterface::printPanel_0xE6_0x0E() {
-  stream->print(F("Zone expander query: 7"));
 }
 
 
@@ -2401,7 +2334,7 @@ void dscKeybusInterface::printPanel_0xE6_0x17() {
   printPartition();
   printPanelBitNumbers(3, 1);
 
-  stream->print(F("| Status lights flashing: "));
+  printStatusLightsFlashing();
   printPanelLights(4, false);
 
   stream->print(F("| Zones 1-32 flashing: "));
@@ -2434,7 +2367,7 @@ void dscKeybusInterface::printPanel_0xE6_0x18() {
   printPartition();
   printPanelBitNumbers(3, 1);
 
-  stream->print(F("| Status lights flashing: "));
+  printStatusLightsFlashing();
   printPanelLights(4, false);
 
   stream->print(F("| Zones 33-64 flashing: "));
@@ -2550,7 +2483,7 @@ void dscKeybusInterface::printPanel_0xE6_0x1F() {
 
 
 /*
- *  0xE6.20: Status in programming, zone lights 33-64
+ *  0xE6.20: Partition 1 status in programming, zone lights 33-64
  *  Interval: constant in *8 programming
  *  CRC: yes
  *  Structure decoding: *incomplete
@@ -2573,11 +2506,38 @@ void dscKeybusInterface::printPanel_0xE6_0x1F() {
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
 void dscKeybusInterface::printPanel_0xE6_0x20() {
-  stream->print(F("Status lights: "));
+  printStatusLights();
   printPanelLights(3);
 
-  stream->print(F(" | Zone lights: "));
+  printZoneLights();
   printPanelZones(5, 33);
+}
+
+
+/*
+ *  0xE6.21: Partition 2 status in programming, zone lights 33-64
+ *  Interval: constant in *8 programming
+ *  CRC: yes
+ *  Structure decoding: *incomplete
+ *  Content decoding: *incomplete
+ *    printPanelMessages() 0x17: Unknown
+ *
+ *  Byte 3: Panel status lights
+ *  Byte 4: Panel status messages
+ *  Byte 5: Unknown
+ *  Byte 6: Unknown
+ *  Byte 7: Unknown
+ *  Byte 8: Unknown
+ *  Byte 9: Unknown
+ *  Byte 10: CRC
+ *
+ *  Command    Subcmd    Lights   Status                                                 CRC
+ *  11100110 0 00100001 10000010 11100100 00000000 00000000 00000000 00000000 10000000 11101101 [0xE6.21] Unknown data
+ *  Byte 0   1    2        3        4        5        6        7        8        9        10
+ */
+void dscKeybusInterface::printPanel_0xE6_0x21() {
+  printStatusLights();
+  printPanelLights(3);
 }
 
 
@@ -2596,15 +2556,15 @@ void dscKeybusInterface::printPanel_0xE6_0x20() {
  *  Byte 8: CRC
  *
  *  Command    Subcmd  Partition Zones1+  Zones9+  Zones17+ Zones25+   CRC
- *  11100110 0 00101011 00000100 00000100 00000000 00000000 00000000 00011001 [0xE6.2B] Partition 3 | Enabled zones  1-32: 3
- *  11100110 0 00101011 00001000 00001000 00000000 00000000 00000000 00100001 [0xE6.2B] Partition 4 | Enabled zones  1-32: 4
+ *  11100110 0 00101011 00000100 00000100 00000000 00000000 00000000 00011001 [0xE6.2B] Partition 3 | Enabled zones 1-32: 3
+ *  11100110 0 00101011 00001000 00001000 00000000 00000000 00000000 00100001 [0xE6.2B] Partition 4 | Enabled zones 1-32: 4
  *  Byte 0   1    2        3        4        5        6        7        8
  */
 void dscKeybusInterface::printPanel_0xE6_0x2B() {
   printPartition();
   printPanelBitNumbers(3, 1);
 
-  stream->print(F("| Enabled zones  1-32: "));
+  stream->print(F("| Enabled zones 1-32: "));
   printPanelZones(4, 1);
 }
 
@@ -2646,10 +2606,10 @@ void dscKeybusInterface::printPanel_0xE6_0x2C() {
  *  (log data samples needed)
  */
 void dscKeybusInterface::printPanel_0xE6_0x41() {
-  stream->print(F("Status lights: "));
+  printStatusLights();
   printPanelLights(3);
 
-  stream->print(F(" | Zone lights: "));
+  printZoneLights();
   printPanelZones(5, 65);
 }
 
@@ -3520,7 +3480,7 @@ void dscKeybusInterface::printModule_Expander() {
     case 0x39: printNumberSpace(3); startZone = 25; break;
     case 0xE6: {
       startByte = 3;
-      switch (currentSubCmd) {
+      switch (moduleSubCmd) {
         case 0x08: printNumberSpace(4); startZone = 33; break;
         case 0x0A: printNumberSpace(5); startZone = 41; break;
         case 0x0C: printNumberSpace(6); startZone = 49; break;
@@ -3659,12 +3619,8 @@ void dscKeybusInterface::printPanelAccessCode(byte dscCode, bool accessCodeIncre
 
 
   switch (dscCode) {
-    case 33: stream->print(F("Duress ")); break;
-    case 34: stream->print(F("Duress ")); break;
     case 40: stream->print(F("Master ")); break;
-    case 41: stream->print(F("Supervisor ")); break;
-    case 42: stream->print(F("Supervisor ")); break;
-    default: stream->print(F("User ")); break;
+    default: stream->print(F("Access ")); break;
   }
   stream->print(F("code "));
   stream->print(dscCode);
@@ -3746,7 +3702,7 @@ bool dscKeybusInterface::printPanelZones(byte inputByte, byte startZone) {
       }
     }
   }
-  if (!zonesEnabled && panelData[0] != 0x0A) stream->print(F("none"));
+  if (!zonesEnabled && panelData[0] != 0x0A && panelData[0] != 0x0F) stream->print(F("none"));
 
   return zonesEnabled;
 }
@@ -3759,6 +3715,21 @@ void dscKeybusInterface::printPartition() {
 
 void dscKeybusInterface::printUnknownData() {
   stream->print(F("Unknown data"));
+}
+
+
+void dscKeybusInterface::printStatusLights() {
+  stream->print(F("Status lights: "));
+}
+
+
+void dscKeybusInterface::printZoneLights() {
+  stream->print(F(" | Zone lights: "));
+}
+
+
+void dscKeybusInterface::printStatusLightsFlashing() {
+  stream->print(F("| Status lights flashing: "));
 }
 
 

@@ -295,6 +295,7 @@ void setStatus(byte partition) {
       case 0x11: root["lcd_lower"] = "Alarm"; break;
       case 0x12: root["lcd_lower"] = "Battery check"; break;
       case 0x14: root["lcd_lower"] = "Auto-arm"; break;
+      case 0x15: root["lcd_lower"] = "Arming w/bypass"; break;
       case 0x16: root["lcd_lower"] = "No entry delay"; break;
       case 0x19: root["lcd_lower"] = "Alarm occured"; break;
       case 0x22: root["lcd_lower"] = "Recent closing"; break;
@@ -330,9 +331,9 @@ void setStatus(byte partition) {
       case 0xB9: root["lcd_lower"] = "Zone tamper"; break;
       case 0xBA: root["lcd_lower"] = "Zones low batt."; break;
       case 0xBC: root["lcd_lower"] = "New 6-digit code"; break;
-      case 0xCE: root["lcd_lower"] = "Active cam. mon."; break;
       case 0xC6: root["lcd_lower"] = "Zone fault menu"; break;
       case 0xC8: root["lcd_lower"] = "Service required"; break;
+      case 0xCE: root["lcd_lower"] = "Active cam. mon."; break;
       case 0xD0: root["lcd_lower"] = "Keypads low batt"; break;
       case 0xD1: root["lcd_lower"] = "Wireless low bat"; break;
       case 0xE4: root["lcd_lower"] = "Installer menu"; break;

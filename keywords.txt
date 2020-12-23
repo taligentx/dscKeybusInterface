@@ -9,7 +9,6 @@ dscZones	LITERAL1
 dscPartitions	LITERAL1
 
 hideKeypadDigits	KEYWORD2
-processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
 processModuleData	KEYWORD2
 
@@ -63,9 +62,13 @@ openZonesStatusChanged	KEYWORD2
 alarmZones	KEYWORD2
 alarmZonesChanged	KEYWORD2
 alarmZonesStatusChanged	KEYWORD2
+pgmOutputs	KEYWORD2
+pgmOutputsChanged	KEYWORD2
+pgmOutputsStatusChanged	KEYWORD2
 lights	KEYWORD2
 status	KEYWORD2
 panelData	KEYWORD2
+panelVersion	KEYWORD2
 
 printPanelBinary	KEYWORD2
 printPanelCommand	KEYWORD2

@@ -53,8 +53,9 @@ volatile byte dscKeybusInterface::isrModuleByteCount;
 volatile byte dscKeybusInterface::isrModuleBitCount;
 volatile byte dscKeybusInterface::isrModuleBitTotal;
 volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::currentSubCmd;
 volatile byte dscKeybusInterface::statusCmd;
+volatile byte dscKeybusInterface::moduleCmd;
+volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
@@ -220,14 +221,21 @@ bool dscKeybusInterface::loop() {
 
   // Skips redundant data sent constantly while in installer programming
   static byte previousCmd0A[dscReadSize];
+  static byte previousCmd0F[dscReadSize];
   static byte previousCmdE6_20[dscReadSize];
+  static byte previousCmdE6_21[dscReadSize];
   switch (panelData[0]) {
-    case 0x0A:  // Status in programming
+    case 0x0A:  // Partition 1 status in programming
       if (redundantPanelData(previousCmd0A, panelData)) return false;
       break;
 
+    case 0x0F:  // Partition 2 status in programming
+      if (redundantPanelData(previousCmd0F, panelData)) return false;
+      break;
+
     case 0xE6:
-      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;  // Status in programming, zone lights 33-64
+      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;  // Partition 1 status in programming, zone lights 33-64
+      if (panelData[2] == 0x21 && redundantPanelData(previousCmdE6_21, panelData)) return false;  // Partition 2 status in programming
       break;
   }
   if (dscPartitions > 4) {
@@ -235,65 +243,11 @@ bool dscKeybusInterface::loop() {
     if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8)) return false;  // Status in alarm/programming, partitions 5-8
   }
 
-  // Skips redundant data from periodic commands sent at regular intervals, by default this data is processed
-  if (!processRedundantData) {
-    static byte previousCmd11[dscReadSize];
-    static byte previousCmd16[dscReadSize];
-    static byte previousCmd27[dscReadSize];
-    static byte previousCmd2D[dscReadSize];
-    static byte previousCmd34[dscReadSize];
-    static byte previousCmd3E[dscReadSize];
-    static byte previousCmd5D[dscReadSize];
-    static byte previousCmd63[dscReadSize];
-    static byte previousCmdB1[dscReadSize];
-    static byte previousCmdC3[dscReadSize];
-    switch (panelData[0]) {
-      case 0x11:  // Keypad slot query
-        if (redundantPanelData(previousCmd11, panelData)) return false;
-        break;
-
-      case 0x16:  // Zone wiring
-        if (redundantPanelData(previousCmd16, panelData)) return false;
-        break;
-
-      case 0x27:  // Status with zone 1-8 info
-        if (redundantPanelData(previousCmd27, panelData)) return false;
-        break;
-
-      case 0x2D:  // Status with zone 9-16 info
-        if (redundantPanelData(previousCmd2D, panelData)) return false;
-        break;
-
-      case 0x34:  // Status with zone 17-24 info
-        if (redundantPanelData(previousCmd34, panelData)) return false;
-        break;
-
-      case 0x3E:  // Status with zone 25-32 info
-        if (redundantPanelData(previousCmd3E, panelData)) return false;
-        break;
-
-      case 0x5D:  // Flash panel lights: status and zones 1-32
-        if (redundantPanelData(previousCmd5D, panelData)) return false;
-        break;
-
-      case 0x63:  // Flash panel lights: status and zones 33-64
-        if (redundantPanelData(previousCmd63, panelData)) return false;
-        break;
-
-      case 0xB1:  // Enabled zones 1-32
-        if (redundantPanelData(previousCmdB1, panelData)) return false;
-        break;
-
-      case 0xC3:  // Unknown command
-        if (redundantPanelData(previousCmdC3, panelData)) return false;
-        break;
-    }
-  }
-
   // Processes valid panel data
   switch (panelData[0]) {
     case 0x05:
     case 0x1B: processPanelStatus(); break;
+    case 0x16: processPanel_0x16(); break;
     case 0x27: processPanel_0x27(); break;
     case 0x2D: processPanel_0x2D(); break;
     case 0x34: processPanel_0x34(); break;
@@ -468,24 +422,6 @@ bool dscKeybusInterface::handleModule() {
 
   if (moduleBitCount < 8) return false;
 
-  // Skips periodic keypad slot query responses
-  if (!processRedundantData && currentCmd == 0x11) {
-    bool redundantData = true;
-    byte checkedBytes = dscReadSize;
-    static byte previousSlotData[dscReadSize];
-    for (byte i = 0; i < checkedBytes; i++) {
-      if (previousSlotData[i] != moduleData[i]) {
-        redundantData = false;
-        break;
-      }
-    }
-    if (redundantData) return false;
-    else {
-      for (byte i = 0; i < dscReadSize; i++) previousSlotData[i] = moduleData[i];
-      return true;
-    }
-  }
-
   // Determines if a keybus message is a response to a panel command
   switch (currentCmd) {
     case 0x11:
@@ -578,54 +514,63 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
   // Sets the binary to write for virtual keypad keys
   if (!writeKeyPending && (millis() - previousTime > 500 || millis() <= 500)) {
     bool validKey = true;
-    switch (receivedKey) {
-      case '/': setPartition = true; validKey = false; break;
-      case '0': writeKey = 0x00; break;
-      case '1': writeKey = 0x05; break;
-      case '2': writeKey = 0x0A; break;
-      case '3': writeKey = 0x0F; break;
-      case '4': writeKey = 0x11; break;
-      case '5': writeKey = 0x16; break;
-      case '6': writeKey = 0x1B; break;
-      case '7': writeKey = 0x1C; break;
-      case '8': writeKey = 0x22; break;
-      case '9': writeKey = 0x27; break;
-      case '*': writeKey = 0x28; writeAsterisk = true; break;
-      case '#': writeKey = 0x2D; break;
-      case 'F':
-      case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
-      case 'b':
-      case 'B': writeKey = 0x82; break;                                       // 0x82 - "Enter in buffer memory"
-      case '>': writeKey = 0x87; break;                                       // "Right arrow" - only in buffer memory read ?
-      case '<': writeKey = 0x88; break;                                       // "Left arrow" - only in buffer memory read ?
-      case 's':
-      case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
-      case 'w':
-      case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;  // Arm away
-      case 'n':
-      case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
-      case 'A':
-      case 'a': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad auxiliary alarm
-      case 'c':
-      case 'C': writeKey = 0xBB; break;                                       // Door chime
-      case 'r':
-      case 'R': writeKey = 0xDA; break;                                       // Reset
-      case 'P':
-      case 'p': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad panic alarm
-      case 'x':
-      case 'X': writeKey = 0xE1; break;                                       // Exit
-      case '[': writeKey = 0xD5; break;                                       // Command output 1
-      case ']': writeKey = 0xDA; break;                                       // Command output 2
-      case '{': writeKey = 0x70; break;                                       // Command output 3
-      case '}': writeKey = 0xEC; break;                                       // Command output 4
-      default: {
-        validKey = false;
-        break;
+
+    // Skips writing to disabled partitions or partitions not specified in dscKeybusInterface.h
+    if (disabled[writePartition - 1] || dscPartitions < writePartition) {
+      switch (receivedKey) {
+        case '/': setPartition = true; validKey = false; break;
       }
+      return;
     }
 
-    // Skips writing to partitions not specified in dscKeybusInterface.h
-    if (dscPartitions < writePartition) return;
+    // Sets binary for virtual keypad keys
+    else {
+      switch (receivedKey) {
+        case '/': setPartition = true; validKey = false; break;
+        case '0': writeKey = 0x00; break;
+        case '1': writeKey = 0x05; break;
+        case '2': writeKey = 0x0A; break;
+        case '3': writeKey = 0x0F; break;
+        case '4': writeKey = 0x11; break;
+        case '5': writeKey = 0x16; break;
+        case '6': writeKey = 0x1B; break;
+        case '7': writeKey = 0x1C; break;
+        case '8': writeKey = 0x22; break;
+        case '9': writeKey = 0x27; break;
+        case '*': writeKey = 0x28; writeAsterisk = true; break;
+        case '#': writeKey = 0x2D; break;
+        case 'F':
+        case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
+        case 'b':
+        case 'B': writeKey = 0x82; break;                                       // 0x82 - "Enter in buffer memory"
+        case '>': writeKey = 0x87; break;                                       // "Right arrow" - only in buffer memory read ?
+        case '<': writeKey = 0x88; break;                                       // "Left arrow" - only in buffer memory read ?
+        case 's':
+        case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
+        case 'w':
+        case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;  // Arm away
+        case 'n':
+        case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
+        case 'A':
+        case 'a': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad auxiliary alarm
+        case 'c':
+        case 'C': writeKey = 0xBB; break;                                       // Door chime
+        case 'r':
+        case 'R': writeKey = 0xDA; break;                                       // Reset
+        case 'P':
+        case 'p': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad panic alarm
+        case 'x':
+        case 'X': writeKey = 0xE1; break;                                       // Exit
+        case '[': writeKey = 0xD5; break;                                       // Command output 1
+        case ']': writeKey = 0xDA; break;                                       // Command output 2
+        case '{': writeKey = 0x70; break;                                       // Command output 3
+        case '}': writeKey = 0xEC; break;                                       // Command output 4
+        default: {
+          validKey = false;
+          break;
+        }
+      }
+    }
 
     // Sets the writing position in dscClockInterrupt() for the currently set partition
     switch (writePartition) {
@@ -932,7 +877,6 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 
       // Stores new panel data in the panel buffer
       currentCmd = isrPanelData[0];
-      currentSubCmd = isrPanelData[2];
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscReadSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
@@ -941,17 +885,12 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         panelBufferLength++;
       }
 
-      // Resets the panel capture data and counters
-      for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
-      isrPanelBitTotal = 0;
-      isrPanelBitCount = 0;
-      isrPanelByteCount = 0;
-      skipData = false;
-
       if (processModuleData) {
 
         // Stores new keypad and module data - this data is not buffered
         if (moduleDataDetected) {
+          moduleCmd = isrPanelData[0];
+          moduleSubCmd = isrPanelData[2];
           moduleDataDetected = false;
           moduleDataCaptured = true;  // Sets a flag for handleModule()
           for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
@@ -965,6 +904,13 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         isrModuleBitCount = 0;
         isrModuleByteCount = 0;
       }
+
+      // Resets the panel capture data and counters
+      for (byte i = 0; i < dscReadSize; i++) isrPanelData[i] = 0;
+      isrPanelBitTotal = 0;
+      isrPanelBitCount = 0;
+      isrPanelByteCount = 0;
+      skipData = false;
     }
   }
   #if defined(ESP32)
