@@ -147,7 +147,10 @@ void dscKeybusInterface::printModuleMessage() {
     case 0x05:
     case 0x0A:
     case 0x0F:
-    case 0x1B: printModule_Status(); return;    // Module notifications sent during panel status commands | Structure: *incomplete | Content: *incomplete
+    case 0x1B:
+    case 0x27:
+    case 0x2D:
+    case 0x3E: printModule_Status(); return;    // Module notifications sent during panel status commands | Structure: *incomplete | Content: *incomplete
     case 0x11: printModule_0x11(); return;      // Module supervision query response | Structure: *incomplete | Content: *incomplete
     case 0x41: printModule_0x41(); return;      // Wireless module query response | Structure: *incomplete | Content: *incomplete
     case 0x4C: printModule_0x4C(); return;      // Module tamper query response | Structure: *incomplete | Content: *incomplete
@@ -3450,6 +3453,9 @@ bool dscKeybusInterface::printModule_Keys() {
   byte endByte = 9;
   switch (moduleCmd) {
     case 0x1B: partitionNumber = 5; break;
+    case 0x27:
+    case 0x2D:
+    case 0x3E: endByte = 3; break;
     case 0xE6: {
         startByte = 3;
         endByte = 3;
