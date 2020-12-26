@@ -1104,7 +1104,7 @@ void dscKeybusInterface::printPanelStatus18(byte panelByte) {
 
 
 /*
- *  Status messages set 0x18 for panel commands: 0xEB, 0xEC
+ *  Status messages set 0x1B for panel commands: 0xEB, 0xEC
  *  Structure decoding: complete
  *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
  *  the numerical list of messages.
@@ -1687,8 +1687,8 @@ void dscKeybusInterface::printPanel_0x6E() {
   }
   else  {
     for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
-    stream->print(panelData[panelByte] >> 4, HEX);
-    stream->print(panelData[panelByte] & 0x0F, HEX);
+      stream->print(panelData[panelByte] >> 4, HEX);
+      stream->print(panelData[panelByte] & 0x0F, HEX);
     }
   }
 }
@@ -3393,8 +3393,8 @@ void dscKeybusInterface::printModule_0x70() {
   }
   else {
     for (byte moduleByte = 2; moduleByte <= 5; moduleByte ++) {
-    stream->print(moduleData[moduleByte] >> 4, HEX);
-    stream->print(moduleData[moduleByte] & 0x0F, HEX);
+      stream->print(moduleData[moduleByte] >> 4, HEX);
+      stream->print(moduleData[moduleByte] & 0x0F, HEX);
     }
   }
 }
@@ -3553,7 +3553,7 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x27: printNumberSpace(9); break;
     case 0x28: stream->print(F("* ")); break;
     case 0x2D: stream->print(F("# ")); break;
-    case 0x46: stream->print(F("Wireless key disarm ")); break;
+    case 0x46: stream->print(F("Wireless key disarm ")); break; //isn't send if wls keys uses access codes 17-32 is enabled
     case 0x52: stream->print(F("Identified voice prompt help ")); break;
     case 0x6E: stream->print(F("Global away arm ")); break;
     case 0x70: stream->print(F("Command output 3 ")); break;
