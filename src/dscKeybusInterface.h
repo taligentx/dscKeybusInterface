@@ -98,6 +98,7 @@ class dscKeybusInterface {
     byte accessCode[dscPartitions];
     bool accessCodeChanged[dscPartitions];
     bool accessCodePrompt;                // True if the panel is requesting an access code
+    bool decimalInput;                    // True if the panel is requesting 3 digit input (for 0x6E readout)
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
@@ -190,6 +191,7 @@ class dscKeybusInterface {
     void printPanelStatus4(byte panelByte);
     void printPanelStatus5(byte panelByte);
     void printPanelStatus14(byte panelByte);
+    void printPanelStatus16(byte panelByte);
     void printPanelStatus17(byte panelByte);
     void printPanelStatus18(byte panelByte);
     void printPanelStatus1B(byte panelByte);
