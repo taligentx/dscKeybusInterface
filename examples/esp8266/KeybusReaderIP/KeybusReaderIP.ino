@@ -69,13 +69,18 @@ bool newClient = true;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(100);
-  Serial.print(F("WiFi connected: "));
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   if (!MDNS.begin(dnsHostname)) {
@@ -93,7 +98,6 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processRedundantData = true;   // Controls if repeated periodic commands are processed and displayed (default: true)
   dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 

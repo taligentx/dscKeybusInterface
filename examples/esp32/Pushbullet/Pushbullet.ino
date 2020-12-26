@@ -1,10 +1,17 @@
 /*
- *  Pushbullet Push Notification 1.0 (esp32)
+ *  Pushbullet Push Notification 1.4 (esp32)
  *
  *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
  *  This example sends notifications via Pushbullet: https://www.pushbullet.com
  *
+ *  Usage:
+ *    1. Set the WiFi SSID and password in the sketch.
+ *    2. Create a PushBullet API access token: https://www.pushbullet.com/#settings
+ *    3. Copy the access token to pushbulletToken.
+ *    4. Upload the sketch.
+ *
  *  Release notes:
+ *    1.4 - Add HTTPS certificate validation, add customizable message prefix
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -43,35 +50,82 @@
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* pushbulletToken = "";  // Set the access token generated in the Pushbullet account settings
+const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // esp32: 4,13,16-39
 #define dscReadPin 19   // esp32: 4,13,16-39
 
+// HTTPS root certificate for api.pushbullet.com: GlobalSign Root CA - R2, expires 2021.12.15
+const char pushbulletCertificateRoot[] = R"=EOF=(
+-----BEGIN CERTIFICATE-----
+MIIESjCCAzKgAwIBAgINAeO0nXfN9AwGGRa24zANBgkqhkiG9w0BAQsFADBMMSAw
+HgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMjETMBEGA1UEChMKR2xvYmFs
+U2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjAeFw0xNzA2MTUwMDAwNDJaFw0yMTEy
+MTUwMDAwNDJaMEIxCzAJBgNVBAYTAlVTMR4wHAYDVQQKExVHb29nbGUgVHJ1c3Qg
+U2VydmljZXMxEzARBgNVBAMTCkdUUyBDQSAxRDIwggEiMA0GCSqGSIb3DQEBAQUA
+A4IBDwAwggEKAoIBAQCy2Xvh4dc/HJFy//kQzYcVeXS3PkeLsmFV/Qw2xn53Qjqy
++lJbC3GB1k3V6SskTSNeiytyXyFVtSnvRMvrglKrPiekkklBSt6o3THgPN9tek0t
+1m0JsA7jYfKy/pBsWnsQZEm0CzwI8up5DGymGolqVjKgKaIwgo+BUQzzornZdbki
+nicUukovLGNYh/FdEOZfkbu5W8xH4h51toyPzHVdVwXngsaEDnRyKss7VfVucOtm
+acMkuziTNZtoYS+b1q6md3J8cUhYMxCv6YCCHbUHQBv2PeyirUedtJQpNLOML80l
+A1g1wCWkVV/hswdWPcjQY7gg+4wdQyz4+anV7G+XAgMBAAGjggEzMIIBLzAOBgNV
+HQ8BAf8EBAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMBIGA1Ud
+EwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFLHdMl3otzdy0s5czib+R3niAQjpMB8G
+A1UdIwQYMBaAFJviB1dnHB7AagbeWbSaLd/cGYYuMDUGCCsGAQUFBwEBBCkwJzAl
+BggrBgEFBQcwAYYZaHR0cDovL29jc3AucGtpLmdvb2cvZ3NyMjAyBgNVHR8EKzAp
+MCegJaAjhiFodHRwOi8vY3JsLnBraS5nb29nL2dzcjIvZ3NyMi5jcmwwPwYDVR0g
+BDgwNjA0BgZngQwBAgEwKjAoBggrBgEFBQcCARYcaHR0cHM6Ly9wa2kuZ29vZy9y
+ZXBvc2l0b3J5LzANBgkqhkiG9w0BAQsFAAOCAQEAcUrEwyOu9+OyAnmME+hTjoDF
+8OPvcWCpqXs0ZYU0vUc7A1cWAJlIOuDg8OrNtkg81aty8NAby2QtOw10aNd0iDF8
+aroO8IxNeM7aEPSKlkWXqZetxTUaGGTok7YNnR+5Xh2A6udbnI6uDqaE0tEXzrP7
+9oFPPOZon8/xpnbFfafz3X1YD+D2YQEcUY52MytInVyBUXIIF7r9AdPuRvn0smhA
+mTEBbE8bxlbrgXPSeVIFkiZbcc2dxNLOI3cPQXppXiElxvi3/3r3R97CAHucWkWc
+Kk5GkNl1LNj/jO7M3GnrbOYV0KP/SAusVd/fJZ1CtlGjZpVgxdAi5yJ6UaXMhw==
+-----END CERTIFICATE-----
+)=EOF=";
+
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
-WiFiClientSecure pushClient;
-bool wifiConnected = false;
+WiFiClientSecure wifiClient;
+bool wifiConnected = true;
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi..."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(100);
-  Serial.print(F("WiFi connected: "));
+  wifiClient.setCACert(pushbulletCertificateRoot);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
+  Serial.print(F("NTP time..."));
+  configTime(0, 0, "pool.ntp.org");
+  time_t now = time(nullptr);
+  while (now < 24 * 3600)
+  {
+    Serial.print(".");
+    delay(2000);
+    now = time(nullptr);
+  }
+  Serial.println(F("synchronized."));
+
   // Sends a push notification on startup to verify connectivity
-  if (sendPush("Security system initializing")) Serial.println(F("Initialization push notification sent successfully."));
-  else Serial.println(F("Initialization push notification failed to send."));
+  Serial.print(F("Pushbullet...."));
+  if (sendMessage("Initializing")) Serial.println(F("connected."));
+  else Serial.println(F("connection error."));
 
   // Starts the Keybus interface
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -106,8 +160,8 @@ void loop() {
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
-      if (dsc.keybusConnected) sendPush("Security system connected");
-      else sendPush("Security system disconnected");
+      if (dsc.keybusConnected) sendMessage("Connected");
+      else sendMessage("Disconnected");
     }
 
     // Checks status per partition
@@ -118,24 +172,37 @@ void loop() {
 
       // Checks armed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
+          char messageContent[25];
 
-          char pushMessage[40];
-          if (dsc.armedAway[partition]) {
-            strcpy(pushMessage, "Security system armed away: partition ");
-          }
-          else if (dsc.armedStay[partition]) {
-            strcpy(pushMessage, "Security system armed stay: partition ");
-          }
-          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-          sendPush(pushMessage);
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedStay[partition]) strcpy(messageContent, "Armed stay: Partition ");
 
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
         }
         else {
-          char pushMessage[39] = "Security system disarmed: partition ";
+          char pushMessage[22] = "Disarmed: Partition ";
           appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-          sendPush(pushMessage);
+          sendMessage(pushMessage);
+        }
+      }
+
+      // Checks exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+
+        if (dsc.exitDelay[partition]) {
+          char messageContent[36] = "Exit delay in progress: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
+          char messageContent[22] = "Disarmed: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
         }
       }
 
@@ -143,22 +210,33 @@ void loop() {
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
-        char pushMessage[38] = "Security system in alarm: partition ";
-        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-
-        if (dsc.alarm[partition]) sendPush(pushMessage);
-        else sendPush("Security system disarmed after alarm");
+        if (dsc.alarm[partition]) {
+          char messageContent[19] = "Alarm: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else if (!dsc.armedChanged[partition]) {
+          char messageContent[22] = "Disarmed: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
       }
+      dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Checks fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
-        char pushMessage[40] = "Security system fire alarm: partition ";
-        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-
-        if (dsc.fire[partition]) sendPush(pushMessage);
-        else sendPush("Security system fire alarm restored");
+        if (dsc.fire[partition]) {
+          char messageContent[24] = "Fire alarm: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else {
+          char messageContent[33] = "Fire alarm restored: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
       }
     }
 
@@ -175,95 +253,110 @@ void loop() {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {       // Zone alarm
-              char pushMessage[24] = "Security zone alarm: ";
+              char pushMessage[15] = "Zone alarm: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
               strcat(pushMessage, zoneNumber);
-              sendPush(pushMessage);
+              sendMessage(pushMessage);
             }
             else {
-              char pushMessage[33] = "Security zone alarm restored: ";
+              char pushMessage[24] = "Zone alarm restored: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
               strcat(pushMessage, zoneNumber);
-              sendPush(pushMessage);
+              sendMessage(pushMessage);
             }
           }
         }
       }
     }
 
+    // Checks trouble status
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) sendMessage("Trouble status on");
+      else sendMessage("Trouble status restored");
+    }
+
     // Checks for AC power status
     if (dsc.powerChanged) {
       dsc.powerChanged = false;  // Resets the battery trouble status flag
-      if (dsc.powerTrouble) sendPush("Security system AC power trouble");
-      else sendPush("Security system AC power restored");
+      if (dsc.powerTrouble) sendMessage("AC power trouble");
+      else sendMessage("AC power restored");
+    }
+
+    // Checks panel battery status
+    if (dsc.batteryChanged) {
+      dsc.batteryChanged = false;  // Resets the battery trouble status flag
+      if (dsc.batteryTrouble) sendMessage("Panel battery trouble");
+      else sendMessage("Panel battery restored");
     }
 
     // Checks for keypad fire alarm status
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      sendPush("Security system fire alarm button pressed");
+      sendMessage("Keypad Fire alarm");
     }
 
     // Checks for keypad aux auxiliary alarm status
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      sendPush("Security system aux alarm button pressed");
+      sendMessage("Keypad Aux alarm");
     }
 
     // Checks for keypad panic alarm status
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      sendPush("Security system panic alarm button pressed");
+      sendMessage("Keypad Panic alarm");
     }
   }
 }
 
 
-bool sendPush(const char* pushMessage) {
+bool sendMessage(const char* pushMessage) {
 
   // Connects and sends the message as JSON
-  if (!pushClient.connect("api.pushbullet.com", 443)) return false;
-  pushClient.println(F("POST /v2/pushes HTTP/1.1"));
-  pushClient.println(F("Host: api.pushbullet.com"));
-  pushClient.println(F("User-Agent: ESP32"));
-  pushClient.println(F("Accept: */*"));
-  pushClient.println(F("Content-Type: application/json"));
-  pushClient.print(F("Content-Length: "));
-  pushClient.println(strlen(pushMessage) + 25);  // Length including JSON data
-  pushClient.print(F("Access-Token: "));
-  pushClient.println(pushbulletToken);
-  pushClient.println();
-  pushClient.print(F("{\"body\":\""));
-  pushClient.print(pushMessage);
-  pushClient.print(F("\",\"type\":\"note\"}"));
+  if (!wifiClient.connect("api.pushbullet.com", 443)) return false;
+  wifiClient.println(F("POST /v2/pushes HTTP/1.1"));
+  wifiClient.println(F("Host: api.pushbullet.com"));
+  wifiClient.println(F("User-Agent: ESP32"));
+  wifiClient.println(F("Accept: */*"));
+  wifiClient.println(F("Content-Type: application/json"));
+  wifiClient.print(F("Content-Length: "));
+  wifiClient.println(strlen(pushMessage) + strlen(messagePrefix) + 25);  // Length including JSON data
+  wifiClient.print(F("Access-Token: "));
+  wifiClient.println(pushbulletToken);
+  wifiClient.println();
+  wifiClient.print(F("{\"body\":\""));
+  wifiClient.print(messagePrefix);
+  wifiClient.print(pushMessage);
+  wifiClient.print(F("\",\"type\":\"note\"}"));
 
   // Waits for a response
   unsigned long previousMillis = millis();
-  while (!pushClient.available()) {
+  while (!wifiClient.available()) {
     dsc.loop();
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
-      pushClient.stop();
+      wifiClient.stop();
       return false;
     }
     yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code
-  while (pushClient.available()) {
-    if (pushClient.read() == ' ') break;
+  while (wifiClient.available()) {
+    if (wifiClient.read() == ' ') break;
   }
 
   // Checks the first character of the HTTP status code - the message was sent successfully if the status code
   // begins with "2"
-  char statusCode = pushClient.read();
+  char statusCode = wifiClient.read();
 
   // Successful, reads the remaining response to clear the client buffer
   if (statusCode == '2') {
-    while (pushClient.available()) pushClient.read();
-    pushClient.stop();
+    while (wifiClient.available()) wifiClient.read();
+    wifiClient.stop();
     return true;
   }
 
@@ -271,9 +364,9 @@ bool sendPush(const char* pushMessage) {
   else {
     Serial.println(F("Push notification error, response:"));
     Serial.print(statusCode);
-    while (pushClient.available()) Serial.print((char)pushClient.read());
+    while (wifiClient.available()) Serial.print((char)wifiClient.read());
     Serial.println();
-    pushClient.stop();
+    wifiClient.stop();
     return false;
   }
 }

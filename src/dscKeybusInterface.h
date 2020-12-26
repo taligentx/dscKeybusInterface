@@ -22,7 +22,6 @@
 
 #include <Arduino.h>
 
-
 #if defined(__AVR__)
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
@@ -81,7 +80,6 @@ class dscKeybusInterface {
 
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
-    bool processRedundantData;      // Controls if repeated periodic commands are processed and displayed (default: false)
     static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)
     bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
@@ -119,6 +117,7 @@ class dscKeybusInterface {
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
     bool pgmOutputsStatusChanged;
     byte pgmOutputs[2], pgmOutputsChanged[2];
+    byte panelVersion;
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
      * followed by the remaining data.  These can be accessed directly in the sketch to get data that is not already
@@ -148,7 +147,8 @@ class dscKeybusInterface {
     static void dscDataInterrupt();
 
     // Deprecated
-    bool handlePanel();               // Returns true if valid panel data is available.  Relabeled to loop()
+    bool handlePanel();         // Returns true if valid panel data is available.  Relabeled to loop()
+    bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
 
   private:
 
@@ -156,6 +156,8 @@ class dscKeybusInterface {
     void processPanelStatus0(byte partition, byte panelByte);
     void processPanelStatus2(byte partition, byte panelByte);
     void processPanelStatus4(byte partition, byte panelByte);
+    void processPanelStatus5(byte partition, byte panelByte);
+    void processPanel_0x16();
     void processPanel_0x27();
     void processPanel_0x2D();
     void processPanel_0x34();
@@ -178,6 +180,7 @@ class dscKeybusInterface {
     void processAlarmZones(byte panelByte, byte startByte, byte zoneCountOffset, byte writeValue);
     void processAlarmZonesStatus(byte zonesByte, byte zoneCount, byte writeValue);
     void processArmed(byte partitionIndex, bool armedStatus);
+    void processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease = true);
 
     void printPanelPartitionStatus(byte startPartition, byte startByte, byte endByte);
     void printPanelStatus0(byte panelByte);
@@ -189,7 +192,7 @@ class dscKeybusInterface {
     void printPanelStatus14(byte panelByte);
     void printPanelStatus17(byte panelByte);
     void printPanelStatus18(byte panelByte);
-    void printPanelStatus1B(byte panelByte);  
+    void printPanelStatus1B(byte panelByte);
 
     void printPanelMessages(byte panelByte);
     void printPanelLights(byte panelByte, bool printMessage = true);
@@ -204,28 +207,29 @@ class dscKeybusInterface {
     void printNumberOffset(byte panelByte, int numberOffset);
     void printUnknownData();
     void printPartition();
+    void printStatusLights();
+    void printStatusLightsFlashing();
+    void printZoneLights(bool lowerRange = true);
     void printPanel_0x05();
-    void printPanel_0x0A();
+    void printPanel_0x0A_0F();
     void printPanel_0x11();
     void printPanel_0x16();
     void printPanel_0x1B();
     void printPanel_0x1C();
-    void printPanel_0x22();
+    void printPanel_0x22_28_33_39();
     void printPanel_0x27();
-    void printPanel_0x28();
     void printPanel_0x2D();
-    void printPanel_0x33();
     void printPanel_0x34();
-    void printPanel_0x39();
     void printPanel_0x3E();
     void printPanel_0x41();
     void printPanel_0x4C();
     void printPanel_0x57();
     void printPanel_0x58();
-    void printPanel_0x5D();
-    void printPanel_0x63();
+    void printPanel_0x5D_63();
     void printPanel_0x64();
     void printPanel_0x69();
+    void printPanel_0x6E();
+    void printPanel_0x70();
     void printPanel_0x75();
     void printPanel_0x7A();
     void printPanel_0x7F();
@@ -242,14 +246,11 @@ class dscKeybusInterface {
     void printPanel_0xCE();
     void printPanel_0xD5();
     void printPanel_0xE6();
-    void printPanel_0xE6_0x03();
-    void printPanel_0xE6_0x08();
+    void printPanel_0xE6_0x01_06_20_21();
+    void printPanel_0xE6_0x08_0A_0C_0E();
     void printPanel_0xE6_0x09();
-    void printPanel_0xE6_0x0A();
     void printPanel_0xE6_0x0B();
-    void printPanel_0xE6_0x0C();
     void printPanel_0xE6_0x0D();
-    void printPanel_0xE6_0x0E();
     void printPanel_0xE6_0x0F();
     void printPanel_0xE6_0x17();
     void printPanel_0xE6_0x18();
@@ -257,7 +258,6 @@ class dscKeybusInterface {
     void printPanel_0xE6_0x1A();
     void printPanel_0xE6_0x1D();
     void printPanel_0xE6_0x1F();
-    void printPanel_0xE6_0x20();
     void printPanel_0xE6_0x2B();
     void printPanel_0xE6_0x2C();
     void printPanel_0xE6_0x41();
@@ -273,11 +273,12 @@ class dscKeybusInterface {
     void printModule_0x4C();
     void printModule_0x57();
     void printModule_0x58();
+    void printModule_0x70();
     void printModule_0xD5();
     bool printModule_Keys();
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
-    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue);
+    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
@@ -319,7 +320,7 @@ class dscKeybusInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, currentSubCmd, statusCmd;
+    static volatile byte currentCmd, statusCmd, moduleCmd, moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };

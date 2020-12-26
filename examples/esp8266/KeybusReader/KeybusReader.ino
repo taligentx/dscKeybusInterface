@@ -53,19 +53,18 @@ dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs
-  dsc.processRedundantData = true;   // Controls if repeated periodic commands are processed and displayed
   dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 

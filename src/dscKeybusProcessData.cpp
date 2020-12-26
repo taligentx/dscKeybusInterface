@@ -98,7 +98,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
 void dscKeybusInterface::processPanelStatus() {
 
   // Trouble status
-  if (panelData[3] <= 0x05) {  // Ignores trouble light status in intermittent states
+  if (panelData[3] <= 0x06) {  // Ignores trouble light status in intermittent states
     if (bitRead(panelData[2],4)) trouble = true;
     else trouble = false;
     if (trouble != previousTrouble) {
@@ -273,6 +273,7 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       // Partition armed with no entry delay
+      case 0x06:
       case 0x16: {
         noEntryDelay[partitionIndex] = true;
 
@@ -341,6 +342,14 @@ void dscKeybusInterface::processPanelStatus() {
 }
 
 
+void dscKeybusInterface::processPanel_0x16() {
+  if (!validCRC()) return;
+
+  // Panel version
+  panelVersion = ((panelData[3] >> 4) * 10) + (panelData[3] & 0x0F);
+}
+
+
 // Panel status and zones 1-8 status
 void dscKeybusInterface::processPanel_0x27() {
   if (!validCRC()) return;
@@ -376,7 +385,7 @@ void dscKeybusInterface::processPanel_0x27() {
     }
 
     // Armed with no entry delay
-    else if (panelData[messageByte] == 0x16) {
+    else if (panelData[messageByte] == 0x06 || panelData[messageByte] == 0x16) {
       noEntryDelay[partitionIndex] = true;
 
       // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
@@ -556,6 +565,7 @@ void dscKeybusInterface::processPanel_0xEB() {
     case 0x00: processPanelStatus0(partition, 8); break;
     case 0x02: processPanelStatus2(partition, 8); break;
     case 0x04: processPanelStatus4(partition, 8); break;
+    case 0x05: processPanelStatus5(partition, 8); break;
   }
 }
 
@@ -675,27 +685,17 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     return;
   }
 
-  // Armed by access code
+  // Armed by access codes 1-34, 40-42
   if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
-    accessCode[partitionIndex] = panelData[panelByte] - 0x98;
-    if (accessCode[partitionIndex] >= 35) accessCode[partitionIndex] += 5;
-    if (accessCode[partitionIndex] != previousAccessCode[partitionIndex]) {
-      previousAccessCode[partitionIndex] = accessCode[partitionIndex];
-      accessCodeChanged[partitionIndex] = true;
-      if (!pauseStatus) statusChanged = true;
-    }
+    byte dscCode = panelData[panelByte] - 0x98;
+    processPanelAccessCode(partitionIndex, dscCode);
     return;
   }
 
-  // Disarmed by access code
+  // Disarmed by access codes 1-34, 40-42
   if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
-    accessCode[partitionIndex] = panelData[panelByte] - 0xBF;
-    if (accessCode[partitionIndex] >= 35) accessCode[partitionIndex] += 5;
-    if (accessCode[partitionIndex] != previousAccessCode[partitionIndex]) {
-      previousAccessCode[partitionIndex] = accessCode[partitionIndex];
-      accessCodeChanged[partitionIndex] = true;
-      if (!pauseStatus) statusChanged = true;
-    }
+    byte dscCode = panelData[panelByte] - 0xBF;
+    processPanelAccessCode(partitionIndex, dscCode);
     return;
   }
 }
@@ -779,6 +779,34 @@ void dscKeybusInterface::processPanelStatus4(byte partition, byte panelByte) {
   //   alarmZones[7] and alarmZonesChanged[7]: Bit 0 = Zone 57 ... Bit 7 = Zone 64
   if (panelData[panelByte] >= 0x20 && panelData[panelByte] <= 0x3F) {
     processAlarmZones(panelByte, 4, 0x20, 0);
+    return;
+  }
+}
+
+
+void dscKeybusInterface::processPanelStatus5(byte partition, byte panelByte) {
+  if (partition == 0 || partition > dscPartitions) return;
+  byte partitionIndex = partition - 1;
+
+  /*
+   *  Armed by access codes 35-95
+   *  0x00 - 0x04: Access codes 35-39
+   *  0x05 - 0x39: Access codes 43-95
+   */
+  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+    byte dscCode = panelData[panelByte] + 0x23;
+    processPanelAccessCode(partitionIndex, dscCode, false);
+    return;
+  }
+
+  /*
+   *  Disarmed by access codes 35-95
+   *  0x3A - 0x3E: Access codes 35-39
+   *  0x3F - 0x73: Access codes 43-95
+   */
+  if (panelData[panelByte] >= 0x3A && panelData[panelByte] <= 0x73) {
+    byte dscCode = panelData[panelByte] - 0x17;
+    processPanelAccessCode(partitionIndex, dscCode, false);
     return;
   }
 }
@@ -894,7 +922,6 @@ void dscKeybusInterface::processAlarmZonesStatus(byte zonesByte, byte zoneCount,
 
 
 void dscKeybusInterface::processArmed(byte partitionIndex, bool armedStatus) {
-
   armedStay[partitionIndex] = armedStatus;
   armedAway[partitionIndex] = armedStatus;
   armed[partitionIndex] = armedStatus;
@@ -902,6 +929,23 @@ void dscKeybusInterface::processArmed(byte partitionIndex, bool armedStatus) {
   if (armed[partitionIndex] != previousArmed[partitionIndex]) {
     previousArmed[partitionIndex] = armed[partitionIndex];
     armedChanged[partitionIndex] = true;
+    if (!pauseStatus) statusChanged = true;
+  }
+}
+
+
+void dscKeybusInterface::processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease) {
+  if (accessCodeIncrease) {
+    if (dscCode >= 35) dscCode += 5;
+  }
+  else {
+    if (dscCode >= 40) dscCode += 3;
+  }
+
+  accessCode[partitionIndex] = dscCode;
+  if (accessCode[partitionIndex] != previousAccessCode[partitionIndex]) {
+    previousAccessCode[partitionIndex] = accessCode[partitionIndex];
+    accessCodeChanged[partitionIndex] = true;
     if (!pauseStatus) statusChanged = true;
   }
 }

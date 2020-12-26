@@ -1,41 +1,50 @@
 /*
- *  Pushbullet Push Notification 1.4 (esp8266)
+ *  Telegram Bot 1.0 (esp32)
  *
- *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
- *  This example sends notifications via Pushbullet: https://www.pushbullet.com
+ *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
+ *
+ *  Setup:
+ *    1. Install the UniversalTelegramBot library from the Arduino IDE/PlatformIO library manager:
+ *         https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot
+ *    2. Install the ArduinoJSON library from the Arduino IDE/PlatformIO library manager:
+ *         https://github.com/bblanchon/ArduinoJson
+ *    3. Set the WiFi SSID and password in the sketch.
+ *    4. Set an access code in the sketch to manage the security system.
+ *    5. Send a message to BotFather: https://t.me/botfather
+ *    6. Create a new bot through BotFather: /newbot
+ *    7. Copy the bot token to the sketch in telegramBotToken.
+ *    8. Send a message to the newly created bot to start a conversation.
+ *    9. Send a message to @myidbot: https://telegram.me/myidbot
+ *   10. Get your user ID: /getid
+ *   11. Copy the user ID to the sketch in telegramUserID.
+ *   12. Upload the sketch.
  *
  *  Usage:
- *    1. Set the WiFi SSID and password in the sketch.
- *    2. Create a PushBullet API access token: https://www.pushbullet.com/#settings
- *    3. Copy the access token to pushbulletToken.
- *    4. Upload the sketch.
+ *    - Set the partition number to manage: /X (where X = 1-8)
+ *    - Arm stay: /armstay
+ *    - Arm away: /armaway
+ *    - Arm night (no entry delay): /armnight
+ *    - Disarm: /disarm
  *
  *  Release notes:
- *    1.4 - Add HTTPS certificate validation, add customizable message prefix
- *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
- *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection
- *          Add appendPartition() to simplify sketch
- *          esp8266 Arduino Core version check for BearSSL
- *    1.1 - Set authentication method for BearSSL in esp8266 Arduino Core 2.5.0+
- *          Added notifications - Keybus connected, armed status, zone alarm status
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -49,54 +58,31 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
 #include <dscKeybusInterface.h>
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* pushbulletToken = "";  // Set the access token generated in the Pushbullet account settings
+const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
+const char* telegramBotToken = "";  // Set the Telegram bot access token
+const char* telegramUserID = "";    // Set the Telegram chat user ID
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-
-// HTTPS root certificate for api.pushbullet.com: GlobalSign Root CA - R2, expires 2021.12.15
-const char pushbulletCertificateRoot[] = R"=EOF=(
------BEGIN CERTIFICATE-----
-MIIESjCCAzKgAwIBAgINAeO0nXfN9AwGGRa24zANBgkqhkiG9w0BAQsFADBMMSAw
-HgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMjETMBEGA1UEChMKR2xvYmFs
-U2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjAeFw0xNzA2MTUwMDAwNDJaFw0yMTEy
-MTUwMDAwNDJaMEIxCzAJBgNVBAYTAlVTMR4wHAYDVQQKExVHb29nbGUgVHJ1c3Qg
-U2VydmljZXMxEzARBgNVBAMTCkdUUyBDQSAxRDIwggEiMA0GCSqGSIb3DQEBAQUA
-A4IBDwAwggEKAoIBAQCy2Xvh4dc/HJFy//kQzYcVeXS3PkeLsmFV/Qw2xn53Qjqy
-+lJbC3GB1k3V6SskTSNeiytyXyFVtSnvRMvrglKrPiekkklBSt6o3THgPN9tek0t
-1m0JsA7jYfKy/pBsWnsQZEm0CzwI8up5DGymGolqVjKgKaIwgo+BUQzzornZdbki
-nicUukovLGNYh/FdEOZfkbu5W8xH4h51toyPzHVdVwXngsaEDnRyKss7VfVucOtm
-acMkuziTNZtoYS+b1q6md3J8cUhYMxCv6YCCHbUHQBv2PeyirUedtJQpNLOML80l
-A1g1wCWkVV/hswdWPcjQY7gg+4wdQyz4+anV7G+XAgMBAAGjggEzMIIBLzAOBgNV
-HQ8BAf8EBAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMBIGA1Ud
-EwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFLHdMl3otzdy0s5czib+R3niAQjpMB8G
-A1UdIwQYMBaAFJviB1dnHB7AagbeWbSaLd/cGYYuMDUGCCsGAQUFBwEBBCkwJzAl
-BggrBgEFBQcwAYYZaHR0cDovL29jc3AucGtpLmdvb2cvZ3NyMjAyBgNVHR8EKzAp
-MCegJaAjhiFodHRwOi8vY3JsLnBraS5nb29nL2dzcjIvZ3NyMi5jcmwwPwYDVR0g
-BDgwNjA0BgZngQwBAgEwKjAoBggrBgEFBQcCARYcaHR0cHM6Ly9wa2kuZ29vZy9y
-ZXBvc2l0b3J5LzANBgkqhkiG9w0BAQsFAAOCAQEAcUrEwyOu9+OyAnmME+hTjoDF
-8OPvcWCpqXs0ZYU0vUc7A1cWAJlIOuDg8OrNtkg81aty8NAby2QtOw10aNd0iDF8
-aroO8IxNeM7aEPSKlkWXqZetxTUaGGTok7YNnR+5Xh2A6udbnI6uDqaE0tEXzrP7
-9oFPPOZon8/xpnbFfafz3X1YD+D2YQEcUY52MytInVyBUXIIF7r9AdPuRvn0smhA
-mTEBbE8bxlbrgXPSeVIFkiZbcc2dxNLOI3cPQXppXiElxvi3/3r3R97CAHucWkWc
-Kk5GkNl1LNj/jO7M3GnrbOYV0KP/SAusVd/fJZ1CtlGjZpVgxdAi5yJ6UaXMhw==
------END CERTIFICATE-----
-)=EOF=";
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin 19   // esp32: 4,13,16-39
+#define dscWritePin 21  // esp32: 4,13,16-33
 
 // Initialize components
-dscKeybusInterface dsc(dscClockPin, dscReadPin);
-X509List pushbulletCert(pushbulletCertificateRoot);
+dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 WiFiClientSecure wifiClient;
+UniversalTelegramBot telegramBot(telegramBotToken, wifiClient);
+const int telegramCheckInterval = 1000;
 bool wifiConnected = true;
-
 
 void setup() {
   Serial.begin(115200);
@@ -104,10 +90,10 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi..."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  wifiClient.setTrustAnchors(&pushbulletCert);
+  wifiClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -115,7 +101,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time"));
+  Serial.print(F("NTP time..."));
   configTime(0, 0, "pool.ntp.org");
   time_t now = time(nullptr);
   while (now < 24 * 3600)
@@ -127,7 +113,7 @@ void setup() {
   Serial.println(F("synchronized."));
 
   // Sends a message on startup to verify connectivity
-  Serial.print(F("Pushbullet...."));
+  Serial.print(F("Telegram...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
 
@@ -152,6 +138,17 @@ void loop() {
     dsc.pauseStatus = true;
   }
 
+  // Checks for incoming Telegram messages
+  static unsigned long telegramPreviousTime;
+  if (millis() - telegramPreviousTime > telegramCheckInterval) {
+    byte telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
+    while (telegramMessages) {
+      handleTelegram(telegramMessages);
+      telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
+    }
+    telegramPreviousTime = millis();
+  }
+
   dsc.loop();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
@@ -169,6 +166,12 @@ void loop() {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
       if (dsc.keybusConnected) sendMessage("Connected");
       else sendMessage("Disconnected");
+    }
+
+    // Sends the access code when needed by the panel for arming
+    if (dsc.accessCodePrompt) {
+      dsc.accessCodePrompt = false;
+      dsc.write(accessCode);
     }
 
     // Checks status per partition
@@ -197,7 +200,7 @@ void loop() {
         }
       }
 
-      // Checks exit delay status
+      // Publishes exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
@@ -216,6 +219,7 @@ void loop() {
       // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
+
 
         if (dsc.alarm[partition]) {
           char messageContent[19] = "Alarm: Partition ";
@@ -320,67 +324,65 @@ void loop() {
 }
 
 
-bool sendMessage(const char* messageContent) {
+void handleTelegram(byte telegramMessages) {
+  static byte partition = 0;
 
-  // Connects and sends the message as a Pushbullet note-type push
-  if (!wifiClient.connect("api.pushbullet.com", 443)) return false;
-  wifiClient.println(F("POST /v2/pushes HTTP/1.1"));
-  wifiClient.println(F("Host: api.pushbullet.com"));
-  wifiClient.println(F("User-Agent: ESP8266"));
-  wifiClient.println(F("Accept: */*"));
-  wifiClient.println(F("Content-Type: application/json"));
-  wifiClient.print(F("Content-Length: "));
-  wifiClient.println(strlen(messageContent) + strlen(messagePrefix) + 25);  // Length including JSON data
-  wifiClient.print(F("Access-Token: "));
-  wifiClient.println(pushbulletToken);
-  wifiClient.println();
-  wifiClient.print(F("{\"body\":\""));
-  wifiClient.print(messagePrefix);
-  wifiClient.print(messageContent);
-  wifiClient.print(F("\",\"type\":\"note\"}"));
+  for (byte i = 0; i < telegramMessages; i++) {
 
-  // Waits for a response
-  unsigned long previousMillis = millis();
-  while (!wifiClient.available()) {
-    dsc.loop();
-    if (millis() - previousMillis > 3000) {
-      Serial.println(F("Connection timed out waiting for a response."));
-      wifiClient.stop();
-      return false;
+    // Checks if a partition number 1-8 has been sent and sets the partition
+    if (telegramBot.messages[i].text[1] >= 0x31 && telegramBot.messages[i].text[1] <= 0x38) {
+      partition = telegramBot.messages[i].text[1] - 49;
+      char messageContent[17] = "Set: Partition ";
+      appendPartition(partition, messageContent);  // Appends the message with the partition number
+      sendMessage(messageContent);
     }
-    yield();
-  }
 
-  // Reads the response until the first space - the next characters will be the HTTP status code
-  while (wifiClient.available()) {
-    if (wifiClient.read() == ' ') break;
-  }
+    // Resets status if attempting to change the armed mode while armed or not ready
+    if (telegramBot.messages[i].text != "/disarm" && !dsc.ready[partition]) {
+      dsc.armedChanged[partition] = true;
+      dsc.statusChanged = true;
+      return;
+    }
 
-  // Checks the first character of the HTTP status code - the message was sent successfully if the status code
-  // begins with "2"
-  char statusCode = wifiClient.read();
+    // Arm stay
+    if (telegramBot.messages[i].text == "/armstay" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('s');
+    }
 
-  // Successful, reads the remaining response to clear the client buffer
-  if (statusCode == '2') {
-    while (wifiClient.available()) wifiClient.read();
-    wifiClient.stop();
-    return true;
-  }
+    // Arm away
+    else if (telegramBot.messages[i].text == "/armaway" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('w');
+    }
 
-  // Unsuccessful, prints the response to serial to help debug
-  else {
-    Serial.println(F("Push notification error, response:"));
-    Serial.print(statusCode);
-    while (wifiClient.available()) Serial.print((char)wifiClient.read());
-    Serial.println();
-    wifiClient.stop();
-    return false;
+    // Arm night
+    else if (telegramBot.messages[i].text == "/armnight" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('n');
+    }
+
+    // Disarm
+    else if (telegramBot.messages[i].text == "/disarm" && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write(accessCode);
+    }
   }
 }
 
 
-void appendPartition(byte sourceNumber, char* messageContent) {
+bool sendMessage(const char* messageContent) {
+  byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
+  char message[messageLength];
+  strcpy(message, messagePrefix);
+  strcat(message, messageContent);
+  if (telegramBot.sendMessage(telegramUserID, message, "")) return true;
+  else return false;
+}
+
+
+void appendPartition(byte sourceNumber, char* message) {
   char partitionNumber[2];
   itoa(sourceNumber + 1, partitionNumber, 10);
-  strcat(messageContent, partitionNumber);
+  strcat(message, partitionNumber);
 }

@@ -66,22 +66,19 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
 #include <FS.h>
-#include <SPIFFS.h>
-#include <SPIFFSEditor.h>
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
 // Settings
 char wifiSSID[] = "";
 char wifiPassword[] = "";
-char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
+char dnsHostname[] = "dsc";  // Sets the host name - if set to "dsc", access via: http://dsc.local
 
 // Configures the Keybus interface with the specified pins - dscWritePin is
 // optional, leaving it out disables the virtual keypad
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
@@ -100,13 +97,18 @@ const char* lcdPartition = "Partition ";
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(100);
-  Serial.print(F("WiFi connected: "));
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   if (!MDNS.begin(dnsHostname)) {
@@ -281,19 +283,21 @@ void setStatus(byte partition) {
       case 0x03: root["lcd_lower"] = "Zones open"; break;
       case 0x04: root["lcd_lower"] = "Armed stay"; break;
       case 0x05: root["lcd_lower"] = "Armed away"; break;
+      case 0x06: root["lcd_lower"] = "No entry delay"; break;
       case 0x07: root["lcd_lower"] = "Failed to arm"; break;
       case 0x08: root["lcd_lower"] = "Exit delay"; break;
       case 0x09: root["lcd_lower"] = "No entry delay"; break;
       case 0x0B: root["lcd_lower"] = "Quick exit"; break;
       case 0x0C: root["lcd_lower"] = "Entry delay"; break;
       case 0x0D: root["lcd_lower"] = "Alarm memory"; break;
-      case 0x0E: root["lcd_lower"] = "Not available"; break;      
+      case 0x0E: root["lcd_lower"] = "Not available"; break;
       case 0x10: root["lcd_lower"] = "Keypad lockout"; break;
       case 0x11: root["lcd_lower"] = "Alarm"; break;
-      case 0x12: root["lcd_lower"] = "Battery check"; break;      
+      case 0x12: root["lcd_lower"] = "Battery check"; break;
       case 0x14: root["lcd_lower"] = "Auto-arm"; break;
+      case 0x15: root["lcd_lower"] = "Arming w/bypass"; break;
       case 0x16: root["lcd_lower"] = "No entry delay"; break;
-      case 0x19: root["lcd_lower"] = "Alarm occured"; break;      
+      case 0x19: root["lcd_lower"] = "Alarm occured"; break;
       case 0x22: root["lcd_lower"] = "Recent closing"; break;
       case 0x2F: root["lcd_lower"] = "LCD Pixel check"; break;
       case 0x33: root["lcd_lower"] = "Busy"; break;
@@ -326,10 +330,10 @@ void setStatus(byte partition) {
       case 0xB8: root["lcd_lower"] = "Enter * code"; break;
       case 0xB9: root["lcd_lower"] = "Zone tamper"; break;
       case 0xBA: root["lcd_lower"] = "Zones low batt."; break;
-      case 0xBC: root["lcd_lower"] = "New 6-digit code"; break;      
-      case 0xCE: root["lcd_lower"] = "Active cam. mon."; break;      
+      case 0xBC: root["lcd_lower"] = "New 6-digit code"; break;
       case 0xC6: root["lcd_lower"] = "Zone fault menu"; break;
       case 0xC8: root["lcd_lower"] = "Service required"; break;
+      case 0xCE: root["lcd_lower"] = "Active cam. mon."; break;
       case 0xD0: root["lcd_lower"] = "Keypads low batt"; break;
       case 0xD1: root["lcd_lower"] = "Wireless low bat"; break;
       case 0xE4: root["lcd_lower"] = "Installer menu"; break;
@@ -342,7 +346,7 @@ void setStatus(byte partition) {
       case 0xEC: root["lcd_lower"] = "Input: 6 digits"; break;
       case 0xED: root["lcd_lower"] = "Input: 32 digits"; break;
       case 0xEE: root["lcd_lower"] = "Input: option"; break;
-      case 0xEF: root["lcd_lower"] = "Supv. modules"; break;      
+      case 0xEF: root["lcd_lower"] = "Supv. modules"; break;
       case 0xF0: root["lcd_lower"] = "Function key 1"; break;
       case 0xF1: root["lcd_lower"] = "Function key 2"; break;
       case 0xF2: root["lcd_lower"] = "Function key 3"; break;
@@ -350,9 +354,9 @@ void setStatus(byte partition) {
       case 0xF4: root["lcd_lower"] = "Function key 5"; break;
       case 0xF5: root["lcd_lower"] = "Wls. place. test"; break;
       case 0xF6: root["lcd_lower"] = "Activate device"; break;
-      case 0xF7: root["lcd_lower"] = "*8PGM subsection"; break;      
+      case 0xF7: root["lcd_lower"] = "*8PGM subsection"; break;
       case 0xF8: root["lcd_lower"] = "Keypad program"; break;
-      case 0xFA: root["lcd_lower"] = "Input: 6 digits"; break;      
+      case 0xFA: root["lcd_lower"] = "Input: 6 digits"; break;
       default: root["lcd_lower"] = dsc.status[partition];
     }
     serializeJson(root, outas);

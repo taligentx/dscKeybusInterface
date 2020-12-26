@@ -220,13 +220,18 @@ unsigned long mqttPreviousTime;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.print("WiFi connected: ");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   mqtt.setCallback(mqttCallback);
@@ -236,7 +241,6 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -286,7 +290,6 @@ void loop() {
 
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         char publishTopic[strlen(mqttPartitionTopic) + 2];
         appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
@@ -312,13 +315,13 @@ void loop() {
       // Publishes alarm status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
-        if (dsc.alarm[partition]) {
-          char publishTopic[strlen(mqttPartitionTopic) + 2];
-          appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
+        char publishTopic[strlen(mqttPartitionTopic) + 2];
+        appendPartition(mqttPartitionTopic, partition, publishTopic);  // Appends the mqttPartitionTopic with the partition number
 
-          mqtt.publish(publishTopic, "triggered", true);  // Alarm tripped
-        }
+        if (dsc.alarm[partition]) mqtt.publish(publishTopic, "triggered", true);  // Alarm tripped
+        else if (!dsc.armedChanged[partition]) mqtt.publish(publishTopic, "disarmed", true);
       }
+      if (dsc.armedChanged[partition]) dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
@@ -434,7 +437,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Disarm
-  else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
+  else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
     dsc.writePartition = partition + 1;         // Sets writes to the partition number
     dsc.write(accessCode);
   }
@@ -459,13 +462,14 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
+  Serial.print(F("MQTT...."));
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
-    Serial.print(F("MQTT connected: "));
+    Serial.print(F("connected: "));
     Serial.println(mqttServer);
     dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
-    Serial.print(F("MQTT connection failed: "));
+    Serial.print(F("connection error: "));
     Serial.println(mqttServer);
   }
   return mqtt.connected();
@@ -498,18 +502,23 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
     case 0x04: mqtt.publish(publishTopic, "Armed stay", true); break;
     case 0x05: mqtt.publish(publishTopic, "Armed away", true); break;
+    case 0x06: mqtt.publish(publishTopic, "Armed with no entry delay", true); break;
     case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
     case 0x08: mqtt.publish(publishTopic, "Exit delay in progress", true); break;
     case 0x09: mqtt.publish(publishTopic, "Arming with no entry delay", true); break;
     case 0x0B: mqtt.publish(publishTopic, "Quick exit in progress", true); break;
     case 0x0C: mqtt.publish(publishTopic, "Entry delay in progress", true); break;
     case 0x0D: mqtt.publish(publishTopic, "Zone open after alarm", true); break;
+    case 0x0E: mqtt.publish(publishTopic, "Function not available"); break;
     case 0x10: mqtt.publish(publishTopic, "Keypad lockout", true); break;
     case 0x11: mqtt.publish(publishTopic, "Partition in alarm", true); break;
+    case 0x12: mqtt.publish(publishTopic, "Battery check in progress"); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
     case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
     case 0x16: mqtt.publish(publishTopic, "Armed with no entry delay", true); break;
+    case 0x19: mqtt.publish(publishTopic, "Disarmed after alarm"); break;
     case 0x22: mqtt.publish(publishTopic, "Partition busy", true); break;
+    case 0x2F: mqtt.publish(publishTopic, "Keypad LCD test"); break;
     case 0x33: mqtt.publish(publishTopic, "Command output in progress", true); break;
     case 0x3D: mqtt.publish(publishTopic, "Disarmed after alarm in memory", true); break;
     case 0x3E: mqtt.publish(publishTopic, "Partition disarmed", true); break;
@@ -540,8 +549,10 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xB8: mqtt.publish(publishTopic, "Key * while armed", true); break;
     case 0xB9: mqtt.publish(publishTopic, "Zone tamper menu", true); break;
     case 0xBA: mqtt.publish(publishTopic, "Zones with low batteries", true); break;
+    case 0xBC: mqtt.publish(publishTopic, "*5: Enter 6-digit code"); break;
     case 0xC6: mqtt.publish(publishTopic, "Zone fault menu", true); break;
     case 0xC8: mqtt.publish(publishTopic, "Service required menu", true); break;
+    case 0xCE: mqtt.publish(publishTopic, "Active camera monitor selection"); break;
     case 0xD0: mqtt.publish(publishTopic, "Handheld keypads with low batteries", true); break;
     case 0xD1: mqtt.publish(publishTopic, "Wireless key with low batteries", true); break;
     case 0xE4: mqtt.publish(publishTopic, "Installer programming", true); break;
@@ -561,8 +572,10 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xF3: mqtt.publish(publishTopic, "Function key 4", true); break;
     case 0xF4: mqtt.publish(publishTopic, "Function key 5", true); break;
     case 0xF5: mqtt.publish(publishTopic, "Wireless module placement test", true); break;
+    case 0xF6: mqtt.publish(publishTopic, "Activate device for test"); break;
     case 0xF7: mqtt.publish(publishTopic, "Installer programming subsection", true); break;
     case 0xF8: mqtt.publish(publishTopic, "Keypad programming", true); break;
+    case 0xFA: mqtt.publish(publishTopic, "Input 6 digits"); break;
     default: return;
   }
 }

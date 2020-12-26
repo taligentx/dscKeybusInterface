@@ -41,16 +41,15 @@
 #include <WiFiClientSecure.h>
 #include <dscKeybusInterface.h>
 
-// WiFi settings
+// Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-
-// Twilio settings
 const char* AccountSID = "";	// Set the account SID from the Twilio Account Dashboard
 const char* AuthToken = "";		// Set the auth token from the Twilio Account Dashboard
 const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "AccountSID:AuthToken" | base64 -w 0
 const char* From = "";	// i.e. 16041234567
 const char* To = "";		// i.e. 16041234567
+const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // esp32: 4,13,16-39
@@ -58,28 +57,33 @@ const char* To = "";		// i.e. 16041234567
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
-WiFiClientSecure pushClient;
-bool wifiConnected = false;
+WiFiClientSecure wifiClient;
+bool wifiConnected = true;
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi..."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.print(F("WiFi connected: "));
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   // Sends a message on startup to verify connectivity
-  if (sendPush("Security system initializing")) Serial.println(F("Initialization SMS sent successfully."));
-  else Serial.println(F("Initialization SMS failed to send."));
+  Serial.print(F("Twilio...."));
+  if (sendMessage("Initializing")) Serial.println(F("connected."));
+  else Serial.println(F("connection error."));
 
   // Starts the Keybus interface
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -114,8 +118,8 @@ void loop() {
     // Checks if the interface is connected to the Keybus
     if (dsc.keybusChanged) {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
-      if (dsc.keybusConnected) sendPush("Security system connected");
-      else sendPush("Security system disconnected");
+      if (dsc.keybusConnected) sendMessage("Connected");
+      else sendMessage("Disconnected");
     }
 
     // Checks status per partition
@@ -126,24 +130,37 @@ void loop() {
 
       // Checks armed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         if (dsc.armed[partition]) {
+          char messageContent[25];
 
-          char pushMessage[40];
-          if (dsc.armedAway[partition]) {
-            strcpy(pushMessage, "Security system armed away: partition ");
-          }
-          else if (dsc.armedStay[partition]) {
-            strcpy(pushMessage, "Security system armed stay: partition ");
-          }
-          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-          sendPush(pushMessage);
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedStay[partition]) strcpy(messageContent, "Armed stay: Partition ");
 
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
         }
         else {
-          char pushMessage[39] = "Security system disarmed: partition ";
-          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-          sendPush(pushMessage);
+          char messageContent[22] = "Disarmed: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+      }
+
+      // Checks exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+
+        if (dsc.exitDelay[partition]) {
+          char messageContent[36] = "Exit delay in progress: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
+          char messageContent[22] = "Disarmed: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
         }
       }
 
@@ -151,22 +168,33 @@ void loop() {
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
-        char pushMessage[38] = "Security system in alarm: Partition ";
-        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-
-        if (dsc.alarm[partition]) sendPush(pushMessage);
-        else sendPush("Security system disarmed after alarm");
+        if (dsc.alarm[partition]) {
+          char messageContent[19] = "Alarm: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else if (!dsc.armedChanged[partition]) {
+          char messageContent[22] = "Disarmed: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
       }
+      dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Checks fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
-        char pushMessage[40] = "Security system fire alarm: Partition ";
-        appendPartition(partition, pushMessage);  // Appends the push message with the partition number
-
-        if (dsc.fire[partition]) sendPush(pushMessage);
-        else sendPush("Security system fire alarm restored");
+        if (dsc.fire[partition]) {
+          char messageContent[24] = "Fire alarm: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
+        else {
+          char messageContent[33] = "Fire alarm restored: Partition ";
+          appendPartition(partition, messageContent);  // Appends the message with the partition number
+          sendMessage(messageContent);
+        }
       }
     }
 
@@ -183,101 +211,116 @@ void loop() {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {       // Zone alarm
-              char pushMessage[24] = "Security zone alarm: ";
+              char messageContent[15] = "Zone alarm: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
-              strcat(pushMessage, zoneNumber);
-              sendPush(pushMessage);
+              strcat(messageContent, zoneNumber);
+              sendMessage(messageContent);
             }
             else {
-              char pushMessage[33] = "Security zone alarm restored: ";
+              char messageContent[24] = "Zone alarm restored: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
-              strcat(pushMessage, zoneNumber);
-              sendPush(pushMessage);
+              strcat(messageContent, zoneNumber);
+              sendMessage(messageContent);
             }
           }
         }
       }
     }
 
+    // Checks trouble status
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;  // Resets the trouble status flag
+      if (dsc.trouble) sendMessage("Trouble status on");
+      else sendMessage("Trouble status restored");
+    }
+
     // Checks for AC power status
     if (dsc.powerChanged) {
       dsc.powerChanged = false;  // Resets the battery trouble status flag
-      if (dsc.powerTrouble) sendPush("Security system AC power trouble");
-      else sendPush("Security system AC power restored");
+      if (dsc.powerTrouble) sendMessage("AC power trouble");
+      else sendMessage("AC power restored");
+    }
+
+    // Checks panel battery status
+    if (dsc.batteryChanged) {
+      dsc.batteryChanged = false;  // Resets the battery trouble status flag
+      if (dsc.batteryTrouble) sendMessage("Panel battery trouble");
+      else sendMessage("Panel battery restored");
     }
 
     // Checks for keypad fire alarm status
     if (dsc.keypadFireAlarm) {
       dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      sendPush("Security system fire alarm button pressed");
+      sendMessage("Keypad Fire alarm");
     }
 
     // Checks for keypad aux auxiliary alarm status
     if (dsc.keypadAuxAlarm) {
       dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      sendPush("Security system aux alarm button pressed");
+      sendMessage("Keypad Aux alarm");
     }
 
     // Checks for keypad panic alarm status
     if (dsc.keypadPanicAlarm) {
       dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      sendPush("Security system panic alarm button pressed");
+      sendMessage("Keypad Panic alarm");
     }
   }
 }
 
 
-bool sendPush(const char* pushMessage) {
+bool sendMessage(const char* messageContent) {
 
   // Connects and sends the message as x-www-form-urlencoded
-  if (!pushClient.connect("api.twilio.com", 443)) return false;
-  pushClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
-  pushClient.print(AccountSID);
-  pushClient.println(F("/Messages.json HTTP/1.1"));
-  pushClient.print(F("Authorization: Basic "));
-  pushClient.println(Base64EncodedAuth);
-  pushClient.println(F("Host: api.twilio.com"));
-  pushClient.println(F("User-Agent: ESP32"));
-  pushClient.println(F("Accept: */*"));
-  pushClient.println(F("Content-Type: application/x-www-form-urlencoded"));
-  pushClient.print(F("Content-Length: "));
-  pushClient.println(strlen(To) + strlen(From) + strlen(pushMessage) + 18);  // Length including data
-  pushClient.println("Connection: Close");
-  pushClient.println();
-  pushClient.print(F("To=+"));
-  pushClient.print(To);
-  pushClient.print(F("&From=+"));
-  pushClient.print(From);
-  pushClient.print(F("&Body="));
-  pushClient.println(pushMessage);
+  if (!wifiClient.connect("api.twilio.com", 443)) return false;
+  wifiClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
+  wifiClient.print(AccountSID);
+  wifiClient.println(F("/Messages.json HTTP/1.1"));
+  wifiClient.print(F("Authorization: Basic "));
+  wifiClient.println(Base64EncodedAuth);
+  wifiClient.println(F("Host: api.twilio.com"));
+  wifiClient.println(F("User-Agent: ESP32"));
+  wifiClient.println(F("Accept: */*"));
+  wifiClient.println(F("Content-Type: application/x-www-form-urlencoded"));
+  wifiClient.print(F("Content-Length: "));
+  wifiClient.println(strlen(To) + strlen(From) + strlen(messagePrefix) + strlen(messageContent) + 18);  // Length including data
+  wifiClient.println("Connection: Close");
+  wifiClient.println();
+  wifiClient.print(F("To=+"));
+  wifiClient.print(To);
+  wifiClient.print(F("&From=+"));
+  wifiClient.print(From);
+  wifiClient.print(F("&Body="));
+  wifiClient.print(messagePrefix);
+  wifiClient.println(messageContent);
 
   // Waits for a response
   unsigned long previousMillis = millis();
-  while (!pushClient.available()) {
+  while (!wifiClient.available()) {
     dsc.loop();
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
-      pushClient.stop();
+      wifiClient.stop();
       return false;
     }
     yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code
-  while (pushClient.available()) {
-    if (pushClient.read() == ' ') break;
+  while (wifiClient.available()) {
+    if (wifiClient.read() == ' ') break;
   }
 
   // Checks the first character of the HTTP status code - the message was sent successfully if the status code
   // begins with "2"
-  char statusCode = pushClient.read();
+  char statusCode = wifiClient.read();
 
   // Successful, reads the remaining response to clear the client buffer
   if (statusCode == '2') {
-    while (pushClient.available()) pushClient.read();
-    pushClient.stop();
+    while (wifiClient.available()) wifiClient.read();
+    wifiClient.stop();
     return true;
   }
 
@@ -285,16 +328,16 @@ bool sendPush(const char* pushMessage) {
   else {
     Serial.println(F("SMS messaging error, response:"));
     Serial.print(statusCode);
-    while (pushClient.available()) Serial.print((char)pushClient.read());
+    while (wifiClient.available()) Serial.print((char)wifiClient.read());
     Serial.println();
-    pushClient.stop();
+    wifiClient.stop();
     return false;
   }
 }
 
 
-void appendPartition(byte sourceNumber, char* pushMessage) {
+void appendPartition(byte sourceNumber, char* messageContent) {
   char partitionNumber[2];
   itoa(sourceNumber + 1, partitionNumber, 10);
-  strcat(pushMessage, partitionNumber);
+  strcat(messageContent, partitionNumber);
 }

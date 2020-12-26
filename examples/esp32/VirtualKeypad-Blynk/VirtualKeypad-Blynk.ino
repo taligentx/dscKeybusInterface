@@ -11,6 +11,7 @@
  *    3. Select "Refresh" to generate a new auth token.
  *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
  *    5. Add the auth token to the sketch below.
+ *    6. Upload the sketch.
  *
  *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
  *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
@@ -75,11 +76,9 @@
 
 #define BLYNK_PRINT Serial
 
-// WiFi settings
+// Settings
 char wifiSSID[] = "";
 char wifiPassword[] = "";
-
-// Blynk settings
 char blynkAuthToken[] = "";  // Token generated from within the Blynk app
 char blynkServer[] = "";     // Blynk local server address
 int blynkPort = 8080;        // Blynk local server port
@@ -92,7 +91,7 @@ int blynkPort = 8080;        // Blynk local server port
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
-bool wifiConnected = false;
+bool wifiConnected = true;
 bool partitionChanged;
 byte viewPartition = 1;
 const char* lcdPartition = "Partition ";
@@ -172,17 +171,24 @@ WidgetLED ledZone64(V124);
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
+
+  Serial.print(F("Blynk..."));
   WiFi.mode(WIFI_STA);
   Blynk.begin(blynkAuthToken, wifiSSID, wifiPassword, blynkServer, blynkPort);
-  while (WiFi.status() != WL_CONNECTED) delay(100);
-  wifiConnected = true;
+  WiFi.begin(wifiSSID, wifiPassword);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
+  Serial.println(WiFi.localIP());
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -772,14 +778,14 @@ void setStatus(byte partition) {
     case 0x0B: lcd.print(0,1, "                "); lcd.print(0,1, "Quick exit"); break;
     case 0x0C: lcd.print(0,1, "                "); lcd.print(0,1, "Entry delay"); break;
     case 0x0D: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm memory"); break;
-    case 0x0E: lcd.print(0,1, "                "); lcd.print(0,1, "Not available"); break;    
+    case 0x0E: lcd.print(0,1, "                "); lcd.print(0,1, "Not available"); break;
     case 0x10: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad lockout"); break;
     case 0x11: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm"); break;
-    case 0x12: lcd.print(0,1, "                "); lcd.print(0,1, "Battery check"); break;    
+    case 0x12: lcd.print(0,1, "                "); lcd.print(0,1, "Battery check"); break;
     case 0x14: lcd.print(0,1, "                "); lcd.print(0,1, "Auto-arm"); break;
     case 0x15: lcd.print(0,1, "                "); lcd.print(0,1, "Arm with bypass"); break;
     case 0x16: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); break;
-    case 0x19: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm occured"); break;    
+    case 0x19: lcd.print(0,1, "                "); lcd.print(0,1, "Alarm occured"); break;
     case 0x22: lcd.print(0,1, "                "); lcd.print(0,1, "Recent closing"); break;
     case 0x2F: lcd.print(0,1, "                "); lcd.print(0,1, "LCD Pixel check"); break;
     case 0x33: lcd.print(0,1, "                "); lcd.print(0,1, "Busy"); break;
@@ -812,10 +818,10 @@ void setStatus(byte partition) {
     case 0xB8: lcd.print(0,1, "                "); lcd.print(0,1, "Enter * code"); break;
     case 0xB9: lcd.print(0,1, "                "); lcd.print(0,1, "Zone tamper"); break;
     case 0xBA: lcd.print(0,1, "                "); lcd.print(0,1, "Zones low batt."); break;
-    case 0xBC: lcd.print(0,1, "                "); lcd.print(0,1, "New 6-digit code"); break;    
+    case 0xBC: lcd.print(0,1, "                "); lcd.print(0,1, "New 6-digit code"); break;
     case 0xC6: lcd.print(0,1, "                "); lcd.print(0,1, "Zone fault menu"); break;
     case 0xC8: lcd.print(0,1, "                "); lcd.print(0,1, "Service required"); break;
-    case 0xCE: lcd.print(0,1, "                "); lcd.print(0,1, "Active cam. mon."); break;    
+    case 0xCE: lcd.print(0,1, "                "); lcd.print(0,1, "Active cam. mon."); break;
     case 0xD0: lcd.print(0,1, "                "); lcd.print(0,1, "Keypads low batt"); break;
     case 0xD1: lcd.print(0,1, "                "); lcd.print(0,1, "Wireless low bat"); break;
     case 0xE4: lcd.print(0,1, "                "); lcd.print(0,1, "Installer menu"); break;
@@ -828,17 +834,17 @@ void setStatus(byte partition) {
     case 0xEC: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 6 digits"); break;
     case 0xED: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 32 digits"); break;
     case 0xEE: lcd.print(0,1, "                "); lcd.print(0,1, "Input: option"); break;
-    case 0xEF: lcd.print(0,1, "                "); lcd.print(0,1, "Supv. modules"); break;    
+    case 0xEF: lcd.print(0,1, "                "); lcd.print(0,1, "Supv. modules"); break;
     case 0xF0: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 1"); break;
     case 0xF1: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 2"); break;
     case 0xF2: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 3"); break;
     case 0xF3: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 4"); break;
     case 0xF4: lcd.print(0,1, "                "); lcd.print(0,1, "Function key 5"); break;
-    case 0xF5: lcd.print(0,1, "                "); lcd.print(0,1, "Wls. place. test"); break; 
-    case 0xF6: lcd.print(0,1, "                "); lcd.print(0,1, "Activate device"); break; 
+    case 0xF5: lcd.print(0,1, "                "); lcd.print(0,1, "Wls. place. test"); break;
+    case 0xF6: lcd.print(0,1, "                "); lcd.print(0,1, "Activate device"); break;
     case 0xF7: lcd.print(0,1, "                "); lcd.print(0,1, "*8PGM subsection"); break;
     case 0xF8: lcd.print(0,1, "                "); lcd.print(0,1, "Keypad program"); break;
-    case 0xFA: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 6 digits"); break;    
+    case 0xFA: lcd.print(0,1, "                "); lcd.print(0,1, "Input: 6 digits"); break;
     default: return;
   }
 }
