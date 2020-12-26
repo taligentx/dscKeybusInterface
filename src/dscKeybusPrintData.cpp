@@ -102,8 +102,8 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x7F: printPanel_0x7F(); return;           // Buzzer, partition 1 | Structure: complete | Content: complete
     case 0x82: printPanel_0x82(); return;           // Buzzer, partition 2 | Structure: complete | Content: complete
     case 0x87: printPanel_0x87(); return;           // PGM outputs | Structure: complete | Content: complete
-    case 0x8D: printPanel_0x8D(); return;           // User code programming key response, codes 17-32 | Structure: *incomplete | Content: *incomplete
-    case 0x94: printPanel_0x94(); return;           // Unknown - immediate after entering *5 programming | Structure: *incomplete | Content: *incomplete
+    case 0x8D: printPanel_0x8D(); return;           // RF module programming - it sends data from panel to RF module after programming entry is done | Structure: *incomplete | Content: *incomplete
+    case 0x94: printPanel_0x94(); return;           // Requesting and getting data from RF module to the panel | Structure: *incomplete | Content: *incomplete
     case 0x9E: printPanel_0x9E(); return;           // DLS query | Structure: complete | Content: complete
     case 0xA5: printPanel_0xA5(); return;           // Date, time, system status messages - partitions 1-2 | Structure: *incomplete | Content: *incomplete
     case 0xAA: printPanel_0xAA(); return;           // Event buffer messages | Structure: complete | Content: *incomplete
@@ -267,21 +267,23 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xAF: stream->print(F("*6: System test")); break;
     case 0xB0: stream->print(F("*6: Enable DLS")); break;
     case 0xB2: stream->print(F("*7: Command output")); break;
+    case 0xB3: stream->print(F("*7: Command output")); break;
     case 0xB7: stream->print(F("Enter installer code")); break;
     case 0xB8: stream->print(F("Key * while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
+    case 0xBF: stream->print(F("*6: Auto-arm select day")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     case 0xCE: stream->print(F("Active camera monitor selection")); break;
     // case 0xCD: Enter DLS (?)
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
-    case 0xE4: stream->print(F("*8: Installer programming")); break;
+    case 0xE4: stream->print(F("*8: Installer programming")); decimalInput = false; break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input 2 digits")); break;
-    case 0xE7: stream->print(F("Input 3 digits")); break;
+    case 0xE7: stream->print(F("Input 3 digits")); decimalInput = true; break;
     case 0xE8: stream->print(F("Input 4 digits")); break;
     case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
     case 0xEB: stream->print(F("Telephone number account code: 4 digits")); break;
@@ -296,7 +298,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF4: stream->print(F("Function key 5")); break;
     case 0xF5: stream->print(F("Wireless module placement test")); break;
     case 0xF6: stream->print(F("Activate device for test")); break;
-    case 0xF7: stream->print(F("Installer programming subsection")); break;
+    case 0xF7: stream->print(F("Installer programming subsection")); decimalInput = false; break;
     case 0xF8: stream->print(F("Keypad programming")); break;
     case 0xFA: stream->print(F("Input 6 digits")); break;
     default:
@@ -536,7 +538,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     case 0xD0: stream->print(F("Command output 4")); return;
     case 0xD1: stream->print(F("Exit fault pre-alert")); return;
     case 0xD2: stream->print(F("Armed with no entry delay cancelled")); return;
-    case 0xD3: stream->print(F("Download remote trigger")); return;
+    case 0xD3: stream->print(F("Downlook remote trigger")); return;
   }
 
   /*
@@ -958,6 +960,26 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
+  }
+
+  printUnknownData();
+}
+
+
+/*
+ *  Status messages set 0x16 for panel commands: 0xEB, 0xEC
+ *  Structure decoding: complete
+ *  Content decoding: likely incomplete - observed messages from logs have been decoded, but there are gaps in
+ *  the numerical list of messages.
+ *
+ *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
+ *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
+ */
+void dscKeybusInterface::printPanelStatus16(byte panelByte) {
+  switch (panelData[panelByte]) {
+    case 0x80: stream->print(F("Trouble acknowledged")); return;
+    case 0x81: stream->print(F("RF delinquency trouble")); return;
+    case 0x82: stream->print(F("RF delinquency restore")); return;
   }
 
   printUnknownData();
@@ -1658,9 +1680,16 @@ void dscKeybusInterface::printPanel_0x69() {
  */
 void dscKeybusInterface::printPanel_0x6E() {
   stream->print(F("LCD display: "));
-  for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
-      stream->print(panelData[panelByte] >> 4, HEX);
-      stream->print(panelData[panelByte] & 0x0F, HEX);
+  if (decimalInput) {
+    if (panelData[2] <= 0x63) stream->print(F("0"));
+    if (panelData[2] <= 0x09) stream->print(F("0"));
+    stream->print(panelData[2], DEC);
+  }
+  else  {
+    for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
+    stream->print(panelData[panelByte] >> 4, HEX);
+    stream->print(panelData[panelByte] & 0x0F, HEX);
+    }
   }
 }
 
@@ -2695,10 +2724,13 @@ void dscKeybusInterface::printPanel_0xEB() {
     case 0x04: printPanelStatus4(8); return;
     case 0x05: printPanelStatus5(8); return;
     case 0x14: printPanelStatus14(8); return;
+    case 0x16: printPanelStatus16(8); return;
     case 0x17: printPanelStatus17(8); return;
     case 0x18: printPanelStatus18(8); return;
     case 0x1B: printPanelStatus1B(8); return;
   }
+
+  printUnknownData();
 }
 
 
@@ -2757,11 +2789,14 @@ void dscKeybusInterface::printPanel_0xEC() {
     case 0x04: printPanelStatus4(8); return;
     case 0x05: printPanelStatus5(8); return;
     case 0x14: printPanelStatus14(8); return;
+    case 0x16: printPanelStatus16(8); return;
     case 0x17: printPanelStatus17(8); return;
     case 0x18: printPanelStatus18(8); return;
     case 0x1B: printPanelStatus1B(8); return;
     case 0xFF: stream->print(F("No entry")); return;
   }
+
+  printUnknownData();
 }
 
 
@@ -3351,9 +3386,16 @@ void dscKeybusInterface::printModule_0x58() {
  */
 void dscKeybusInterface::printModule_0x70() {
   stream->print(F("LCD keypad data entry: "));
-  for (byte moduleByte = 2; moduleByte <= 5; moduleByte ++) {
-      stream->print(moduleData[moduleByte] >> 4, HEX);
-      stream->print(moduleData[moduleByte] & 0x0F, HEX);
+  if (decimalInput) {
+    if (moduleData[2] <= 0x63) stream->print(F("0"));
+    if (moduleData[2] <= 0x09) stream->print(F("0"));
+    stream->print(moduleData[2], DEC);
+  }
+  else {
+    for (byte moduleByte = 2; moduleByte <= 5; moduleByte ++) {
+    stream->print(moduleData[moduleByte] >> 4, HEX);
+    stream->print(moduleData[moduleByte] & 0x0F, HEX);
+    }
   }
 }
 
