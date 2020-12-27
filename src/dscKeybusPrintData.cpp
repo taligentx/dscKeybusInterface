@@ -280,6 +280,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     // case 0xCD: Enter DLS (?)
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
+    case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
     case 0xE4: stream->print(F("*8: Installer programming")); decimalInput = false; break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input 2 digits")); break;
