@@ -277,7 +277,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     case 0xCE: stream->print(F("Active camera monitor selection")); break;
-    // case 0xCD: Enter DLS (?)
+    case 0xCD: stream->print(F("Downloading in progress")); break;
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
@@ -2858,7 +2858,8 @@ void dscKeybusInterface::printModule_0xDD() {
  *  Byte 4 bit 5: Zone expander 2 notification, panel response: 0x33 Zone expander 2 query
  *  Byte 4 bit 6: Zone expander 1 notification, panel response: 0x28 Zone expander 1 query
  *  Byte 4 bit 7: Zone expander 0 notification, panel response: 0x22 Zone expander 0 query
- *  Byte 5 bit 0-1: Unknown
+ *  Byte 5 bit 0: Unknown
+ *  Byte 5 bit 1: Wireless module unknown notification, panel response: 0xE6.25 then Module0xE6
  *  Byte 5 bit 2: Keypad zone status notification, panel response: 0xD5 Keypad zone query
  *  Byte 5 bit 3-4: Unknown
  *  Byte 5 bit 5: Module status notification, panel response: 0x58 Module status query
@@ -2944,6 +2945,14 @@ void dscKeybusInterface::printModule_Status() {
       stream->print(F("Wireless module battery notification "));
       printedMessage = true;
     }
+  }
+
+
+  // Unknown wireless notification, panel responds with 0xE6.25 then Module0xE6
+  if ((moduleData[5] & 0x02) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("Wireless notification "));
+    printedMessage = true;
   }
 
   //Keypad zone notification, panel responds with 0xD5 query
