@@ -523,6 +523,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
      */
     case 0x03: stream->print(F("Cross zone alarm")); return;
     case 0x04: stream->print(F("Delinquency alarm")); return;
+    case 0x05: stream->print(F("Late to close")); return;
     // 0x24 - 0x28: Access codes 33-34, 40-42
     case 0x29: stream->print(F("Downloading forced answer")); return;
     case 0x2B: stream->print(F("Armed: Auto-arm")); return;
