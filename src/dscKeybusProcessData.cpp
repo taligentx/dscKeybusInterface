@@ -46,7 +46,7 @@ void dscKeybusInterface::resetStatus() {
 
 
 // Sets the panel time
-bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode) {
+bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition) {
 
   // Loops if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
@@ -88,7 +88,20 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
   strcat(timeEntry, timeChar);
 
   strcat(timeEntry, "#");
-  write(timeEntry);
+
+  if (writePartition != timePartition) {
+    byte previousPartition = writePartition;
+    writePartition = timePartition;
+    write(timeEntry);
+    while(writeKeyPending || writeKeysPending) {
+      loop();
+      #if defined(ESP8266)
+      yield();
+      #endif
+    }
+    writePartition = previousPartition;
+  }
+  else write(timeEntry);
 
   return true;
 }
@@ -793,7 +806,7 @@ void dscKeybusInterface::processPanelStatus5(byte partition, byte panelByte) {
    *  0x00 - 0x04: Access codes 35-39
    *  0x05 - 0x39: Access codes 43-95
    */
-  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+  if (panelData[panelByte] <= 0x39) {
     byte dscCode = panelData[panelByte] + 0x23;
     processPanelAccessCode(partitionIndex, dscCode, false);
     return;

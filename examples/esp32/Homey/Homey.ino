@@ -57,7 +57,7 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin 19   // esp32: 4,13,16-39
+#define dscReadPin  19  // esp32: 4,13,16-39
 #define dscWritePin 21  // esp32: 4,13,16-33
 
 // Initialize components

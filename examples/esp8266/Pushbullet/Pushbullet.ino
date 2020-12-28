@@ -60,7 +60,7 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
 // HTTPS root certificate for api.pushbullet.com: GlobalSign Root CA - R2, expires 2021.12.15
 const char pushbulletCertificateRoot[] = R"=EOF=(
@@ -94,7 +94,7 @@ Kk5GkNl1LNj/jO7M3GnrbOYV0KP/SAusVd/fJZ1CtlGjZpVgxdAi5yJ6UaXMhw==
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 X509List pushbulletCert(pushbulletCertificateRoot);
-WiFiClientSecure wifiClient;
+WiFiClientSecure ipClient;
 bool wifiConnected = true;
 
 
@@ -107,7 +107,7 @@ void setup() {
   Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  wifiClient.setTrustAnchors(&pushbulletCert);
+  ipClient.setTrustAnchors(&pushbulletCert);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -323,47 +323,47 @@ void loop() {
 bool sendMessage(const char* messageContent) {
 
   // Connects and sends the message as a Pushbullet note-type push
-  if (!wifiClient.connect("api.pushbullet.com", 443)) return false;
-  wifiClient.println(F("POST /v2/pushes HTTP/1.1"));
-  wifiClient.println(F("Host: api.pushbullet.com"));
-  wifiClient.println(F("User-Agent: ESP8266"));
-  wifiClient.println(F("Accept: */*"));
-  wifiClient.println(F("Content-Type: application/json"));
-  wifiClient.print(F("Content-Length: "));
-  wifiClient.println(strlen(messageContent) + strlen(messagePrefix) + 25);  // Length including JSON data
-  wifiClient.print(F("Access-Token: "));
-  wifiClient.println(pushbulletToken);
-  wifiClient.println();
-  wifiClient.print(F("{\"body\":\""));
-  wifiClient.print(messagePrefix);
-  wifiClient.print(messageContent);
-  wifiClient.print(F("\",\"type\":\"note\"}"));
+  if (!ipClient.connect("api.pushbullet.com", 443)) return false;
+  ipClient.println(F("POST /v2/pushes HTTP/1.1"));
+  ipClient.println(F("Host: api.pushbullet.com"));
+  ipClient.println(F("User-Agent: ESP8266"));
+  ipClient.println(F("Accept: */*"));
+  ipClient.println(F("Content-Type: application/json"));
+  ipClient.print(F("Content-Length: "));
+  ipClient.println(strlen(messageContent) + strlen(messagePrefix) + 25);  // Length including JSON data
+  ipClient.print(F("Access-Token: "));
+  ipClient.println(pushbulletToken);
+  ipClient.println();
+  ipClient.print(F("{\"body\":\""));
+  ipClient.print(messagePrefix);
+  ipClient.print(messageContent);
+  ipClient.print(F("\",\"type\":\"note\"}"));
 
   // Waits for a response
   unsigned long previousMillis = millis();
-  while (!wifiClient.available()) {
+  while (!ipClient.available()) {
     dsc.loop();
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
-      wifiClient.stop();
+      ipClient.stop();
       return false;
     }
     yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code
-  while (wifiClient.available()) {
-    if (wifiClient.read() == ' ') break;
+  while (ipClient.available()) {
+    if (ipClient.read() == ' ') break;
   }
 
   // Checks the first character of the HTTP status code - the message was sent successfully if the status code
   // begins with "2"
-  char statusCode = wifiClient.read();
+  char statusCode = ipClient.read();
 
   // Successful, reads the remaining response to clear the client buffer
   if (statusCode == '2') {
-    while (wifiClient.available()) wifiClient.read();
-    wifiClient.stop();
+    while (ipClient.available()) ipClient.read();
+    ipClient.stop();
     return true;
   }
 
@@ -371,9 +371,9 @@ bool sendMessage(const char* messageContent) {
   else {
     Serial.println(F("Push notification error, response:"));
     Serial.print(statusCode);
-    while (wifiClient.available()) Serial.print((char)wifiClient.read());
+    while (ipClient.available()) Serial.print((char)ipClient.read());
     Serial.println();
-    wifiClient.stop();
+    ipClient.stop();
     return false;
   }
 }

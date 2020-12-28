@@ -74,14 +74,14 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 X509List telegramCert(TELEGRAM_CERTIFICATE_ROOT);
-WiFiClientSecure wifiClient;
-UniversalTelegramBot telegramBot(telegramBotToken, wifiClient);
+WiFiClientSecure ipClient;
+UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
 const int telegramCheckInterval = 1000;
 bool wifiConnected = true;
 
@@ -95,7 +95,7 @@ void setup() {
   Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  wifiClient.setTrustAnchors(&telegramCert);
+  ipClient.setTrustAnchors(&telegramCert);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);

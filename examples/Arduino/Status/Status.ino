@@ -44,7 +44,7 @@
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
-#define dscReadPin 5   // Arduino Uno: 2-12
+#define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
@@ -269,11 +269,14 @@ void loop() {
       }
     }
 
-    // Checks for a panel timestamp
-    //
-    // The panel time can be set using dsc.setTime(year, month, day, hour, minute, "accessCode") - for example:
-    //   dsc.setTime(2015, 10, 21, 7, 28, "1234")  # Sets 2015.10.21 07:28 with access code 1234
-    //
+    /*  Checks for a panel timestamp
+     *
+     *  The panel time can be set using dsc.setTime(year, month, day, hour, minute, "accessCode", partition) - the
+     *  partition is optional and defaults to partition 1:
+     *
+     *    dsc.setTime(2015, 12, 21, 20, 38, "1234")     # Sets 2015.12.21 20:38 with access code 1234
+     *    dsc.setTime(2020, 05, 30, 15, 22, "1234", 2)  # Sets 2020.05.30 15:22 with access code 1234 on partition 2
+     */
     if (dsc.timestampChanged) {
       dsc.timestampChanged = false;
       Serial.print(F("Timestamp: "));

@@ -59,11 +59,11 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
-WiFiClientSecure wifiClient;
+WiFiClientSecure ipClient;
 bool wifiConnected = true;
 
 
@@ -82,7 +82,7 @@ void setup() {
   }
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  wifiClient.setInsecure();
+  ipClient.setInsecure();
 
   // Sends a message on startup to verify connectivity
   Serial.print(F("Twilio...."));
@@ -281,53 +281,53 @@ void loop() {
 bool sendMessage(const char* messageContent) {
 
   // Connects and sends the message as x-www-form-urlencoded
-  if (!wifiClient.connect("api.twilio.com", 443)) return false;
-  wifiClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
-  wifiClient.print(AccountSID);
-  wifiClient.println(F("/Messages.json HTTP/1.1"));
-  wifiClient.print(F("Authorization: Basic "));
-  wifiClient.println(Base64EncodedAuth);
-  wifiClient.println(F("Host: api.twilio.com"));
-  wifiClient.println(F("User-Agent: ESP8266"));
-  wifiClient.println(F("Accept: */*"));
-  wifiClient.println(F("Content-Type: application/x-www-form-urlencoded"));
-  wifiClient.print(F("Content-Length: "));
-  wifiClient.println(strlen(To) + strlen(From) + strlen(messagePrefix) + strlen(messageContent) + 18);  // Length including data
-  wifiClient.println("Connection: Close");
-  wifiClient.println();
-  wifiClient.print(F("To=+"));
-  wifiClient.print(To);
-  wifiClient.print(F("&From=+"));
-  wifiClient.print(From);
-  wifiClient.print(F("&Body="));
-  wifiClient.print(messagePrefix);
-  wifiClient.println(messageContent);
+  if (!ipClient.connect("api.twilio.com", 443)) return false;
+  ipClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
+  ipClient.print(AccountSID);
+  ipClient.println(F("/Messages.json HTTP/1.1"));
+  ipClient.print(F("Authorization: Basic "));
+  ipClient.println(Base64EncodedAuth);
+  ipClient.println(F("Host: api.twilio.com"));
+  ipClient.println(F("User-Agent: ESP8266"));
+  ipClient.println(F("Accept: */*"));
+  ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
+  ipClient.print(F("Content-Length: "));
+  ipClient.println(strlen(To) + strlen(From) + strlen(messagePrefix) + strlen(messageContent) + 18);  // Length including data
+  ipClient.println("Connection: Close");
+  ipClient.println();
+  ipClient.print(F("To=+"));
+  ipClient.print(To);
+  ipClient.print(F("&From=+"));
+  ipClient.print(From);
+  ipClient.print(F("&Body="));
+  ipClient.print(messagePrefix);
+  ipClient.println(messageContent);
 
   // Waits for a response
   unsigned long previousMillis = millis();
-  while (!wifiClient.available()) {
+  while (!ipClient.available()) {
     dsc.loop();
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
-      wifiClient.stop();
+      ipClient.stop();
       return false;
     }
     yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code
-  while (wifiClient.available()) {
-    if (wifiClient.read() == ' ') break;
+  while (ipClient.available()) {
+    if (ipClient.read() == ' ') break;
   }
 
   // Checks the first character of the HTTP status code - the message was sent successfully if the status code
   // begins with "2"
-  char statusCode = wifiClient.read();
+  char statusCode = ipClient.read();
 
   // Successful, reads the remaining response to clear the client buffer
   if (statusCode == '2') {
-    while (wifiClient.available()) wifiClient.read();
-    wifiClient.stop();
+    while (ipClient.available()) ipClient.read();
+    ipClient.stop();
     return true;
   }
 
@@ -335,9 +335,9 @@ bool sendMessage(const char* messageContent) {
   else {
     Serial.println(F("SMS messaging error, response:"));
     Serial.print(statusCode);
-    while (wifiClient.available()) Serial.print((char)wifiClient.read());
+    while (ipClient.available()) Serial.print((char)ipClient.read());
     Serial.println();
-    wifiClient.stop();
+    ipClient.stop();
     return false;
   }
 }
