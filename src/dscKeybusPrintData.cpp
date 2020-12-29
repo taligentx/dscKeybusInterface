@@ -2914,8 +2914,9 @@ void dscKeybusInterface::printModule_Status() {
   // Keypad partition
   if (moduleCmd == 0x1B && moduleData[4] != 0xFF) {
     if (printedMessage) stream->print("| ");
-    stream->print(F("Keypad partition: "));
+    stream->print(F("Keypad on partition: "));
     printModuleSlots(1, 4, 4, 0x80, 0, 1, 0, true);
+    stream->print(F("going idle"));
     printedMessage = true;
   }
   else {
@@ -2975,10 +2976,22 @@ void dscKeybusInterface::printModule_Status() {
     printedMessage = true;
   }
 
-  //Keypad going idle notification
+  //Unknown keypad notification
   if (moduleByteCount > 6 && (moduleData[7] & 0x08) == 0) {
     if (printedMessage) stream->print("| ");
-    stream->print(F("Keypad idle notification "));
+    stream->print(F("Keypad notification "));
+    printedMessage = true;
+  }
+
+  if (moduleByteCount > 6 && (moduleData[6] & 0x80) == 0 && (moduleData[6] & 0x60) != 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("Door chime broadcast "));
+    printedMessage = true;
+  }
+
+  if (moduleByteCount > 6 && (moduleData[6] & 0x60) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("Zone label broadcast "));
     printedMessage = true;
   }
 
@@ -3574,7 +3587,7 @@ void dscKeybusInterface::printModule_KeyCodes(byte keyByte) {
     case 0x88: stream->print(F("Left arrow ")); break;
     case 0x8D: stream->print(F("Bypass recall ")); break;
     case 0x93: stream->print(F("Recall bypass group ")); break;
-    case 0x94: stream->print(F("Label broadcast announce ")); break;
+    case 0x94: stream->print(F("Global label broadcast ")); break;
     case 0x99: stream->print(F("Function key [25] Future Use ")); break;
     case 0xA5: stream->print(F("Receive data ")); break;
     case 0xAA: stream->print(F("Submit data ")); break;
