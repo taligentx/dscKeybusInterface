@@ -39,6 +39,7 @@
  *    V61 - Zone 1 ... V124 - Zone 64
  *
  *  Release notes:
+ *    1.3 - Display *3 alarm memory zones
  *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
  *
@@ -93,7 +94,8 @@ int blynkPort = 8080;        // Blynk local server port
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool wifiConnected = true;
-bool partitionChanged;
+bool partitionChanged, memoryZonesStatusChanged;
+byte memoryZones[dscZones], memoryZonesChanged[dscZones], previousMemoryZones[dscZones];
 byte viewPartition = 1;
 const char* lcdPartition = "Partition ";
 WidgetLCD lcd(V40);
@@ -211,7 +213,8 @@ void loop() {
 
   Blynk.run();
 
-  dsc.loop();
+  // Processes status data that is not handled natively by the library
+  if (dsc.loop()) processStatus();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
     dsc.statusChanged = false;  // Reset the status tracking flag
@@ -247,70 +250,70 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
             if (bitRead(dsc.openZones[zoneGroup], zoneBit)) {
               switch (zoneBit + 1 + (zoneGroup * 8)) {
-                case 1: ledZone1.on(); break;
-                case 2: ledZone2.on(); break;
-                case 3: ledZone3.on(); break;
-                case 4: ledZone4.on(); break;
-                case 5: ledZone5.on(); break;
-                case 6: ledZone6.on(); break;
-                case 7: ledZone7.on(); break;
-                case 8: ledZone8.on(); break;
-                case 9: ledZone9.on(); break;
-                case 10: ledZone10.on(); break;
-                case 11: ledZone11.on(); break;
-                case 12: ledZone12.on(); break;
-                case 13: ledZone13.on(); break;
-                case 14: ledZone14.on(); break;
-                case 15: ledZone15.on(); break;
-                case 16: ledZone16.on(); break;
-                case 17: ledZone17.on(); break;
-                case 18: ledZone18.on(); break;
-                case 19: ledZone19.on(); break;
-                case 20: ledZone20.on(); break;
-                case 21: ledZone21.on(); break;
-                case 22: ledZone22.on(); break;
-                case 23: ledZone23.on(); break;
-                case 24: ledZone24.on(); break;
-                case 25: ledZone25.on(); break;
-                case 26: ledZone26.on(); break;
-                case 27: ledZone27.on(); break;
-                case 28: ledZone28.on(); break;
-                case 29: ledZone29.on(); break;
-                case 30: ledZone30.on(); break;
-                case 31: ledZone31.on(); break;
-                case 32: ledZone32.on(); break;
-                case 33: ledZone33.on(); break;
-                case 34: ledZone34.on(); break;
-                case 35: ledZone35.on(); break;
-                case 36: ledZone36.on(); break;
-                case 37: ledZone37.on(); break;
-                case 38: ledZone38.on(); break;
-                case 39: ledZone39.on(); break;
-                case 40: ledZone40.on(); break;
-                case 41: ledZone41.on(); break;
-                case 42: ledZone42.on(); break;
-                case 43: ledZone43.on(); break;
-                case 44: ledZone44.on(); break;
-                case 45: ledZone45.on(); break;
-                case 46: ledZone46.on(); break;
-                case 47: ledZone47.on(); break;
-                case 48: ledZone48.on(); break;
-                case 49: ledZone49.on(); break;
-                case 50: ledZone50.on(); break;
-                case 51: ledZone51.on(); break;
-                case 52: ledZone52.on(); break;
-                case 53: ledZone53.on(); break;
-                case 54: ledZone54.on(); break;
-                case 55: ledZone55.on(); break;
-                case 56: ledZone56.on(); break;
-                case 57: ledZone57.on(); break;
-                case 58: ledZone58.on(); break;
-                case 59: ledZone59.on(); break;
-                case 60: ledZone60.on(); break;
-                case 61: ledZone61.on(); break;
-                case 62: ledZone62.on(); break;
-                case 63: ledZone63.on(); break;
-                case 64: ledZone64.on(); break;
+                case 1: ledZone1.setColor("#23C48E"); ledZone1.on(); break;
+                case 2: ledZone2.setColor("#23C48E"); ledZone2.on(); break;
+                case 3: ledZone3.setColor("#23C48E"); ledZone3.on(); break;
+                case 4: ledZone4.setColor("#23C48E"); ledZone4.on(); break;
+                case 5: ledZone5.setColor("#23C48E"); ledZone5.on(); break;
+                case 6: ledZone6.setColor("#23C48E"); ledZone6.on(); break;
+                case 7: ledZone7.setColor("#23C48E"); ledZone7.on(); break;
+                case 8: ledZone8.setColor("#23C48E"); ledZone8.on(); break;
+                case 9: ledZone9.setColor("#23C48E"); ledZone9.on(); break;
+                case 10: ledZone10.setColor("#23C48E"); ledZone10.on(); break;
+                case 11: ledZone11.setColor("#23C48E"); ledZone11.on(); break;
+                case 12: ledZone12.setColor("#23C48E"); ledZone12.on(); break;
+                case 13: ledZone13.setColor("#23C48E"); ledZone13.on(); break;
+                case 14: ledZone14.setColor("#23C48E"); ledZone14.on(); break;
+                case 15: ledZone15.setColor("#23C48E"); ledZone15.on(); break;
+                case 16: ledZone16.setColor("#23C48E"); ledZone16.on(); break;
+                case 17: ledZone17.setColor("#23C48E"); ledZone17.on(); break;
+                case 18: ledZone18.setColor("#23C48E"); ledZone18.on(); break;
+                case 19: ledZone19.setColor("#23C48E"); ledZone19.on(); break;
+                case 20: ledZone20.setColor("#23C48E"); ledZone20.on(); break;
+                case 21: ledZone21.setColor("#23C48E"); ledZone21.on(); break;
+                case 22: ledZone22.setColor("#23C48E"); ledZone22.on(); break;
+                case 23: ledZone23.setColor("#23C48E"); ledZone23.on(); break;
+                case 24: ledZone24.setColor("#23C48E"); ledZone24.on(); break;
+                case 25: ledZone25.setColor("#23C48E"); ledZone25.on(); break;
+                case 26: ledZone26.setColor("#23C48E"); ledZone26.on(); break;
+                case 27: ledZone27.setColor("#23C48E"); ledZone27.on(); break;
+                case 28: ledZone28.setColor("#23C48E"); ledZone28.on(); break;
+                case 29: ledZone29.setColor("#23C48E"); ledZone29.on(); break;
+                case 30: ledZone30.setColor("#23C48E"); ledZone30.on(); break;
+                case 31: ledZone31.setColor("#23C48E"); ledZone31.on(); break;
+                case 32: ledZone32.setColor("#23C48E"); ledZone32.on(); break;
+                case 33: ledZone33.setColor("#23C48E"); ledZone33.on(); break;
+                case 34: ledZone34.setColor("#23C48E"); ledZone34.on(); break;
+                case 35: ledZone35.setColor("#23C48E"); ledZone35.on(); break;
+                case 36: ledZone36.setColor("#23C48E"); ledZone36.on(); break;
+                case 37: ledZone37.setColor("#23C48E"); ledZone37.on(); break;
+                case 38: ledZone38.setColor("#23C48E"); ledZone38.on(); break;
+                case 39: ledZone39.setColor("#23C48E"); ledZone39.on(); break;
+                case 40: ledZone40.setColor("#23C48E"); ledZone40.on(); break;
+                case 41: ledZone41.setColor("#23C48E"); ledZone41.on(); break;
+                case 42: ledZone42.setColor("#23C48E"); ledZone42.on(); break;
+                case 43: ledZone43.setColor("#23C48E"); ledZone43.on(); break;
+                case 44: ledZone44.setColor("#23C48E"); ledZone44.on(); break;
+                case 45: ledZone45.setColor("#23C48E"); ledZone45.on(); break;
+                case 46: ledZone46.setColor("#23C48E"); ledZone46.on(); break;
+                case 47: ledZone47.setColor("#23C48E"); ledZone47.on(); break;
+                case 48: ledZone48.setColor("#23C48E"); ledZone48.on(); break;
+                case 49: ledZone49.setColor("#23C48E"); ledZone49.on(); break;
+                case 50: ledZone50.setColor("#23C48E"); ledZone50.on(); break;
+                case 51: ledZone51.setColor("#23C48E"); ledZone51.on(); break;
+                case 52: ledZone52.setColor("#23C48E"); ledZone52.on(); break;
+                case 53: ledZone53.setColor("#23C48E"); ledZone53.on(); break;
+                case 54: ledZone54.setColor("#23C48E"); ledZone54.on(); break;
+                case 55: ledZone55.setColor("#23C48E"); ledZone55.on(); break;
+                case 56: ledZone56.setColor("#23C48E"); ledZone56.on(); break;
+                case 57: ledZone57.setColor("#23C48E"); ledZone57.on(); break;
+                case 58: ledZone58.setColor("#23C48E"); ledZone58.on(); break;
+                case 59: ledZone59.setColor("#23C48E"); ledZone59.on(); break;
+                case 60: ledZone60.setColor("#23C48E"); ledZone60.on(); break;
+                case 61: ledZone61.setColor("#23C48E"); ledZone61.on(); break;
+                case 62: ledZone62.setColor("#23C48E"); ledZone62.on(); break;
+                case 63: ledZone63.setColor("#23C48E"); ledZone63.on(); break;
+                case 64: ledZone64.setColor("#23C48E"); ledZone64.on(); break;
               }
             }
             else {
@@ -561,6 +564,86 @@ void loop() {
         lcd.print(0,0,"Battery restored");
       }
     }
+
+    // Displays alarm memory zones in the *3 alarm memory menu
+    if (dsc.status[partition] == 0xA2) {
+      for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(memoryZonesChanged[zoneGroup], zoneBit)) {      // Checks an individual alarm memory zone status flag
+            if (bitRead(memoryZones[zoneGroup], zoneBit)) {
+              bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);  // Resets the individual open zone status flag
+              dsc.openZonesStatusChanged = true;
+              switch (zoneBit + 1 + (zoneGroup * 8)) {                // Sets LED color to red on alarm memory zone
+                case 1: ledZone1.setColor("#D3435C"); ledZone1.on(); break;
+                case 2: ledZone2.setColor("#D3435C"); ledZone2.on(); break;
+                case 3: ledZone3.setColor("#D3435C"); ledZone3.on(); break;
+                case 4: ledZone4.setColor("#D3435C"); ledZone4.on(); break;
+                case 5: ledZone5.setColor("#D3435C"); ledZone5.on(); break;
+                case 6: ledZone6.setColor("#D3435C"); ledZone6.on(); break;
+                case 7: ledZone7.setColor("#D3435C"); ledZone7.on(); break;
+                case 8: ledZone8.setColor("#D3435C"); ledZone8.on(); break;
+                case 9: ledZone9.setColor("#D3435C"); ledZone9.on(); break;
+                case 10: ledZone10.setColor("#D3435C"); ledZone10.on(); break;
+                case 11: ledZone11.setColor("#D3435C"); ledZone11.on(); break;
+                case 12: ledZone12.setColor("#D3435C"); ledZone12.on(); break;
+                case 13: ledZone13.setColor("#D3435C"); ledZone13.on(); break;
+                case 14: ledZone14.setColor("#D3435C"); ledZone14.on(); break;
+                case 15: ledZone15.setColor("#D3435C"); ledZone15.on(); break;
+                case 16: ledZone16.setColor("#D3435C"); ledZone16.on(); break;
+                case 17: ledZone17.setColor("#D3435C"); ledZone17.on(); break;
+                case 18: ledZone18.setColor("#D3435C"); ledZone18.on(); break;
+                case 19: ledZone19.setColor("#D3435C"); ledZone19.on(); break;
+                case 20: ledZone20.setColor("#D3435C"); ledZone20.on(); break;
+                case 21: ledZone21.setColor("#D3435C"); ledZone21.on(); break;
+                case 22: ledZone22.setColor("#D3435C"); ledZone22.on(); break;
+                case 23: ledZone23.setColor("#D3435C"); ledZone23.on(); break;
+                case 24: ledZone24.setColor("#D3435C"); ledZone24.on(); break;
+                case 25: ledZone25.setColor("#D3435C"); ledZone25.on(); break;
+                case 26: ledZone26.setColor("#D3435C"); ledZone26.on(); break;
+                case 27: ledZone27.setColor("#D3435C"); ledZone27.on(); break;
+                case 28: ledZone28.setColor("#D3435C"); ledZone28.on(); break;
+                case 29: ledZone29.setColor("#D3435C"); ledZone29.on(); break;
+                case 30: ledZone30.setColor("#D3435C"); ledZone30.on(); break;
+                case 31: ledZone31.setColor("#D3435C"); ledZone31.on(); break;
+                case 32: ledZone32.setColor("#D3435C"); ledZone32.on(); break;
+                case 33: ledZone33.setColor("#D3435C"); ledZone33.on(); break;
+                case 34: ledZone34.setColor("#D3435C"); ledZone34.on(); break;
+                case 35: ledZone35.setColor("#D3435C"); ledZone35.on(); break;
+                case 36: ledZone36.setColor("#D3435C"); ledZone36.on(); break;
+                case 37: ledZone37.setColor("#D3435C"); ledZone37.on(); break;
+                case 38: ledZone38.setColor("#D3435C"); ledZone38.on(); break;
+                case 39: ledZone39.setColor("#D3435C"); ledZone39.on(); break;
+                case 40: ledZone40.setColor("#D3435C"); ledZone40.on(); break;
+                case 41: ledZone41.setColor("#D3435C"); ledZone41.on(); break;
+                case 42: ledZone42.setColor("#D3435C"); ledZone42.on(); break;
+                case 43: ledZone43.setColor("#D3435C"); ledZone43.on(); break;
+                case 44: ledZone44.setColor("#D3435C"); ledZone44.on(); break;
+                case 45: ledZone45.setColor("#D3435C"); ledZone45.on(); break;
+                case 46: ledZone46.setColor("#D3435C"); ledZone46.on(); break;
+                case 47: ledZone47.setColor("#D3435C"); ledZone47.on(); break;
+                case 48: ledZone48.setColor("#D3435C"); ledZone48.on(); break;
+                case 49: ledZone49.setColor("#D3435C"); ledZone49.on(); break;
+                case 50: ledZone50.setColor("#D3435C"); ledZone50.on(); break;
+                case 51: ledZone51.setColor("#D3435C"); ledZone51.on(); break;
+                case 52: ledZone52.setColor("#D3435C"); ledZone52.on(); break;
+                case 53: ledZone53.setColor("#D3435C"); ledZone53.on(); break;
+                case 54: ledZone54.setColor("#D3435C"); ledZone54.on(); break;
+                case 55: ledZone55.setColor("#D3435C"); ledZone55.on(); break;
+                case 56: ledZone56.setColor("#D3435C"); ledZone56.on(); break;
+                case 57: ledZone57.setColor("#D3435C"); ledZone57.on(); break;
+                case 58: ledZone58.setColor("#D3435C"); ledZone58.on(); break;
+                case 59: ledZone59.setColor("#D3435C"); ledZone59.on(); break;
+                case 60: ledZone60.setColor("#D3435C"); ledZone60.on(); break;
+                case 61: ledZone61.setColor("#D3435C"); ledZone61.on(); break;
+                case 62: ledZone62.setColor("#D3435C"); ledZone62.on(); break;
+                case 63: ledZone63.setColor("#D3435C"); ledZone63.on(); break;
+                case 64: ledZone64.setColor("#D3435C"); ledZone64.on(); break;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -771,11 +854,11 @@ void setStatus(byte partition) {
     case 0x01: lcd.print(0,1, "                "); lcd.print(0,1, "Ready"); break;
     case 0x02: lcd.print(0,1, "                "); lcd.print(0,1, "Stay zones open"); break;
     case 0x03: lcd.print(0,1, "                "); lcd.print(0,1, "Zones open"); break;
-    case 0x04: lcd.print(0,1, "                "); lcd.print(0,1, "Armed stay"); break;
-    case 0x05: lcd.print(0,1, "                "); lcd.print(0,1, "Armed away"); break;
-    case 0x06: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); break;
+    case 0x04: lcd.print(0,1, "                "); lcd.print(0,1, "Armed stay"); resetMemoryZones(); break;
+    case 0x05: lcd.print(0,1, "                "); lcd.print(0,1, "Armed away"); resetMemoryZones(); break;
+    case 0x06: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); resetMemoryZones(); break;
     case 0x07: lcd.print(0,1, "                "); lcd.print(0,1, "Failed to arm"); break;
-    case 0x08: lcd.print(0,1, "                "); lcd.print(0,1, "Exit delay"); break;
+    case 0x08: lcd.print(0,1, "                "); lcd.print(0,1, "Exit delay"); resetMemoryZones(); break;
     case 0x09: lcd.print(0,1, "                "); lcd.print(0,1, "No entry delay"); break;
     case 0x0B: lcd.print(0,1, "                "); lcd.print(0,1, "Quick exit"); break;
     case 0x0C: lcd.print(0,1, "                "); lcd.print(0,1, "Entry delay"); break;
@@ -866,5 +949,50 @@ void printFire(byte partition) {
     lcd.print(0,0, lcdPartition);
     lcd.print(position, 0, partition + 1);
     lcd.print(0,1, "Fire alarm off");
+  }
+}
+
+
+// Processes status data not natively handled within the library
+void processStatus() {
+  switch (dsc.panelData[0]) {
+    case 0x5D: if ((dsc.panelData[2] & 0x04) == 0x04) processMemoryZones(0); break;  // Alarm memory zones 1-32
+    case 0xE6: if (dsc.panelData[2] == 0x18 && (dsc.panelData[4] & 0x04) == 0x04) processMemoryZones(4);  // Alarm memory zones 33-64
+    break;
+  }
+}
+
+
+// Processes alarm memory zones status
+void processMemoryZones(byte startByte) {
+  byte endByte = startByte + 4;
+  if (endByte > dscZones) endByte = dscZones;
+  byte zoneOffset = 3;
+  if (startByte == 4) zoneOffset = 1;
+
+  for (byte zoneGroup = startByte; zoneGroup < endByte; zoneGroup++) {
+    memoryZones[zoneGroup] = dsc.panelData[zoneGroup + zoneOffset];
+    byte zonesChanged = memoryZones[zoneGroup] ^ previousMemoryZones[zoneGroup];
+    if (zonesChanged != 0) {
+      previousMemoryZones[zoneGroup] = memoryZones[zoneGroup];
+      memoryZonesStatusChanged = true;
+      if (!dsc.pauseStatus) dsc.statusChanged = true;
+
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        if (bitRead(zonesChanged, zoneBit)) {
+          bitWrite(memoryZonesChanged[zoneGroup], zoneBit, 1);
+        }
+      }
+    }
+  }
+}
+
+// Resets alarm memory zones status
+void resetMemoryZones() {
+  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+    memoryZones[zoneGroup] = 0;
+    memoryZonesChanged[zoneGroup] = 0;
+    previousMemoryZones[zoneGroup] = 0;
+    memoryZonesStatusChanged = false;
   }
 }
