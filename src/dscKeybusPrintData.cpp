@@ -266,7 +266,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xAD: stream->print(F("*6: Auto-arm disabled")); break;
     case 0xAF: stream->print(F("*6: System test")); break;
     case 0xB0: stream->print(F("*6: Enable DLS")); break;
-    case 0xB2: stream->print(F("*7: Command output")); break;
+    case 0xB2:
     case 0xB3: stream->print(F("*7: Command output")); break;
     case 0xB7: stream->print(F("Enter installer code")); break;
     case 0xB8: stream->print(F("Key * while armed")); break;
@@ -276,8 +276,8 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xBF: stream->print(F("*6: Auto-arm select day")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
-    case 0xCE: stream->print(F("Active camera monitor selection")); break;
     case 0xCD: stream->print(F("Downloading in progress")); break;
+    case 0xCE: stream->print(F("Active camera monitor selection")); break;
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
@@ -2946,7 +2946,6 @@ void dscKeybusInterface::printModule_Status() {
       printedMessage = true;
     }
   }
-
 
   // Unknown wireless notification, panel responds with 0xE6.25 then Module0xE6
   if ((moduleData[5] & 0x02) == 0) {
