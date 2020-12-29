@@ -89,7 +89,7 @@ class dscKeybusInterface {
     int year;
 
     // Sets panel time, the year can be sent as either 2 or 4 digits, returns true if the panel is ready to set the time
-    bool setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode);
+    bool setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition = 1);
 
     // Status tracking
     bool statusChanged;                   // True after any status change
@@ -306,6 +306,7 @@ class dscKeybusInterface {
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
     byte previousPgmOutputs[2];
+    bool firstGen;
 
     static byte dscClockPin;
     static byte dscReadPin;

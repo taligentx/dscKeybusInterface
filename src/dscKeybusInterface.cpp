@@ -206,13 +206,15 @@ bool dscKeybusInterface::loop() {
   #endif
 
   // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
-  static bool firstClockCycle = true;
-  if (firstClockCycle) {
-    if ((validCRC() || panelData[0] == 0x05) && panelData[0] != 0) {
-      firstClockCycle = false;
+  static bool startupCycle = true;
+  if (startupCycle) {
+    if (panelData[0] == 0) return false;
+    else if (panelData[0] == 0x05) {
+      if (panelByteCount == 6) firstGen = true;
+      startupCycle = false;
       writeReady = true;
     }
-    else return false;
+    else if (!validCRC()) return false;
   }
 
   // Sets writeReady status
@@ -262,7 +264,7 @@ bool dscKeybusInterface::loop() {
 }
 
 
-// Deprecated, relabeled to loop()
+// Deprecated, replaced by loop()
 bool dscKeybusInterface::handlePanel() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s

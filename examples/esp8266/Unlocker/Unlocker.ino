@@ -91,7 +91,7 @@
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscRelayPin D6  // esp8266: D5, D6, D7 (GPIO 14, 12, 13) - Optional, leave this pin disconnected if not using a relay
 

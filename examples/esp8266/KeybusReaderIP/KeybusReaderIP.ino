@@ -6,10 +6,12 @@
  *
  *  Usage:
  *    1. Set WiFi settings and upload the sketch.
- *    2. For macOS/Linux, use netcat to connect: nc dsc.local 80
+ *    2. For macOS/Linux: telnet dsc.local
  *
  *  Release notes:
- *    1.2 - Show redundant data by default
+ *    1.2 - Updated to connect via telnet
+ *          Handle spurious data while keybus is disconnected
+ *          Removed redundant data processing
  *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
  *
@@ -51,20 +53,19 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
-int serverPort = 80;
+char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: dsc.local
+int serverPort = 23;
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
-WiFiServer wifiServer(serverPort);
-WiFiClient client;
-bool newClient = true;
+WiFiServer ipServer(serverPort);
+WiFiClient ipClient;
 
 
 void setup() {
@@ -90,7 +91,7 @@ void setup() {
     }
   }
 
-  wifiServer.begin();
+  ipServer.begin();
   Serial.print(F("Server started: "));
   Serial.print(dnsHostname);
   Serial.print(F(".local:"));
@@ -103,7 +104,7 @@ void setup() {
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), begin(client) for IP.
-  dsc.begin(client);
+  dsc.begin(ipClient);
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -114,80 +115,94 @@ void loop() {
 
   dsc.loop(); //call it to process buffer when client is disconnected
 
-  client = wifiServer.available();
-  if (client) {
+  // Checks if the interface is connected to the Keybus
+  if (dsc.keybusChanged) {
+    dsc.keybusChanged = false;                 // Resets the Keybus data status flag
+    if (dsc.keybusConnected) Serial.println(F("Keybus connected"));
+    else Serial.println(F("Keybus disconnected"));
+  }
 
-    while (client.connected()) {
+  ipClient = ipServer.available();
+  if (ipClient) {
+    static bool newClient = true;
+
+    while (ipClient.connected()) {
 
       // Once client is connected, tell it is connected (once!)
       if (newClient) {
         Serial.println("Client connected");
-        client.printf("Connected to dscKeybusReader\n");
+        ipClient.printf("Connected to DSC Keybus Reader\r\n");
         newClient = false;
       }
 
       // Reads from IP input and writes to the Keybus as a virtual keypad
-      while (client.available() > 0) {
-        char c = static_cast<char>(client.read());
-        dsc.write(c);
-        yield();
+      if (ipClient.available() > 0) {
+        if (ipClient.peek() == 0xFF) {  // Checks for Telnet options negotiation data
+          for (byte i = 0; i < 3; i++) ipClient.read();
+        } else {
+          char c = static_cast<char>(ipClient.read());
+          dsc.write(c);
+        }
       }
 
       if (dsc.loop()) {
+
         // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
         // loop more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
         if (dsc.bufferOverflow) {
-          client.print(F("Keybus buffer overflow"));
+          ipClient.print(F("Keybus buffer overflow"));
           dsc.bufferOverflow = false;
         }
 
         // Prints panel data
-        printTimestamp();
-        client.print(" ");
-        dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
-        client.print(" [");
-        dsc.printPanelCommand();  // Prints the panel command as hex
-        client.print("] ");
-        dsc.printPanelMessage();  // Prints the decoded message
-        client.printf("\n");
+        if (dsc.keybusConnected) {
+          printTimestamp();
+          ipClient.print(" ");
+          dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
+          ipClient.print(" [");
+          dsc.printPanelCommand();  // Prints the panel command as hex
+          ipClient.print("] ");
+          dsc.printPanelMessage();  // Prints the decoded message
+          ipClient.printf("\r\n");
+        }
 
         // Prints keypad and module data when valid panel data is printed
-        if (dsc.handleModule()) {
-          printTimestamp();
-          client.print(" ");
-          dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
-          client.print(" ");
-          dsc.printModuleMessage();  // Prints the decoded message
-          client.printf("\n");
-        }
+        if (dsc.handleModule()) printModule();
       }
 
       // Prints keypad and module data when valid panel data is not available
-      else if (dsc.handleModule()) {
-        printTimestamp();
-        client.print(" ");
-        dsc.printModuleBinary();  // Optionally prints without spaces: printKeybusBinary(false);
-        client.print(" ");
-        dsc.printModuleMessage();
-        client.printf("\n");
-      }
+      else if (dsc.keybusConnected && dsc.handleModule()) printModule();
 
       MDNS.update();
+      yield();
     }
-    client.stop();
+
+    ipClient.stop();
     newClient = true;
     Serial.println("Client disconnected");
   }
 }
 
+
+// Prints keypad and module data
+void printModule() {
+  printTimestamp();
+  ipClient.print(" ");
+  dsc.printModuleBinary();  // Optionally prints without spaces: printKeybusBinary(false);
+  ipClient.print(" ");
+  dsc.printModuleMessage();
+  ipClient.printf("\r\n");
+}
+
+
 // Prints a timestamp in seconds (with 2 decimal precision) - this is useful to determine when
 // the panel sends a group of messages immediately after each other due to an event.
 void printTimestamp() {
   float timeStamp = millis() / 1000.0;
-  if (timeStamp < 10) client.print("    ");
-  else if (timeStamp < 100) client.print("   ");
-  else if (timeStamp < 1000) client.print("  ");
-  else if (timeStamp < 10000) client.print(" ");
-  client.print(timeStamp, 2);
-  client.print(F(":"));
+  if (timeStamp < 10) ipClient.print("    ");
+  else if (timeStamp < 100) ipClient.print("   ");
+  else if (timeStamp < 1000) ipClient.print("  ");
+  else if (timeStamp < 10000) ipClient.print(" ");
+  ipClient.print(timeStamp, 2);
+  ipClient.print(F(":"));
 }

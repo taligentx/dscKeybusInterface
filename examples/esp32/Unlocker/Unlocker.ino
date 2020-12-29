@@ -85,7 +85,7 @@
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin 19   // esp32: 4,13,16-39
+#define dscReadPin  19  // esp32: 4,13,16-39
 #define dscWritePin 21  // esp32: 4,13,16-33
 #define dscRelayPin 17  // esp32: 4,13,16-33 - Optional, leave this pin disconnected if not using a relay
 

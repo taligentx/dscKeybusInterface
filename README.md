@@ -10,33 +10,33 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
 Screenshots:
-* [Apple Home & Siri](https://www.apple.com/ios/home/):
+* [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/61570833-c9bb9780-aa54-11e9-9477-8e0853609e91.png)
-* [Home Assistant](https://www.home-assistant.io):
+* [Home Assistant](https://www.home-assistant.io):  
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/61985900-38f33780-afd1-11e9-9d43-ab0b681b7b03.png)
-* [OpenHAB](https://www.openhab.org) MQTT:
+* [OpenHAB](https://www.openhab.org) MQTT:  
   ![OpenHAB](https://user-images.githubusercontent.com/12835671/61560425-daa6e180-aa31-11e9-9efe-0fcb44d2106a.png)
-* [Blynk](https://www.blynk.cc) app virtual keypad:
+* [Blynk](https://www.blynk.cc) app virtual keypad:  
   ![VirtualKeypad-Blynk](https://user-images.githubusercontent.com/12835671/61568638-9fb0a800-aa49-11e9-94d0-e598431ea2ed.png)
-* Web virtual keypad:
+* Web virtual keypad:  
   ![VirtualKeypad-Web](https://user-images.githubusercontent.com/12835671/61570049-e43f4200-aa4f-11e9-96bc-3448b6630990.png)
-* [Telegram](https://www.telegram.org) bot:
+* [Telegram](https://www.telegram.org) bot:  
   ![Telegram](https://user-images.githubusercontent.com/12835671/102932636-47fc4480-4466-11eb-844b-baa767b92157.png)
 
 ## Quick start
 1. Install the DSC Keybus Interface library:
-    * Arduino IDE: Search for `DSC` in the Library Manager - `Sketch > Include Library > Manage Libraries`
+    * Arduino IDE: Search for `DSC` in the Library Manager - `Sketch > Include Library > Manage Libraries`  
       ![ArduinoIDE](https://user-images.githubusercontent.com/12835671/41826133-cfa55334-77ec-11e8-8ee1-b482cdb696b2.png)
-    * PlatformIO IDE: Search for `DSC` in the [PlatformIO Library Registry](https://platformio.org/lib/show/5499/dscKeybusInterface)
+    * PlatformIO IDE: Search for `DSC` in the [PlatformIO Library Registry](https://platformio.org/lib/show/5499/dscKeybusInterface)  
       ![PlatformIO](https://user-images.githubusercontent.com/12835671/41826138-d5852b62-77ec-11e8-805d-7c861a329e43.png)
     * PlatformIO CLI: `platformio lib install "dscKeybusInterface"`
     * Alternatively, `git clone` or download the repo .zip to the Arduino/PlatformIO library directory to keep track of the latest changes.
-2. Select, configure, and upload one of the example sketches to the microcontroller:
+2. Select, configure, and upload one of the example sketches to the microcontroller:  
       ![Examples](https://user-images.githubusercontent.com/12835671/102936214-61ed5580-446d-11eb-9d70-0eae40fe5757.png)
 3. Connect the microcontroller to the DSC Keybus per the wiring diagram with the appropriate resistors (and a transistor if you'd like to control the system).
 
 ## Why?
-**I Had**: _A DSC security system not being monitored by a third-party service._
+**I Had**: _A DSC security system not being monitored by a third-party service._  
 **I Wanted**: _Notification if the alarm triggered._
 
 I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel, keypads, and other modules.  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) and [FreeRTOS](https://www.freertos.org) (via [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos)) platforms.
@@ -100,6 +100,8 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
   - New: `Unlocker` example sketch - determines the panel installer code
+  - New: `TimeSyncNTP` example sketch - uses NTP to automatically set the panel time
+  - New: [ESPHome](https://esphome.io) integration example (located in the `extras` directory) - thanks to [Dilbert66](https://github.com/Dilbert66) for this contribution!
   - New: `KeybusReaderIP` example sketch enables Keybus data access over IP, thanks to [aboulfad](https://github.com/aboulfad) for this contribution!
   - New: esp32 microcontroller support
   - New: Features for sketches:
@@ -194,13 +196,15 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **OpenHAB-MQTT**: Interfaces with [OpenHAB](https://www.openhab.org) via MQTT.  Demonstrates using the panel and partitions states as OpenHAB switches and zone states as OpenHAB contacts.  For esp8266/esp32, a panel status message is also sent as a string to OpenHAB.  See https://github.com/jimtng/dscalarm-mqtt for an integration using the Homie convention for OpenHAB's Homie MQTT component.
 
+* **ESPHome** (esp8266): Integrates with [ESPHome](https://esphome.io) as a custom component - note that this example is located in the `extras` directory.  Thanks to [Dilbert66](https://github.com/Dilbert66) for this contribution!
+
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* **Telegram** (esp8266/esp32-only):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.
+* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.
 
-* **Pushbullet** (esp8266/esp32-only):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).
+* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).
 
-* **Twilio-SMS** (esp8266/esp32-only): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
+* **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
 * **Email** (esp8266/esp32-only): Demonstrates sending status updates as an email.  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
@@ -210,13 +214,15 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Sprint: 5558675309@messaging.sprintpcs.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266/esp32-only): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
-* **VirtualKeypad-Web** (esp8266-only): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+* **VirtualKeypad-Web** (esp8266): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+
+* **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
 
 * **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
 

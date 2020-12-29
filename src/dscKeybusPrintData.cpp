@@ -821,7 +821,7 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
   /*
    *  Zone expander trouble: 2-6
    */
-  if (panelData[panelByte] >= 0 && panelData[panelByte] <= 0x04) {
+  if (panelData[panelByte] <= 0x04) {
     stream->print(F("Zone expander trouble: "));
     printNumberOffset(panelByte, 2);
     return;
@@ -924,7 +924,7 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
    *  0x00 - 0x04: Access codes 35-39
    *  0x05 - 0x39: Access codes 43-95
    */
-  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+  if (panelData[panelByte] <= 0x39) {
     byte dscCode = panelData[panelByte] + 0x23;
     stream->print(F("Armed: "));
     printPanelAccessCode(dscCode, false);
@@ -1015,7 +1015,7 @@ void dscKeybusInterface::printPanelStatus17(byte panelByte) {
    *  0x00 - 0x24: *2: Access code 1-32, 40-42
    *  0x84 - 0xBD: *2: Access codes 35-39, 43-95
    */
-  if (panelData[panelByte] >= 0 && panelData[panelByte] <= 0x24) {
+  if (panelData[panelByte] <= 0x24) {
     byte dscCode = panelData[panelByte] + 1;
     stream->print(F("*2: "));
     printPanelAccessCode(dscCode);
@@ -1066,10 +1066,10 @@ void dscKeybusInterface::printPanelStatus18(byte panelByte) {
   /*
    *  *7/User/Auto-arm cancel by access codes 35-95
    *
-   *  0x00 - 0x04: *7/*Access codes 35-39
-   *  0x05 - 0x39: *7/*Access codes 43-95
+   *  0x00 - 0x04: *7, * Access codes 35-39
+   *  0x05 - 0x39: *7, * Access codes 43-95
    */
-  if (panelData[panelByte] >= 0x00 && panelData[panelByte] <= 0x39) {
+  if (panelData[panelByte] <= 0x39) {
     byte dscCode = panelData[panelByte] + 0x23;
     printPanelAccessCode(dscCode, false);
     return;
@@ -1189,7 +1189,7 @@ void dscKeybusInterface::printPanel_0x05() {
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
 void dscKeybusInterface::printPanel_0x0A_0F() {
-  byte partition;
+  byte partition = 0;
   switch (panelData[0]) {
     case 0x0A: partition = 1; break;
     case 0x0F: partition = 2; break;
@@ -1362,7 +1362,7 @@ void dscKeybusInterface::printPanel_0x1C() {
  *  Byte 0   1    2        3        4        5        6
  */
 void dscKeybusInterface::printPanel_0x22_28_33_39() {
-  byte expander;
+  byte expander = 0;
   switch (panelData[0]) {
     case 0x22: expander = 0; break;
     case 0x28: expander = 1; break;
@@ -1599,7 +1599,7 @@ void dscKeybusInterface::printPanel_0x58() {
  *  Byte 0   1    2        3        4        5        6        7
  */
 void dscKeybusInterface::printPanel_0x5D_63() {
-  byte partition;
+  byte partition = 0;
   switch (panelData[0]) {
     case 0x5D: partition = 1; break;
     case 0x63: partition = 2; break;
@@ -2288,7 +2288,7 @@ void dscKeybusInterface::printPanel_0xE6() {
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
 void dscKeybusInterface::printPanel_0xE6_0x01_06_20_21() {
-  byte partition;
+  byte partition = 0;
   switch(panelData[2]) {
     case 0x01: partition = 3; break;
     case 0x02: partition = 4; break;
@@ -2340,7 +2340,7 @@ void dscKeybusInterface::printPanel_0xE6_0x01_06_20_21() {
  *  Byte 0   1    2        3        4        5        6        7        8
  */
 void dscKeybusInterface::printPanel_0xE6_0x08_0A_0C_0E() {
-  byte expander;
+  byte expander = 0;
   switch (panelData[2]) {
     case 0x08: expander = 4; break;
     case 0x0A: expander = 5; break;

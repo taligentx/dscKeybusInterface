@@ -55,11 +55,11 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
-WiFiClientSecure wifiClient;
+WiFiClientSecure ipClient;
 bool wifiConnected = true;
 
 
@@ -78,7 +78,7 @@ void setup() {
   }
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  wifiClient.setInsecure();
+  ipClient.setInsecure();
 
   // Sends a message on startup to verify connectivity
   Serial.print(F("Email...."));
@@ -201,37 +201,37 @@ void loop() {
 // server - the login and password must be base64 encoded. For example, on the macOS/Linux terminal:
 // $ echo -n 'mylogin@example.com' | base64 -w 0
 bool sendMessage(const char* messageContent) {
-  if (!wifiClient.connect("smtp.example.com", 465)) return false;       // Set the SMTP server address - for example: smtp.gmail.com
+  if (!ipClient.connect("smtp.example.com", 465)) return false;       // Set the SMTP server address - for example: smtp.gmail.com
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("HELO ESP8266"));
+  ipClient.println(F("HELO ESP8266"));
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("AUTH LOGIN"));
+  ipClient.println(F("AUTH LOGIN"));
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("myBase64encodedLogin"));                        // Set the SMTP server login in base64
+  ipClient.println(F("myBase64encodedLogin"));                        // Set the SMTP server login in base64
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("myBase64encodedPassword"));                     // Set the SMTP server password in base64
+  ipClient.println(F("myBase64encodedPassword"));                     // Set the SMTP server password in base64
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("MAIL FROM:<sender@example.com>"));              // Set the sender address
+  ipClient.println(F("MAIL FROM:<sender@example.com>"));              // Set the sender address
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("RCPT TO:<recipient@example.com>"));             // Set the recipient address - repeat to add multiple recipients
+  ipClient.println(F("RCPT TO:<recipient@example.com>"));             // Set the recipient address - repeat to add multiple recipients
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("RCPT TO:<recipient2@example.com>"));            // An optional additional recipient
+  ipClient.println(F("RCPT TO:<recipient2@example.com>"));            // An optional additional recipient
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("DATA"));
+  ipClient.println(F("DATA"));
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("From: Security System <sender@example.com>"));  // Set the sender displayed in the email header
-  wifiClient.println(F("To: Recipient <recipient@example.com>"));       // Set the recipient displayed in the email header
-  wifiClient.print(F("Subject: "));
-  wifiClient.print(messagePrefix);
-  wifiClient.println(messageContent);
-  wifiClient.println();                                                 // Required blank line between the header and body
-  wifiClient.print(messagePrefix);
-  wifiClient.println(messageContent);
-  wifiClient.println(F("."));
+  ipClient.println(F("From: Security System <sender@example.com>"));  // Set the sender displayed in the email header
+  ipClient.println(F("To: Recipient <recipient@example.com>"));       // Set the recipient displayed in the email header
+  ipClient.print(F("Subject: "));
+  ipClient.print(messagePrefix);
+  ipClient.println(messageContent);
+  ipClient.println();                                                 // Required blank line between the header and body
+  ipClient.print(messagePrefix);
+  ipClient.println(messageContent);
+  ipClient.println(F("."));
   if(!smtpValidResponse()) return false;
-  wifiClient.println(F("QUIT"));
+  ipClient.println(F("QUIT"));
   if(!smtpValidResponse()) return false;
-  wifiClient.stop();
+  ipClient.stop();
   return true;
 }
 
@@ -240,11 +240,11 @@ bool smtpValidResponse() {
 
   // Waits for a response
   unsigned long previousMillis = millis();
-  while (!wifiClient.available()) {
+  while (!ipClient.available()) {
     dsc.loop();  // Processes Keybus data while waiting on the SMTP response
     if (millis() - previousMillis > 3000) {
       Serial.println(F("Connection timed out waiting for a response."));
-      wifiClient.stop();
+      ipClient.stop();
       return false;
     }
     yield();
@@ -252,11 +252,11 @@ bool smtpValidResponse() {
 
   // Checks the first character of the SMTP reply code - the command was successful if the reply code begins
   // with "2" or "3"
-  char replyCode = wifiClient.read();
+  char replyCode = ipClient.read();
 
   // Successful, reads the remainder of the response to clear the client buffer
   if (replyCode == '2' || replyCode == '3') {
-    while (wifiClient.available()) wifiClient.read();
+    while (ipClient.available()) ipClient.read();
     return true;
   }
 
@@ -264,11 +264,11 @@ bool smtpValidResponse() {
   else {
     Serial.println(F("Email send error, response:"));
     Serial.print(replyCode);
-    while (wifiClient.available()) Serial.print((char)wifiClient.read());
+    while (ipClient.available()) Serial.print((char)ipClient.read());
     Serial.println();
-    wifiClient.println(F("QUIT"));
+    ipClient.println(F("QUIT"));
     smtpValidResponse();
-    wifiClient.stop();
+    ipClient.stop();
     return false;
   }
 }
