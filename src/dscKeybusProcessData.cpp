@@ -346,7 +346,8 @@ void dscKeybusInterface::processPanelStatus() {
       }
 
       // Enter * function code
-      case 0x9E: {
+      case 0x9E:
+      case 0xB8: {
         wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
         writeAsterisk = false;
         writeKeyPending = false;

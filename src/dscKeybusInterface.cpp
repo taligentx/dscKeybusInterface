@@ -660,8 +660,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #endif
 
-  // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for keypad data).
-  // The following sets up a timer for both Arduino/AVR and Arduino/esp8266 that will call dscDataInterrupt() in
+  // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for
+  // keypad data).  The following sets up a timer for each platform that will call dscDataInterrupt() in
   // 250us to read the data line.
 
   // AVR Timer1 calls dscDataInterrupt() via ISR(TIMER1_OVF_vect) when the Timer1 counter overflows
@@ -695,7 +695,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       static bool writeCmd = false;
 
       if (writePartition <= 4 && statusCmd == 0x05) writeCmd = true;
-      else if (writePartition > 4 && statusCmd == 0x1B) writeCmd = true;
+      else if (writePartition >= 5 && statusCmd == 0x1B) writeCmd = true;
       else writeCmd = false;
 
       // Writes a F/A/P alarm key and repeats the key on the next immediate command from the panel (0x1C verification)
@@ -712,6 +712,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
         // Writes the remaining alarm key data
         else if (writeStart && isrPanelBitTotal > 1 && isrPanelBitTotal <= 8) {
           if (!((writeKey >> (8 - isrPanelBitTotal)) & 0x01)) digitalWrite(dscWritePin, HIGH);
+
           // Resets counters when the write is complete
           if (isrPanelBitTotal == 8) {
             writeKeyPending = false;
@@ -727,13 +728,14 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
       else if (writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
         if (isrPanelBitTotal == writeBit) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
-        // Writes the remaining alarm key data
+        // Writes the remaining key data
         else if (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7) {
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
