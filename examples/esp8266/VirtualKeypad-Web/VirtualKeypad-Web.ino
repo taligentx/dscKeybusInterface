@@ -289,7 +289,7 @@ void setStatus(byte partition) {
       case 0x09: root["lcd_lower"] = "No entry delay"; break;
       case 0x0B: root["lcd_lower"] = "Quick exit"; break;
       case 0x0C: root["lcd_lower"] = "Entry delay"; break;
-      case 0x0D: root["lcd_lower"] = "Alarm memory"; break;
+      case 0x0D: root["lcd_lower"] = "Entry delay"; break;
       case 0x0E: root["lcd_lower"] = "Not available"; break;
       case 0x10: root["lcd_lower"] = "Keypad lockout"; break;
       case 0x11: root["lcd_lower"] = "Alarm"; break;

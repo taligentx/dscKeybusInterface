@@ -87,7 +87,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
-  // Arduino Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
+  // Arduino/AVR Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
   #if defined(__AVR__)
   TCCR1A = 0;
   TCCR1B = 0;
@@ -108,14 +108,14 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timerAlarmEnable(timer0);
   #endif
 
-  // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino
+  // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
 }
 
 
 void dscKeybusInterface::stop() {
 
-  // Disables Arduino Timer1 interrupts
+  // Disables Arduino/AVR Timer1 interrupts
   #if defined(__AVR__)
   TIMSK1 = 0;
 
@@ -209,8 +209,8 @@ bool dscKeybusInterface::loop() {
   static bool startupCycle = true;
   if (startupCycle) {
     if (panelData[0] == 0) return false;
-    else if (panelData[0] == 0x05) {
-      if (panelByteCount == 6) firstGen = true;
+    else if (panelData[0] == 0x05 || panelData[0] == 0x1B) {
+      if (panelByteCount == 6) keybusVersion1 = true;
       startupCycle = false;
       writeReady = true;
     }
@@ -425,7 +425,7 @@ bool dscKeybusInterface::handleModule() {
   if (moduleBitCount < 8) return false;
 
   // Determines if a keybus message is a response to a panel command
-  switch (currentCmd) {
+  switch (moduleCmd) {
     case 0x11:
     case 0x28:
     case 0xD5: queryResponse = true; break;
@@ -438,7 +438,7 @@ bool dscKeybusInterface::handleModule() {
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
 
-  // Loops if a previous write is in progress
+  // Blocks if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
@@ -453,7 +453,7 @@ void dscKeybusInterface::write(const char receivedKey) {
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
 
-  // Loops if a previous write is in progress
+  // Blocks if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
@@ -468,7 +468,7 @@ void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
     writeReady = false;
   }
 
-  // Optionally loops until the write is complete
+  // Optionally blocks until the write is complete, necessary if the received keys char array is ephemeral
   if (blockingWrite) {
     while (writeKeysPending) {
       writeKeys(writeKeysArray);

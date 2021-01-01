@@ -91,7 +91,15 @@ void loop() {
     // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      // Skips processing if the partition is disabled or in installer programming
+      // Checks disabled status
+      if (dsc.disabledChanged[partition]) {
+        dsc.disabledChanged[partition] = false;
+        if (dsc.disabled[partition]) {
+          Serial.print(F("Partition "));
+          Serial.print(partition + 1);
+          Serial.println(F(" disabled"));
+        }
+      }
       if (dsc.disabled[partition]) continue;
 
       // Checks ready status

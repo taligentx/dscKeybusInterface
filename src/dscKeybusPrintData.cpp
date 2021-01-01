@@ -229,7 +229,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x09: stream->print(F("Arming with no entry delay")); break;
     case 0x0B: stream->print(F("Quick exit in progress")); break;
     case 0x0C: stream->print(F("Entry delay in progress")); break;
-    case 0x0D: stream->print(F("Zone open after alarm")); break;
+    case 0x0D: stream->print(F("Entry delay after alarm")); break;
     case 0x0E: stream->print(F("Function not available")); break;
     case 0x10: stream->print(F("Keypad lockout")); break;
     case 0x11: stream->print(F("Partition in alarm")); break;
@@ -238,11 +238,11 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed: No entry delay")); break;
     //case 0x17: break;  // Observed in logs, unknown message
-    case 0x19: stream->print(F("Disarmed after alarm")); break;
-    case 0x22: stream->print(F("Recent closing")); break;
+    case 0x19: stream->print(F("Disarmed: Alarm memory")); break;
+    case 0x22: stream->print(F("Disarmed: Recent closing")); break;
     case 0x2F: stream->print(F("Keypad LCD test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
-    case 0x3D: stream->print(F("Disarmed after alarm")); break;
+    case 0x3D: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
@@ -268,7 +268,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB0: stream->print(F("*6: Enable DLS")); break;
     case 0xB2: stream->print(F("*7: Command output")); break;
     case 0xB7: stream->print(F("Enter installer code")); break;
-    case 0xB8: stream->print(F("Key * while armed")); break;
+    case 0xB8: stream->print(F("Enter * function code while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
@@ -1135,7 +1135,7 @@ void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
  */
 void dscKeybusInterface::printPanel_0x05() {
   printPanelPartitionStatus(1, 3, 5);
-  if (panelByteCount > 9) {
+  if (!keybusVersion1) {
       stream->print(" | ");
       printPanelPartitionStatus(3, 7, 9);
   }

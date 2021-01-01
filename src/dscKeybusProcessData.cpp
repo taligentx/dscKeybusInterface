@@ -1,6 +1,16 @@
 /*
     DSC Keybus Interface
 
+    Functions used by all sketches to track the security system status.  These
+    are the most commonly used status data by the example sketches.
+
+    Sketches can be extended to support all Keybus data (as seen in
+    dscKeybusPrintData.cpp) by checking panelData[] - see the Unlocker
+    sketch for an example of this.
+
+    If there is a status that is not currently being tracked and would
+    be useful in most applications, post an issue/PR:
+
     https://github.com/taligentx/dscKeybusInterface
 
     This library is free software: you can redistribute it and/or modify
@@ -126,13 +136,14 @@ void dscKeybusInterface::processPanelStatus() {
   byte partitionCount = 0;
   if (panelData[0] == 0x05) {
     partitionStart = 0;
-    if (panelByteCount < 9) partitionCount = 2;  // Handles earlier panels that support up to 2 partitions
+    if (keybusVersion1) partitionCount = 2;  // Handles earlier panels that support up to 2 partitions
     else partitionCount = 4;
     if (dscPartitions < partitionCount) partitionCount = dscPartitions;
   }
   else if (dscPartitions > 4 && panelData[0] == 0x1B) {
     partitionStart = 4;
     partitionCount = 8;
+    if (dscPartitions < partitionCount) partitionCount = dscPartitions;
   }
 
   // Sets status per partition
@@ -148,8 +159,16 @@ void dscKeybusInterface::processPanelStatus() {
     }
 
     // Partition disabled status
-    if (panelData[messageByte] == 0xC7) disabled[partitionIndex] = true;
+    if (panelData[messageByte] == 0xC7) {
+      disabled[partitionIndex] = true;
+      processReadyStatus(partitionIndex, false);
+    }
     else disabled[partitionIndex] = false;
+    if (disabled[partitionIndex] != previousDisabled[partitionIndex]) {
+      previousDisabled[partitionIndex] = disabled[partitionIndex];
+      disabledChanged[partitionIndex] = true;
+      if (!pauseStatus) statusChanged = true;
+    }
 
     // Status lights
     lights[partitionIndex] = panelData[statusByte];
