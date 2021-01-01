@@ -315,7 +315,7 @@ class dscKeybusInterface {
     static char writeKey;
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
-    static volatile bool writeAlarm, writeAsterisk, wroteAsterisk;
+    static volatile bool writeAlarm, starKeyCheck, starKeyWait[dscPartitions];
     static volatile bool moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;

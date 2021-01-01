@@ -195,7 +195,6 @@ void dscKeybusInterface::processPanelStatus() {
       }
     }
 
-
     // Messages
     switch (panelData[messageByte]) {
 
@@ -348,9 +347,11 @@ void dscKeybusInterface::processPanelStatus() {
       // Enter * function code
       case 0x9E:
       case 0xB8: {
-        wroteAsterisk = false;  // Resets the flag that delays writing after '*' is pressed
-        writeAsterisk = false;
-        writeKeyPending = false;
+        if (starKeyWait[partitionIndex]) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
+          starKeyWait[partitionIndex] = false;
+          starKeyCheck = false;
+          writeKeyPending = false;
+        }
         processReadyStatus(partitionIndex, false);
         break;
       }

@@ -37,8 +37,8 @@ volatile bool dscKeybusInterface::moduleDataCaptured;
 volatile byte dscKeybusInterface::moduleByteCount;
 volatile byte dscKeybusInterface::moduleBitCount;
 volatile bool dscKeybusInterface::writeAlarm;
-volatile bool dscKeybusInterface::writeAsterisk;
-volatile bool dscKeybusInterface::wroteAsterisk;
+volatile bool dscKeybusInterface::starKeyCheck;
+volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
@@ -539,7 +539,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '7': writeKey = 0x1C; break;
         case '8': writeKey = 0x22; break;
         case '9': writeKey = 0x27; break;
-        case '*': writeKey = 0x28; writeAsterisk = true; break;
+        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) starKeyCheck = true; break;
         case '#': writeKey = 0x2D; break;
         case 'F':
         case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
@@ -727,7 +727,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+      else if (writeKeyPending && !starKeyWait[writePartition - 1] && isrPanelByteCount == writeByte && writeCmd) {
 
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
         if (isrPanelBitTotal == writeBit) {
@@ -741,7 +741,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
           // Resets counters when the write is complete
           if (isrPanelBitTotal == writeBit + 7) {
-            if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
+            if (starKeyCheck) starKeyWait[writePartition - 1] = true;  // Handles waiting until the panel is ready after pressing '*'
             else writeKeyPending = false;
             writeStart = false;
           }
