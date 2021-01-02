@@ -150,6 +150,10 @@ void dscKeybusInterface::stop() {
 
 bool dscKeybusInterface::loop() {
 
+  #if defined(ESP8266) || defined(ESP32)
+  yield();
+  #endif
+
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
   #if defined(ESP32)
   portENTER_CRITICAL(&timer0Mux);

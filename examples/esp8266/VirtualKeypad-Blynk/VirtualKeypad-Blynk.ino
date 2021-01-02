@@ -844,7 +844,6 @@ void resetZones() {
   for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
     previousProgramZones[zoneGroup] = 0;
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-      byte zoneLight = zoneBit + 1 + (zoneGroup * 8);
       if (bitRead(programZones[zoneGroup], zoneBit)) {
         bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);
       }

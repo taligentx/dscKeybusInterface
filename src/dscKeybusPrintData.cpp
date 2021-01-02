@@ -249,7 +249,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x8B: stream->print(F("Quick exit")); break;
     case 0x8E: stream->print(F("Function not available")); break;
     case 0x8F: stream->print(F("Invalid access code")); break;
-    case 0x9E: stream->print(F("Enter * function code")); break;
+    case 0x9E: stream->print(F("Enter * function key")); break;
     case 0x9F: stream->print(F("Enter access code")); break;
     case 0xA0: stream->print(F("*1: Zone bypass")); break;  // *1
     case 0xA1: stream->print(F("*2: Trouble")); break;
@@ -268,7 +268,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB0: stream->print(F("*6: Enable DLS")); break;
     case 0xB2: stream->print(F("*7: Command output")); break;
     case 0xB7: stream->print(F("Enter installer code")); break;
-    case 0xB8: stream->print(F("Enter * function code while armed")); break;
+    case 0xB8: stream->print(F("Enter * function key while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
@@ -280,14 +280,14 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xE4: stream->print(F("*8: Installer programming")); break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
-    case 0xE6: stream->print(F("Input 2 digits")); break;
-    case 0xE7: stream->print(F("Input 3 digits")); break;
-    case 0xE8: stream->print(F("Input 4 digits")); break;
+    case 0xE6: stream->print(F("Input: 2 digits")); break;
+    case 0xE7: stream->print(F("Input: 3 digits")); break;
+    case 0xE8: stream->print(F("Input: 4 digits")); break;
     case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
     case 0xEB: stream->print(F("Telephone number account code: 4 digits")); break;
-    case 0xEC: stream->print(F("Input 6 digits")); break;
-    case 0xED: stream->print(F("Input 32 digits")); break;
-    case 0xEE: stream->print(F("Input 1 option per zone")); break;
+    case 0xEC: stream->print(F("Input: 6 digits")); break;
+    case 0xED: stream->print(F("Input: 32 digits")); break;
+    case 0xEE: stream->print(F("Input: 1 option per zone")); break;
     case 0xEF: stream->print(F("Module supervision field")); break;
     case 0xF0: stream->print(F("Function key 1")); break;
     case 0xF1: stream->print(F("Function key 2")); break;

@@ -1,5 +1,5 @@
 /*
- *  DSC Unlocker 1.2 (esp8266)
+ *  DSC Unlocker 1.3 (esp8266)
  *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
@@ -11,21 +11,26 @@
  *  before continuing the code search.  The physical keypads may beep when this occurs, the keypads can
  *  be disconnected for silence during the code search.
  *
- *    - Optionally, if the current configuration on the panel is not needed, the keypad lockout can be
- *      skipped to reduce the code search time by using a relay to automatically power cycle the panel
- *      while the panel is set to factory default (on the PC1864, by connecting a jumper wire from PGM1
- *      to Z1). This has been tested with the commonly available relay boards using the Songle SRD-05VDC-SL-C
- *      relay (~1USD shipped).
+ *    - Keypad lockout can be skipped if a valid access code to arm/disarm the panel is entered in
+ *      the sketch settings.  The sketch will trigger an arm/disarm cycle before the keypad
+ *      lockout - this will result in beeps from the physical keypads each arm/disarm cycle.
+ *
+ *    - If a valid access code is not available and the current configuration on the panel is not
+ *      needed, the keypad lockout can also be skipped by using a relay to automatically power cycle
+ *      the panel while the panel is set to factory default (on the PC1864, by connecting a jumper
+ *      wire from PGM1 to Z1). This has been tested with the commonly available relay boards using
+ *      the Songle SRD-05VDC-SL-C relay (~1USD shipped).
  *
  *    - The Wemos Relay Shield v1 is hardwired to connect using the D1 pin and will conflict with this
  *      interface if using the default wiring scheme and plugging directly into the Wemos D1 mini. Wire
  *      the relay board separately (without plugging in directly to the Wemos board) to connect the relay
  *      board D1 pin to a different esp8266 pin (or use a different relay board).
  *
- *  Example maximum unlocking times:
- *    - PC1864 without keypad lockout: ~8h20m
- *    - PC1864 with 5m keypad lockout, 6 codes tested before lockout: ~6d3h13m
- *    - PC1864 with keypad lockout and relay reset: ~19h27m
+ *  Example maximum unlocking times on the PC1864:
+ *    - Without keypad lockout: ~8h20m
+ *    - With 6 attempt/5 minute keypad lockout: ~6d3h13m
+ *    - With 6 attempt keypad lockout and skipping via arm/disarm reset: ~10hr18m
+ *    - With 6 attempt keypad lockout and skipping via relay reset: ~19h27m
  *
  *  Note that if the panel was configured remotely (using the panel communicator), it is possible for the
  *  installer to lock out local programming - if so, this sketch will not be able to determine the code.
@@ -43,6 +48,7 @@
  *      `startPosition`.
  *
  *  Release notes:
+ *    1.3 - Add skipping keypad lockout by arm/disarm cycle with a valid access code
  *    1.2 - Check for valid panel state at startup
  *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.0 - Initial release
@@ -89,14 +95,15 @@
 
 #include <dscKeybusInterface.h>
 
+// Settings
+const char* accessCode = "";  // Optional, skips keypad lockout if enabled by arming/disarming the panel
+int startPosition = 0;        // Starting test position, set if the process is interrupted
+
 // Configures the Keybus interface with the specified pins
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscRelayPin D6  // esp8266: D5, D6, D7 (GPIO 14, 12, 13) - Optional, leave this pin disconnected if not using a relay
-
-// Starting test position - this can be changed to start at a different position if the process is interrupted
-int startPosition = 0;
 
 // Commonly known DSC codes are tested first
 const int codeList[] = {
@@ -495,6 +502,8 @@ char testCodeChar[5];
 int codeListCount = sizeof(codeList) / sizeof(codeList[0]);
 int codeListCounter = startPosition;
 bool pauseTest = false;
+byte testCount = 1;
+byte lockoutThreshold;
 
 
 void setup() {
@@ -512,14 +521,12 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-  Serial.println(F("DSC Keybus Interface is online."));
+  Serial.print(F("DSC Keybus Interface..."));
 
   // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
   // "Stay/away zones open" (0x02), or "Zones open" (0x03)
-  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) {
-    dsc.loop();
-    yield();
-  }
+  while (!dsc.status[0] || dsc.status[0] > 0x03) dsc.loop();
+  Serial.println(F("connected."));
 }
 
 
@@ -542,10 +549,7 @@ void loop() {
         pauseTest = false;
         printTimestamp();
         Serial.println("Resuming code search");
-        while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) {
-          dsc.loop();
-          yield();
-        }
+        while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) dsc.loop();
       }
       else {
         pauseTest = true;
@@ -569,20 +573,27 @@ void loop() {
 
   // Loops until the partition 1 status is "Partition ready" (0x01), "Stay/away zones open" (0x02),
   // "Zones open" (0x03), or "Enter installer code" (0xB7)
-  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03 && dsc.status[0] != 0xB7) {
-    dsc.loop();
-    yield();
+  while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03 && dsc.status[0] != 0xB7) dsc.loop();
+
+  // Skips keypad lockout if an access code is available to arm/disarm the panel
+  if (testCount == lockoutThreshold && strlen(accessCode)) {
+    testCount = 1;
+    dsc.write('#');                                                     // Exit "Enter installer code" prompt
+    while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02) dsc.loop();  // Loop until the partition is ready
+    dsc.write('s');                                                     // Stay arm
+    while (dsc.status[0] != 0x08 && dsc.status[0] != 0x9F) dsc.loop();  // Loop until "Exit delay" or "Enter access code"
+    if (dsc.status[0] == 0x9F) {
+      dsc.write(accessCode);                                            // Enters the access code to arm if required
+    }
+    while (dsc.status[0] != 0x08) dsc.loop();                           // Loop until "Exit delay"
+    dsc.write(accessCode);                                              // Enters the access code to disarm
+    while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x3E) dsc.loop();  // Loop until the partition is ready
   }
 
   // Enters installer programming mode
-  if (dsc.status[0] == 0x01 || dsc.status[0] == 0x02 || dsc.status[0] == 0x03) {
+  if (dsc.status[0] == 0x01 || dsc.status[0] == 0x02 || dsc.status[0] == 0x03 || dsc.status[0] == 0x3E) {
     dsc.write("*8");
-
-    // Loops until "Enter installer code" (0xB7)
-    while (dsc.status[0] != 0xB7) {
-      dsc.loop();
-      yield();
-    }
+    while (dsc.status[0] != 0xB7) dsc.loop();  // Loop until "Enter installer code" (0xB7)
   }
 
   // Enters the test code on "Enter installer code"
@@ -616,13 +627,12 @@ void loop() {
     }
 
     // Loops until "Keypad lockout" (0x10), "Invalid access code" (0x8F), or "*8 Main Menu" (0xE4)
-    while (dsc.status[0] != 0x10 && dsc.status[0] != 0x8F && dsc.status[0] != 0xE4) {
-      dsc.loop();
-      yield();
-    }
+    while (dsc.status[0] != 0x10 && dsc.status[0] != 0x8F && dsc.status[0] != 0xE4) dsc.loop();
 
     // Keypad lockout
     if (dsc.status[0] == 0x10) {
+      lockoutThreshold = testCount;
+      testCount = 1;
       printTimestamp();
       Serial.println("Keypad lockout");
 
@@ -632,18 +642,13 @@ void loop() {
       digitalWrite(dscRelayPin, LOW);
 
       // Loops until the lockout expires
-      while (dsc.status[0] == 0x10) {
-        dsc.loop();
-        yield();
-      }
+      while (dsc.status[0] == 0x10) dsc.loop();
     }
 
     // Invalid access code - loops until "Enter installer code" (0xB7)
     else if (dsc.status[0] == 0x8F) {
-      while (dsc.status[0] != 0xB7) {
-        dsc.loop();
-        yield();
-      }
+      while (dsc.status[0] != 0xB7) dsc.loop();
+      testCount++;
     }
 
     // *8 Main Menu
@@ -655,10 +660,7 @@ void loop() {
       dsc.write('0');
 
       // Loops until the panel sends a status command (0x05) or a long beep command (0x7F)
-      while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F) {
-        dsc.loop();
-        yield();
-      }
+      while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F) dsc.loop();
 
       // Long beep, code is not valid for programming
       if (dsc.panelData[0] == 0x7F) {
@@ -666,6 +668,7 @@ void loop() {
         Serial.print("Non-programming *8 code: ");
         Serial.println(testCode);
         dsc.write('#');
+        testCount++;
       }
 
       // Entered keypad programming, code is valid - exits the installer menu and outputs the code via serial and LED blinking

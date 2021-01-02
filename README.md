@@ -9,7 +9,7 @@ The built-in examples can be used as-is or as a base to adapt to other uses:
 
 See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
-Screenshots:
+Example integrations:
 * [Apple Home & Siri](https://www.apple.com/ios/home/):  
   ![HomeKit](https://user-images.githubusercontent.com/12835671/61570833-c9bb9780-aa54-11e9-9477-8e0853609e91.png)
 * [Home Assistant](https://www.home-assistant.io):  
@@ -50,7 +50,7 @@ While there has been excellent [discussion about the DSC Keybus protocol](https:
 Poking around with a logic analyzer and oscilloscope revealed that the errors capturing the Keybus data were timing issues - after resolving the data errors, it was possible to reverse engineer the protocol by capturing the Keybus binary data as the security system handled various events.
 
 ## Features
-* Monitor the alarm state of all partitions:
+* Monitor the status of all partitions:
   - Alarm triggered, armed/disarmed, entry/exit delay, fire triggered, keypad panic keys
 * Monitor zones status:
   - Zones open/closed, zones in alarm
@@ -116,6 +116,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
       * `panelVersion` tracks the panel version number
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
+  - Updated: `VirtualKeypad-Blynk` displays alarm memory and programming zone lights
   - Updated: `HomeAssistant-MQTT, Homebridge-MQTT, OpenHAB-MQTT` include PGM outputs 1-14 status
   - Updated: Virtual keypad writes
       * `write()` for multiple keys can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
