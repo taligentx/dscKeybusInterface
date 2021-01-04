@@ -241,7 +241,6 @@ bool smtpValidResponse() {
       ipClient.stop();
       return false;
     }
-    yield();
   }
 
   // Checks the first character of the SMTP reply code - the command was successful if the reply code begins

@@ -226,10 +226,10 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x06: stream->print(F("Armed: No entry delay")); break;
     case 0x07: stream->print(F("Failed to arm")); break;
     case 0x08: stream->print(F("Exit delay in progress")); break;
-    case 0x09: stream->print(F("Arming with no entry delay")); break;
+    case 0x09: stream->print(F("Arming: No entry delay")); break;
     case 0x0B: stream->print(F("Quick exit in progress")); break;
     case 0x0C: stream->print(F("Entry delay in progress")); break;
-    case 0x0D: stream->print(F("Zone open after alarm")); break;
+    case 0x0D: stream->print(F("Entry delay after alarm")); break;
     case 0x0E: stream->print(F("Function not available")); break;
     case 0x10: stream->print(F("Keypad lockout")); break;
     case 0x11: stream->print(F("Partition in alarm")); break;
@@ -238,18 +238,18 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed: No entry delay")); break;
     //case 0x17: break;  // Observed in logs, unknown message
-    case 0x19: stream->print(F("Disarmed after alarm")); break;
-    case 0x22: stream->print(F("Recent closing")); break;
+    case 0x19: stream->print(F("Disarmed: Alarm memory")); break;
+    case 0x22: stream->print(F("Disarmed: Recent closing")); break;
     case 0x2F: stream->print(F("Keypad LCD test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
-    case 0x3D: stream->print(F("Disarmed after alarm")); break;
+    case 0x3D: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
     case 0x8B: stream->print(F("Quick exit")); break;
     case 0x8E: stream->print(F("Function not available")); break;
     case 0x8F: stream->print(F("Invalid access code")); break;
-    case 0x9E: stream->print(F("Enter * function code")); break;
+    case 0x9E: stream->print(F("Enter * function key")); break;
     case 0x9F: stream->print(F("Enter access code")); break;
     case 0xA0: stream->print(F("*1: Zone bypass")); break;  // *1
     case 0xA1: stream->print(F("*2: Trouble")); break;
@@ -269,7 +269,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB2:
     case 0xB3: stream->print(F("*7: Command output")); break;
     case 0xB7: stream->print(F("Enter installer code")); break;
-    case 0xB8: stream->print(F("Key * while armed")); break;
+    case 0xB8: stream->print(F("Enter * function key while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
@@ -283,14 +283,14 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
     case 0xE4: stream->print(F("*8: Installer programming")); decimalInput = false; break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
-    case 0xE6: stream->print(F("Input 2 digits")); break;
-    case 0xE7: stream->print(F("Input 3 digits")); decimalInput = true; break;
-    case 0xE8: stream->print(F("Input 4 digits")); break;
+    case 0xE6: stream->print(F("Input: 2 digits")); break;
+    case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
+    case 0xE8: stream->print(F("Input: 4 digits")); break;
     case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
     case 0xEB: stream->print(F("Telephone number account code: 4 digits")); break;
-    case 0xEC: stream->print(F("Input 6 digits")); break;
-    case 0xED: stream->print(F("Input 32 digits")); break;
-    case 0xEE: stream->print(F("Input 1 option per zone")); break;
+    case 0xEC: stream->print(F("Input: 6 digits")); break;
+    case 0xED: stream->print(F("Input: 32 digits")); break;
+    case 0xEE: stream->print(F("Input: 1 option per zone")); break;
     case 0xEF: stream->print(F("Module supervision field")); break;
     case 0xF0: stream->print(F("Function key 1")); break;
     case 0xF1: stream->print(F("Function key 2")); break;
@@ -1159,7 +1159,7 @@ void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
  */
 void dscKeybusInterface::printPanel_0x05() {
   printPanelPartitionStatus(1, 3, 5);
-  if (panelByteCount > 9) {
+  if (!keybusVersion1) {
       stream->print(" | ");
       printPanelPartitionStatus(3, 7, 9);
   }
@@ -2270,21 +2270,22 @@ void dscKeybusInterface::printPanel_0xE6() {
 
 
 /*
- *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 3-8
+ *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 1-8
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Command  Subcommand  Lights   Status                                                 CRC
+ *  Command  Subcommand  Lights   Status  Zones33+ Zones41+ Zones49+ Zones57+            CRC
  *  11100110 0 00000001 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001101 [0xE6.01] Partition 3: Armed Backlight - *8: Installer programming
  *  11100110 0 00000010 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001110 [0xE6.02] Partition 4: Armed Backlight - *8: Installer programming
  *  11100110 0 00000011 10000001 11111000 00000000 00000000 00000000 00000000 00000000 01100010 [0xE6.03] Partition 5: Ready Backlight - Keypad programming
  *  11100110 0 00000100 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01010000 [0xE6.04] Partition 6: Armed Backlight - *8: Installer programming
  *  11100110 0 00000101 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01010001 [0xE6.05] Partition 7: Armed Backlight - *8: Installer programming
  *  11100110 0 00000110 10000010 11100100 00000000 00000000 00000000 00000000 10000000 11010010 [0xE6.06] Partition 8: Armed Backlight - *8: Installer programming
- *  11100110 0 00100000 10000000 10011110 00000000 00000000 00000000 00000000 10000000 10100100 [0xE6.20] Status lights: Backlight - Enter * function code | Zone lights: none
- *  11100110 0 00100000 10000000 10011111 00000000 00000000 00000000 00000000 10000000 10100101 [0xE6.20] Status lights: Backlight - Enter access code | Zone lights: none
- *  11100110 0 00100000 10000001 11111000 00000000 00000000 00000000 00000000 10000000 11111111 [0xE6.20] Status lights: Ready Backlight - Keypad programming | Zone lights: none
+ *  11100110 0 00100000 10000000 10011110 00000000 00000000 00000000 00000000 10000000 10100100 [0xE6.20] Partition 1: Backlight - Enter * function code | Zone lights: none
+ *  11100110 0 00100000 10000000 10011111 00000000 00000000 00000000 00000000 10000000 10100101 [0xE6.20] Partition 1: Backlight - Enter access code | Zone lights: none
+ *  11100110 0 00100000 10000001 11111000 00000000 00000000 00000000 00000000 10000000 11111111 [0xE6.20] Partition 1: Ready Backlight - Keypad programming | Zone lights: none
+ *  11100110 0 00100000 10000010 10100110 10000000 00000001 00000000 00000000 10000000 00101111 [0xE6.20] Partition 1: Armed Backlight - *5: Access codes | Zones 33-64 lights: 40 41
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
 void dscKeybusInterface::printPanel_0xE6_0x01_06_20_21() {

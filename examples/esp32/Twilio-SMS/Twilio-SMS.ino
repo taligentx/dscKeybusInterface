@@ -305,7 +305,6 @@ bool sendMessage(const char* messageContent) {
       ipClient.stop();
       return false;
     }
-    yield();
   }
 
   // Reads the response until the first space - the next characters will be the HTTP status code

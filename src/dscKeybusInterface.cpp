@@ -37,8 +37,8 @@ volatile bool dscKeybusInterface::moduleDataCaptured;
 volatile byte dscKeybusInterface::moduleByteCount;
 volatile byte dscKeybusInterface::moduleBitCount;
 volatile bool dscKeybusInterface::writeAlarm;
-volatile bool dscKeybusInterface::writeAsterisk;
-volatile bool dscKeybusInterface::wroteAsterisk;
+volatile bool dscKeybusInterface::starKeyCheck;
+volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
 volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
@@ -59,7 +59,41 @@ volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
+// Workaround for ESP32 hardware timer interrupt functions called from within an ISR:
+// https://github.com/crankyoldgit/IRremoteESP8266/pull/1351
 #if defined(ESP32)
+typedef struct {
+    union {
+        struct {
+            uint32_t reserved0:   10;
+            uint32_t alarm_en:     1;
+            uint32_t level_int_en: 1;
+            uint32_t edge_int_en:  1;
+            uint32_t divider:     16;
+            uint32_t autoreload:   1;
+            uint32_t increase:     1;
+            uint32_t enable:       1;
+        };
+        uint32_t val;
+    } config;
+    uint32_t cnt_low;
+    uint32_t cnt_high;
+    uint32_t update;
+    uint32_t alarm_low;
+    uint32_t alarm_high;
+    uint32_t load_low;
+    uint32_t load_high;
+    uint32_t reload;
+} hw_timer_reg_t;
+
+typedef struct hw_timer_s {
+        hw_timer_reg_t * dev;
+        uint8_t num;
+        uint8_t group;
+        uint8_t timer;
+        portMUX_TYPE lock;
+} hw_timer_t;
+
 hw_timer_t *timer0 = NULL;
 portMUX_TYPE timer0Mux = portMUX_INITIALIZER_UNLOCKED;
 #endif
@@ -87,7 +121,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Platform-specific timers trigger a read of the data line 250us after the Keybus clock changes
 
-  // Arduino Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
+  // Arduino/AVR Timer1 calls ISR(TIMER1_OVF_vect) from dscClockInterrupt() and is disabled in the ISR for a one-shot timer
   #if defined(__AVR__)
   TCCR1A = 0;
   TCCR1B = 0;
@@ -108,14 +142,14 @@ void dscKeybusInterface::begin(Stream &_stream) {
   timerAlarmEnable(timer0);
   #endif
 
-  // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino
+  // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
 }
 
 
 void dscKeybusInterface::stop() {
 
-  // Disables Arduino Timer1 interrupts
+  // Disables Arduino/AVR Timer1 interrupts
   #if defined(__AVR__)
   TIMSK1 = 0;
 
@@ -149,6 +183,10 @@ void dscKeybusInterface::stop() {
 
 
 bool dscKeybusInterface::loop() {
+
+  #if defined(ESP8266) || defined(ESP32)
+  yield();
+  #endif
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
   #if defined(ESP32)
@@ -209,8 +247,8 @@ bool dscKeybusInterface::loop() {
   static bool startupCycle = true;
   if (startupCycle) {
     if (panelData[0] == 0) return false;
-    else if (panelData[0] == 0x05) {
-      if (panelByteCount == 6) firstGen = true;
+    else if (panelData[0] == 0x05 || panelData[0] == 0x1B) {
+      if (panelByteCount == 6) keybusVersion1 = true;
       startupCycle = false;
       writeReady = true;
     }
@@ -425,7 +463,7 @@ bool dscKeybusInterface::handleModule() {
   if (moduleBitCount < 8) return false;
 
   // Determines if a keybus message is a response to a panel command
-  switch (currentCmd) {
+  switch (moduleCmd) {
     case 0x11:
     case 0x28:
     case 0xD5: queryResponse = true; break;
@@ -438,7 +476,7 @@ bool dscKeybusInterface::handleModule() {
 // Sets up writes for a single key
 void dscKeybusInterface::write(const char receivedKey) {
 
-  // Loops if a previous write is in progress
+  // Blocks if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
@@ -453,7 +491,7 @@ void dscKeybusInterface::write(const char receivedKey) {
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
 
-  // Loops if a previous write is in progress
+  // Blocks if a previous write is in progress
   while(writeKeyPending || writeKeysPending) {
     loop();
     #if defined(ESP8266)
@@ -468,7 +506,7 @@ void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
     writeReady = false;
   }
 
-  // Optionally loops until the write is complete
+  // Optionally blocks until the write is complete, necessary if the received keys char array is ephemeral
   if (blockingWrite) {
     while (writeKeysPending) {
       writeKeys(writeKeysArray);
@@ -539,7 +577,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '7': writeKey = 0x1C; break;
         case '8': writeKey = 0x22; break;
         case '9': writeKey = 0x27; break;
-        case '*': writeKey = 0x28; writeAsterisk = true; break;
+        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) starKeyCheck = true; break;
         case '#': writeKey = 0x2D; break;
         case 'F':
         case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
@@ -660,8 +698,8 @@ void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #endif
 
-  // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for keypad data).
-  // The following sets up a timer for both Arduino/AVR and Arduino/esp8266 that will call dscDataInterrupt() in
+  // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for
+  // keypad data).  The following sets up a timer for each platform that will call dscDataInterrupt() in
   // 250us to read the data line.
 
   // AVR Timer1 calls dscDataInterrupt() via ISR(TIMER1_OVF_vect) when the Timer1 counter overflows
@@ -675,7 +713,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   // esp32 timer0 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  timerStart(timer0);
+  timer0->dev->config.enable = 1;
   portENTER_CRITICAL(&timer0Mux);
   #endif
 
@@ -695,7 +733,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       static bool writeCmd = false;
 
       if (writePartition <= 4 && statusCmd == 0x05) writeCmd = true;
-      else if (writePartition > 4 && statusCmd == 0x1B) writeCmd = true;
+      else if (writePartition >= 5 && statusCmd == 0x1B) writeCmd = true;
       else writeCmd = false;
 
       // Writes a F/A/P alarm key and repeats the key on the next immediate command from the panel (0x1C verification)
@@ -712,6 +750,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
         // Writes the remaining alarm key data
         else if (writeStart && isrPanelBitTotal > 1 && isrPanelBitTotal <= 8) {
           if (!((writeKey >> (8 - isrPanelBitTotal)) & 0x01)) digitalWrite(dscWritePin, HIGH);
+
           // Resets counters when the write is complete
           if (isrPanelBitTotal == 8) {
             writeKeyPending = false;
@@ -726,20 +765,21 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (writeKeyPending && !wroteAsterisk && isrPanelByteCount == writeByte && writeCmd) {
+      else if (writeKeyPending && !starKeyWait[writePartition - 1] && isrPanelByteCount == writeByte && writeCmd) {
+
         // Writes the first bit by shifting the key data right 7 bits and checking bit 0
         if (isrPanelBitTotal == writeBit) {
           if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
           writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
         }
 
-        // Writes the remaining alarm key data
+        // Writes the remaining key data
         else if (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7) {
           if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
 
           // Resets counters when the write is complete
           if (isrPanelBitTotal == writeBit + 7) {
-            if (writeAsterisk) wroteAsterisk = true;  // Delays writing after pressing '*' until the panel is ready
+            if (starKeyCheck) starKeyWait[writePartition - 1] = true;  // Handles waiting until the panel is ready after pressing '*'
             else writeKeyPending = false;
             writeStart = false;
           }
@@ -770,7 +810,7 @@ void dscKeybusInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
-  timerStop(timer0);
+  timer0->dev->config.enable = 0;
   portENTER_CRITICAL(&timer0Mux);
 #endif
 
