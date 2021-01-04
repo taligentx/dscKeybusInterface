@@ -59,7 +59,41 @@ volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 
+// Workaround for ESP32 hardware timer interrupt functions called from within an ISR:
+// https://github.com/crankyoldgit/IRremoteESP8266/pull/1351
 #if defined(ESP32)
+typedef struct {
+    union {
+        struct {
+            uint32_t reserved0:   10;
+            uint32_t alarm_en:     1;
+            uint32_t level_int_en: 1;
+            uint32_t edge_int_en:  1;
+            uint32_t divider:     16;
+            uint32_t autoreload:   1;
+            uint32_t increase:     1;
+            uint32_t enable:       1;
+        };
+        uint32_t val;
+    } config;
+    uint32_t cnt_low;
+    uint32_t cnt_high;
+    uint32_t update;
+    uint32_t alarm_low;
+    uint32_t alarm_high;
+    uint32_t load_low;
+    uint32_t load_high;
+    uint32_t reload;
+} hw_timer_reg_t;
+
+typedef struct hw_timer_s {
+        hw_timer_reg_t * dev;
+        uint8_t num;
+        uint8_t group;
+        uint8_t timer;
+        portMUX_TYPE lock;
+} hw_timer_t;
+
 hw_timer_t *timer0 = NULL;
 portMUX_TYPE timer0Mux = portMUX_INITIALIZER_UNLOCKED;
 #endif
@@ -679,7 +713,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   // esp32 timer0 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  timerStart(timer0);
+  timer0->dev->config.enable = 1;
   portENTER_CRITICAL(&timer0Mux);
   #endif
 
@@ -776,7 +810,7 @@ void dscKeybusInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
-  timerStop(timer0);
+  timer0->dev->config.enable = 0;
   portENTER_CRITICAL(&timer0Mux);
 #endif
 

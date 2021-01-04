@@ -226,7 +226,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x06: stream->print(F("Armed: No entry delay")); break;
     case 0x07: stream->print(F("Failed to arm")); break;
     case 0x08: stream->print(F("Exit delay in progress")); break;
-    case 0x09: stream->print(F("Arming with no entry delay")); break;
+    case 0x09: stream->print(F("Arming: No entry delay")); break;
     case 0x0B: stream->print(F("Quick exit in progress")); break;
     case 0x0C: stream->print(F("Entry delay in progress")); break;
     case 0x0D: stream->print(F("Entry delay after alarm")); break;
@@ -2239,21 +2239,22 @@ void dscKeybusInterface::printPanel_0xE6() {
 
 
 /*
- *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 3-8
+ *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 1-8
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Command  Subcommand  Lights   Status                                                 CRC
+ *  Command  Subcommand  Lights   Status  Zones33+ Zones41+ Zones49+ Zones57+            CRC
  *  11100110 0 00000001 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001101 [0xE6.01] Partition 3: Armed Backlight - *8: Installer programming
  *  11100110 0 00000010 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001110 [0xE6.02] Partition 4: Armed Backlight - *8: Installer programming
  *  11100110 0 00000011 10000001 11111000 00000000 00000000 00000000 00000000 00000000 01100010 [0xE6.03] Partition 5: Ready Backlight - Keypad programming
  *  11100110 0 00000100 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01010000 [0xE6.04] Partition 6: Armed Backlight - *8: Installer programming
  *  11100110 0 00000101 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01010001 [0xE6.05] Partition 7: Armed Backlight - *8: Installer programming
  *  11100110 0 00000110 10000010 11100100 00000000 00000000 00000000 00000000 10000000 11010010 [0xE6.06] Partition 8: Armed Backlight - *8: Installer programming
- *  11100110 0 00100000 10000000 10011110 00000000 00000000 00000000 00000000 10000000 10100100 [0xE6.20] Status lights: Backlight - Enter * function code | Zone lights: none
- *  11100110 0 00100000 10000000 10011111 00000000 00000000 00000000 00000000 10000000 10100101 [0xE6.20] Status lights: Backlight - Enter access code | Zone lights: none
- *  11100110 0 00100000 10000001 11111000 00000000 00000000 00000000 00000000 10000000 11111111 [0xE6.20] Status lights: Ready Backlight - Keypad programming | Zone lights: none
+ *  11100110 0 00100000 10000000 10011110 00000000 00000000 00000000 00000000 10000000 10100100 [0xE6.20] Partition 1: Backlight - Enter * function code | Zone lights: none
+ *  11100110 0 00100000 10000000 10011111 00000000 00000000 00000000 00000000 10000000 10100101 [0xE6.20] Partition 1: Backlight - Enter access code | Zone lights: none
+ *  11100110 0 00100000 10000001 11111000 00000000 00000000 00000000 00000000 10000000 11111111 [0xE6.20] Partition 1: Ready Backlight - Keypad programming | Zone lights: none
+ *  11100110 0 00100000 10000010 10100110 10000000 00000001 00000000 00000000 10000000 00101111 [0xE6.20] Partition 1: Armed Backlight - *5: Access codes | Zones 33-64 lights: 40 41
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
 void dscKeybusInterface::printPanel_0xE6_0x01_06_20_21() {

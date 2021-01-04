@@ -205,16 +205,19 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("Blynk..."));
+  Serial.print(F("WiFi..."));
   WiFi.mode(WIFI_STA);
   Blynk.begin(blynkAuthToken, wifiSSID, wifiPassword, blynkServer, blynkPort);
-  WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
+  while (WiFi.status() != WL_CONNECTED) yield();
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
+  Serial.print(F("Blynk..."));
+  while (!Blynk.connected()) {
+    Blynk.run();
+    yield();
+  }
+  Serial.print(F("connected: "));
+  Serial.println(blynkServer);
 
   lcd.clear();
 
@@ -444,8 +447,8 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x08: lcd.print(0, 0, "Exit delay   ");
                lcd.print(0, 1, "in progress     ");
                if (pausedZones) resetZones(); break;
-    case 0x09: lcd.print(0, 0, "Arming with  ");
-               lcd.print(0, 1, "no entry delay  "); break;
+    case 0x09: lcd.print(0, 0, "Arming:      ");
+               lcd.print(0, 1, "No entry delay  "); break;
     case 0x0B: lcd.print(0, 0, "Quick exit   ");
                lcd.print(0, 1, "in progress     "); break;
     case 0x0C: lcd.print(0, 0, "Entry delay  ");

@@ -1,12 +1,12 @@
 /*
- *  VirtualKeypad-Web 1.3 (esp8266)
+ *  VirtualKeypad-Web 1.0 (esp32)
  *
- *  Provides a virtual keypad web interface using the esp8266 as a standalone web server.
+ *  Provides a virtual keypad web interface using the esp32 as a standalone web server.
  *
  *  Usage:
  *    1. Install the following libraries directly from each Github repository:
  *         ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
- *         ESPAsyncTCP: https://github.com/me-no-dev/ESPAsyncTCP
+ *         AsyncTCP: https://github.com/me-no-dev/AsyncTCP
  *    2. Install the following libraries, available in the Arduino IDE Library Manager and
  *       the Platform.io Library Registry:
  *         ArduinoJson: https://github.com/bblanchon/ArduinoJson
@@ -14,40 +14,31 @@
  *    3. Set the WiFi SSID and password in the sketch.
  *    4. If desired, update the DNS hostname in the sketch.  By default, this is set to
  *       "dsc" and the web interface will be accessible at: http://dsc.local
- *    5. Set the esp8266 flash size to use 1M SPIFFS.
- *         Arduino IDE: Tools > Flash Size > 4M (1M SPIFFS)
- *    6. Upload the sketch.
- *    7. Upload the SPIFFS data containing the web server files:
- *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
- *    8. Access the virtual keypad web interface by the IP address displayed through
+ *    5. Upload the sketch.
+ *    6. Upload the SPIFFS data containing the web server files:
+ *         Arduino IDE: Tools > ESP32 Sketch Data Upload
+ *    7. Access the virtual keypad web interface by the IP address displayed through
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
- *    1.3 - Display zone lights in alarm memory and programming
- *          Added AC power status, reset, quick exit
- *          Removed UI <> buttons, backlight icon, PGM
- *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
- *    1.1 - New: Fire, alarm, panic, stay arm, away arm, door chime buttons are now functional
- *          Bugfix: Set mDNS to update in loop()
- *          Updated: ArduinoOTA no longer included by default
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
+ *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
  *
- *      DSC Aux(-) --- esp8266 Ground
+ *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin (esp32: 4,13,16-39)
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin (esp32: 4,13,16-39)
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -63,25 +54,28 @@
  *  This example code is in the public domain.
  */
 
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+
+#include <WiFi.h>
+#include <ESPmDNS.h>
 #include <dscKeybusInterface.h>
 #include <ESPAsyncWebServer.h>
-#include <ESPAsyncTCP.h>
+#include <AsyncTCP.h>
 #include <FS.h>
+#include <SPIFFS.h>
+#include <SPIFFSEditor.h>
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
 // Settings
 char wifiSSID[] = "";
 char wifiPassword[] = "";
-char dnsHostname[] = "dsc";  // Sets the host name - if set to "dsc", access via: http://dsc.local
+char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 byte dscPartition = 1;       // Set the partition for the keypad
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin 18  // esp32: 4,13,16-39
+#define dscReadPin  19  // esp32: 4,13,16-39
+#define dscWritePin 21  // esp32: 4,13,16-33
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
@@ -136,8 +130,6 @@ void setup() {
 
 
 void loop() {
-
-  MDNS.update();
 
   //ping-pong WebSocket to keep connection open
   if (ws_ping_pong.isRunning() && ws_ping_pong.elapsed() > 5 * 60) {
