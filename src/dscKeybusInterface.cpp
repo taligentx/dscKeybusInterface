@@ -582,9 +582,9 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case 'F':
         case 'f': writeKey = 0x77; writeAlarm = true; break;                    // Keypad fire alarm
         case 'b':
-        case 'B': writeKey = 0x82; break;                                       // 0x82 - "Enter in buffer memory"
-        case '>': writeKey = 0x87; break;                                       // "Right arrow" - only in buffer memory read ?
-        case '<': writeKey = 0x88; break;                                       // "Left arrow" - only in buffer memory read ?
+        case 'B': writeKey = 0x82; break;                                       // Enter event buffer
+        case '>': writeKey = 0x87; break;                                       // Event buffer right arrow
+        case '<': writeKey = 0x88; break;                                       // Event buffer left arrow
         case 's':
         case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
         case 'w':
