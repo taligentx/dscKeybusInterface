@@ -116,7 +116,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0xEB: printPanel_0xEB(); return;           // Date, time, system status messages - partitions 1-8 | Structure: *incomplete | Content: *incomplete
     case 0xEC: printPanel_0xEC(); return;           // Event buffer messages | Structure: *incomplete | Content: *incomplete
     default: {
-      stream->print(F("Unknown data"));
+      stream->print("Unknown data");
       return;
     }
   }
@@ -178,7 +178,7 @@ void dscKeybusInterface::printModuleMessage() {
         case 0x0E: printModule_Expander(); return;  // Zone expanders 4-7 response
       }
     }
-    default: stream->print(F("Unknown data"));
+    default: stream->print("Unknown data");
   }
 }
 
@@ -412,7 +412,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
    *  Byte 0   1    2        3        4        5        6        7        8
    */
   if (panelData[panelByte] >= 0x09 && panelData[panelByte] <= 0x28) {
-    stream->print(F("Zone alarm: "));
+    stream->print("Zone alarm: ");
     printNumberOffset(panelByte, -8);
     return;
   }
@@ -427,7 +427,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
    *  Byte 0   1    2        3        4        5        6        7        8
    */
   if (panelData[panelByte] >= 0x29 && panelData[panelByte] <= 0x48) {
-    stream->print(F("Zone alarm restored: "));
+    stream->print("Zone alarm restored: ");
     printNumberOffset(panelByte, -40);
     return;
   }
@@ -442,7 +442,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
    *  Byte 0   1    2        3        4        5        6        7        8        9        10
    */
   if (panelData[panelByte] >= 0x56 && panelData[panelByte] <= 0x75) {
-    stream->print(F("Zone tamper: "));
+    stream->print("Zone tamper: ");
     printNumberOffset(panelByte, -85);
     return;
   }
@@ -456,7 +456,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
    *  Byte 0   1    2        3        4        5        6        7        8
    */
   if (panelData[panelByte] >= 0x76 && panelData[panelByte] <= 0x95) {
-    stream->print(F("Zone tamper restored: "));
+    stream->print("Zone tamper restored: ");
     printNumberOffset(panelByte, -117);
     return;
   }
@@ -491,7 +491,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     return;
   }
 
-  stream->print(F("Unknown data"));
+  stream->print("Unknown data");
 }
 
 
@@ -624,7 +624,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     return;
   }
 
-  stream->print(F("Unknown data"));
+  stream->print("Unknown data");
 }
 
 
@@ -770,7 +770,7 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     return;
   }
 
-  stream->print(F("Unknown data"));
+  stream->print("Unknown data");
 }
 
 
@@ -857,7 +857,7 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     return;
   }
 
-  stream->print(F("Unknown data"));
+  stream->print("Unknown data");
 }
 
 
@@ -885,22 +885,22 @@ void dscKeybusInterface::printPanelStatus4(byte panelByte) {
   }
 
   if (panelData[panelByte] <= 0x1F) {
-    stream->print(F("Zone alarm: "));
+    stream->print("Zone alarm: ");
     printNumberOffset(panelByte, 33);
   }
 
   else if (panelData[panelByte] >= 0x20 && panelData[panelByte] <= 0x3F) {
-    stream->print(F("Zone alarm restored: "));
+    stream->print("Zone alarm restored: ");
     printNumberOffset(panelByte, 1);
   }
 
   else if (panelData[panelByte] >= 0x40 && panelData[panelByte] <= 0x5F) {
-    stream->print(F("Zone tamper: "));
+    stream->print("Zone tamper: ");
     printNumberOffset(panelByte, -31);
   }
 
   else if (panelData[panelByte] >= 0x60 && panelData[panelByte] <= 0x7F) {
-    stream->print(F("Zone tamper restored: "));
+    stream->print("Zone tamper restored: ");
     printNumberOffset(panelByte, -63);
   }
 
@@ -2264,7 +2264,7 @@ void dscKeybusInterface::printPanel_0xE6() {
     case 0x2B: printPanel_0xE6_0x2B(); break;  // Enabled zones 1-32, partitions 1-8 | Structure: complete | Content: complete
     case 0x2C: printPanel_0xE6_0x2C(); break;  // Enabled zones 33-64, partitions 1-8 | Structure: complete | Content: complete
     case 0x41: printPanel_0xE6_0x41(); break;  // Status in access code programming, zone lights 65-95| Structure: *incomplete | Content: *incomplete
-    default: stream->print(F("Unknown data"));
+    default: stream->print("Unknown data");
   }
 }
 
@@ -3864,7 +3864,7 @@ void dscKeybusInterface::printPartition() {
 
 
 void dscKeybusInterface::printUnknownData() {
-  stream->print(F("Unknown data"));
+  stream->print("Unknown data");
 }
 
 
