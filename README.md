@@ -116,7 +116,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
       * `panelVersion` tracks the panel version number
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
-  - Updated: `VirtualKeypad-Blynk` displays alarm memory and programming zone lights
+  - Updated: `VirtualKeypad-Blynk` and `VirtualKeypad-Web` display alarm memory and programming zone lights
   - Updated: `HomeAssistant-MQTT, Homebridge-MQTT, OpenHAB-MQTT` include PGM outputs 1-14 status
   - Updated: Virtual keypad writes
       * `write()` for multiple keys can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
@@ -207,7 +207,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
-* **Email** (esp8266/esp32-only): Demonstrates sending status updates as an email.  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* **Email** (esp8266/esp32): Demonstrates sending status updates as an email.  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
   This can be used to send SMS text messages if the number's service provider has an [email to SMS gateway](https://en.wikipedia.org/wiki/SMS_gateway#Email_clients) - examples for the US:
   * T-mobile: 5558675309@tmomail.net
@@ -216,12 +216,12 @@ The included examples demonstrate how to use the library and can be used as-is o
   * AT&T: 5558675309@txt.att.net
 
 * **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
-  - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png)
+  - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
-* **VirtualKeypad-Web** (esp8266): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+* **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server - thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
 * **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
 

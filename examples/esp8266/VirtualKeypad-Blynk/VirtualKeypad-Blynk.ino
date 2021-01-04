@@ -6,9 +6,13 @@
  *  sketch currently does not emulate the menu navigation features of the DSC LCD keypads (PK5500, etc).
  *
  *  Usage:
- *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout:
- *      16 zones: https://user-images.githubusercontent.com/12835671/42364287-41ca6662-80c0-11e8-85e7-d579b542568d.png
+ *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
+ *       can contain a limited amount of objects, only the 16-zone template includes PGM outputs 1-8.  Use cloning
+ *       within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
+
+ *      16 zones: https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png
  *      32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
+
  *    2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
  *    3. Select "Refresh" to generate a new auth token.
  *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
@@ -90,14 +94,7 @@ char blynkAuthToken[] = "";  // Token generated from within the Blynk app
 char blynkServer[] = "";     // Blynk local server address
 int blynkPort = 8080;        // Blynk local server port
 
-// Configures the Keybus interface with the specified pins - dscWritePin is
-// optional, leaving it out disables the virtual keypad
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-
-// Configures the Keybus interface with the specified pins - dscWritePin is
-// optional, leaving it out disables the virtual keypad
+// Configures the Keybus interface with the specified pins
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
@@ -833,25 +830,41 @@ void processStatus() {
       }
       break;
     case 0xE6:
-      if (dsc.panelData[2] == 0x18 && (dsc.panelData[4] & 0x04) == 0x04) {
-        //processMemoryZones(4);  // Alarm memory zones 33-64
+      switch (dsc.panelData[2]) {
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x20:
+        case 0x21: if (pausedZones) processProgramZones(5, ledProgramZonesColor); break;  // Programming zone lights 33-64
+        case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) yield(); break;                 // Alarm memory zones 33-64
       }
       break;
   }
 }
 
 
-void resetZones() {
-  pausedZones = false;
-  dsc.openZonesStatusChanged = true;
-  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
-    previousProgramZones[zoneGroup] = 0;
-    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-      if (bitRead(programZones[zoneGroup], zoneBit)) {
-        bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);
-      }
-      if (bitRead(systemZones[zoneGroup], zoneBit)) {
-        bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);
+void processProgramZones(byte startByte, const char* ledColor) {
+  byte byteCount = 0;
+  byte zoneStart = 0;
+  if (startByte == 5) zoneStart = 4;
+
+  for (byte zoneGroup = zoneStart; zoneGroup < zoneStart + 4; zoneGroup++) {
+    programZones[zoneGroup] = dsc.panelData[startByte + byteCount];
+    byteCount++;
+    byte zonesChanged = programZones[zoneGroup] ^ previousProgramZones[zoneGroup];
+    if (zonesChanged) {
+      previousProgramZones[zoneGroup] = programZones[zoneGroup];
+      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+        if (bitRead(zonesChanged, zoneBit)) {
+          byte zoneLight = zoneBit + 1 + (zoneGroup * 8);
+          if (bitRead(programZones[zoneGroup], zoneBit)) {
+            setZoneLight(zoneLight, true, ledColor);
+          }
+          else setZoneLight(zoneLight, false, NULL);
+        }
       }
     }
   }
@@ -871,20 +884,17 @@ void pauseZones() {
 }
 
 
-void processProgramZones(byte startByte, const char* ledColor) {
-  for (byte zoneGroup = 0; zoneGroup < 4; zoneGroup++) {
-    programZones[zoneGroup] = dsc.panelData[zoneGroup + startByte];
-    byte zonesChanged = programZones[zoneGroup] ^ previousProgramZones[zoneGroup];
-    if (zonesChanged) {
-      previousProgramZones[zoneGroup] = programZones[zoneGroup];
-      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-        if (bitRead(zonesChanged, zoneBit)) {
-          byte zoneLight = zoneBit + 1 + (zoneGroup * 8);
-          if (bitRead(programZones[zoneGroup], zoneBit)) {
-            setZoneLight(zoneLight, true, ledColor);
-          }
-          else setZoneLight(zoneLight, false, NULL);
-        }
+void resetZones() {
+  pausedZones = false;
+  dsc.openZonesStatusChanged = true;
+  for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
+    previousProgramZones[zoneGroup] = 0;
+    for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+      if (bitRead(programZones[zoneGroup], zoneBit)) {
+        bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);
+      }
+      if (bitRead(systemZones[zoneGroup], zoneBit)) {
+        bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 1);
       }
     }
   }
