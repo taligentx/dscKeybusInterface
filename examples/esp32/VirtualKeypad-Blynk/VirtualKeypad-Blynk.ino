@@ -51,7 +51,7 @@
       V61 - Zone 1 ... V124 - Zone 64
  *
  *  Release notes:
- *    1.3 - Display zone lights in alarm memory and programming
+ *    1.3 - Display alarm memory, programming zone lights, and event buffer
  *          Add PGM outputs 1-14 status
  *    1.0 - Initial release
  *
