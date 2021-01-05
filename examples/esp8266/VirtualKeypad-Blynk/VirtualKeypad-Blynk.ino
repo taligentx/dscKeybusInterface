@@ -7,12 +7,13 @@
  *
  *  Usage:
  *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
- *       can contain a limited amount of objects, only the 16-zone template includes PGM outputs 1-8.  Use cloning
- *       within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
-
+ *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
+ *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
+ *
+ *      8 zones with event log: https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png
  *      16 zones: https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png
  *      32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
-
+ *
  *    2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
  *    3. Select "Refresh" to generate a new auth token.
  *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
@@ -33,6 +34,9 @@
       V14 - Keypad fire alarm
       V15 - Keypad aux alarm
       V16 - Keypad panic alarm
+      V17 - Event buffer enter
+      V18 - Event buffer right arrow
+      V19 - Event buffer left arrow
       V30 - Partition number menu
       V31 - PGM 1 ... V39 - PGM9
       V40 - LCD
@@ -92,7 +96,7 @@ char wifiSSID[] = "";
 char wifiPassword[] = "";
 char blynkAuthToken[] = "";  // Token generated from within the Blynk app
 char blynkServer[] = "";     // Blynk local server address
-int blynkPort = 8080;        // Blynk local server port
+int  blynkPort = 8080;       // Blynk local server port
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
@@ -102,7 +106,7 @@ int blynkPort = 8080;        // Blynk local server port
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool wifiConnected = true;
-bool partitionChanged, pausedZones;
+bool partitionChanged, pausedZones, extendedBuffer;
 byte systemZones[dscZones], programZones[dscZones], previousProgramZones[dscZones];
 const char* ledOpenZonesColor = "#23C48E";     // Green
 const char* ledProgramZonesColor = "#FDD322";  // Orange
@@ -710,6 +714,24 @@ BLYNK_WRITE(V16) {
   Blynk.virtualWrite(V16, 0);
 }
 
+BLYNK_WRITE(V17) {
+  int buttonPressed = param.asInt();
+  if (buttonPressed) dsc.write('b');
+  Blynk.virtualWrite(V17, 0);
+}
+
+BLYNK_WRITE(V18) {
+  int buttonPressed = param.asInt();
+  if (buttonPressed) dsc.write('>');
+  Blynk.virtualWrite(V18, 0);
+}
+
+BLYNK_WRITE(V19) {
+  int buttonPressed = param.asInt();
+  if (buttonPressed) dsc.write('<');
+  Blynk.virtualWrite(V19, 0);
+}
+
 BLYNK_WRITE(V30) {
   switch (param.asInt()) {
     case 1: {
@@ -829,6 +851,7 @@ void processStatus() {
         }
       }
       break;
+    case 0xAA: if (pausedZones) processEventBufferAA(); break;
     case 0xE6:
       switch (dsc.panelData[2]) {
         case 0x01:
@@ -842,6 +865,7 @@ void processStatus() {
         case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) yield(); break;                 // Alarm memory zones 33-64
       }
       break;
+    case 0xEC: if (pausedZones) processEventBufferEC(); break;
   }
 }
 
@@ -871,6 +895,938 @@ void processProgramZones(byte startByte, const char* ledColor) {
 }
 
 
+void processEventBufferAA() {
+  if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
+
+  char eventInfo[45] = "Event: ";
+  char charBuffer[4];
+  itoa(dsc.panelData[7], charBuffer, 10);
+  if (dsc.panelData[7] < 10) strcat(eventInfo, "00");
+  else if (dsc.panelData[7] < 100) strcat(eventInfo, "0");
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " | ");
+
+  byte dscYear3 = dsc.panelData[2] >> 4;
+  byte dscYear4 = dsc.panelData[2] & 0x0F;
+  byte dscMonth = dsc.panelData[2 + 1] << 2; dscMonth >>= 4;
+  byte dscDay1 = dsc.panelData[2 + 1] << 6; dscDay1 >>= 3;
+  byte dscDay2 = dsc.panelData[2 + 2] >> 5;
+  byte dscDay = dscDay1 | dscDay2;
+  byte dscHour = dsc.panelData[2 + 2] & 0x1F;
+  byte dscMinute = dsc.panelData[2 + 3] >> 2;
+
+  if (dscYear3 >= 7) strcat(eventInfo, "19");
+  else strcat(eventInfo, "20");
+  itoa(dscYear3, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  itoa(dscYear4, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscMonth < 10) strcat(eventInfo, "0");
+  itoa(dscMonth, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscDay < 10) strcat(eventInfo, "0");
+  itoa(dscDay, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " ");
+  if (dscHour < 10) strcat(eventInfo, "0");
+  itoa(dscHour, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ":");
+  if (dscMinute < 10) strcat(eventInfo, "0");
+  itoa(dscMinute, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+  strcat(eventInfo, " | Partition ");
+  itoa(dsc.panelData[3] >> 6, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+  Blynk.virtualWrite(V20, eventInfo);
+
+  switch (dsc.panelData[5] & 0x03) {
+    case 0x00: printPanelStatus0(6); break;
+    case 0x01: printPanelStatus1(6); break;
+    case 0x02: printPanelStatus2(6); break;
+    case 0x03: printPanelStatus3(6); break;
+  }
+}
+
+
+void processEventBufferEC() {
+  if (!extendedBuffer) extendedBuffer = true;
+
+  char eventInfo[45] = "Event: ";
+  char charBuffer[4];
+  int eventNumber = dsc.panelData[9] + ((dsc.panelData[4] >> 6) * 256);
+  itoa(eventNumber, charBuffer, 10);
+  if (eventNumber < 10) strcat(eventInfo, "00");
+  else if (eventNumber < 100) strcat(eventInfo, "0");
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " | ");
+
+  byte dscYear3 = dsc.panelData[3] >> 4;
+  byte dscYear4 = dsc.panelData[3] & 0x0F;
+  byte dscMonth = dsc.panelData[4] << 2; dscMonth >>= 4;
+  byte dscDay1 = dsc.panelData[4] << 6; dscDay1 >>= 3;
+  byte dscDay2 = dsc.panelData[5] >> 5;
+  byte dscDay = dscDay1 | dscDay2;
+  byte dscHour = dsc.panelData[5] & 0x1F;
+  byte dscMinute = dsc.panelData[6] >> 2;
+
+  if (dscYear3 >= 7) strcat(eventInfo, "19");
+  else strcat(eventInfo, "20");
+  itoa(dscYear3, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  itoa(dscYear4, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscMonth < 10) strcat(eventInfo, "0");
+  itoa(dscMonth, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ".");
+  if (dscDay < 10) strcat(eventInfo, "0");
+  itoa(dscDay, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, " ");
+  if (dscHour < 10) strcat(eventInfo, "0");
+  itoa(dscHour, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+  strcat(eventInfo, ":");
+  if (dscMinute < 10) strcat(eventInfo, "0");
+  itoa(dscMinute, charBuffer, 10);
+  strcat(eventInfo, charBuffer);
+
+  if (dsc.panelData[2] != 0) {
+    strcat(eventInfo, " | Partition ");
+
+    byte bitCount = 0;
+    for (byte bit = 0; bit <= 7; bit++) {
+      if (bitRead(dsc.panelData[2], bit)) {
+        itoa((bitCount + 1), charBuffer, 10);
+      }
+      bitCount++;
+    }
+    strcat(eventInfo, charBuffer);
+  }
+
+  Blynk.virtualWrite(V20, eventInfo);
+
+  switch (dsc.panelData[7]) {
+    case 0x00: printPanelStatus0(8); break;
+    case 0x01: printPanelStatus1(8); break;
+    case 0x02: printPanelStatus2(8); break;
+    case 0x03: printPanelStatus3(8); break;
+    case 0x04: printPanelStatus4(8); break;
+    case 0x05: printPanelStatus5(8); break;
+    case 0x14: printPanelStatus14(8); break;
+    case 0x16: printPanelStatus16(8); break;
+    case 0x17: printPanelStatus17(8); break;
+    case 0x18: printPanelStatus18(8); break;
+    case 0x1B: printPanelStatus1B(8); break;
+  }
+}
+
+
+void printPanelStatus0(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x49: lcd.print(0, 0, "Duress alarm    ");
+               lcd.print(0, 1, "                "); break;
+    case 0x4A: lcd.print(0, 0, "Disarmed:       ");
+               lcd.print(0, 1, "Alarm memory    "); break;
+    case 0x4B: lcd.print(0, 0, "Recent          ");
+               lcd.print(0, 1, "closing alarm   "); break;
+    case 0x4C: lcd.print(0, 0, "Zone expander   ");
+               lcd.print(0, 1, "suprvis. alarm  "); break;
+    case 0x4D: lcd.print(0, 0, "Zone expander   ");
+               lcd.print(0, 1, "suprvis. restore"); break;
+    case 0x4E: lcd.print(0, 0, "Keypad Fire     ");
+               lcd.print(0, 1, "alarm           "); break;
+    case 0x4F: lcd.print(0, 0, "Keypad Aux      ");
+               lcd.print(0, 1, "alarm           "); break;
+    case 0x50: lcd.print(0, 0, "Keypad Panic    ");
+               lcd.print(0, 1, "alarm           "); break;
+    case 0x51: lcd.print(0, 0, "Auxiliary       ");
+               lcd.print(0, 1, "input alarm     "); break;
+    case 0x52: lcd.print(0, 0, "Keypad Fire     ");
+               lcd.print(0, 1, "alarm restored  "); break;
+    case 0x53: lcd.print(0, 0, "Keypad Aux      ");
+               lcd.print(0, 1, "alarm restored  "); break;
+    case 0x54: lcd.print(0, 0, "Keypad Panic    ");
+               lcd.print(0, 1, "alarm restored  "); break;
+    case 0x55: lcd.print(0, 0, "Auxiliary input ");
+               lcd.print(0, 1, "alarm restored  "); break;
+    case 0x98: lcd.print(0, 0, "Keypad          ");
+               lcd.print(0, 1, "lockout         "); break;
+    case 0xBE: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Partial         "); break;
+    case 0xBF: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Special         "); break;
+    case 0xE5: lcd.print(0, 0, "Auto-arm        ");
+               lcd.print(0, 1, "cancelled       "); break;
+    case 0xE6: lcd.print(0, 0, "Disarmed:       ");
+               lcd.print(0, 1, "Special         "); break;
+    case 0xE7: lcd.print(0, 0, "Panel battery   ");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0xE8: lcd.print(0, 0, "Panel AC        ");
+               lcd.print(0, 1, "power trouble   "); break;
+    case 0xE9: lcd.print(0, 0, "Bell trouble    ");
+               lcd.print(0, 1, "                "); break;
+    case 0xEA: lcd.print(0, 0, "Fire zone       ");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0xEB: lcd.print(0, 0, "Panel aux       ");
+               lcd.print(0, 1, "supply trouble  "); break;
+    case 0xEC: lcd.print(0, 0, "Telephone       ");
+               lcd.print(0, 1, "line trouble    "); break;
+    case 0xEF: lcd.print(0, 0, "Panel battery   ");
+               lcd.print(0, 1, "restored        "); break;
+    case 0xF0: lcd.print(0, 0, "Panel AC        ");
+               lcd.print(0, 1, "power restored  "); break;
+    case 0xF1: lcd.print(0, 0, "Bell restored   ");
+               lcd.print(0, 1, "                "); break;
+    case 0xF2: lcd.print(0, 0, "Fire zone       ");
+               lcd.print(0, 1, "trouble restored"); break;
+    case 0xF3: lcd.print(0, 0, "Panel aux       ");
+               lcd.print(0, 1, "supply restored "); break;
+    case 0xF4: lcd.print(0, 0, "Telephone       ");
+               lcd.print(0, 1, "line restored   "); break;
+    case 0xF7: lcd.print(0, 0, "Phone 1 FTC     ");
+               lcd.print(0, 1, "                "); break;
+    case 0xF8: lcd.print(0, 0, "Phone 2 FTC     ");
+               lcd.print(0, 1, "                "); break;
+    case 0xF9: lcd.print(0, 0, "Event buffer    ");
+               lcd.print(0, 1, "threshold       "); break;
+    case 0xFA: lcd.print(0, 0, "DLS lead-in     ");
+               lcd.print(0, 1, "                "); break;
+    case 0xFB: lcd.print(0, 0, "DLS lead-out    ");
+               lcd.print(0, 1, "                "); break;
+    case 0xFE: lcd.print(0, 0, "Periodic test   ");
+               lcd.print(0, 1, "transmission    "); break;
+    case 0xFF: lcd.print(0, 0, "System test     ");
+               lcd.print(0, 1, "                "); break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x09 && dsc.panelData[panelByte] <= 0x28) {
+    strcpy(lcdMessage, "Zone alarm: ");
+    itoa(dsc.panelData[panelByte] - 8, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 8 < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x29 && dsc.panelData[panelByte] <= 0x48) {
+    lcd.print(0, 0, "Zone alarm      ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 40, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 40 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x56 && dsc.panelData[panelByte] <= 0x75) {
+    strcpy(lcdMessage, "Zone tamper: ");
+    itoa(dsc.panelData[panelByte] - 85, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 85 < 10) strcat(lcdMessage, "  ");
+    else strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x76 && dsc.panelData[panelByte] <= 0x95) {
+    lcd.print(0, 0, "Zone tamper     ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 117, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 117 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x99 && dsc.panelData[panelByte] <= 0xBD) {
+    lcd.print(0, 0, "Armed:          ");
+    byte dscCode = dsc.panelData[panelByte] - 0x98;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC0 && dsc.panelData[panelByte] <= 0xE4) {
+    lcd.print(0, 0, "Disarmed:       ");
+    byte dscCode = dsc.panelData[panelByte] - 0xBF;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus1(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x03: lcd.print(0, 0, "Cross zone      ");
+               lcd.print(0, 1, "alarm           "); break;
+    case 0x04: lcd.print(0, 0, "Delinquency     ");
+               lcd.print(0, 1, "alarm           "); break;
+    case 0x05: lcd.print(0, 0, "Late to close   ");
+               lcd.print(0, 1, "                "); break;
+    case 0x29: lcd.print(0, 0, "Downloading     ");
+               lcd.print(0, 1, "forced answer   "); break;
+    case 0x2B: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Auto-arm        "); break;
+    case 0xAC: lcd.print(0, 0, "Exit install    ");
+               lcd.print(0, 1, "programming     "); break;
+    case 0xAD: lcd.print(0, 0, "Enter install   ");
+               lcd.print(0, 1, "programming     "); break;
+    case 0xAE: lcd.print(0, 0, "Walk test       ");
+               lcd.print(0, 1, "end             "); break;
+    case 0xAF: lcd.print(0, 0, "Walk test       ");
+               lcd.print(0, 1, "begin           "); break;
+    case 0xD0: lcd.print(0, 0, "Command         ");
+               lcd.print(0, 1, "output 4        "); break;
+    case 0xD1: lcd.print(0, 0, "Exit fault      ");
+               lcd.print(0, 1, "pre-alert       "); break;
+    case 0xD2: lcd.print(0, 0, "Armed: No entry ");
+               lcd.print(0, 1, "delay cancelled "); break;
+    case 0xD3: lcd.print(0, 0, "Downlook        ");
+               lcd.print(0, 1, "remote trigger  "); break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x24 && dsc.panelData[panelByte] <= 0x28) {
+    byte dscCode = dsc.panelData[panelByte] - 0x03;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x2C && dsc.panelData[panelByte] <= 0x4B) {
+    lcd.print(0, 0, "Zone battery    ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 43, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 43 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x4C && dsc.panelData[panelByte] <= 0x6B) {
+    lcd.print(0, 0, "Zone battery    ");
+    strcpy(lcdMessage, "low: ");
+    itoa(dsc.panelData[panelByte] - 75, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 75 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x6C && dsc.panelData[panelByte] <= 0x8B) {
+    lcd.print(0, 0, "Zone fault      ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 107, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 107 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x8C && dsc.panelData[panelByte] <= 0xAB) {
+    strcpy(lcdMessage, "Zone fault: ");
+    itoa(dsc.panelData[panelByte] - 139, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 139 < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xB0 && dsc.panelData[panelByte] <= 0xCF) {
+    strcpy(lcdMessage, "Zone bypass: ");
+    itoa(dsc.panelData[panelByte] - 175, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 175 < 10) strcat(lcdMessage, "  ");
+    else strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus2(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x2A: lcd.print(0, 0, "Quick exit      ");
+               lcd.print(0, 1, "                "); break;
+    case 0x63: lcd.print(0, 0, "Keybus fault    ");
+               lcd.print(0, 1, "restored        "); break;
+    case 0x64: lcd.print(0, 0, "Keybus fault    ");
+               lcd.print(0, 1, "                "); break;
+    case 0x66: lcd.print(0, 0, "*1: Zone        ");
+               lcd.print(0, 1, "bypass program  "); break;
+    case 0x67: lcd.print(0, 0, "Command         ");
+               lcd.print(0, 1, "output 1        "); break;
+    case 0x68: lcd.print(0, 0, "Command         ");
+               lcd.print(0, 1, "output 2        "); break;
+    case 0x69: lcd.print(0, 0, "Command         ");
+               lcd.print(0, 1, "output 3        "); break;
+    case 0x8C: lcd.print(0, 0, "Cold start      ");
+               lcd.print(0, 1, "                "); break;
+    case 0x8D: lcd.print(0, 0, "Warm start      ");
+               lcd.print(0, 1, "                "); break;
+    case 0x8E: lcd.print(0, 0, "Panel factory   ");
+               lcd.print(0, 1, "default         "); break;
+    case 0x91: lcd.print(0, 0, "Swinger         ");
+               lcd.print(0, 1, "shutdown        "); break;
+    case 0x93: lcd.print(0, 0, "Disarmed:       ");
+               lcd.print(0, 1, "Keyswitch       "); break;
+    case 0x96: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Keyswitch       "); break;
+    case 0x97: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Keypad away     "); break;
+    case 0x98: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Quick-arm       "); break;
+    case 0x99: lcd.print(0, 0, "Activate        ");
+               lcd.print(0, 1, "stay/away zones "); break;
+    case 0x9A: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Stay            "); break;
+    case 0x9B: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "Away            "); break;
+    case 0x9C: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "No entry delay  "); break;
+    case 0xFF: lcd.print(0, 0, "Zone expander   ");
+               lcd.print(0, 1, "trouble: 1      "); break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x9E && dsc.panelData[panelByte] <= 0xC2) {
+    byte dscCode = dsc.panelData[panelByte] - 0x9D;
+    lcd.print(0, 0, "*1:             ");
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC3 && dsc.panelData[panelByte] <= 0xC5) {
+    byte dscCode = dsc.panelData[panelByte] - 0xA0;
+    lcd.print(0, 0, "*5:             ");
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xC6 && dsc.panelData[panelByte] <= 0xE5) {
+    byte dscCode = dsc.panelData[panelByte] - 0xC5;
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xE6 && dsc.panelData[panelByte] <= 0xE8) {
+    byte dscCode = dsc.panelData[panelByte] - 0xC3;
+    lcd.print(0, 0, "*6:             ");
+    if (dscCode >= 35) dscCode += 5;
+    if (dscCode == 40) strcpy(lcdMessage, "Master code ");
+    else strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xE9 && dsc.panelData[panelByte] <= 0xF0) {
+    lcd.print(0, 0, "Keypad restored ");
+    strcpy(lcdMessage, "Slot ");
+    itoa(dsc.panelData[panelByte] - 232, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, "          ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xF1 && dsc.panelData[panelByte] <= 0xF8) {
+    lcd.print(0, 0, "Keypad trouble: ");
+    strcpy(lcdMessage, "Slot ");
+    itoa(dsc.panelData[panelByte] - 240, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, "          ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xF9 && dsc.panelData[panelByte] <= 0xFE) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 248, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "restored        ");
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus3(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x05: lcd.print(0, 0, "PC/RF5132:      ");
+               lcd.print(0, 1, "Suprvis. restore"); break;
+    case 0x06: lcd.print(0, 0, "PC/RF5132:      ");
+               lcd.print(0, 1, "Suprvis. trouble"); break;
+    case 0x09: lcd.print(0, 0, "PC5204:         ");
+               lcd.print(0, 1, "Suprvis. restore"); break;
+    case 0x0A: lcd.print(0, 0, "PC5204:         ");
+               lcd.print(0, 1, "Suprvis. trouble"); break;
+    case 0x17: lcd.print(0, 0, "Zone expander 7 ");
+               lcd.print(0, 1, "restored        "); break;
+    case 0x18: lcd.print(0, 0, "Zone expander 7 ");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0x41: lcd.print(0, 0, "PC/RF5132:      ");
+               lcd.print(0, 1, "Tamper restored "); break;
+    case 0x42: lcd.print(0, 0, "PC/RF5132:      ");
+               lcd.print(0, 1, "Tamper          "); break;
+    case 0x43: lcd.print(0, 0, "PC5208: Tamper  ");
+               lcd.print(0, 1, "restored        "); break;
+    case 0x44: lcd.print(0, 0, "PC5208: Tamper  ");
+               lcd.print(0, 1, "                "); break;
+    case 0x45: lcd.print(0, 0, "PC5204: Tamper  ");
+               lcd.print(0, 1, "restored        "); break;
+    case 0x46: lcd.print(0, 0, "PC5204: Tamper  ");
+               lcd.print(0, 1, "                "); break;
+    case 0x51: lcd.print(0, 0, "Zone expander 7 ");
+               lcd.print(0, 1, "tamper restored "); break;
+    case 0x52: lcd.print(0, 0, "Zone expander 7 ");
+               lcd.print(0, 1, "tamper          "); break;
+    case 0xB3: lcd.print(0, 0, "PC5204:         ");
+               lcd.print(0, 1, "Battery restored"); break;
+    case 0xB4: lcd.print(0, 0, "PC5204:         ");
+               lcd.print(0, 1, "Battery trouble "); break;
+    case 0xB5: lcd.print(0, 0, "PC5204: Aux     ");
+               lcd.print(0, 1, "supply restored "); break;
+    case 0xB6: lcd.print(0, 0, "PC5204: Aux     ");
+               lcd.print(0, 1, "supply trouble  "); break;
+    case 0xB7: lcd.print(0, 0, "PC5204: Output 1");
+               lcd.print(0, 1, "restored        "); break;
+    case 0xB8: lcd.print(0, 0, "PC5204: Output 1");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0xFF: lcd.print(0, 0, "Extended status ");
+               lcd.print(0, 1, "                "); break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x04) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] + 2, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "trouble         ");
+    return;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x35 && dsc.panelData[panelByte] <= 0x3A) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 52, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "tamper restored ");
+    return;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3B && dsc.panelData[panelByte] <= 0x40) {
+    strcpy(lcdMessage, "Zone expander ");
+    itoa(dsc.panelData[panelByte] - 58, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "tamper          ");
+    return;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus4(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x86: lcd.print(0, 0, "Periodic test   ");
+               lcd.print(0, 1, "with trouble    "); break;
+    case 0x87: lcd.print(0, 0, "Exit fault      ");
+               lcd.print(0, 1, "                "); break;
+    case 0x89: lcd.print(0, 0, "Alarm cancelled ");
+               lcd.print(0, 1, "                "); break;
+    default: decoded = false;
+  }
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x1F) {
+    strcpy(lcdMessage, "Zone alarm: ");
+    itoa(dsc.panelData[panelByte] + 33, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] + 33 < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x20 && dsc.panelData[panelByte] <= 0x3F) {
+    lcd.print(0, 0, "Zone alarm      ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] + 1, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] + 1 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x40 && dsc.panelData[panelByte] <= 0x5F) {
+    strcpy(lcdMessage, "Zone tamper: ");
+    itoa(dsc.panelData[panelByte] - 31, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 31 < 10) strcat(lcdMessage, "  ");
+    else strcat(lcdMessage, " ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  else if (dsc.panelData[panelByte] >= 0x60 && dsc.panelData[panelByte] <= 0x7F) {
+    lcd.print(0, 0, "Zone tamper     ");
+    strcpy(lcdMessage, "restored: ");
+    itoa(dsc.panelData[panelByte] - 63, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dsc.panelData[panelByte] - 63 < 10) strcat(lcdMessage, "    ");
+    else strcat(lcdMessage, "   ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus5(byte panelByte) {
+  bool decoded = true;
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x39) {
+    byte dscCode = dsc.panelData[panelByte] + 0x23;
+    lcd.print(0, 0, "Armed:          ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x73) {
+    byte dscCode = dsc.panelData[panelByte] - 0x17;
+    lcd.print(0, 0, "Disarmed:       ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus14(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0xC0: lcd.print(0, 0, "TLink           ");
+               lcd.print(0, 1, "com fault       "); break;
+    case 0xC2: lcd.print(0, 0, "Tlink           ");
+               lcd.print(0, 1, "network fault   "); break;
+    case 0xC4: lcd.print(0, 0, "TLink receiver  ");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0xC5: lcd.print(0, 0, "TLink receiver  ");
+               lcd.print(0, 1, "restored        "); break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus16(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0x80: lcd.print(0, 0, "Trouble         ");
+               lcd.print(0, 1, "acknowledged    "); break;
+    case 0x81: lcd.print(0, 0, "RF delinquency  ");
+               lcd.print(0, 1, "trouble         "); break;
+    case 0x82: lcd.print(0, 0, "RF delinquency  ");
+               lcd.print(0, 1, "restore         "); break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus17(byte panelByte) {
+  bool decoded = true;
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] >= 0x4A && dsc.panelData[panelByte] <= 0x83) {
+    byte dscCode = dsc.panelData[panelByte] - 0x27;
+    lcd.print(0, 0, "*1:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] <= 0x24) {
+    byte dscCode = dsc.panelData[panelByte] + 1;
+    lcd.print(0, 0, "*2:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x84 && dsc.panelData[panelByte] <= 0xBD) {
+    byte dscCode = dsc.panelData[panelByte] - 0x61;
+    lcd.print(0, 0, "*2:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x25 && dsc.panelData[panelByte] <= 0x49) {
+    byte dscCode = dsc.panelData[panelByte] - 0x24;
+    lcd.print(0, 0, "*3:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0xBE && dsc.panelData[panelByte] <= 0xF7) {
+    byte dscCode = dsc.panelData[panelByte] - 0x9B;
+    lcd.print(0, 0, "*3:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus18(byte panelByte) {
+  bool decoded = true;
+
+  char lcdMessage[20];
+  char charBuffer[4];
+
+  if (dsc.panelData[panelByte] <= 0x39) {
+    byte dscCode = dsc.panelData[panelByte] + 0x23;
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 0, lcdMessage);
+    lcd.print(0, 1, "                ");
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x3A && dsc.panelData[panelByte] <= 0x95) {
+    byte dscCode = dsc.panelData[panelByte] - 0x39;
+    lcd.print(0, 0, "*5:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (dsc.panelData[panelByte] >= 0x96 && dsc.panelData[panelByte] <= 0xF1) {
+    byte dscCode = dsc.panelData[panelByte] - 0x95;
+    lcd.print(0, 0, "*6:             ");
+    if (dscCode >= 40) dscCode += 3;
+    strcpy(lcdMessage, "Access code ");
+    itoa(dscCode, charBuffer, 10);
+    strcat(lcdMessage, charBuffer);
+    if (dscCode < 10) strcat(lcdMessage, "   ");
+    else strcat(lcdMessage, "  ");
+    lcd.print(0, 1, lcdMessage);
+    decoded = true;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
+void printPanelStatus1B(byte panelByte) {
+  bool decoded = true;
+
+  switch (dsc.panelData[panelByte]) {
+    case 0xF1: lcd.print(0, 0, "System reset    ");
+               lcd.print(0, 1, "transmission    "); break;
+    default: decoded = false;
+  }
+
+  if (!decoded) {
+    lcd.print(0, 0, "Unknown data    ");
+    lcd.print(0, 1, "                ");
+  }
+}
+
+
 void pauseZones() {
   pausedZones = true;
   for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
@@ -887,6 +1843,8 @@ void pauseZones() {
 void resetZones() {
   pausedZones = false;
   dsc.openZonesStatusChanged = true;
+  Blynk.virtualWrite(V20, "     ");
+  changedPartition(dsc.writePartition - 1);
   for (byte zoneGroup = 0; zoneGroup < dscZones; zoneGroup++) {
     previousProgramZones[zoneGroup] = 0;
     for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {

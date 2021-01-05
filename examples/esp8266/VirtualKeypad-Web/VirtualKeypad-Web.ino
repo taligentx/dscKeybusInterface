@@ -804,7 +804,7 @@ void printPanelStatus0(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x98;
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -816,7 +816,7 @@ void printPanelStatus0(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0xBF;
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -857,7 +857,7 @@ void printPanelStatus1(byte panelByte) {
                root["lcd_lower"] = "programming"; break;
     case 0xAE: root["lcd_upper"] = "Walk test";
                root["lcd_lower"] = "end"; break;
-    case 0xAF: root["lcd_upper"] = "Walk test begin";
+    case 0xAF: root["lcd_upper"] = "Walk test";
                root["lcd_lower"] = "begin"; break;
     case 0xD0: root["lcd_upper"] = "Command";
                root["lcd_lower"] = "output 4"; break;
@@ -876,7 +876,7 @@ void printPanelStatus1(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x03;
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_upper"] = lcdMessage;
@@ -997,7 +997,7 @@ void printPanelStatus2(byte panelByte) {
     root["lcd_upper"] = "*1: ";
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1009,7 +1009,7 @@ void printPanelStatus2(byte panelByte) {
     root["lcd_upper"] = "*5: ";
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1020,7 +1020,7 @@ void printPanelStatus2(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0xC5;
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_upper"] = lcdMessage;
@@ -1033,7 +1033,7 @@ void printPanelStatus2(byte panelByte) {
     root["lcd_upper"] = "*6: ";
     if (dscCode >= 35) dscCode += 5;
     if (dscCode == 40) strcpy(lcdMessage, "Master code ");
-    else strcpy(lcdMessage, "Access code");
+    else strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1250,7 +1250,7 @@ void printPanelStatus5(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] + 0x23;
     root["lcd_upper"] = "Armed: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1261,7 +1261,7 @@ void printPanelStatus5(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x17;
     root["lcd_upper"] = "Disarmed: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1348,7 +1348,7 @@ void printPanelStatus17(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x27;
     root["lcd_upper"] = "*1: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1359,7 +1359,7 @@ void printPanelStatus17(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] + 1;
     root["lcd_upper"] = "*2: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1370,7 +1370,7 @@ void printPanelStatus17(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x61;
     root["lcd_upper"] = "*2: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1381,7 +1381,7 @@ void printPanelStatus17(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x24;
     root["lcd_upper"] = "*3: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1392,7 +1392,7 @@ void printPanelStatus17(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x9B;
     root["lcd_upper"] = "*3: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1422,7 +1422,7 @@ void printPanelStatus18(byte panelByte) {
   if (dsc.panelData[panelByte] <= 0x39) {
     byte dscCode = dsc.panelData[panelByte] + 0x23;
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_upper"] = lcdMessage;
@@ -1434,7 +1434,7 @@ void printPanelStatus18(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x39;
     root["lcd_upper"] = "*5: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;
@@ -1445,7 +1445,7 @@ void printPanelStatus18(byte panelByte) {
     byte dscCode = dsc.panelData[panelByte] - 0x95;
     root["lcd_upper"] = "*6: ";
     if (dscCode >= 40) dscCode += 3;
-    strcpy(lcdMessage, "Access code");
+    strcpy(lcdMessage, "Access code ");
     itoa(dscCode, charBuffer, 10);
     strcat(lcdMessage, charBuffer);
     root["lcd_lower"] = lcdMessage;

@@ -116,8 +116,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * `appendPartition()` in example sketches simplifies adding partition numbers to messages
       * `panelVersion` tracks the panel version number
   - New: Handle `*1 bypass/re-activate` used to change stay/away mode while armed
-  - Updated: `VirtualKeypad-Web` display event buffer
-  - Updated: `VirtualKeypad-Blynk` and `VirtualKeypad-Web` display alarm memory and programming zone lights
+  - Updated: `VirtualKeypad-Blynk` and `VirtualKeypad-Web` display alarm memory, programming zone lights, and event buffer
   - Updated: `HomeAssistant-MQTT, Homebridge-MQTT, OpenHAB-MQTT` include PGM outputs 1-14 status
   - Updated: Virtual keypad writes
       * `write()` for multiple keys can now be set to block until the write is complete with an optional parameter if the char array is ephemeral
@@ -216,13 +215,14 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Sprint: 5558675309@messaging.sprintpcs.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory and programming zone lights.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+  - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png)
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
-* **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server, including viewing alarm memory, programming zone lights, and viewing the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+* **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
 * **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
 
