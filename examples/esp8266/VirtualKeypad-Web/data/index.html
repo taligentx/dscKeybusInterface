@@ -104,6 +104,14 @@
         line-height: 1 !important;
       }
 
+      button.keypad_text {
+        width: calc(0.6rem + 10vw);
+        border-radius: 1.5rem;
+        font-size: calc(0.3rem + 1vw);
+        padding: 0.2rem;
+        max-width: 4.5rem;
+      }
+
       button.keypad_button_control {
         width: 11vw;
         padding: 2px;
@@ -122,6 +130,11 @@
         padding: 2px 10px;
         border-radius: 8px;
         flex: 1;
+      }
+
+      div#event_info {
+        font-size: calc(0.1rem + 1vw);
+        font-weight: normal;
       }
 
       div#lcd_container {
@@ -175,8 +188,6 @@
         background-color: #d9dcdf;
         border: 2px solid #898e94;
       }
-
-
 
       div#left_buttons,
       div#right_buttons,
@@ -267,6 +278,7 @@
 
       <div id="lcd_container">
         <div class="virtual_lcd">
+          <div id="event_info"></div>
           <div id="first_line">&nbsp;</div>
           <div id="second_line">&nbsp;</div>
         </div>
@@ -283,6 +295,11 @@
 
         <div id="left_buttons">
           <div class="keypad_button_row">
+            <button type="button" id="btn_<" class="btn btn-outline-dark keypad_button keypad_button_small"><i class="fas fa-chevron-left"></i></button>
+            <button type="button" id="btn_>" class="btn btn-outline-dark keypad_button keypad_button_small"><i class="fas fa-chevron-right"></i></button>
+          </div>
+          <div class="keypad_button_row">
+            <button type="button" id="btn_b" class="btn btn-outline-dark keypad_text keypad_button_slim">Enter</button>
           </div>
           <div class="keypad_button_row">
             <button type="button" id="btn_f" class="btn btn-outline-dark keypad_button keypad_button_slim">
@@ -545,7 +562,8 @@
                     $("#fire_icon").removeClass("green_circle");
                   }
 
-                } else if ("lcd_lower" in obj || "lcd_upper" in obj) {
+                } else if ("lcd_lower" in obj || "lcd_upper" in obj || "event_info" in obj) {
+                  if ("event_info" in obj) $("#event_info").html(obj.event_info);
                   if ("lcd_upper" in obj) $("#first_line").html(obj.lcd_upper);
                   if ("lcd_lower" in obj) $("#second_line").html(obj.lcd_lower);
                 } else {

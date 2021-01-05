@@ -107,11 +107,29 @@ binary_sensor:
     payload_on: "1"
     payload_off: "0"
 
- *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a prefix to the command:
+ *  Example button card configuration to add a panic button: https://www.home-assistant.io/lovelace/button/
+
+type: entity-button
+name: Panic alarm
+tap_action:
+  action: call-service
+  service: mqtt.publish
+  service_data:
+    payload: P
+    topic: dsc/Set
+hold_action:
+  action: none
+show_icon: true
+show_name: true
+entity: alarm_control_panel.security_partition_1
+
+ *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a
+ *  prefix to the command, except to trigger the panic alarm:
  *    Partition 1 disarm: "1D"
  *    Partition 2 arm stay: "2S"
  *    Partition 2 arm away: "2A"
  *    Partition 1 arm night: "1N"
+ *    Panic alarm: "P"
  *
  *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
  *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
@@ -191,7 +209,7 @@ const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
-const int mqttPort = 1883;      // MQTT server port
+const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 
@@ -412,6 +430,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   if (payload[0] >= 0x31 && payload[0] <= 0x38) {
     partition = payload[0] - 49;
     payloadIndex = 1;
+  }
+
+  if (payload[payloadIndex] == 'P') {
+    dsc.write('p');
   }
 
   // Resets status if attempting to change the armed mode while armed or not ready

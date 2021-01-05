@@ -52,8 +52,8 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: dsc.local
-int serverPort = 23;
+const char* dnsHostname = "dsc";  // Sets the domain name - if set to "dsc", access via: dsc.local
+const int   serverPort = 23;
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.

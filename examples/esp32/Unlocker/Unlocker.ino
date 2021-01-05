@@ -90,8 +90,8 @@
 #include <dscKeybusInterface.h>
 
 // Settings
-const char* accessCode = "";  // Optional, skips keypad lockout if enabled by arming/disarming the panel
-int startPosition = 0;        // Starting test position, set if the process is interrupted
+const char* accessCode = "";    // Optional, skips keypad lockout if enabled by arming/disarming the panel
+const int   startPosition = 0;  // Starting test position, set if the process is interrupted
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39

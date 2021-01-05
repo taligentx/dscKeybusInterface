@@ -96,8 +96,8 @@
 #include <dscKeybusInterface.h>
 
 // Settings
-const char* accessCode = "";  // Optional, skips keypad lockout if enabled by arming/disarming the panel
-int startPosition = 0;        // Starting test position, set if the process is interrupted
+const char* accessCode = "";    // Optional, skips keypad lockout if enabled by arming/disarming the panel
+const int   startPosition = 0;  // Starting test position, set if the process is interrupted
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
