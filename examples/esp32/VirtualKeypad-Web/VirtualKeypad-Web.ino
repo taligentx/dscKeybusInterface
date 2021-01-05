@@ -75,10 +75,10 @@
 #include <Chrono.h>
 
 // Settings
-char wifiSSID[] = "";
-char wifiPassword[] = "";
-char dnsHostname[] = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
-byte dscPartition = 1;       // Set the partition for the keypad
+const char* wifiSSID = "";
+const char* wifiPassword = "";
+const char* dnsHostname = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
+const byte  dscPartition = 1;     // Set the partition for the keypad
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39

@@ -1,13 +1,17 @@
 /*
  *  Homebridge-MQTT 1.4 (esp32)
  *
- *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
- *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
- *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states
- *  for the contactSensor objects, and fire alarm states for the smokeSensor object.
+ *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
+ *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
+ *  HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object,
+ *  zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
+ *
+ *  Google Home integration via homebridge-gsh includes arming/disarming by voice with Google Assistant.  For
+ *  disarming, set a voice PIN for 2 factor authentication as described in homebridge-gsh settings.
  *
  *  Homebridge: https://github.com/nfarina/homebridge
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
+ *  homebridge-gsh (Google Home): https://github.com/oznu/homebridge-gsh
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
  *  Usage:
@@ -144,6 +148,7 @@
  *
  *  Release notes:
  *    1.4 - Added PGM outputs 1-14 status
+ *          Added notes on Google Home integration
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -184,7 +189,7 @@ const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
-const int mqttPort = 1883;      // MQTT server port
+const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 

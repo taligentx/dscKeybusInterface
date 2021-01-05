@@ -199,9 +199,9 @@ entity: alarm_control_panel.security_partition_1
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
-const int mqttPort = 1883;      // MQTT server port
+const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 

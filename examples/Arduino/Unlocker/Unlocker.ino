@@ -88,8 +88,8 @@
 #include <dscKeybusInterface.h>
 
 // Settings
-const char* accessCode = "";  // Optional, skips keypad lockout if enabled by arming/disarming the panel
-int startingCode = 0;         // Starting installer code to test (without leading zeros) if the process is interrupted
+const char* accessCode = "";   // Optional, skips keypad lockout if enabled by arming/disarming the panel
+const int   startingCode = 0;  // Starting installer code to test (without leading zeros) if the process is interrupted
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3

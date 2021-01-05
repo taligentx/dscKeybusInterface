@@ -44,11 +44,11 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* AccountSID = "";	// Set the account SID from the Twilio Account Dashboard
-const char* AuthToken = "";		// Set the auth token from the Twilio Account Dashboard
+const char* AccountSID = "";	       // Set the account SID from the Twilio Account Dashboard
+const char* AuthToken = "";		       // Set the auth token from the Twilio Account Dashboard
 const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "AccountSID:AuthToken" | base64 -w 0
-const char* From = "";	// i.e. 16041234567
-const char* To = "";		// i.e. 16041234567
+const char* From = "";	             // i.e. 16041234567
+const char* To = "";		             // i.e. 16041234567
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.

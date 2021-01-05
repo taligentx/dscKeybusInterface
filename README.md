@@ -2,7 +2,7 @@
 This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and direct control as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
-* Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
+* Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
 * Notifications: [Telegram](https://www.telegram.org) bot, [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 * Installer code unlocking: automatic code search to unlock panels with unknown installer codes
@@ -190,7 +190,7 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Panel trouble
   * Keybus connected
 
-* **Homebridge-MQTT**: Interfaces with [Homebridge](https://github.com/nfarina/homebridge) via MQTT to integrate with Apple HomeKit (including the iOS Home app and Siri).  Demonstrates arming/disarming partitions and viewing the status of zones, PGM outputs, and fire alarms.
+* **Homebridge-MQTT**: Interfaces with [Homebridge](https://github.com/nfarina/homebridge) via MQTT to integrate with Apple HomeKit (including the iOS Home app and Siri) and [Google Home](https://github.com/oznu/homebridge-gsh).  Demonstrates arming/disarming partitions and for HomeKit, viewing the status of zones, PGM outputs, and fire alarms.
     - The [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) library includes a native HomeKit implementation that runs directly on esp8266, without requiring a separate device running MQTT or Homebridge.
 
 * **HomeAssistant-MQTT**: Interfaces with [Home Assistant](https://www.home-assistant.io) via MQTT.  Demonstrates arming/disarming partitions and viewing the status of zones, PGM outputs, fire alarms, and trouble.  For esp8266/esp32, the partition status is available as a text message for display.
@@ -216,9 +216,9 @@ The included examples demonstrate how to use the library and can be used as-is o
   * AT&T: 5558675309@txt.att.net
 
 * **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
-  - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png)
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png)
+  - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png)
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 

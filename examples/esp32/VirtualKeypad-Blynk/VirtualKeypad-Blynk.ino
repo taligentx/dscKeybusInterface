@@ -10,9 +10,9 @@
  *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
  *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
  *
- *      8 zones with event log: https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png
  *      16 zones: https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png
  *      32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
+ *      8 zones with event log: https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png
  *
  *    2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
  *    3. Select "Refresh" to generate a new auth token.
@@ -92,11 +92,11 @@
 #define BLYNK_PRINT Serial
 
 // Settings
-char wifiSSID[] = "";
-char wifiPassword[] = "";
-char blynkAuthToken[] = "";  // Token generated from within the Blynk app
-char blynkServer[] = "";     // Blynk local server address
-int  blynkPort = 8080;       // Blynk local server port
+const char* wifiSSID = "";
+const char* wifiPassword = "";
+const char* blynkAuthToken = "";  // Token generated from within the Blynk app
+const char* blynkServer = "";     // Blynk local server address
+const int   blynkPort = 8080;     // Blynk local server port
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39
