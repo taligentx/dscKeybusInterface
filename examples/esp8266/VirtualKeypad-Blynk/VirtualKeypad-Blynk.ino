@@ -37,6 +37,7 @@
       V17 - Event buffer enter
       V18 - Event buffer right arrow
       V19 - Event buffer left arrow
+      V20 - Event buffer date/time info
       V30 - Partition number menu
       V31 - PGM 1 ... V39 - PGM9
       V40 - LCD
@@ -551,6 +552,8 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "low battery     "); break;
     case 0xD1: lcd.print(0, 0, "*2: Keyfobs  ");
                lcd.print(0, 1, "low battery     "); break;
+    case 0xD4: lcd.print(0, 0, "*2: Sensors");
+               lcd.print(0, 1, "RF delinquency  "); break;
     case 0xE4: lcd.print(0, 0, "*8:          ");
                lcd.print(0, 1, "Installer menu  "); break;
     case 0xE5: lcd.print(0, 0, "Keypad       ");

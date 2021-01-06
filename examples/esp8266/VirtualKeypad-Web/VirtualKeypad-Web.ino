@@ -397,6 +397,8 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "low battery     "; break;
       case 0xD1: root["lcd_upper"] = "*2: Keyfobs  ";
                  root["lcd_lower"] = "low battery     "; break;
+      case 0xD4: root["lcd_upper"] = "*2: Sensors  ";
+                 root["lcd_lower"] = "RF Delinquency  "; break;
       case 0xE4: root["lcd_upper"] = "*8:          ";
                  root["lcd_lower"] = "Installer menu  "; break;
       case 0xE5: root["lcd_upper"] = "Keypad       ";
