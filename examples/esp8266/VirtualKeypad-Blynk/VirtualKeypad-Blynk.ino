@@ -8,7 +8,8 @@
  *  Usage:
  *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
  *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
- *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
+ *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.  Some Android devices have
+ *       issues reading these QR codes and may need to be used with a different monitor/device.
  *
  *      16 zones: https://user-images.githubusercontent.com/12835671/103719316-5f6f1d80-4f8e-11eb-8a7c-4bd7bfe3cd8a.png
  *      32 zones: https://user-images.githubusercontent.com/12835671/103719459-af4de480-4f8e-11eb-8e4a-7172961e2d29.png

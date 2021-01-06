@@ -585,6 +585,8 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case 'B': writeKey = 0x82; break;                                       // Enter event buffer
         case '>': writeKey = 0x87; break;                                       // Event buffer right arrow
         case '<': writeKey = 0x88; break;                                       // Event buffer left arrow
+        case 'l':
+        case 'L': writeKey = 0xA5; break;                                       // LCD keypad data request
         case 's':
         case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
         case 'w':

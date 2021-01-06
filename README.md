@@ -222,7 +222,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 
   Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
 
-* **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
+* **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266/esp32 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
 * **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
 
