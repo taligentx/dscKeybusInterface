@@ -37,6 +37,7 @@
       V17 - Event buffer enter
       V18 - Event buffer right arrow
       V19 - Event buffer left arrow
+      V20 - Event buffer date/time info      
       V30 - Partition number menu
       V31 - PGM 1 ... V39 - PGM9
       V40 - LCD
