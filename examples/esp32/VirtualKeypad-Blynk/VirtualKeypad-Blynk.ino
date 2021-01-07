@@ -8,11 +8,12 @@
  *  Usage:
  *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
  *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
- *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.
+ *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.  Some Android devices have
+ *       issues reading these QR codes and may need to be used with a different monitor/device.
  *
- *      16 zones: https://user-images.githubusercontent.com/12835671/103560647-b6390200-4e7d-11eb-9e68-c6e647efb8b4.png
- *      32 zones: https://user-images.githubusercontent.com/12835671/42364293-4512b720-80c0-11e8-87bd-153c4e857b4e.png
- *      8 zones with event log: https://user-images.githubusercontent.com/12835671/103681053-9e7c7f00-4f4c-11eb-82e5-1c0b36b8401e.png
+ *      16 zones: https://user-images.githubusercontent.com/12835671/103719316-5f6f1d80-4f8e-11eb-8a7c-4bd7bfe3cd8a.png
+ *      32 zones: https://user-images.githubusercontent.com/12835671/103719459-af4de480-4f8e-11eb-8e4a-7172961e2d29.png
+ *      8 zones with event log: https://user-images.githubusercontent.com/12835671/103719518-cc82b300-4f8e-11eb-8b2a-97299e7be3a2.png
  *
  *    2. Navigate to Project Settings > Devices > DSC Keybus Interface > DSC KeybusInterface.
  *    3. Select "Refresh" to generate a new auth token.
@@ -37,7 +38,7 @@
       V17 - Event buffer enter
       V18 - Event buffer right arrow
       V19 - Event buffer left arrow
-      V20 - Event buffer date/time info      
+      V20 - Event buffer date/time info
       V30 - Partition number menu
       V31 - PGM 1 ... V39 - PGM9
       V40 - LCD
@@ -550,7 +551,7 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "low battery     "); break;
     case 0xD1: lcd.print(0, 0, "*2: Keyfobs  ");
                lcd.print(0, 1, "low battery     "); break;
-    case 0xD4: lcd.print(0, 0, "*2: Sensors");
+    case 0xD4: lcd.print(0, 0, "*2: Sensors  ");
                lcd.print(0, 1, "RF delinquency  "); break;
     case 0xE4: lcd.print(0, 0, "*8:          ");
                lcd.print(0, 1, "Installer menu  "); break;
@@ -847,9 +848,7 @@ void processStatus() {
       break;
     case 0x5D:
       if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
-        if (pausedZones) {
-          processProgramZones(3, ledAlarmZonesColor);
-        }
+        if (pausedZones) processProgramZones(3, ledAlarmZonesColor);
       }
       break;
     case 0xAA: if (pausedZones) processEventBufferAA(); break;
@@ -863,7 +862,7 @@ void processStatus() {
         case 0x06:
         case 0x20:
         case 0x21: if (pausedZones) processProgramZones(5, ledProgramZonesColor); break;  // Programming zone lights 33-64
-        case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) yield(); break;                 // Alarm memory zones 33-64
+        case 0x18: if (pausedZones && (dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5, ledProgramZonesColor); break;  // Alarm memory zones 33-64
       }
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;

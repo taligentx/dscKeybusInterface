@@ -486,7 +486,7 @@ void processStatus() {
         case 0x06:
         case 0x20:
         case 0x21: if (pausedZones) processProgramZones(5); break;         // Programming zone lights 33-64
-        case 0x18: if ((dsc.panelData[4] & 0x04) == 0x04) yield(); break;  // Alarm memory zones 33-64
+        case 0x18: if (pausedZones && (dsc.panelData[4] & 0x04) == 0x04) processProgramZones(5); break;  // Alarm memory zones 33-64
       }
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;
