@@ -275,13 +275,14 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
     case 0xBF: stream->print(F("*6: Auto-arm select day")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
+    //case 0xC7: stream->print(F("Partition not available")); break;
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     case 0xCD: stream->print(F("Downloading in progress")); break;
     case 0xCE: stream->print(F("Active camera monitor selection")); break;
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
-    case 0xE4: stream->print(F("*8: Installer programming")); decimalInput = false; break;
+    case 0xE4: stream->print(F("*8: Installer programming")); decimalInput = false; break; //Requesting 3-digit input
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input: 2 digits")); break;
     case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
@@ -299,7 +300,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF4: stream->print(F("Function key 5")); break;
     case 0xF5: stream->print(F("Wireless module placement test")); break;
     case 0xF6: stream->print(F("Activate device for test")); break;
-    case 0xF7: stream->print(F("Installer programming subsection")); decimalInput = false; break;
+    case 0xF7: stream->print(F("Installer programming subsection")); decimalInput = false; break; //Requesting 2-digit input
     case 0xF8: stream->print(F("Keypad programming")); break;
     case 0xFA: stream->print(F("Input 6 digits")); break;
     default:
