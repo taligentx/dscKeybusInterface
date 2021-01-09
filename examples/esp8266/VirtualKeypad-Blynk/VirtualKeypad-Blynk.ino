@@ -559,8 +559,8 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "low battery     "); break;
     case 0xD4: lcd.print(0, 0, "*2: Sensors  ");
                lcd.print(0, 1, "RF delinquency  "); break;
-    case 0xE4: lcd.print(0, 0, "*8:          ");
-               lcd.print(0, 1, "Installer menu  ");
+    case 0xE4: lcd.print(0, 0, "*8: 3 digit  ");
+               lcd.print(0, 1, "Section entry   ");
                inputDigits = false; decimalOutput = false; Blynk.virtualWrite(V20, " "); break;
     case 0xE5: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "slot assignment "); break;
@@ -599,11 +599,11 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0xF4: lcd.print(0, 0, "Function     ");
                lcd.print(0, 1, "key 5           "); break;
     case 0xF5: lcd.print(0, 0, "Wireless mod.");
-               lcd.print(0, 1, "place. test     "); break;
+               lcd.print(0, 1, "placement test  "); break;
     case 0xF6: lcd.print(0, 0, "Activate     ");
                lcd.print(0, 1, "device for test "); break;
-    case 0xF7: lcd.print(0, 0, "*8 PGM       ");
-               lcd.print(0, 1, "subsection      ");
+    case 0xF7: lcd.print(0, 0, "*8: 2 digit  ");
+               lcd.print(0, 1, "subsection entry");
                inputDigits = false; decimalOutput = false; Blynk.virtualWrite(V20, " "); break;
     case 0xF8: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "programming     "); break;

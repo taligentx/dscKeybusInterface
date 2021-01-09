@@ -399,8 +399,8 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "low battery     "; break;
       case 0xD4: root["lcd_upper"] = "*2: Sensors  ";
                  root["lcd_lower"] = "RF Delinquency  "; break;
-      case 0xE4: root["lcd_upper"] = "*8:          ";
-                 root["lcd_lower"] = "Installer menu  "; break;
+      case 0xE4: root["lcd_upper"] = "*8: 3 digit  ";
+                 root["lcd_lower"] = "section entry   "; break;
       case 0xE5: root["lcd_upper"] = "Keypad       ";
                  root["lcd_lower"] = "slot assignment "; break;
       case 0xE6: root["lcd_upper"] = "Input:       ";
@@ -432,11 +432,11 @@ void setStatus(byte partition) {
       case 0xF4: root["lcd_upper"] = "Function     ";
                  root["lcd_lower"] = "key 5           "; break;
       case 0xF5: root["lcd_upper"] = "Wireless mod.";
-                 root["lcd_lower"] = "place. test     "; break;
+                 root["lcd_lower"] = "placement test  "; break;
       case 0xF6: root["lcd_upper"] = "Activate     ";
                  root["lcd_lower"] = "device for test "; break;
-      case 0xF7: root["lcd_upper"] = "*8 PGM       ";
-                 root["lcd_lower"] = "subsection      "; break;
+      case 0xF7: root["lcd_upper"] = "*8: 2 digit  ";
+                 root["lcd_lower"] = "subsection entry"; break;
       case 0xF8: root["lcd_upper"] = "Keypad       ";
                  root["lcd_lower"] = "programming     "; break;
       case 0xFA: root["lcd_upper"] = "Input:       ";
