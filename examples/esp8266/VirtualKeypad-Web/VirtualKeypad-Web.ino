@@ -409,6 +409,8 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "3 digits        "; break;
       case 0xE8: root["lcd_upper"] = "Input:       ";
                  root["lcd_lower"] = "4 digits        "; break;
+      case 0xE9: root["lcd_upper"] = "Input:       ";
+                 root["lcd_lower"] = "5 digits        "; break;
       case 0xEA: root["lcd_upper"] = "Reporting    ";
                  root["lcd_lower"] = "code: 2 digits  "; break;
       case 0xEB: root["lcd_upper"] = "Reporting    ";

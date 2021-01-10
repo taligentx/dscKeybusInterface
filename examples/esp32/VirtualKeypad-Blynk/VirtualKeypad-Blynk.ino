@@ -571,6 +571,9 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0xE8: lcd.print(0, 0, "Input:       ");
                lcd.print(0, 1, "4 digits        ");
                inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xE9: lcd.print(0, 0, "Input:       ");
+               lcd.print(0, 1, "5 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
     case 0xEA: lcd.print(0, 0, "Reporting    ");
                lcd.print(0, 1, "code: 2 digits  ");
                inputDigits = true; decimalOutput = false; dsc.write('l'); break;

@@ -287,6 +287,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xE6: stream->print(F("Input: 2 digits")); break;
     case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
     case 0xE8: stream->print(F("Input: 4 digits")); break;
+    case 0xE9: stream->print(F("Input: 5 digits")); break;
     case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
     case 0xEB: stream->print(F("Telephone number account code: 4 digits")); break;
     case 0xEC: stream->print(F("Input: 6 digits")); break;
@@ -2124,7 +2125,7 @@ void dscKeybusInterface::printPanel_0xBB() {
  *
  *  Byte 2: Keypad status, incomplete
  *  Byte 2: bit3 and 4 active when dialer attempt begin
- *  Byte 2: bit4 active after dialer attempt finished
+ *  Byte 2: bit4 stays active after dialer attempt finished
  *  Byte 3: Unknown, always observed as 11111111
  *  Byte 4: CRC
  *
@@ -2143,7 +2144,7 @@ void dscKeybusInterface::printPanel_0xC3() {
       case 0x18: stream->print(F("Dialer call attempt")); break;
       case 0x30:
       case 0x40: stream->print(F("Keypad lockout")); break;
-      case 0x38: stream->print(F("Dialer call attempt while keypad lockout")); break;
+      case 0x38: stream->print(F("Dialer call attempt | keypad lockout")); break; //probably should check each bit, not whole byte
       default: printUnknownData(); break;
     }
   }

@@ -582,6 +582,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xE6: mqtt.publish(publishTopic, "Input: 2 digits", true); break;
     case 0xE7: mqtt.publish(publishTopic, "Input: 3 digits", true); break;
     case 0xE8: mqtt.publish(publishTopic, "Input: 4 digits", true); break;
+    case 0xE9: mqtt.publish(publishTopic, "Template programming: 5 digits", true); break;
     case 0xEA: mqtt.publish(publishTopic, "Reporting code: 2 digits", true); break;
     case 0xEB: mqtt.publish(publishTopic, "Telephone number account code: 4 digits", true); break;
     case 0xEC: mqtt.publish(publishTopic, "Input: 6 digits", true); break;
