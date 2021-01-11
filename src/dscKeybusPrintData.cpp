@@ -242,7 +242,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
-    case 0x17: //keypad blanking while trouble flashing
+    case 0x17: //keypad blanking with trouble flashing
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
     case 0x8B: stream->print(F("Quick exit")); break;

@@ -317,6 +317,8 @@ void setStatus(byte partition) {
       case 0x16: root["lcd_upper"] = "Armed:       ";
                  root["lcd_lower"] = "No entry delay  ";
                  if (pausedZones) resetZones(); break;
+      case 0x17: root["lcd_upper"] = "Power saving ";
+                 root["lcd_lower"] = "Keypad blanked  "; break;
       case 0x19: root["lcd_upper"] = "Alarm        ";
                  root["lcd_lower"] = "occurred        "; break;
       case 0x22: root["lcd_upper"] = "Recent       ";

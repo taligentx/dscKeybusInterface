@@ -474,6 +474,8 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x16: lcd.print(0, 0, "Armed:       ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
+    case 0x17: lcd.print(0, 0, "Power saving ");
+               lcd.print(0, 1, "Keypad blanked  "); break;
     case 0x19: lcd.print(0, 0, "Alarm        ");
                lcd.print(0, 1, "occurred        "); break;
     case 0x22: lcd.print(0, 0, "Recent       ");
