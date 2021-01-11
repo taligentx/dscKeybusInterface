@@ -214,7 +214,6 @@ void dscKeybusInterface::printPanelLights(byte panelByte, bool printMessage) {
  *  Status messages for panel commands: 0x05, 0x0A, 0x1B, 0x27, 0x2D, 0x34, 0x3E
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    0x17: Unknown
  */
 void dscKeybusInterface::printPanelMessages(byte panelByte) {
   switch (panelData[panelByte]) {
@@ -237,13 +236,13 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
     case 0x16: stream->print(F("Armed: No entry delay")); break;
-    //case 0x17: break;  // Observed in logs, unknown message
     case 0x19: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x22: stream->print(F("Disarmed: Recent closing")); break;
     case 0x2F: stream->print(F("Keypad LCD test")); break;
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
+    case 0x17: //keypad blanking while trouble flashing
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
     case 0x8B: stream->print(F("Quick exit")); break;
@@ -1133,7 +1132,6 @@ void dscKeybusInterface::printPanelStatus1B(byte panelByte) {
  *  CRC: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 1 lights, printPanelLights()
  *  Byte 3: Partition 1 status, printPanelMessages()
@@ -1176,7 +1174,6 @@ void dscKeybusInterface::printPanel_0x05() {
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition lights, printPanelLights()
  *  Byte 3: Partition status, printPanelMessages()
@@ -1311,7 +1308,6 @@ void dscKeybusInterface::printPanel_0x16() {
  *  CRC: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 5 lights, printPanelLights()
  *  Byte 3: Partition 5 status, printPanelMessages()
@@ -1384,7 +1380,6 @@ void dscKeybusInterface::printPanel_0x22_28_33_39() {
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 1 lights, printPanelLights()
  *  Byte 3: Partition 1 status, printPanelMessages()
@@ -1426,7 +1421,6 @@ void dscKeybusInterface::printPanel_0x27() {
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 1 lights, printPanelLights()
  *  Byte 3: Partition 1 status, printPanelMessages()
@@ -1454,7 +1448,6 @@ void dscKeybusInterface::printPanel_0x2D() {
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 1 lights, printPanelLights()
  *  Byte 3: Partition 1 status, printPanelMessages()
@@ -1477,7 +1470,6 @@ void dscKeybusInterface::printPanel_0x34() {
  *  CRC: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
- *    printPanelMessages() 0x17: Unknown
  *
  *  Byte 2: Partition 1 lights, printPanelLights()
  *  Byte 3: Partition 1 status, printPanelMessages()
