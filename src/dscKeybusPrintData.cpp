@@ -801,6 +801,8 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     case 0x0A: stream->print(F("PC5204: Supervisory trouble")); return;
     case 0x17: stream->print(F("Zone expander restored: 7")); return;
     case 0x18: stream->print(F("Zone expander trouble: 7")); return;
+    // 0x25 - 0x2C: Keypad tamper restored, slots 1-8    NOTE: not included because it wont fit into Arduino Uno memory
+    // 0x2D - 0x34: Keypad tamper, slots 1-8             NOTE: not included because it wont fit into Arduino Uno memory
     // 0x35 - 0x3A: Module tamper restored, slots 9-14
     // 0x3B - 0x40: Module tamper, slots 9-14
     case 0x41: stream->print(F("PC/RF5132: Tamper restored")); return;
