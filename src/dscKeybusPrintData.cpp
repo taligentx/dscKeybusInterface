@@ -288,7 +288,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xE8: stream->print(F("Input: 4 digits")); break;
     case 0xE9: stream->print(F("Input: 5 digits")); break;
     case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
-    case 0xEB: stream->print(F("Telephone number account code: 4 digits")); break;
+    case 0xEB: stream->print(F("Partition account code: 4 digits")); break;
     case 0xEC: stream->print(F("Input: 6 digits")); break;
     case 0xED: stream->print(F("Input: 32 digits")); break;
     case 0xEE: stream->print(F("Input: 1 option per zone")); break;
@@ -370,7 +370,7 @@ void dscKeybusInterface::printPanelStatus0(byte panelByte) {
     case 0x52: stream->print(F("Keypad Fire alarm restored")); break;
     case 0x53: stream->print(F("Keypad Aux alarm restored")); break;
     case 0x54: stream->print(F("Keypad Panic alarm restored")); break;
-    case 0x55: stream->print(F("Auxilary input alarm restored")); break;
+    case 0x55: stream->print(F("Auxiliary input alarm restored")); break;
     // 0x56 - 0x75: Zone tamper, zones 1-32
     // 0x76 - 0x95: Zone tamper restored, zones 1-32
     case 0x98: stream->print(F("Keypad lockout")); break;
@@ -540,7 +540,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     // 0xB0 - 0xCF: Zones bypassed, zones 1-32
     case 0xD0: stream->print(F("Command output 4")); return;
     case 0xD1: stream->print(F("Exit fault pre-alert")); return;
-    case 0xD2: stream->print(F("Armed with no entry delay cancelled")); return;
+    case 0xD2: stream->print(F("Armed: with entry delay")); return;
     case 0xD3: stream->print(F("Downlook remote trigger")); return;
   }
 
@@ -664,10 +664,8 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     case 0x2A: stream->print(F("Quick exit")); return;
     case 0x63: stream->print(F("Keybus fault restored")); return;
     case 0x64: stream->print(F("Keybus fault")); return;
-    case 0x66: stream->print(F("*1: Zone bypass programming")); return;
-    case 0x67: stream->print(F("Command output 1")); return;
-    case 0x68: stream->print(F("Command output 2")); return;
-    case 0x69: stream->print(F("Command output 3")); return;
+    case 0x66: stream->print(F("*1: Zone bypass")); return;
+    // 0x67 - 0x69: *7: Command output 1-3
     case 0x8C: stream->print(F("Cold start")); return;
     case 0x8D: stream->print(F("Warm start")); return;
     case 0x8E: stream->print(F("Panel factory default")); return;
@@ -688,6 +686,15 @@ void dscKeybusInterface::printPanelStatus2(byte panelByte) {
     // 0xF1 - 0xF8: Keypad trouble: Slots 1-8
     // 0xF9 - 0xFE: Zone expander restored: 1-6
     case 0xFF: stream->print(F("Zone expander trouble: 1")); return;
+  }
+
+  /*
+   *  *7: Command output 1-3
+   */
+  if (panelData[panelByte] >= 0x67 && panelData[panelByte] <= 0x69) {
+    stream->print(F("Command output: "));
+    printNumberOffset(panelByte, -0x66);
+    return;
   }
 
   /*
@@ -800,8 +807,8 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     case 0x0A: stream->print(F("PC5204: Supervisory trouble")); return;
     case 0x17: stream->print(F("Zone expander restored: 7")); return;
     case 0x18: stream->print(F("Zone expander trouble: 7")); return;
-    // 0x25 - 0x2C: Keypad tamper restored, slots 1-8    NOTE: not included because it wont fit into Arduino Uno memory
-    // 0x2D - 0x34: Keypad tamper, slots 1-8             NOTE: not included because it wont fit into Arduino Uno memory
+    // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
+    // 0x2D - 0x34: Keypad tamper, slots 1-8
     // 0x35 - 0x3A: Module tamper restored, slots 9-14
     // 0x3B - 0x40: Module tamper, slots 9-14
     case 0x41: stream->print(F("PC/RF5132: Tamper restored")); return;
@@ -827,6 +834,24 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
   if (panelData[panelByte] <= 0x04) {
     stream->print(F("Zone expander trouble: "));
     printNumberOffset(panelByte, 2);
+    return;
+  }
+
+  /*
+   *  Keypad tamper restored: 1-8
+   */
+  if (panelData[panelByte] >= 0x25 && panelData[panelByte] <= 0x2C) {
+    stream->print(F("Keypad tamper restored: "));
+    printNumberOffset(panelByte, -0x24);
+    return;
+  }
+
+  /*
+   *  Keypad tamper: 1-8
+   */
+  if (panelData[panelByte] >= 0x2D && panelData[panelByte] <= 0x34) {
+    stream->print(F("Keypad tamper: "));
+    printNumberOffset(panelByte, -0x2C);
     return;
   }
 
@@ -2117,9 +2142,9 @@ void dscKeybusInterface::printPanel_0xBB() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Byte 2: Keypad status, incomplete
- *  Byte 2: bit3 and 4 active when dialer attempt begin
- *  Byte 2: bit4 stays active after dialer attempt finished
+ *  Byte 2: bit 3 active when dialer attempt begin
+ *  Byte 2: bit 4 dialer enabled
+ *  Byte 2: bit 5 keypad lockout active
  *  Byte 3: Unknown, always observed as 11111111
  *  Byte 4: CRC
  *
@@ -2132,15 +2157,25 @@ void dscKeybusInterface::printPanel_0xBB() {
  */
 void dscKeybusInterface::printPanel_0xC3() {
   if (panelData[3] == 0xFF) {
-    switch (panelData[2]) {
-      case 0x00: stream->print(F("Keypad ready")); break;
-      case 0x10: stream->print(F("Dialer attempts finished")); break;
-      case 0x18: stream->print(F("Dialer call attempt")); break;
-      case 0x30:
-      case 0x40: stream->print(F("Keypad lockout")); break;
-      case 0x38: stream->print(F("Dialer call attempt | keypad lockout")); break; //probably should check each bit, not whole byte
-      default: printUnknownData(); break;
+    bool printedMessage = false;
+    stream->print(F("Dialer: "));
+    if (panelData[2] & 0x10) {
+      stream->print(F("enabled"));
+      printedMessage = true;
     }
+    else {
+      stream->print(F("disabled"));
+      printedMessage = true;
+    }
+    if (panelData[2] & 0x08) {
+      stream->print(F(" | Dialer call attempt"));
+      printedMessage = true;
+    }
+    if (panelData[2] & 0x20) {
+      stream->print(F(" | Keypad lockout"));
+      printedMessage = true;
+    }
+    if (!printedMessage) printUnknownData();
   }
   else printUnknownData();
 }
