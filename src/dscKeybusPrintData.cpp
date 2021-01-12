@@ -250,14 +250,14 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x8F: stream->print(F("Invalid access code")); break;
     case 0x9E: stream->print(F("Enter * function key")); break;
     case 0x9F: stream->print(F("Enter access code")); break;
-    case 0xA0: stream->print(F("*1: Zone bypass")); break;  // *1
+    case 0xA0: stream->print(F("*1: Zone bypass")); break;
     case 0xA1: stream->print(F("*2: Trouble")); break;
     case 0xA2: stream->print(F("*3: Alarm memory")); break;
     case 0xA3: stream->print(F("Door chime enabled")); break;
     case 0xA4: stream->print(F("Door chime disabled")); break;
     case 0xA5: stream->print(F("Enter master code")); break;
     case 0xA6: stream->print(F("*5: Access codes")); break;
-    case 0xA7: stream->print(F("*5: Enter 4-digit code")); break;
+    case 0xA7: stream->print(F("*5: Enter new 4-digit code")); break;
     case 0xA9: stream->print(F("*6: User functions")); break;
     case 0xAA: stream->print(F("*6: Time and date")); break;
     case 0xAB: stream->print(F("*6: Auto-arm time")); break;
@@ -271,7 +271,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xB8: stream->print(F("Enter * function key while armed")); break;
     case 0xB9: stream->print(F("*2: Zone tamper menu")); break;
     case 0xBA: stream->print(F("*2: Zones with low batteries")); break;
-    case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
+    case 0xBC: stream->print(F("*5: Enter new 6-digit code")); break;
     case 0xBF: stream->print(F("*6: Auto-arm select day")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
     //case 0xC7: stream->print(F("Partition not available")); break;
@@ -287,10 +287,10 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
     case 0xE8: stream->print(F("Input: 4 digits")); break;
     case 0xE9: stream->print(F("Input: 5 digits")); break;
-    case 0xEA: stream->print(F("Reporting code: 2 digits")); break;
-    case 0xEB: stream->print(F("Partition account code: 4 digits")); break;
-    case 0xEC: stream->print(F("Input: 6 digits")); break;
-    case 0xED: stream->print(F("Input: 32 digits")); break;
+    case 0xEA: stream->print(F("Input HEX: 2 digits")); break;
+    case 0xEB: stream->print(F("Input HEX: 4 digits")); break;
+    case 0xEC: stream->print(F("Input HEX: 6 digits")); break;
+    case 0xED: stream->print(F("Input HEX: 32 digits")); break;
     case 0xEE: stream->print(F("Input: 1 option per zone")); break;
     case 0xEF: stream->print(F("Module supervision field")); break;
     case 0xF0: stream->print(F("Function key 1")); break;
@@ -302,7 +302,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF6: stream->print(F("Activate device for test")); break;
     case 0xF7: stream->print(F("*8: 2 digit subsection entry")); decimalInput = false; break;
     case 0xF8: stream->print(F("Keypad programming")); break;
-    case 0xFA: stream->print(F("Input 6 digits")); break;
+    case 0xFA: stream->print(F("Input: 6 digits")); break;
     default:
       printUnknownData();
       stream->print(F(": 0x"));

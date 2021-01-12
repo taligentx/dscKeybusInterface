@@ -338,7 +338,7 @@ void setStatus(byte partition) {
       case 0x9F: root["lcd_upper"] = "Enter        ";
                  root["lcd_lower"] = "access code     "; break;
       case 0xA0: root["lcd_upper"] = "*1:          ";
-                 root["lcd_lower"] = "Zone bypass menu"; break;
+                 root["lcd_lower"] = "Zone bypass     "; break;
       case 0xA1: root["lcd_upper"] = "*2:          ";
                  root["lcd_lower"] = "Trouble menu    "; break;
       case 0xA2: root["lcd_upper"] = "*3:          ";
@@ -351,7 +351,7 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "master code     "; break;
       case 0xA6: root["lcd_upper"] = "*5:          ";
                  root["lcd_lower"] = "Access codes    "; break;
-      case 0xA7: root["lcd_upper"] = "Enter        ";
+      case 0xA7: root["lcd_upper"] = "*5: enter new";
                  root["lcd_lower"] = "4-digit code    "; break;
       case 0xA9: root["lcd_upper"] = "*6:          ";
                  root["lcd_lower"] = "User functions  "; break;
@@ -377,7 +377,7 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "Zone tamper menu"; break;
       case 0xBA: root["lcd_upper"] = "*2: Zones    ";
                  root["lcd_lower"] = "low battery     "; break;
-      case 0xBC: root["lcd_upper"] = "New          ";
+      case 0xBC: root["lcd_upper"] = "*5 enter new ";
                  root["lcd_lower"] = "6-digit code    "; break;
       case 0xC6: root["lcd_upper"] = "*2:          ";
                  root["lcd_lower"] = "Zone fault menu "; break;
@@ -405,13 +405,13 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "4 digits        "; break;
       case 0xE9: root["lcd_upper"] = "Input:       ";
                  root["lcd_lower"] = "5 digits        "; break;
-      case 0xEA: root["lcd_upper"] = "Reporting    ";
-                 root["lcd_lower"] = "code: 2 digits  "; break;
-      case 0xEB: root["lcd_upper"] = "Reporting    ";
-                 root["lcd_lower"] = "code: 4 digits  "; break;
-      case 0xEC: root["lcd_upper"] = "Input:       ";
+      case 0xEA: root["lcd_upper"] = "Input HEX:   ";
+                 root["lcd_lower"] = "2 digits        "; break;
+      case 0xEB: root["lcd_upper"] = "Input HEX:   ";
+                 root["lcd_lower"] = "4 digits        "; break;
+      case 0xEC: root["lcd_upper"] = "Input HEX:   ";
                  root["lcd_lower"] = "6 digits        "; break;
-      case 0xED: root["lcd_upper"] = "Input:       ";
+      case 0xED: root["lcd_upper"] = "Input HEX:   ";
                  root["lcd_lower"] = "32 digits       "; break;
       case 0xEE: root["lcd_upper"] = "Input: 1     ";
                  root["lcd_lower"] = "option per zone "; break;
@@ -861,8 +861,8 @@ void printPanelStatus1(byte panelByte) {
                root["lcd_lower"] = "output 4"; break;
     case 0xD1: root["lcd_upper"] = "Exit fault";
                root["lcd_lower"] = "pre-alert"; break;
-    case 0xD2: root["lcd_upper"] = "Armed: No entry";
-               root["lcd_lower"] = "delay cancelled"; break;
+    case 0xD2: root["lcd_upper"] = "Armed:";
+               root["lcd_lower"] = "with entry delay"; break;
     case 0xD3: root["lcd_upper"] = "Downlook remote";
                root["lcd_lower"] = "trigger"; break;
     default: decoded = false;
