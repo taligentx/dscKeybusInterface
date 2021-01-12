@@ -2142,9 +2142,11 @@ void dscKeybusInterface::printPanel_0xBB() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
+ *  Byte 2: bit 0-2 unknown
  *  Byte 2: bit 3 active when dialer attempt begin
  *  Byte 2: bit 4 dialer enabled
  *  Byte 2: bit 5 keypad lockout active
+ *  Byte 2: bit 6-7 unknown
  *  Byte 3: Unknown, always observed as 11111111
  *  Byte 4: CRC
  *
@@ -2157,25 +2159,13 @@ void dscKeybusInterface::printPanel_0xBB() {
  */
 void dscKeybusInterface::printPanel_0xC3() {
   if (panelData[3] == 0xFF) {
-    bool printedMessage = false;
+
     stream->print(F("Dialer: "));
-    if (panelData[2] & 0x10) {
-      stream->print(F("enabled"));
-      printedMessage = true;
-    }
-    else {
-      stream->print(F("disabled"));
-      printedMessage = true;
-    }
-    if (panelData[2] & 0x08) {
-      stream->print(F(" | Dialer call attempt"));
-      printedMessage = true;
-    }
-    if (panelData[2] & 0x20) {
-      stream->print(F(" | Keypad lockout"));
-      printedMessage = true;
-    }
-    if (!printedMessage) printUnknownData();
+    if (panelData[2] & 0x10) stream->print(F("enabled"));
+    else stream->print(F("disabled"));
+
+    if (panelData[2] & 0x08) stream->print(F(" | Dialer call attempt"));
+    if (panelData[2] & 0x20) stream->print(F(" | Keypad lockout"));
   }
   else printUnknownData();
 }
