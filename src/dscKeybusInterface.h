@@ -276,6 +276,7 @@ class dscKeybusInterface {
     void printModule_0x57();
     void printModule_0x58();
     void printModule_0x70();
+    void printModule_0x94();
     void printModule_0xD5();
     bool printModule_Keys();
     void printModule_KeyCodes(byte keyByte);

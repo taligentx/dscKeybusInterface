@@ -99,6 +99,7 @@ const char* wifiPassword = "";
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
 const char* blynkServer = "";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
+bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39
@@ -916,6 +917,7 @@ void processProgramZones(byte startByte, const char* ledColor) {
 
 
 void processLCDoutputData() {
+  if (!showLCDoutput) return; // Do not display LCD output data if showLCDoutput is false
   char dataInfo[21] = "LCD Display: ";
   char dataBuffer[4];  
   if (decimalOutput) {
