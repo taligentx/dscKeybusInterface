@@ -541,6 +541,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
     case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
     case 0x16: mqtt.publish(publishTopic, "Armed: No entry delay", true); break;
+    case 0x17: mqtt.publish(publishTopic, "Power saving: Keypad blanked", true); break;
     case 0x19: mqtt.publish(publishTopic, "Disarmed: Alarm memory"); break;
     case 0x22: mqtt.publish(publishTopic, "Disarmed: Recent closing", true); break;
     case 0x2F: mqtt.publish(publishTopic, "Keypad LCD test"); break;
@@ -561,7 +562,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xA4: mqtt.publish(publishTopic, "*4: Door chime disabled", true); break;
     case 0xA5: mqtt.publish(publishTopic, "Enter master code", true); break;
     case 0xA6: mqtt.publish(publishTopic, "*5: Access codes", true); break;
-    case 0xA7: mqtt.publish(publishTopic, "*5: Enter 4-digit code", true); break;
+    case 0xA7: mqtt.publish(publishTopic, "*5: Enter new 4-digit code", true); break;
     case 0xA9: mqtt.publish(publishTopic, "*6: User functions", true); break;
     case 0xAA: mqtt.publish(publishTopic, "*6: Time and date", true); break;
     case 0xAB: mqtt.publish(publishTopic, "*6: Auto-arm time", true); break;
@@ -570,25 +571,30 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xAF: mqtt.publish(publishTopic, "*6: System test", true); break;
     case 0xB0: mqtt.publish(publishTopic, "*6: Enable DLS", true); break;
     case 0xB2: mqtt.publish(publishTopic, "*7: Command output", true); break;
+    case 0xB3: mqtt.publish(publishTopic, "*7: Command output", true); break;
     case 0xB7: mqtt.publish(publishTopic, "Enter installer code", true); break;
     case 0xB8: mqtt.publish(publishTopic, "Enter * function key while armed", true); break;
     case 0xB9: mqtt.publish(publishTopic, "*2: Zone tamper menu", true); break;
     case 0xBA: mqtt.publish(publishTopic, "*2: Zones with low batteries", true); break;
-    case 0xBC: mqtt.publish(publishTopic, "*5: Enter 6-digit code"); break;
+    case 0xBC: mqtt.publish(publishTopic, "*5: Enter new 6-digit code"); break;
+    case 0xBF: mqtt.publish(publishTopic, "*6: Auto-arm select day"); break;
     case 0xC6: mqtt.publish(publishTopic, "*2: Zone fault menu", true); break;
     case 0xC8: mqtt.publish(publishTopic, "*2: Service required menu", true); break;
+    case 0xCD: mqtt.publish(publishTopic, "Downloading in progress"); break;
     case 0xCE: mqtt.publish(publishTopic, "Active camera monitor selection"); break;
     case 0xD0: mqtt.publish(publishTopic, "*2: Keypads with low batteries", true); break;
     case 0xD1: mqtt.publish(publishTopic, "*2: Keyfobs with low batteries", true); break;
-    case 0xE4: mqtt.publish(publishTopic, "*8: Installer programming", true); break;
+    case 0xD4: mqtt.publish(publishTopic, "*2: Sensors with RF delinquency", true); break;
+    case 0xE4: mqtt.publish(publishTopic, "*8: 3 digit section entry", true); break;
     case 0xE5: mqtt.publish(publishTopic, "Keypad slot assignment", true); break;
     case 0xE6: mqtt.publish(publishTopic, "Input: 2 digits", true); break;
     case 0xE7: mqtt.publish(publishTopic, "Input: 3 digits", true); break;
     case 0xE8: mqtt.publish(publishTopic, "Input: 4 digits", true); break;
-    case 0xEA: mqtt.publish(publishTopic, "Reporting code: 2 digits", true); break;
-    case 0xEB: mqtt.publish(publishTopic, "Telephone number account code: 4 digits", true); break;
-    case 0xEC: mqtt.publish(publishTopic, "Input: 6 digits", true); break;
-    case 0xED: mqtt.publish(publishTopic, "Input: 32 digits", true); break;
+    case 0xE9: mqtt.publish(publishTopic, "Input: 5 digits", true); break;
+    case 0xEA: mqtt.publish(publishTopic, "Input HEX: 2 digits", true); break;
+    case 0xEB: mqtt.publish(publishTopic, "Input HEX: 4 digits", true); break;
+    case 0xEC: mqtt.publish(publishTopic, "Input HEX: 6 digits", true); break;
+    case 0xED: mqtt.publish(publishTopic, "Input HEX: 32 digits", true); break;
     case 0xEE: mqtt.publish(publishTopic, "Input: 1 option per zone", true); break;
     case 0xEF: mqtt.publish(publishTopic, "Module supervision field", true); break;
     case 0xF0: mqtt.publish(publishTopic, "Function key 1", true); break;
@@ -598,9 +604,9 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xF4: mqtt.publish(publishTopic, "Function key 5", true); break;
     case 0xF5: mqtt.publish(publishTopic, "Wireless module placement test", true); break;
     case 0xF6: mqtt.publish(publishTopic, "Activate device for test"); break;
-    case 0xF7: mqtt.publish(publishTopic, "Installer programming subsection", true); break;
+    case 0xF7: mqtt.publish(publishTopic, "*8: 2 digit subsection entry", true); break;
     case 0xF8: mqtt.publish(publishTopic, "Keypad programming", true); break;
-    case 0xFA: mqtt.publish(publishTopic, "Input 6 digits"); break;
+    case 0xFA: mqtt.publish(publishTopic, "Input: 6 digits"); break;
     default: return;
   }
 }

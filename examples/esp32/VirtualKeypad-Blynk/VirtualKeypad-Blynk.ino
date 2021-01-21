@@ -99,6 +99,7 @@ const char* wifiPassword = "";
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
 const char* blynkServer = "";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
+bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 18  // esp32: 4,13,16-39
@@ -109,6 +110,7 @@ const int   blynkPort = 8080;     // Blynk local server port
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool wifiConnected = true;
 bool partitionChanged, pausedZones, extendedBuffer;
+bool decimalOutput, inputDigits;
 byte systemZones[dscZones], programZones[dscZones], previousProgramZones[dscZones];
 const char* ledOpenZonesColor = "#23C48E";     // Green
 const char* ledProgramZonesColor = "#FDD322";  // Orange
@@ -471,6 +473,8 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x16: lcd.print(0, 0, "Armed:       ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
+    case 0x17: lcd.print(0, 0, "Power saving ");
+               lcd.print(0, 1, "Keypad blanked  "); break;
     case 0x19: lcd.print(0, 0, "Alarm        ");
                lcd.print(0, 1, "occurred        "); break;
     case 0x22: lcd.print(0, 0, "Recent       ");
@@ -498,7 +502,7 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x9F: lcd.print(0, 0, "Enter        ");
                lcd.print(0, 1, "access code     "); break;
     case 0xA0: lcd.print(0, 0, "*1:          ");
-               lcd.print(0, 1, "Zone bypass menu"); break;
+               lcd.print(0, 1, "Zone bypass     "); break;
     case 0xA1: lcd.print(0, 0, "*2:          ");
                lcd.print(0, 1, "Trouble menu    "); break;
     case 0xA2: lcd.print(0, 0, "*3:          ");
@@ -510,9 +514,11 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0xA5: lcd.print(0, 0, "Enter        ");
                lcd.print(0, 1, "master code     "); break;
     case 0xA6: lcd.print(0, 0, "*5:          ");
-               lcd.print(0, 1, "Access codes    "); break;
-    case 0xA7: lcd.print(0, 0, "Enter        ");
-               lcd.print(0, 1, "4-digit code    "); break;
+               lcd.print(0, 1, "Access codes    ");
+               inputDigits = false; decimalOutput = false; Blynk.virtualWrite(V20, " "); break;               
+    case 0xA7: lcd.print(0, 0, "*5: Enter new");
+               lcd.print(0, 1, "4-digit code    ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
     case 0xA9: lcd.print(0, 0, "*6:          ");
                lcd.print(0, 1, "User functions  "); break;
     case 0xAA: lcd.print(0, 0, "*6:          ");
@@ -537,12 +543,13 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "Zone tamper menu"); break;
     case 0xBA: lcd.print(0, 0, "*2: Zones    ");
                lcd.print(0, 1, "low battery     "); break;
-    case 0xBC: lcd.print(0, 0, "New          ");
-               lcd.print(0, 1, "6-digit code    "); break;
+    case 0xBC: lcd.print(0, 0, "*5: enter new");
+               lcd.print(0, 1, "6-digit code    ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
     case 0xC6: lcd.print(0, 0, "*2:          ");
                lcd.print(0, 1, "Zone fault menu "); break;
     case 0xC7: lcd.print(0, 0, "Partition    ");
-               lcd.print(0, 1, "disabled        "); break;
+               lcd.print(0, 1, "not available   "); break;
     case 0xC8: lcd.print(0, 0, "*2:          ");
                lcd.print(0, 1, "Service required"); break;
     case 0xCE: lcd.print(0, 0, "Active camera");
@@ -553,23 +560,33 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "low battery     "); break;
     case 0xD4: lcd.print(0, 0, "*2: Sensors  ");
                lcd.print(0, 1, "RF delinquency  "); break;
-    case 0xE4: lcd.print(0, 0, "*8:          ");
-               lcd.print(0, 1, "Installer menu  "); break;
+    case 0xE4: lcd.print(0, 0, "*8: 3 digit  ");
+               lcd.print(0, 1, "section entry   ");
+               inputDigits = false; decimalOutput = false; Blynk.virtualWrite(V20, " "); break;
     case 0xE5: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "slot assignment "); break;
     case 0xE6: lcd.print(0, 0, "Input:       ");
-               lcd.print(0, 1, "2 digits        "); break;
+               lcd.print(0, 1, "2 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
     case 0xE7: lcd.print(0, 0, "Input:       ");
-               lcd.print(0, 1, "3 digits        "); break;
+               lcd.print(0, 1, "3 digits        ");
+               inputDigits = true; decimalOutput = true; dsc.write('l'); break;
     case 0xE8: lcd.print(0, 0, "Input:       ");
-               lcd.print(0, 1, "4 digits        "); break;
-    case 0xEA: lcd.print(0, 0, "Reporting    ");
-               lcd.print(0, 1, "code: 2 digits  "); break;
-    case 0xEB: lcd.print(0, 0, "Reporting    ");
-               lcd.print(0, 1, "code: 4 digits  "); break;
-    case 0xEC: lcd.print(0, 0, "Input:       ");
-               lcd.print(0, 1, "6 digits        "); break;
-    case 0xED: lcd.print(0, 0, "Input:       ");
+               lcd.print(0, 1, "4 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xE9: lcd.print(0, 0, "Input:       ");
+               lcd.print(0, 1, "5 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xEA: lcd.print(0, 0, "Input HEX:   ");
+               lcd.print(0, 1, "2 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xEB: lcd.print(0, 0, "Input HEX:   ");
+               lcd.print(0, 1, "4 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xEC: lcd.print(0, 0, "Input HEX:   ");
+               lcd.print(0, 1, "6 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
+    case 0xED: lcd.print(0, 0, "Input HEX:   ");
                lcd.print(0, 1, "32 digits       "); break;
     case 0xEE: lcd.print(0, 0, "Input: 1     ");
                lcd.print(0, 1, "option per zone "); break;
@@ -586,15 +603,17 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0xF4: lcd.print(0, 0, "Function     ");
                lcd.print(0, 1, "key 5           "); break;
     case 0xF5: lcd.print(0, 0, "Wireless mod.");
-               lcd.print(0, 1, "place. test     "); break;
+               lcd.print(0, 1, "placement test  "); break;
     case 0xF6: lcd.print(0, 0, "Activate     ");
                lcd.print(0, 1, "device for test "); break;
-    case 0xF7: lcd.print(0, 0, "*8 PGM       ");
-               lcd.print(0, 1, "subsection      "); break;
+    case 0xF7: lcd.print(0, 0, "*8: 2 digit  ");
+               lcd.print(0, 1, "subsection entry");
+               inputDigits = false; decimalOutput = false; Blynk.virtualWrite(V20, " "); break;
     case 0xF8: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "programming     "); break;
     case 0xFA: lcd.print(0, 0, "Input:       ");
-               lcd.print(0, 1, "6 digits        "); break;
+               lcd.print(0, 1, "6 digits        ");
+               inputDigits = true; decimalOutput = false; dsc.write('l'); break;
     default: return;
   }
 }
@@ -834,12 +853,12 @@ void setLights(byte partition, bool forceUpdate) {
 void processStatus() {
   switch (dsc.panelData[0]) {
     case 0x05:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones) {
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
         pauseZones();
       }
       break;
     case 0x0A:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones) {
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
         pauseZones();
       }
       if (pausedZones) {
@@ -851,6 +870,8 @@ void processStatus() {
         if (pausedZones) processProgramZones(3, ledAlarmZonesColor);
       }
       break;
+    case 0x64: if ((inputDigits) && (dsc.panelData[2] == 0x04)) dsc.write('l'); break; 
+    case 0x6E: if ((inputDigits) && (pausedZones)) processLCDoutputData(); break;
     case 0xAA: if (pausedZones) processEventBufferAA(); break;
     case 0xE6:
       switch (dsc.panelData[2]) {
@@ -892,6 +913,28 @@ void processProgramZones(byte startByte, const char* ledColor) {
       }
     }
   }
+}
+
+
+void processLCDoutputData() {
+  if (!showLCDoutput) return; // Do not display LCD output data if showLCDoutput is false
+  char dataInfo[21] = "LCD Display: ";
+  char dataBuffer[4];  
+  if (decimalOutput) {
+    itoa(dsc.panelData[2], dataBuffer, 10);
+    if (dsc.panelData[2] < 10) strcat(dataInfo, "00");
+    else if (dsc.panelData[2] < 100) strcat(dataInfo, "0");
+    strcat(dataInfo, dataBuffer);
+  }
+  else {
+    for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
+      sprintf(dataBuffer,"%X",dsc.panelData[panelByte] >> 4);
+      strcat(dataInfo, dataBuffer);
+      sprintf(dataBuffer,"%X",dsc.panelData[panelByte] & 0x0F);
+      strcat(dataInfo, dataBuffer);
+    }      
+  }
+  Blynk.virtualWrite(V20, dataInfo);
 }
 
 
@@ -1215,8 +1258,8 @@ void printPanelStatus1(byte panelByte) {
                lcd.print(0, 1, "output 4        "); break;
     case 0xD1: lcd.print(0, 0, "Exit fault      ");
                lcd.print(0, 1, "pre-alert       "); break;
-    case 0xD2: lcd.print(0, 0, "Armed: No entry ");
-               lcd.print(0, 1, "delay cancelled "); break;
+    case 0xD2: lcd.print(0, 0, "Armed:          ");
+               lcd.print(0, 1, "with entry delay"); break;
     case 0xD3: lcd.print(0, 0, "Downlook        ");
                lcd.print(0, 1, "remote trigger  "); break;
     default: decoded = false;
@@ -1841,6 +1884,7 @@ void pauseZones() {
 
 
 void resetZones() {
+  inputDigits = false; //reset flag here as *5 can timeout from digit input directly to idle state
   pausedZones = false;
   dsc.openZonesStatusChanged = true;
   Blynk.virtualWrite(V20, "     ");
