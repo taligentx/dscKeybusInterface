@@ -26,14 +26,18 @@
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-#elif defined(ESP8266) || defined(ESP32)
+const byte dscReadSize = 16;    // Maximum bytes of a Keybus command
+#elif defined(ESP8266)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
-#endif
-
-// Maximum bytes of a Keybus command
 const byte dscReadSize = 16;
+#elif defined(ESP32)
+const byte dscPartitions = 8;
+const byte dscZones = 8;
+const DRAM_ATTR byte dscBufferSize = 50;
+const DRAM_ATTR byte dscReadSize = 16;
+#endif
 
 // Exit delay target states
 #define DSC_EXIT_STAY 1
@@ -144,7 +148,7 @@ class dscKeybusInterface {
     // True if dscBufferSize needs to be increased
     static volatile bool bufferOverflow;
 
-    // Timer interrupt function to capture data - declared as public for use by AVR Timer2
+    // Timer interrupt function to capture data - declared as public for use by AVR Timer1
     static void dscDataInterrupt();
 
     // Deprecated

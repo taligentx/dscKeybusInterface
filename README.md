@@ -89,7 +89,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino) and WiFi for ~$3USD shipped.
     - esp32:
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v1.0.5-rc6 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -103,7 +103,7 @@ Poking around with a logic analyzer and oscilloscope revealed that the errors ca
   - New: `TimeSyncNTP` example sketch - uses NTP to automatically set the panel time
   - New: [ESPHome](https://esphome.io) integration example (located in the `extras` directory) - thanks to [Dilbert66](https://github.com/Dilbert66) for this contribution!
   - New: `KeybusReaderIP` example sketch enables Keybus data access over IP, thanks to [aboulfad](https://github.com/aboulfad) for this contribution!
-  - New: esp32 microcontroller support
+  - New: esp32 microcontroller support - requires [Arduino-esp32](https://github.com/espressif/arduino-esp32) v1.0.5-rc6 or newer
   - New: Features for sketches:
       * `ready` and `disabled` track partition status
       * `setTime()` sets the panel date and time
