@@ -1,23 +1,27 @@
 /*
- *  DSC Keybus Reader 1.0 (esp8266)
+ *  DSC Keybus Reader 1.2 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
- *  keypad.  This is primarily to help decode the Keybus protocol - see the Status examples to put the interface
+ *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
+ *  Release notes:
+ *    1.2 - Handle spurious data while keybus is disconnected
+ *          Removed redundant data processing
+ *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.0 - Initial release
+ *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
@@ -41,26 +45,27 @@
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
   // Optional configuration
-  dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processRedundantData = false;  // Controls if repeated periodic commands are processed and displayed (default: true)
-  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
-  dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
+  dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs
+  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
+  dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
 
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -68,48 +73,59 @@ void setup() {
 void loop() {
 
   // Reads from serial input and writes to the Keybus as a virtual keypad
-  if (Serial.available() > 0 && dsc.writeReady) {
-      dsc.write(Serial.read());
-  }
+  if (Serial.available() > 0) dsc.write(Serial.read());
 
-  if (dsc.handlePanel()) {
+  if (dsc.loop()) {
+
+    if (dsc.statusChanged) {      // Checks if the security system status has changed
+      dsc.statusChanged = false;  // Reset the status tracking flag
+
+      // Checks if the interface is connected to the Keybus
+      if (dsc.keybusChanged) {
+        dsc.keybusChanged = false;                 // Resets the Keybus data status flag
+        if (dsc.keybusConnected) Serial.println(F("Keybus connected"));
+        else Serial.println(F("Keybus disconnected"));
+      }
+    }
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Prints panel data
-    printTimestamp();
-    Serial.print(" ");
-    dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
-    Serial.print(" [");
-    dsc.printPanelCommand();  // Prints the panel command as hex
-    Serial.print("] ");
-    dsc.printPanelMessage();  // Prints the decoded message
-    Serial.println();
-
-    // Prints keypad and module data when valid panel data is printed
-    if (dsc.handleModule()) {
+    if (dsc.keybusConnected) {
       printTimestamp();
       Serial.print(" ");
-      dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
-      Serial.print(" ");
-      dsc.printModuleMessage();  // Prints the decoded message
+      dsc.printPanelBinary();   // Optionally prints without spaces: printPanelBinary(false);
+      Serial.print(" [");
+      dsc.printPanelCommand();  // Prints the panel command as hex
+      Serial.print("] ");
+      dsc.printPanelMessage();  // Prints the decoded message
       Serial.println();
+
+      // Prints keypad and module data when valid panel data is printed
+      if (dsc.handleModule()) printModule();
     }
   }
 
   // Prints keypad and module data when valid panel data is not available
-  else if (dsc.handleModule()) {
-    printTimestamp();
-    Serial.print(" ");
-    dsc.printModuleBinary();  // Optionally prints without spaces: printKeybusBinary(false);
-    Serial.print(" ");
-    dsc.printModuleMessage();
-    Serial.println();
-  }
+  else if (dsc.keybusConnected && dsc.handleModule()) printModule();
 }
+
+
+// Prints keypad and module data
+void printModule() {
+  printTimestamp();
+  Serial.print(" ");
+  dsc.printModuleBinary();   // Optionally prints without spaces: printKeybusBinary(false);
+  Serial.print(" ");
+  dsc.printModuleMessage();  // Prints the decoded message
+  Serial.println();
+}
+
 
 // Prints a timestamp in seconds (with 2 decimal precision) - this is useful to determine when
 // the panel sends a group of messages immediately after each other due to an event.

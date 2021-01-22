@@ -1,5 +1,5 @@
 /*
- *  Homey 1.0 (esp8266)
+ *  Homey 1.2 (esp8266)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -11,19 +11,23 @@
  *
  *  Zone states are published by Homey.trigger command including the zone number.
  *
+ *  Release notes:
+ *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
+ *    1.1 - Added status update on WiFi reconnection
+ *          Removed writeReady check, moved into library
+ *    1.0 - Initial release
+ *
  *  Wiring:
- *      DSC Aux(+) ---+--- esp8266 NodeMCU Vin pin
- *                    |
- *                    +--- 5v voltage regulator --- esp8266 Wemos D1 Mini 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
  *                                         +--- dscClockPin (esp8266: D1, D2, D8)
- *      DSC Yellow --- 15k ohm resistor ---|
+ *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *                                         +--- dscReadPin (esp8266: D1, D2, D8)
- *      DSC Green ---- 15k ohm resistor ---|
+ *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *  Virtual keypad (optional):
@@ -48,7 +52,7 @@
 #include <Homey.h>
 #include <dscKeybusInterface.h>
 
-// WiFi settings
+// Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
@@ -56,20 +60,28 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin D2   // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+bool wifiConnected = true;
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
+  Serial.print(F("WiFi"));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.print("WiFi connected: ");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
   // Initiate and starts the Homey interface
@@ -94,14 +106,35 @@ void setup() {
 
 
 void loop() {
+
+  // Updates status if WiFi drops and reconnects
+  if (!wifiConnected && WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi reconnected");
+    wifiConnected = true;
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
+  }
+  else if (WiFi.status() != WL_CONNECTED && wifiConnected) {
+    Serial.println("WiFi disconnected");
+    wifiConnected = false;
+  }
+
   // Run the Homey loop
   Homey.loop();
 
-  if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                   // Reset the status tracking flag
+  dsc.loop();
+
+  if (dsc.statusChanged) {      // Checks if the security system status has changed
+    dsc.statusChanged = false;  // Reset the status tracking flag
+
+    // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt && dsc.writeReady) {
+    if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
     }
@@ -184,26 +217,21 @@ void loop() {
 // Arm stay
 void armStay() {
    if (Homey.value.toInt() == 1 && !dsc.armed[0] && !dsc.exitDelay[0]) {  // Read the argument sent from the homey flow
-     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
      dsc.write('s');  // Keypad stay arm
 
   }
 }
 
-
 // Arm away
 void armAway() {
    if (Homey.value.toInt() == 1 && !dsc.armed[0] && !dsc.exitDelay[0]) {  // Read the argument sent from the homey flow
-     while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
      dsc.write('w');  // Keypad away arm
   }
 }
 
-
 // Disarm
 void disarm() {
    if (Homey.value.toInt() == 1 && (dsc.armed[0] || dsc.exitDelay[0])) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.write(accessCode);
   }
 }

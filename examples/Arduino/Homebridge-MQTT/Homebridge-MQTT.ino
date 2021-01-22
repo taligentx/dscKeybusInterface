@@ -1,13 +1,17 @@
 /*
- *  Homebridge-MQTT 1.0 (Arduino with Ethernet)
+ *  Homebridge-MQTT 1.4 (Arduino with Ethernet)
  *
- *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app and
- *  Siri.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for HomeKit integration
- *  and demonstrates using the armed and alarm states for the HomeKit securitySystem object, zone states
- *  for the contactSensor objects, and fire alarm states for the smokeSensor object.
+ *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
+ *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
+ *  HomeKit integration and demonstrates using the armed and alarm states for the HomeKit securitySystem object,
+ *  zone states for the contactSensor objects, and fire alarm states for the smokeSensor object.
+ *
+ *  Google Home integration via homebridge-gsh includes arming/disarming by voice with Google Assistant.  For
+ *  disarming, set a voice PIN for 2 factor authentication as described in homebridge-gsh settings.
  *
  *  Homebridge: https://github.com/nfarina/homebridge
  *  homebridge-mqttthing: https://github.com/arachnetech/homebridge-mqttthing
+ *  homebridge-gsh (Google Home): https://github.com/oznu/homebridge-gsh
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
  *  Usage:
@@ -16,10 +20,6 @@
  *    3. Copy the example configuration to Homebridge's config.json and customize.
  *    4. Upload the sketch.
  *    5. Restart Homebridge.
- *
- *  Release notes:
- *    1.1 - Add "getTargetState" to the Homebridge config.json example
- *    1.0 - Initial release
  *
  *  Example Homebridge config.json "accessories" configuration:
 
@@ -31,7 +31,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition1",
-                "getTargetState":    "dsc/Get/Partition1",
+                "getTargetState":     "dsc/Get/Partition1",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["1S", "1A", "1N", "1D"]
@@ -44,7 +44,7 @@
             "topics":
             {
                 "getCurrentState":    "dsc/Get/Partition2",
-                "getTargetState":    "dsc/Get/Partition1",
+                "getTargetState":     "dsc/Get/Partition2",
                 "setTargetState":     "dsc/Set"
             },
             "targetStateValues": ["2S", "2A", "2N", "2D"]
@@ -92,6 +92,28 @@
                 "getContactSensorState": "dsc/Get/Zone2"
             },
             "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "PGM 1",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/PGM1"
+            },
+            "integerValue": "true"
+        },
+        {
+            "accessory": "mqttthing",
+            "type": "contactSensor",
+            "name": "PGM 8",
+            "url": "http://127.0.0.1:1883",
+            "topics":
+            {
+                "getContactSensorState": "dsc/Get/PGM8"
+            },
+            "integerValue": "true"
         }
 
  *  The commands to set the alarm state are setup in Homebridge with the partition number (1-8) as a prefix to the command:
@@ -117,6 +139,21 @@
  *  appended with the partition number:
  *    Fire alarm: "1"
  *    Fire alarm restored: "0"
+ *
+ *  PGM outputs states are published as an integer in a separate topic per PGM with the configured mqttPgmTopic appended
+ *  with the PGM output number:
+ *    Open: "1"
+ *    Closed: "0"
+ *
+ *  Release notes:
+ *    1.4 - Added PGM outputs 1-14 status
+ *          Added notes on Google Home integration
+ *    1.2 - Resolved handling HomeKit target states
+ *          Added status update on initial MQTT connection and reconnection
+ *          Added publishState() to simplify sketch
+ *          Removed writeReady check, moved into library
+ *    1.1 - Add "getTargetState" to the Homebridge config.json example
+ *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Aux(+) --- Arduino Vin pin
@@ -154,9 +191,9 @@
 
 // Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
-const int mqttPort = 1883;      // MQTT server port
+const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
 const char* mqttPassword = "";  // Optional, leave blank if not required
 
@@ -165,33 +202,36 @@ const char* mqttClientName = "dscKeybusInterface";
 const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
 const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
 const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
-unsigned long mqttPreviousTime;
-
-EthernetClient ethClient;
-PubSubClient mqtt(mqttServer, mqttPort, ethClient);
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
-#define dscReadPin 5   // Arduino Uno: 2-12
+#define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
+
+// Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+EthernetClient ipClient;
+PubSubClient mqtt(mqttServer, mqttPort, ipClient);
+unsigned long mqttPreviousTime;
+char exitState;
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 
   // Initializes ethernet with DHCP
-  Serial.print(F("Initializing Ethernet..."));
+  Serial.print(F("Ethernet...."));
   while(!Ethernet.begin(mac)) {
       Serial.println(F("DHCP failed.  Retrying..."));
       delay(5000);
   }
-  Serial.println(F("success!"));
-  Serial.print(F("IP address: "));
+  Serial.print(F("connected: "));
   Serial.println(Ethernet.localIP());
 
   mqtt.setCallback(mqttCallback);
@@ -201,7 +241,6 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-
   Serial.println(F("DSC Keybus Interface is online."));
 }
 
@@ -209,16 +248,20 @@ void setup() {
 void loop() {
   mqttHandle();
 
-  if (dsc.handlePanel() && dsc.statusChanged) {  // Processes data only when a valid Keybus command has been read
-    dsc.statusChanged = false;                   // Reset the status tracking flag
+  dsc.loop();
+
+  if (dsc.statusChanged) {      // Checks if the security system status has changed
+    dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // handlePanel() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
-    if (dsc.bufferOverflow) Serial.println(F("Keybus buffer overflow"));
-    dsc.bufferOverflow = false;
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    if (dsc.bufferOverflow) {
+      Serial.println(F("Keybus buffer overflow"));
+      dsc.bufferOverflow = false;
+    }
 
     // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt && dsc.writeReady) {
+    if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
     }
@@ -226,68 +269,96 @@ void loop() {
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
+      // Skips processing if the partition is disabled or in installer programming
+      if (dsc.disabled[partition]) continue;
+
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
-        dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
-
-        // Appends the mqttPartitionTopic with the partition number
-        char publishTopic[strlen(mqttPartitionTopic) + 1];
-        char partitionNumber[2];
-        strcpy(publishTopic, mqttPartitionTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(publishTopic, partitionNumber);
-
         if (dsc.armed[partition]) {
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);       // Night armed
-          else if (dsc.armedAway[partition]) mqtt.publish(publishTopic, "AA", true);                                      // Away armed
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) mqtt.publish(publishTopic, "NA", true);  // Night armed
-          else if (dsc.armedStay[partition]) mqtt.publish(publishTopic, "SA", true);                                      // Stay armed
+          exitState = 0;
+
+          // Night armed away
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+            publishState(mqttPartitionTopic, partition, "N", "NA");
+          }
+
+          // Armed away
+          else if (dsc.armedAway[partition]) {
+            publishState(mqttPartitionTopic, partition, "A", "AA");
+          }
+
+          // Night armed stay
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+            publishState(mqttPartitionTopic, partition, "N", "NA");
+          }
+
+          // Armed stay
+          else if (dsc.armedStay[partition]) {
+            publishState(mqttPartitionTopic, partition, "S", "SA");
+          }
         }
-        else mqtt.publish(publishTopic, "D", true);  // Disarmed
+
+        // Disarmed
+        else publishState(mqttPartitionTopic, partition, "D", "D");
+      }
+
+      // Checks exit delay status
+      if (dsc.exitDelayChanged[partition]) {
+        dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
+
+        // Exit delay in progress
+        if (dsc.exitDelay[partition]) {
+
+          // Sets the arming target state if the panel is armed externally
+          if (exitState == 0 || dsc.exitStateChanged[partition]) {
+            dsc.exitStateChanged[partition] = 0;
+            switch (dsc.exitState[partition]) {
+              case DSC_EXIT_STAY: {
+                exitState = 'S';
+                publishState(mqttPartitionTopic, partition, "S", 0);
+                break;
+              }
+              case DSC_EXIT_AWAY: {
+                exitState = 'A';
+                publishState(mqttPartitionTopic, partition, "A", 0);
+                break;
+              }
+              case DSC_EXIT_NO_ENTRY_DELAY: {
+                exitState = 'N';
+                publishState(mqttPartitionTopic, partition, "N", 0);
+                break;
+              }
+            }
+          }
+        }
+
+        // Disarmed during exit delay
+        else if (!dsc.armed[partition]) {
+          exitState = 0;
+          publishState(mqttPartitionTopic, partition, "D", "D");
+        }
       }
 
       // Publishes alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
         if (dsc.alarm[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
-
-          mqtt.publish(publishTopic, "T", true);  // Alarm tripped
+          publishState(mqttPartitionTopic, partition, 0, "T");
         }
+        else if (!dsc.armedChanged[partition]) publishState(mqttPartitionTopic, partition, "D", "D");
       }
-
-      // Publishes status when the system is disarmed during exit delay
-      if (dsc.exitDelayChanged[partition] && !dsc.exitDelay[partition] && !dsc.armed[partition]) {
-
-          // Appends the mqttPartitionTopic with the partition number
-          char publishTopic[strlen(mqttPartitionTopic) + 1];
-          char partitionNumber[2];
-          strcpy(publishTopic, mqttPartitionTopic);
-          itoa(partition + 1, partitionNumber, 10);
-          strcat(publishTopic, partitionNumber);
-
-          mqtt.publish(publishTopic, "D", true);  // Disarmed
-      }
+      if (dsc.armedChanged[partition]) dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
 
       // Publishes fire alarm status
       if (dsc.fireChanged[partition]) {
         dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
-        // Appends the mqttFireTopic with the partition number
-        char firePublishTopic[strlen(mqttFireTopic) + 1];
-        char partitionNumber[2];
-        strcpy(firePublishTopic, mqttFireTopic);
-        itoa(partition + 1, partitionNumber, 10);
-        strcat(firePublishTopic, partitionNumber);
-
-        if (dsc.fire[partition]) mqtt.publish(firePublishTopic, "1");  // Fire alarm tripped
-        else mqtt.publish(firePublishTopic, "0");                           // Fire alarm restored
+        if (dsc.fire[partition]) {
+          publishState(mqttFireTopic, partition, 0, "1");  // Fire alarm tripped
+        }
+        else {
+          publishState(mqttFireTopic, partition, 0, "0");  // Fire alarm restored
+        }
       }
     }
 
@@ -305,7 +376,7 @@ void loop() {
             bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
             // Appends the mqttZoneTopic with the zone number
-            char zonePublishTopic[strlen(mqttZoneTopic) + 2];
+            char zonePublishTopic[strlen(mqttZoneTopic) + 3];
             char zone[3];
             strcpy(zonePublishTopic, mqttZoneTopic);
             itoa(zoneBit + 1 + (zoneGroup * 8), zone, 10);
@@ -320,9 +391,37 @@ void loop() {
       }
     }
 
+    // Publishes PGM outputs 1-14 status in a separate topic per zone
+    // PGM status is stored in the pgmOutputs[] and pgmOutputsChanged[] arrays using 1 bit per PGM output:
+    //   pgmOutputs[0] and pgmOutputsChanged[0]: Bit 0 = PGM 1 ... Bit 7 = PGM 8
+    //   pgmOutputs[1] and pgmOutputsChanged[1]: Bit 0 = PGM 9 ... Bit 5 = PGM 14
+    if (dsc.pgmOutputsStatusChanged) {
+      dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag
+      for (byte pgmGroup = 0; pgmGroup < 2; pgmGroup++) {
+        for (byte pgmBit = 0; pgmBit < 8; pgmBit++) {
+          if (bitRead(dsc.pgmOutputsChanged[pgmGroup], pgmBit)) {  // Checks an individual PGM output status flag
+            bitWrite(dsc.pgmOutputsChanged[pgmGroup], pgmBit, 0);  // Resets the individual PGM output status flag
+
+            // Appends the mqttPgmTopic with the PGM number
+            char pgmPublishTopic[strlen(mqttPgmTopic) + 3];
+            char pgm[3];
+            strcpy(pgmPublishTopic, mqttPgmTopic);
+            itoa(pgmBit + 1 + (pgmGroup * 8), pgm, 10);
+            strcat(pgmPublishTopic, pgm);
+
+            if (bitRead(dsc.pgmOutputs[pgmGroup], pgmBit)) {
+              mqtt.publish(pgmPublishTopic, "1", true);           // PGM enabled
+            }
+            else mqtt.publish(pgmPublishTopic, "0", true);        // PGM disabled
+          }
+        }
+      }
+    }
+
     mqtt.subscribe(mqttSubscribeTopic);
   }
 }
+
 
 // Handles messages received in the mqttSubscribeTopic
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -340,32 +439,53 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
+  // Resets the HomeKit target state if attempting to change the armed mode while armed or not ready
+  if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
+    dsc.armedChanged[partition] = true;
+    dsc.statusChanged = true;
+    return;
+  }
+
+  // Resets the HomeKit target state if attempting to change the arming mode during the exit delay
+  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState != 0) {
+    if (exitState == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
+    else if (exitState == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
+    else if (exitState == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
+  }
+
+
   // homebridge-mqttthing STAY_ARM
   if (payload[payloadIndex] == 'S' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('s');  // Keypad stay arm
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState = 'S';
+    return;
   }
 
   // homebridge-mqttthing AWAY_ARM
-  else if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+  if (payload[payloadIndex] == 'A' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('w');  // Keypad away arm
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState = 'A';
+    return;
   }
 
   // homebridge-mqttthing NIGHT_ARM
-  else if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+  if (payload[payloadIndex] == 'N' && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad arm with no entry delay
+    publishState(mqttPartitionTopic, partition, "N", 0);
+    exitState = 'N';
+    return;
   }
 
   // homebridge-mqttthing DISARM
-  else if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition])) {
-    while (!dsc.writeReady) dsc.handlePanel();  // Continues processing Keybus data until ready to write
+  if (payload[payloadIndex] == 'D' && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write(accessCode);
+    return;
   }
 }
 
@@ -387,15 +507,43 @@ void mqttHandle() {
 
 
 bool mqttConnect() {
+  Serial.print(F("MQTT...."));
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
-    Serial.print(F("MQTT connected: "));
+    Serial.print(F("connected: "));
     Serial.println(mqttServer);
-    mqtt.subscribe(mqttSubscribeTopic);
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
-    Serial.print(F("MQTT connection failed: "));
+    Serial.print(F("connection error: "));
     Serial.println(mqttServer);
   }
   return mqtt.connected();
 }
 
+
+// Publishes HomeKit target and current states with partition numbers
+void publishState(const char* sourceTopic, byte partition, const char* targetSuffix, const char* currentState) {
+  char publishTopic[strlen(sourceTopic) + 2];
+  char partitionNumber[2];
+
+  // Appends the sourceTopic with the partition number
+  itoa(partition + 1, partitionNumber, 10);
+  strcpy(publishTopic, sourceTopic);
+  strcat(publishTopic, partitionNumber);
+
+  if (targetSuffix != 0) {
+
+    // Prepends the targetSuffix with the partition number
+    char targetState[strlen(targetSuffix) + 2];
+    strcpy(targetState, partitionNumber);
+    strcat(targetState, targetSuffix);
+
+    // Publishes the target state
+    mqtt.publish(publishTopic, targetState, true);
+  }
+
+  // Publishes the current state
+  if (currentState != 0) {
+    mqtt.publish(publishTopic, currentState, true);
+  }
+}

@@ -1,31 +1,40 @@
 dscKeybusInterface	KEYWORD1
 dsc	KEYWORD1
 
-begin	KEYWORD2
-write	KEYWORD2
-writeReady	KEYWORD2
-handlePanel	KEYWORD2
-handleModule	KEYWORD2
-
-printPanelBinary	KEYWORD2
-printPanelCommand	KEYWORD2
-printPanelMessage	KEYWORD2
-printModuleBinary	KEYWORD2
-printModuleMessage	KEYWORD2
+dscClockPin	LITERAL1
+dscReadPin	LITERAL1
+dscWritePin	LITERAL1
+dscRelayPin	LITERAL1
+dscZones	LITERAL1
+dscPartitions	LITERAL1
 
 hideKeypadDigits	KEYWORD2
-processRedundantData	KEYWORD2
 displayTrailingBits	KEYWORD2
 processModuleData	KEYWORD2
 
+begin	KEYWORD2
+stop	KEYWORD2
+loop	KEYWORD2
+bufferOverflow	KEYWORD2
+handleModule	KEYWORD2
+
+write	KEYWORD2
+writeReady	KEYWORD2
+writePartition	KEYWORD2
+
 statusChanged	KEYWORD2
+resetStatus	KEYWORD2
+pauseStatus	KEYWORD2
 keybusConnected	KEYWORD2
 keybusChanged	KEYWORD2
+accessCode	KEYWORD2
+accessCodeChanged	KEYWORD2
 accessCodePrompt	KEYWORD2
-writePartition	KEYWORD2
-timeAvailable	KEYWORD2
+timestampChanged	KEYWORD2
 ready	KEYWORD2
 readyChanged	KEYWORD2
+disabled	KEYWORD2
+disabledChanged	KEYWORD2
 exitDelay	KEYWORD2
 exitDelayChanged	KEYWORD2
 entryDelay	KEYWORD2
@@ -54,12 +63,16 @@ openZonesStatusChanged	KEYWORD2
 alarmZones	KEYWORD2
 alarmZonesChanged	KEYWORD2
 alarmZonesStatusChanged	KEYWORD2
+pgmOutputs	KEYWORD2
+pgmOutputsChanged	KEYWORD2
+pgmOutputsStatusChanged	KEYWORD2
 lights	KEYWORD2
 status	KEYWORD2
-bufferOverflow	KEYWORD2
+panelData	KEYWORD2
+panelVersion	KEYWORD2
 
-dscClockPin	LITERAL1
-dscReadPin	LITERAL1
-dscWritePin	LITERAL1
-dscZones	LITERAL1
-dscPartitions	LITERAL1
+printPanelBinary	KEYWORD2
+printPanelCommand	KEYWORD2
+printPanelMessage	KEYWORD2
+printModuleBinary	KEYWORD2
+printModuleMessage	KEYWORD2
