@@ -1,10 +1,14 @@
 /*
- *  SMS Notification 1.0 (esp32)
+ *  TinyGSM SMS Notification 1.0 (esp32)
  *
- *  Processes the security system status and demonstrates how to send an SMS when the status has changed.
+ *  Processes the security system status and demonstrates how to send an SMS text message when the status has
+ *  changed.  This example sends SMS text messages via a TinyGSM-compatible module which can be integrated
+ *  into a board (eg. TTGO T-Call) or connected separately (eg. SIM800 module).
  *
- *  SMS is sent using TinyGsm compatible module which can be integrated into a board (eg. TTGO T-Call) or
- *  connected separately (eg. SIM800 module)
+ *  Usage:
+ *    1. Install the TinyGSM library, available in the Arduino IDE Library Manager and the Platform.io Library
+ *       Registry: https://github.com/vshymanskyy/TinyGSM
+ *    2. Set the destination phone numbers in the sketch settings.
  *
  *  Release notes:
  *    1.0 - Initial release
@@ -22,18 +26,10 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
- *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
- *            Ground --- NPN emitter --/
- *
- *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
- *  be suitable, for example:
- *   -- 2N3904
- *   -- BC547, BC548, BC549
- *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
+ *
+ *  Thanks to jvitkauskas for contributing this example: https://github.com/jvitkauskas
  *
  *  This example code is in the public domain.
  */
@@ -87,15 +83,15 @@ void setup() {
   digitalWrite(MODEM_PWRKEY, HIGH);
 
   Serial1.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
-  
+
   while (!modem.isNetworkConnected()) {
     Serial.print(F("GSM..."));
     while (!modem.restart()) {
       Serial.print(".");
     }
     Serial.println();
-  
-    Serial.print(F("Waiting for network..."));  
+
+    Serial.print(F("Waiting for network..."));
     if (modem.waitForNetwork(600000L) && modem.isNetworkConnected()) {
       Serial.println(F("connected."));
     }
@@ -112,7 +108,7 @@ void setup() {
 
 void loop() {
   modem.maintain();
-  
+
   dsc.loop();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
@@ -205,7 +201,7 @@ void loop() {
 
 bool sendMessage(const char* messageContent) {
   bool result = true;
-  
+
   for (int i = 0; i < phone_number_count; i++) {
      result &= modem.sendSMS(sendToPhoneNumbers[i], messageContent);
   }
