@@ -401,8 +401,8 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "low battery     "; break;
       case 0xD4: root["lcd_upper"] = "*2: Sensors  ";
                  root["lcd_lower"] = "RF Delinquency  "; break;
-      case 0xE4: root["lcd_upper"] = "*8: 3 digit  ";
-                 root["lcd_lower"] = "section entry   "; break;
+      case 0xE4: root["lcd_upper"] = "*8: Installer";
+                 root["lcd_lower"] = "menu, 3 digits  "; break;
       case 0xE5: root["lcd_upper"] = "Keypad       ";
                  root["lcd_lower"] = "slot assignment "; break;
       case 0xE6: root["lcd_upper"] = "Input:       ";
@@ -439,8 +439,8 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "placement test  "; break;
       case 0xF6: root["lcd_upper"] = "Activate     ";
                  root["lcd_lower"] = "device for test "; break;
-      case 0xF7: root["lcd_upper"] = "*8: 2 digit  ";
-                 root["lcd_lower"] = "subsection entry"; break;
+      case 0xF7: root["lcd_upper"] = "*8: Installer";
+                 root["lcd_lower"] = "menu, 2 digits  "; break;
       case 0xF8: root["lcd_upper"] = "Keypad       ";
                  root["lcd_lower"] = "programming     "; break;
       case 0xFA: root["lcd_upper"] = "Input:       ";
@@ -870,7 +870,7 @@ void printPanelStatus1(byte panelByte) {
     case 0xD1: root["lcd_upper"] = "Exit fault";
                root["lcd_lower"] = "pre-alert"; break;
     case 0xD2: root["lcd_upper"] = "Armed:";
-               root["lcd_lower"] = "with entry delay"; break;
+               root["lcd_lower"] = "Entry delay"; break;
     case 0xD3: root["lcd_upper"] = "Downlook remote";
                root["lcd_lower"] = "trigger"; break;
     default: decoded = false;

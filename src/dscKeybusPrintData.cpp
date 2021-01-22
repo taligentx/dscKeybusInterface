@@ -243,7 +243,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x33: stream->print(F("Command output in progress")); break;
     case 0x3D: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x3E: stream->print(F("Partition disarmed")); break;
-    case 0x17: //keypad blanking with trouble flashing
+    case 0x17: // Keypad blanking with trouble light flashing
     case 0x40: stream->print(F("Keypad blanking")); break;
     case 0x8A: stream->print(F("Activate stay/away zones")); break;
     case 0x8B: stream->print(F("Quick exit")); break;
@@ -282,7 +282,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xD0: stream->print(F("*2: Keypads with low batteries")); break;
     case 0xD1: stream->print(F("*2: Keyfobs with low batteries")); break;
     case 0xD4: stream->print(F("*2: Zones with RF Delinquency")); break;
-    case 0xE4: stream->print(F("*8: 3 digit section entry")); decimalInput = false; break;
+    case 0xE4: stream->print(F("*8: Installer programming, 3 digits")); decimalInput = false; break;
     case 0xE5: stream->print(F("Keypad slot assignment")); break;
     case 0xE6: stream->print(F("Input: 2 digits")); break;
     case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
@@ -301,7 +301,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0xF4: stream->print(F("Function key 5")); break;
     case 0xF5: stream->print(F("Wireless module placement test")); break;
     case 0xF6: stream->print(F("Activate device for test")); break;
-    case 0xF7: stream->print(F("*8: 2 digit subsection entry")); decimalInput = false; break;
+    case 0xF7: stream->print(F("*8: Installer programming, 2 digits")); decimalInput = false; break;
     case 0xF8: stream->print(F("Keypad programming")); break;
     case 0xFA: stream->print(F("Input: 6 digits")); break;
     default:
@@ -540,7 +540,7 @@ void dscKeybusInterface::printPanelStatus1(byte panelByte) {
     // 0xB0 - 0xCF: Zones bypassed, zones 1-32
     case 0xD0: stream->print(F("Command output 4")); return;
     case 0xD1: stream->print(F("Exit fault pre-alert")); return;
-    case 0xD2: stream->print(F("Armed: with entry delay")); return;
+    case 0xD2: stream->print(F("Armed: Entry delay")); return;
     case 0xD3: stream->print(F("Downlook remote trigger")); return;
   }
 

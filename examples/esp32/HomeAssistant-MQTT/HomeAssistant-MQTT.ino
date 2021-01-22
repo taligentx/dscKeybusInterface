@@ -578,7 +578,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xD0: mqtt.publish(publishTopic, "*2: Keypads with low batteries", true); break;
     case 0xD1: mqtt.publish(publishTopic, "*2: Keyfobs with low batteries", true); break;
     case 0xD4: mqtt.publish(publishTopic, "*2: Sensors with RF delinquency", true); break;
-    case 0xE4: mqtt.publish(publishTopic, "*8: 3 digit section entry", true); break;
+    case 0xE4: mqtt.publish(publishTopic, "*8: Installer programming, 3 digits", true); break;
     case 0xE5: mqtt.publish(publishTopic, "Keypad slot assignment", true); break;
     case 0xE6: mqtt.publish(publishTopic, "Input: 2 digits", true); break;
     case 0xE7: mqtt.publish(publishTopic, "Input: 3 digits", true); break;
@@ -597,7 +597,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0xF4: mqtt.publish(publishTopic, "Function key 5", true); break;
     case 0xF5: mqtt.publish(publishTopic, "Wireless module placement test", true); break;
     case 0xF6: mqtt.publish(publishTopic, "Activate device for test"); break;
-    case 0xF7: mqtt.publish(publishTopic, "*8: 2 digit subsection entry", true); break;
+    case 0xF7: mqtt.publish(publishTopic, "*8: Installer programming, 2 digits", true); break;
     case 0xF8: mqtt.publish(publishTopic, "Keypad programming", true); break;
     case 0xFA: mqtt.publish(publishTopic, "Input: 6 digits"); break;
     default: return;
