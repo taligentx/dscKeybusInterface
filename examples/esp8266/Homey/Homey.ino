@@ -30,11 +30,14 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscPC16Pin  // Default: D7, GPIO 13
- *      DSC PGM ------ 33k ohm resistor ---|
- *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/

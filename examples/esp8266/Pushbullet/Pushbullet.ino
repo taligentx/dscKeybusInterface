@@ -33,9 +33,12 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscPC16Pin  // Default: D7, GPIO 13
- *      DSC PGM ------ 33k ohm resistor ---|
- *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
  *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface

@@ -61,7 +61,7 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad:
+ *      Virtual keypad:
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/

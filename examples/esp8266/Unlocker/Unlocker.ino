@@ -69,7 +69,7 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad:
+ *      Virtual keypad:
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/

@@ -70,11 +70,14 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscPC16Pin   // Default: 17
- *      DSC PGM ------ 33k ohm resistor ---|
- *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/

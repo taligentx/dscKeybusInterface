@@ -23,11 +23,14 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscPC16Pin (Arduino Uno: 2-12)
- *      DSC PGM ------ 15k ohm resistor ---|
- *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin (Arduino Uno: 2-12)
+ *                 +-- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/

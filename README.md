@@ -1,4 +1,5 @@
 # DSC Keybus Interface
+![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
 This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, and direct control as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
@@ -265,8 +266,10 @@ DSC Green ----+--- 15k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
 
 Classic series only, PGM configured for PC-16 output:
-                        Arduino        +--- dscPC16Pin (Arduino Uno: 4)
-DSC PGM ------+--- 15k ohm resistor ---|
+DSC PGM ------+--- 1k ohm resistor ---- DSC Aux(+)
+              |
+              |         Arduino        +--- dscPC16Pin (Arduino Uno: 4)
+              +--- 15k ohm resistor ---|
               |                        +--- 10k ohm resistor --- Ground
               |
               |     esp8266/esp32      +--- dscPC16Pin (esp8266: D7, GPIO 13 / esp32: 17)

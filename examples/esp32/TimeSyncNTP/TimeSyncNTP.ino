@@ -22,7 +22,7 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
