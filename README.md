@@ -1,4 +1,5 @@
 # DSC Keybus Interface
+![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
 This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) security systems for integration with home automation, notifications on alarm events, and direct control as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
