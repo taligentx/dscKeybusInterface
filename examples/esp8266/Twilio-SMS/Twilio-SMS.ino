@@ -18,23 +18,17 @@
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
- *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
- *            Ground --- NPN emitter --/
- *
- *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
- *  be suitable, for example:
- *   -- 2N3904
- *   -- BC547, BC548, BC549
+ *                                         +--- dscPC16Pin  // Default: D7, GPIO 13
+ *      DSC PGM ------ 33k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
  *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
@@ -43,6 +37,9 @@
  *
  *  This example code is in the public domain.
  */
+
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+//#define dscClassicSeries
 
 #include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
@@ -58,11 +55,16 @@ const char* To = "";		// i.e. 16041234567
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
+#endif
 WiFiClientSecure ipClient;
 bool wifiConnected = true;
 

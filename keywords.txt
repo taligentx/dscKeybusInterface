@@ -1,12 +1,15 @@
 dscKeybusInterface	KEYWORD1
+dscClassicInterface	KEYWORD1
 dsc	KEYWORD1
 
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1
 dscWritePin	LITERAL1
 dscRelayPin	LITERAL1
+dscPC16Pin	LITERAL1
 dscZones	LITERAL1
 dscPartitions	LITERAL1
+dscClassicSeries	LITERAL1
 
 hideKeypadDigits	KEYWORD2
 displayTrailingBits	KEYWORD2
@@ -69,6 +72,7 @@ pgmOutputsStatusChanged	KEYWORD2
 lights	KEYWORD2
 status	KEYWORD2
 panelData	KEYWORD2
+pc16Data	KEYWORD2
 panelVersion	KEYWORD2
 
 printPanelBinary	KEYWORD2

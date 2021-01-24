@@ -63,17 +63,21 @@
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
+ *                                         +--- dscPC16Pin  // Default: D7, GPIO 13
+ *      DSC PGM ------ 33k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -87,6 +91,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+//#define dscClassicSeries
+
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 #include <dscKeybusInterface.h>
@@ -96,18 +103,24 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
 const char* blynkServer = "";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
 bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 bool wifiConnected = true;
 bool partitionChanged, pausedZones, extendedBuffer;
 bool decimalOutput, inputDigits;
@@ -853,6 +866,7 @@ void setLights(byte partition, bool forceUpdate) {
 
 // Processes status data not natively handled within the library
 void processStatus() {
+  #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
     case 0x05:
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
@@ -890,6 +904,7 @@ void processStatus() {
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;
   }
+  #endif
 }
 
 
@@ -919,6 +934,7 @@ void processProgramZones(byte startByte, const char* ledColor) {
 
 
 void processLCDoutputData() {
+  #ifndef dscClassicSeries
   if (!showLCDoutput) return; // Do not display LCD output data if showLCDoutput is false
   char dataInfo[21] = "LCD Display: ";
   char dataBuffer[4];
@@ -937,10 +953,12 @@ void processLCDoutputData() {
     }
   }
   Blynk.virtualWrite(V20, dataInfo);
+  #endif
 }
 
 
 void processEventBufferAA() {
+  #ifndef dscClassicSeries
   if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
 
   char eventInfo[45] = "Event: ";
@@ -995,10 +1013,12 @@ void processEventBufferAA() {
     case 0x02: printPanelStatus2(6); break;
     case 0x03: printPanelStatus3(6); break;
   }
+  #endif
 }
 
 
 void processEventBufferEC() {
+  #ifndef dscClassicSeries
   if (!extendedBuffer) extendedBuffer = true;
 
   char eventInfo[45] = "Event: ";
@@ -1070,6 +1090,7 @@ void processEventBufferEC() {
     case 0x18: printPanelStatus18(8); break;
     case 0x1B: printPanelStatus1B(8); break;
   }
+  #endif
 }
 
 

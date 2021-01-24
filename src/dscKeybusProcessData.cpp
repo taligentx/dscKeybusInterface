@@ -27,7 +27,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dscKeybusInterface.h"
+#include "dscKeybus.h"
 
 
 // Resets the state of all status components as changed for sketches to get the current status

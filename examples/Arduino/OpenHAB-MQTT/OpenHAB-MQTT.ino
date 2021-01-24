@@ -98,6 +98,10 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
+ *                                         +--- dscPC16Pin (Arduino Uno: 2-12)
+ *      DSC PGM ------ 15k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
@@ -113,6 +117,9 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *
  *  This example code is in the public domain.
  */
+
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+//#define dscClassicSeries
 
 #include <SPI.h>
 #include <Ethernet.h>
@@ -142,11 +149,16 @@ const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to w
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 EthernetClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;

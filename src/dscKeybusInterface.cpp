@@ -17,51 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dscKeybusInterface.h"
+#include "dscKeybus.h"
 
-byte dscKeybusInterface::dscClockPin;
-byte dscKeybusInterface::dscReadPin;
-byte dscKeybusInterface::dscWritePin;
-char dscKeybusInterface::writeKey;
-byte dscKeybusInterface::writePartition;
-byte dscKeybusInterface::writeByte;
-byte dscKeybusInterface::writeBit;
-bool dscKeybusInterface::virtualKeypad;
-bool dscKeybusInterface::processModuleData;
-byte dscKeybusInterface::panelData[dscReadSize];
-byte dscKeybusInterface::panelByteCount;
-byte dscKeybusInterface::panelBitCount;
-volatile bool dscKeybusInterface::writeKeyPending;
-volatile byte dscKeybusInterface::moduleData[dscReadSize];
-volatile bool dscKeybusInterface::moduleDataCaptured;
-volatile byte dscKeybusInterface::moduleByteCount;
-volatile byte dscKeybusInterface::moduleBitCount;
-volatile bool dscKeybusInterface::writeAlarm;
-volatile bool dscKeybusInterface::starKeyCheck;
-volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
-volatile bool dscKeybusInterface::bufferOverflow;
-volatile byte dscKeybusInterface::panelBufferLength;
-volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
-volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
-volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
-volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
-volatile byte dscKeybusInterface::isrPanelByteCount;
-volatile byte dscKeybusInterface::isrPanelBitCount;
-volatile byte dscKeybusInterface::isrPanelBitTotal;
-volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
-volatile byte dscKeybusInterface::isrModuleByteCount;
-volatile byte dscKeybusInterface::isrModuleBitCount;
-volatile byte dscKeybusInterface::isrModuleBitTotal;
-volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::statusCmd;
-volatile byte dscKeybusInterface::moduleCmd;
-volatile byte dscKeybusInterface::moduleSubCmd;
-volatile unsigned long dscKeybusInterface::clockHighTime;
-volatile unsigned long dscKeybusInterface::keybusTime;
 
 #if defined(ESP32)
-hw_timer_t *timer0 = NULL;
-portMUX_TYPE timer0Mux = portMUX_INITIALIZER_UNLOCKED;
+hw_timer_t * dscKeybusInterface::timer0 = NULL;
+portMUX_TYPE dscKeybusInterface::timer0Mux = portMUX_INITIALIZER_UNLOCKED;
 #endif
 
 
@@ -759,16 +720,6 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
   portEXIT_CRITICAL(&timer0Mux);
   #endif
 }
-
-
-// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
-// dscDataInterrupt() to read the data line
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  TCCR1B = 0;  // Disables Timer1
-  dscKeybusInterface::dscDataInterrupt();
-}
-#endif
 
 
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer0 after 250us to read the data line

@@ -45,17 +45,21 @@
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
+ *                                         +--- dscPC16Pin  // Default: D7, GPIO 13
+ *      DSC PGM ------ 33k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *
  *  Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -71,6 +75,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+//#define dscClassicSeries
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <dscKeybusInterface.h>
@@ -83,16 +90,22 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* dnsHostname = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 const byte  dscPartition = 1;     // Set the partition for the keypad
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Chrono ws_ping_pong(Chrono::SECONDS);
@@ -470,6 +483,7 @@ void setLights(byte partition) {
 
 // Processes status data not natively handled within the library
 void processStatus() {
+  #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
     case 0x05:
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones) {
@@ -503,6 +517,7 @@ void processStatus() {
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;
   }
+  #endif
 }
 
 
@@ -535,6 +550,7 @@ void processProgramZones(byte startByte) {
 
 
 void processEventBufferAA() {
+  #ifndef dscClassicSeries
   if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
 
   char eventInfo[45] = "Event: ";
@@ -596,10 +612,12 @@ void processEventBufferAA() {
     case 0x02: printPanelStatus2(6); break;
     case 0x03: printPanelStatus3(6); break;
   }
+  #endif
 }
 
 
 void processEventBufferEC() {
+  #ifndef dscClassicSeries
   if (!extendedBuffer) extendedBuffer = true;
 
   char eventInfo[45] = "Event: ";
@@ -678,6 +696,7 @@ void processEventBufferEC() {
     case 0x18: printPanelStatus18(8); break;
     case 0x1B: printPanelStatus1B(8); break;
   }
+  #endif
 }
 
 

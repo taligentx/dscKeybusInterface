@@ -25,6 +25,10 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
+ *                                         +--- dscPC16Pin (Arduino Uno: 2-12)
+ *      DSC PGM ------ 15k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
+ *
  *  Virtual keypad:
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
@@ -60,12 +64,13 @@ byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address uniqu
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
-EthernetUDP ipClient;
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+EthernetUDP ipClient;
 byte ntpBuffer[48];
 unsigned int localPort = 8888;
 bool ntpSynced = true;

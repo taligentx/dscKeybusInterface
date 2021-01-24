@@ -16,29 +16,27 @@
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
- *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
- *            Ground --- NPN emitter --/
+ *                                         +--- dscPC16Pin   // Default: 17
+ *      DSC PGM ------ 33k ohm resistor ---|
+ *      (Classic series only)              +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
- *  be suitable, for example:
- *   -- 2N3904
- *   -- BC547, BC548, BC549
  *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
  *
  *  This example code is in the public domain.
  */
+
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+//#define dscClassicSeries
 
 #include <WiFiClientSecure.h>
 #include <dscKeybusInterface.h>
@@ -49,11 +47,16 @@ const char* wifiPassword = "";
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
+#endif
 WiFiClientSecure ipClient;
 bool wifiConnected = true;
 
