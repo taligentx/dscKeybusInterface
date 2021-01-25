@@ -37,6 +37,7 @@ const byte dscBufferSize = 50;
 #define DSC_EXIT_AWAY 2
 #define DSC_EXIT_NO_ENTRY_DELAY 3
 
+
 class dscClassicInterface {
 
   public:
@@ -158,7 +159,9 @@ class dscClassicInterface {
     static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
+    #if ESP_IDF_VERSION_MAJOR < 4
     static hw_timer_t * timer0;
+    #endif
     static portMUX_TYPE timer0Mux;
     #endif
 

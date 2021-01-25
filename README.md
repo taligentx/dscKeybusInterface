@@ -266,7 +266,7 @@ DSC Green ----+--- 15k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
 
 Classic series only, PGM configured for PC-16 output:
-DSC PGM ------+--- 1k ohm resistor ---- DSC Aux(+)
+DSC PGM ------+--- 1k ohm resistor --- DSC Aux(+)
               |
               |         Arduino        +--- dscPC16Pin (Arduino Uno: 4)
               +--- 15k ohm resistor ---|

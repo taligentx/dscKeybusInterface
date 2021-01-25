@@ -21,9 +21,17 @@
 
 
 #if defined(ESP32)
-hw_timer_t * dscKeybusInterface::timer0 = NULL;
 portMUX_TYPE dscKeybusInterface::timer0Mux = portMUX_INITIALIZER_UNLOCKED;
-#endif
+
+#if ESP_IDF_VERSION_MAJOR < 4
+hw_timer_t * dscKeybusInterface::timer0 = NULL;
+
+#else  // ESP-IDF 4+
+esp_timer_handle_t timer0;
+const esp_timer_create_args_t timer0Parameters = { .callback = reinterpret_cast<esp_timer_cb_t>(&dscKeybusInterface::dscDataInterrupt) };
+
+#endif  // ESP_IDF_VERSION_MAJOR
+#endif  // ESP32
 
 
 dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin) {
@@ -62,12 +70,16 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
+  #if ESP_IDF_VERSION_MAJOR < 4
   timer0 = timerBegin(0, 80, true);
   timerStop(timer0);
   timerAttachInterrupt(timer0, &dscDataInterrupt, true);
   timerAlarmWrite(timer0, 250, true);
   timerAlarmEnable(timer0);
-  #endif
+  #else  // IDF4+
+  esp_timer_create(&timer0Parameters, &timer0);
+  #endif  // ESP_IDF_VERSION_MAJOR
+  #endif  // ESP32
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
@@ -87,9 +99,13 @@ void dscKeybusInterface::stop() {
 
   // Disables esp32 timer0
   #elif defined(ESP32)
+  #if ESP_IDF_VERSION_MAJOR < 4
   timerAlarmDisable(timer0);
   timerEnd(timer0);
-  #endif
+  #else  // ESP-IDF 4+
+  esp_timer_stop(timer0);
+  #endif  // ESP_IDF_VERSION_MAJOR
+  #endif  // ESP32
 
   // Disables the Keybus clock pin interrupt
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
@@ -642,7 +658,11 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   // esp32 timer0 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
+  #if ESP_IDF_VERSION_MAJOR < 4
   timerStart(timer0);
+  #else  // IDF4+
+  esp_timer_start_periodic(timer0, 250);
+  #endif
   portENTER_CRITICAL(&timer0Mux);
   #endif
 
@@ -729,7 +749,11 @@ void dscKeybusInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+  #if ESP_IDF_VERSION_MAJOR < 4
   timerStop(timer0);
+  #else // IDF 4+
+  esp_timer_stop(timer0);
+  #endif
   portENTER_CRITICAL(&timer0Mux);
 #endif
 

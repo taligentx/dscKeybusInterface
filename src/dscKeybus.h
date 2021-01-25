@@ -294,7 +294,9 @@ class dscKeybusInterface {
     static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
+    #if ESP_IDF_VERSION_MAJOR < 4
     static hw_timer_t * timer0;
+    #endif
     static portMUX_TYPE timer0Mux;
     #endif
 
