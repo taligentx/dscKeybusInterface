@@ -91,6 +91,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
     - esp32:
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
       * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v1.0.5-rc6 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
+    - esp32-s2:
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (idf-release/v4.2 branch required), WiFi, and Bluetooth.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -98,6 +100,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
+  - New: esp32-s2 microcontroller support
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
