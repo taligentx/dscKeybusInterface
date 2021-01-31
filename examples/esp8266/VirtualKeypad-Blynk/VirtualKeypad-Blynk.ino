@@ -108,7 +108,7 @@ const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
-const char* blynkServer = "192.168.0.30";     // Blynk local server address
+const char* blynkServer = "";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
 bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
