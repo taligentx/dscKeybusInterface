@@ -108,7 +108,7 @@ const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
-const char* blynkServer = "";     // Blynk local server address
+const char* blynkServer = "192.168.0.30";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
 bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
@@ -876,21 +876,25 @@ void setLights(byte partition, bool forceUpdate) {
 void processStatus() {
   #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
-    case 0x05:
-    case 0x1B:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) pauseZones();
-      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones) pauseZones();
-      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones) pauseZones();
-      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones) pauseZones();
+    case 0x05:  //Enter (*) function key, enter (*) function key while armed, enter installer code, enter master code status messages for partitions 1-4 calls pauseZones
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 1) pauseZones();
+      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones && dsc.writePartition == 2) pauseZones();
+      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones && dsc.writePartition == 3) pauseZones();
+      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones && dsc.writePartition == 4) pauseZones();
       break;
-    case 0x0A:
-    case 0x0F:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
-        pauseZones();
-      }
-      if (pausedZones) {
-        processProgramZones(4, ledProgramZonesColor);
-      }
+    case 0x0A:  //Call processProgramZones on partition 1
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 1) pauseZones();
+      if (pausedZones) processProgramZones(4, ledProgramZonesColor);
+      break;
+    case 0x0F:  //Call processProgramZones on partition 2
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 2) pauseZones();
+      if (pausedZones) processProgramZones(4, ledProgramZonesColor);
+      break;
+    case 0x1B:  //Enter (*) function key, enter (*) function key while armed, enter installer code, enter master code status messages for partitions 4-8 calls pauseZones
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 5) pauseZones();
+      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones && dsc.writePartition == 6) pauseZones();
+      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones && dsc.writePartition == 7) pauseZones();
+      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones && dsc.writePartition == 8) pauseZones();
       break;
     case 0x5D:
       if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
