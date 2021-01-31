@@ -93,7 +93,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 13, option 4 on).
 //#define dscClassicSeries
 
 #include <WiFi.h>
@@ -415,10 +415,12 @@ void loop() {
       if (dsc.powerTrouble) {
         lcd.print(0, 0, "Power        ");
         lcd.print(0, 1, "trouble         ");
+        Blynk.notify("Power trouble");
       }
       else {
         lcd.print(0, 0, "Power        ");
         lcd.print(0, 1, "restored        ");
+        Blynk.notify("Power restored");
       }
     }
 
@@ -427,10 +429,12 @@ void loop() {
       if (dsc.batteryTrouble) {
         lcd.print(0, 0, "Battery     ");
         lcd.print(0, 1, "trouble         ");
+        Blynk.notify("Battery trouble");
       }
       else {
         lcd.print(0, 0, "Battery     ");
         lcd.print(0, 1, "restored        ");
+        Blynk.notify("Battery restored");
       }
     }
   }
@@ -479,7 +483,8 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x10: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "lockout         "); break;
     case 0x11: lcd.print(0, 0, "Partition    ");
-               lcd.print(0, 1, "in alarm        "); break;
+               lcd.print(0, 1, "in alarm        ");
+               Blynk.notify("Partition in alarm"); break;
     case 0x12: lcd.print(0, 0, "Battery check");
                lcd.print(0, 1, "in progress     "); break;
     case 0x14: lcd.print(0, 0, "Auto-arm     ");
@@ -870,11 +875,14 @@ void processStatus() {
   #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
     case 0x05:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
-        pauseZones();
-      }
+    case 0x1B:
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) pauseZones();
+      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones) pauseZones();
+      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones) pauseZones();
+      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones) pauseZones();
       break;
     case 0x0A:
+    case 0x0F:
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
         pauseZones();
       }
