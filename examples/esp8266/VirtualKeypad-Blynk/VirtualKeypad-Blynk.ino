@@ -439,6 +439,26 @@ void loop() {
         Blynk.notify("Battery restored");
       }
     }
+
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;
+      if (dsc.trouble) Blynk.notify("Trouble status on");
+      else Blynk.notify("Trouble status restored");
+    }
+
+    for (byte partition = 0; partition < dscPartitions; partition++) {
+      if (dsc.disabled[partition]) continue;
+      if (dsc.alarmChanged[partition]) {
+        dsc.alarmChanged[partition] = false;
+        if (dsc.alarm[partition]) {
+          char alarmPartition[19] = "Alarm: Partition ";
+          char partitionNumber[2];
+          itoa(partition + 1, partitionNumber, 10);
+          strcat(alarmPartition, partitionNumber);
+          Blynk.notify(alarmPartition);
+        }
+      }
+    }
   }
 }
 
@@ -485,8 +505,7 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x10: lcd.print(0, 0, "Keypad       ");
                lcd.print(0, 1, "lockout         "); break;
     case 0x11: lcd.print(0, 0, "Partition    ");
-               lcd.print(0, 1, "in alarm        ");
-               Blynk.notify("Partition in alarm"); break;
+               lcd.print(0, 1, "in alarm        "); break;
     case 0x12: lcd.print(0, 0, "Battery check");
                lcd.print(0, 1, "in progress     "); break;
     case 0x14: lcd.print(0, 0, "Auto-arm     ");
