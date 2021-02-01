@@ -126,9 +126,9 @@ void dscKeybusInterface::printPanelMessage() {
 // Processes keypad and module notifications and responses to panel queries
 void dscKeybusInterface::printModuleMessage() {
   switch (moduleData[0]) {
-    case 0x77: printModule_0x77(); return;  // Keypad fire alarm | Structure: complete | Content: complete
-    case 0xBB: printModule_0xBB(); return;  // Keypad auxiliary alarm | Structure: complete | Content: complete
-    case 0xDD: printModule_0xDD(); return;  // Keypad panic alarm | Structure: complete | Content: complete
+    case 0xBB: printModule_0xBB(); return;  // Keypad fire alarm | Structure: complete | Content: complete
+    case 0xDD: printModule_0xDD(); return;  // Keypad auxiliary alarm | Structure: complete | Content: complete
+    case 0xEE: printModule_0xEE(); return;  // Keypad panic alarm | Structure: complete | Content: complete
   }
 
   stream->print(F("[Module/0x"));
@@ -2832,11 +2832,11 @@ void dscKeybusInterface::printPanel_0xEC() {
  *  Structure decoding: complete
  *  Content decoding: complete
  *
- *  Byte 0: 01110111
+ *  Byte 0: 10111011
  *
- *  01110111 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
+ *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Fire alarm
  */
-void dscKeybusInterface::printModule_0x77() {
+void dscKeybusInterface::printModule_0xBB() {
   stream->print(F("[Keypad] Fire alarm"));
 }
 
@@ -2846,11 +2846,11 @@ void dscKeybusInterface::printModule_0x77() {
  *  Structure decoding: complete
  *  Content decoding: complete
  *
- *  Byte 0: 10111011
+ *  Byte 0: 11011101
  *
- *  10111011 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
+ *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Aux alarm
  */
-void dscKeybusInterface::printModule_0xBB() {
+void dscKeybusInterface::printModule_0xDD() {
   stream->print(F("[Keypad] Auxiliary alarm"));
 }
 
@@ -2860,11 +2860,11 @@ void dscKeybusInterface::printModule_0xBB() {
  *  Structure decoding: complete
  *  Content decoding: complete
  *
- *  Byte 0: 11011101
+ *  Byte 0: 11101110
  *
- *  11011101 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
+ *  11101110 1 11111111 11111111 11111111 11111111 11111111 11111111 [Keypad] Panic alarm
  */
-void dscKeybusInterface::printModule_0xDD() {
+void dscKeybusInterface::printModule_0xEE() {
   stream->print(F("[Keypad] Panic alarm"));
 }
 

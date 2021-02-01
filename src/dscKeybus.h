@@ -270,9 +270,9 @@ class dscKeybusInterface {
     void printPanel_0xEB();
     void printPanel_0xEC();
 
-    void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
+    void printModule_0xEE();
     void printModule_Status();
     void printModule_0x11();
     void printModule_0x41();
@@ -330,7 +330,7 @@ class dscKeybusInterface {
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, starKeyCheck, starKeyWait[dscPartitions];
-    static volatile bool moduleDataCaptured;
+    static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
@@ -338,7 +338,7 @@ class dscKeybusInterface {
     static volatile byte moduleBitCount, moduleByteCount;
     static volatile byte currentCmd, statusCmd, moduleCmd, moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
+    static volatile byte isrModuleData[dscReadSize];
 };
 
 #endif // dscKeybus_h

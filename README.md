@@ -92,7 +92,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
       * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v1.0.5-rc6 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
     - esp32-s2:
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (idf-release/v4.2 branch required), WiFi, and Bluetooth.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (idf-release/v4.2 branch required) and WiFi.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -107,7 +107,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - New: `Unlocker` example sketch - determines the panel installer code
   - New: `TimeSyncNTP` example sketch - uses NTP to automatically set the panel time
   - New: [ESPHome](https://esphome.io) integration example (located in the `extras` directory) - thanks to [Dilbert66](https://github.com/Dilbert66) for this contribution!
-  - New: `TinyGMS-SMS` example sketch - sends status via SMS with a GSM modem - thanks to [jvitkauskas](https://github.com/jvitkauskas) for this contribution!
+  - New: `TinyGSM-SMS` example sketch - sends status via SMS with a GSM modem - thanks to [jvitkauskas](https://github.com/jvitkauskas) for this contribution!
   - New: `KeybusReaderIP` example sketch enables Keybus data access over IP, thanks to [aboulfad](https://github.com/aboulfad) for this contribution!
   - New: esp32 microcontroller support - requires [Arduino-esp32](https://github.com/espressif/arduino-esp32) v1.0.5-rc6 or newer
   - New: Features for sketches:
