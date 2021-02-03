@@ -1,12 +1,13 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, and direct control as a virtual keypad.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
+This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.  This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
 * Notifications: [Telegram](https://www.telegram.org) bot, [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
-* Installer code unlocking: automatic code search to unlock panels with unknown installer codes
+* Keypad interface: Use keypads as physical input devices for any general purpose without needing a DSC panel.
+* Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
 
 See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
@@ -60,6 +61,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * Monitor PGM outputs 1-14 status
 * Virtual keypad:
   - Write keys to the panel for all partitions
+* Keypad interface
+  - Use DSC keypads as physical input devices for any general purpose without needing a DSC panel.
 * Panel time - retrieve current panel date/time and set a new date/time (including an example with NTP sync)
 * Panel installer code unlocking - determine the 4-digit panel installer code
 * Direct Keybus interface:
@@ -100,6 +103,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
+  - New: `KeypadInterface` example sketch - interfaces with DSC keypads as physical input devices for any general purpose without needing a DSC panel.
   - New: esp32-s2 microcontroller support
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
@@ -232,6 +236,8 @@ The included examples demonstrate how to use the library and can be used as-is o
 * **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
 
 * **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
+
+* **KeypadInterface**:  Interfaces directly to a DSC PowerSeries keypad (without a DSC panel) to enable use of DSC keypads as physical inputs for any general purpose.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the sketch.
 
 * **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.  For esp8266/esp32, `KeybusReaderIP` enables connectivity over WiFi.
 

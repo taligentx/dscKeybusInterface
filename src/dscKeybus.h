@@ -81,7 +81,6 @@ class dscKeybusInterface {
     void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printModuleMessage();                        // Prints the decoded keypad or module message
 
-
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
     static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)

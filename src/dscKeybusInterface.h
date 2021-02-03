@@ -24,59 +24,8 @@
 #include "esp_timer.h"
 #endif
 
-// DSC PowerSeries
-#ifndef dscClassicSeries
-#include "dscKeybus.h"
-
-byte dscKeybusInterface::dscClockPin;
-byte dscKeybusInterface::dscReadPin;
-byte dscKeybusInterface::dscWritePin;
-char dscKeybusInterface::writeKey;
-byte dscKeybusInterface::writePartition;
-byte dscKeybusInterface::writeByte;
-byte dscKeybusInterface::writeBit;
-bool dscKeybusInterface::virtualKeypad;
-bool dscKeybusInterface::processModuleData;
-byte dscKeybusInterface::panelData[dscReadSize];
-byte dscKeybusInterface::panelByteCount;
-byte dscKeybusInterface::panelBitCount;
-volatile bool dscKeybusInterface::writeKeyPending;
-volatile byte dscKeybusInterface::moduleData[dscReadSize];
-volatile bool dscKeybusInterface::moduleDataCaptured;
-volatile bool dscKeybusInterface::moduleDataDetected;
-volatile byte dscKeybusInterface::moduleByteCount;
-volatile byte dscKeybusInterface::moduleBitCount;
-volatile bool dscKeybusInterface::writeAlarm;
-volatile bool dscKeybusInterface::starKeyCheck;
-volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
-volatile bool dscKeybusInterface::bufferOverflow;
-volatile byte dscKeybusInterface::panelBufferLength;
-volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
-volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
-volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
-volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
-volatile byte dscKeybusInterface::isrPanelByteCount;
-volatile byte dscKeybusInterface::isrPanelBitCount;
-volatile byte dscKeybusInterface::isrPanelBitTotal;
-volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
-volatile byte dscKeybusInterface::currentCmd;
-volatile byte dscKeybusInterface::statusCmd;
-volatile byte dscKeybusInterface::moduleCmd;
-volatile byte dscKeybusInterface::moduleSubCmd;
-volatile unsigned long dscKeybusInterface::clockHighTime;
-volatile unsigned long dscKeybusInterface::keybusTime;
-
-// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
-// dscDataInterrupt() to read the data line
-#if defined(__AVR__)
-ISR(TIMER1_OVF_vect) {
-  TCCR1B = 0;  // Disables Timer1
-  dscKeybusInterface::dscDataInterrupt();
-}
-#endif // __AVR__
-
 // DSC Classic Series
-#elif defined dscClassicSeries
+#if defined dscClassicSeries
 #include "dscClassic.h"
 
 byte dscClassicInterface::dscClockPin;
@@ -134,5 +83,92 @@ ISR(TIMER1_OVF_vect) {
 }
 #endif  // __AVR__
 
-#endif  // dscClassicSeries
+
+// DSC Keypad Interface
+#elif defined dscKeypad
+#include "dscKeypad.h"
+
+byte dscKeypadInterface::dscClockPin;
+byte dscKeypadInterface::dscReadPin;
+byte dscKeypadInterface::dscWritePin;
+int  dscKeypadInterface::clockInterval;
+volatile byte dscKeypadInterface::keyData;
+volatile byte dscKeypadInterface::alarmKeyData;
+volatile bool dscKeypadInterface::commandReady;
+volatile bool dscKeypadInterface::moduleDataDetected;
+volatile bool dscKeypadInterface::moduleDataCaptured;
+volatile bool dscKeypadInterface::alarmKeyDetected;
+volatile bool dscKeypadInterface::alarmKeyCaptured;
+volatile bool dscKeypadInterface::alarmKeyResponsePending;
+volatile byte dscKeypadInterface::clockCycleCount;
+volatile byte dscKeypadInterface::clockCycleTotal;
+volatile byte dscKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscKeypadInterface::isrPanelBitTotal;
+volatile byte dscKeypadInterface::isrPanelBitCount;
+volatile byte dscKeypadInterface::panelCommandByteCount;
+volatile byte dscKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscKeypadInterface::isrModuleBitTotal;
+volatile byte dscKeypadInterface::isrModuleBitCount;
+volatile byte dscKeypadInterface::isrModuleByteCount;
+volatile byte dscKeypadInterface::panelCommandByteTotal;
+volatile byte dscKeypadInterface::moduleData[dscReadSize];
+
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  dscKeypadInterface::dscClockInterrupt();
+}
+#endif  // __AVR__
+
+
+// DSC PowerSeries
+#else
+#include "dscKeybus.h"
+
+byte dscKeybusInterface::dscClockPin;
+byte dscKeybusInterface::dscReadPin;
+byte dscKeybusInterface::dscWritePin;
+char dscKeybusInterface::writeKey;
+byte dscKeybusInterface::writePartition;
+byte dscKeybusInterface::writeByte;
+byte dscKeybusInterface::writeBit;
+bool dscKeybusInterface::virtualKeypad;
+bool dscKeybusInterface::processModuleData;
+byte dscKeybusInterface::panelData[dscReadSize];
+byte dscKeybusInterface::panelByteCount;
+byte dscKeybusInterface::panelBitCount;
+volatile bool dscKeybusInterface::writeKeyPending;
+volatile byte dscKeybusInterface::moduleData[dscReadSize];
+volatile bool dscKeybusInterface::moduleDataCaptured;
+volatile bool dscKeybusInterface::moduleDataDetected;
+volatile byte dscKeybusInterface::moduleByteCount;
+volatile byte dscKeybusInterface::moduleBitCount;
+volatile bool dscKeybusInterface::writeAlarm;
+volatile bool dscKeybusInterface::starKeyCheck;
+volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
+volatile bool dscKeybusInterface::bufferOverflow;
+volatile byte dscKeybusInterface::panelBufferLength;
+volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
+volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
+volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
+volatile byte dscKeybusInterface::isrPanelByteCount;
+volatile byte dscKeybusInterface::isrPanelBitCount;
+volatile byte dscKeybusInterface::isrPanelBitTotal;
+volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
+volatile byte dscKeybusInterface::currentCmd;
+volatile byte dscKeybusInterface::statusCmd;
+volatile byte dscKeybusInterface::moduleCmd;
+volatile byte dscKeybusInterface::moduleSubCmd;
+volatile unsigned long dscKeybusInterface::clockHighTime;
+volatile unsigned long dscKeybusInterface::keybusTime;
+
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
+// dscDataInterrupt() to read the data line
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  TCCR1B = 0;  // Disables Timer1
+  dscKeybusInterface::dscDataInterrupt();
+}
+#endif  // __AVR__
+#endif  // dscClassicSeries, dscKeypadInterface
 #endif  // dscKeybusInterface_h

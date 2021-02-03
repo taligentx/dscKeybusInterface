@@ -1,5 +1,6 @@
 dscKeybusInterface	KEYWORD1
 dscClassicInterface	KEYWORD1
+dscKeypadInterface	KEYWORD1
 dsc	KEYWORD1
 
 dscClockPin	LITERAL1
@@ -10,6 +11,7 @@ dscPC16Pin	LITERAL1
 dscZones	LITERAL1
 dscPartitions	LITERAL1
 dscClassicSeries	LITERAL1
+dscKeypad	LITERAL1
 
 hideKeypadDigits	KEYWORD2
 displayTrailingBits	KEYWORD2
@@ -74,6 +76,24 @@ status	KEYWORD2
 panelData	KEYWORD2
 pc16Data	KEYWORD2
 panelVersion	KEYWORD2
+Zone1	KEYWORD2
+Zone2	KEYWORD2
+Zone3	KEYWORD2
+Zone4	KEYWORD2
+Zone5	KEYWORD2
+Zone6	KEYWORD2
+Zone7	KEYWORD2
+Zone8	KEYWORD2
+Ready	KEYWORD2
+Armed	KEYWORD2
+Memory	KEYWORD2
+Bypass	KEYWORD2
+Trouble	KEYWORD2
+Program	KEYWORD2
+Fire	KEYWORD2
+Backlight	KEYWORD2
+KeyAvailable	KEYWORD2
+Key	KEYWORD2
 
 printPanelBinary	KEYWORD2
 printPanelCommand	KEYWORD2
