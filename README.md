@@ -343,8 +343,10 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 
   - AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.
 
-* PC1550 Classic series section `19`:
-  - PC16-OUT: Enable option 4 to set the PGM output to PC16 mode to send required panel status data on the Keybus.
+* PC1500/PC1550 Classic series - the following configuration is required to get the security system status:
+  - Communicator: Enable in section `12`, option `1` to support PC16-OUT mode
+  - PC16-OUT: Enable section `13`, option `4` to set the PGM output to PC16-OUT mode to send required panel status data on the Keybus.
+  - PGM output: Enable section `24`, option `08` to set the PGM output to trigger while the system alarm is tripped (works together with PC16-OUT mode).
 
 ## Notes
 * For OTA updates on esp8266 and esp32, you may need to stop the interface using `dsc.stop();`:

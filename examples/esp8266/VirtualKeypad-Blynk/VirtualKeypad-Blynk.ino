@@ -94,7 +94,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
 #include <ESP8266WiFi.h>
