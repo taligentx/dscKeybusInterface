@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.0 (esp32)
+ *  VirtualKeypad-Web 1.4 (esp32)
  *
  *  Provides a virtual keypad web interface using the esp32 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
@@ -29,6 +29,7 @@
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.4 - Fix crash when pressing keys while Keybus is disconnected
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -69,7 +70,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration: *8 section 19, option 4 on).
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
 #include <WiFi.h>
@@ -174,6 +175,36 @@ void loop() {
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
+    }
+
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;                 // Resets the Keybus data status flag
+      if (dsc.keybusConnected) {
+        Serial.println(F("Keybus connected"));
+        forceUpdate = true;
+        if (ws.count()) {
+          char outas[128];
+          StaticJsonDocument<200> doc;
+          JsonObject root = doc.to<JsonObject>();
+          root["lcd_upper"] = "Keybus";
+          root["lcd_lower"] = "connected";
+          serializeJson(root, outas);
+          ws.textAll(outas);
+        }
+      }
+      else {
+        Serial.println(F("Keybus disconnected"));
+        if (ws.count()) {
+          char outas[128];
+          StaticJsonDocument<200> doc;
+          JsonObject root = doc.to<JsonObject>();
+          root["lcd_upper"] = "Keybus";
+          root["lcd_lower"] = "disconnected";
+          serializeJson(root, outas);
+          ws.textAll(outas);
+        }
+      }
     }
 
     setLights(partition);
@@ -1538,9 +1569,30 @@ void resetZones() {
 
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
+
   if (type == WS_EVT_CONNECT) {
     client->printf("{\"connected_id\": %u}", client->id());
-    forceUpdate = true;
+    if (dsc.keybusConnected && ws.count()) {
+      if (ws.count()) {
+        char outas[128];
+        StaticJsonDocument<200> doc;
+        JsonObject root = doc.to<JsonObject>();
+        root["lcd_upper"] = "Keybus";
+        root["lcd_lower"] = "connected";
+        serializeJson(root, outas);
+        ws.textAll(outas);
+      }
+      forceUpdate = true;
+    }
+    else if (!dsc.keybusConnected && ws.count()) {
+      char outas[128];
+      StaticJsonDocument<200> doc;
+      JsonObject root = doc.to<JsonObject>();
+      root["lcd_upper"] = "Keybus";
+      root["lcd_lower"] = "disconnected";
+      serializeJson(root, outas);
+      ws.textAll(outas);
+    }
     client->ping();
     ws_ping_pong.restart();
   }
@@ -1583,7 +1635,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
             char * const sep_at = strchr(tmp, '_');
             if (sep_at != NULL)            {
               *sep_at = '\0';
-              dsc.write(sep_at + 1);
+              if (dsc.keybusConnected) dsc.write(sep_at + 1);
             }
           }
         }

@@ -81,7 +81,6 @@ class dscKeybusInterface {
     void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
     void printModuleMessage();                        // Prints the decoded keypad or module message
 
-
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
     static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)
@@ -270,9 +269,9 @@ class dscKeybusInterface {
     void printPanel_0xEB();
     void printPanel_0xEC();
 
-    void printModule_0x77();
     void printModule_0xBB();
     void printModule_0xDD();
+    void printModule_0xEE();
     void printModule_Status();
     void printModule_0x11();
     void printModule_0x41();
@@ -330,7 +329,7 @@ class dscKeybusInterface {
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, starKeyCheck, starKeyWait[dscPartitions];
-    static volatile bool moduleDataCaptured;
+    static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
     static volatile byte panelBuffer[dscBufferSize][dscReadSize];
@@ -338,7 +337,7 @@ class dscKeybusInterface {
     static volatile byte moduleBitCount, moduleByteCount;
     static volatile byte currentCmd, statusCmd, moduleCmd, moduleSubCmd;
     static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
+    static volatile byte isrModuleData[dscReadSize];
 };
 
 #endif // dscKeybus_h
