@@ -38,7 +38,6 @@ dscKeypadInterface::dscKeypadInterface(byte setClockPin, byte setReadPin, byte s
   dscClockPin = setClockPin;
   dscReadPin = setReadPin;
   dscWritePin = setWritePin;
-  alarmKeyData = 0xFF;
   commandReady = true;
   keyData = 0xFF;
   clockInterval = 57800;  // Sets AVR timer 1 to trigger an overflow interrupt every ~500us to generate a 1kHz clock signal
@@ -82,6 +81,14 @@ void dscKeypadInterface::begin(Stream &_stream) {
   #endif  // ESP32
 
   intervalStart = millis();
+
+  unsigned long keybusTime = millis();
+  while (millis() - keybusTime < 4000) {  // Waits for the keypad to be powered on
+    if (!digitalRead(dscReadPin)) keybusTime = millis();
+    #if defined(ESP8266) || defined(ESP32)
+    yield();
+    #endif
+  }
 }
 
 
@@ -184,6 +191,39 @@ bool dscKeypadInterface::loop() {
         panelCommandByteTotal = 7;
       }
 
+      else if (panelBlink != previousBlink || panelZonesBlink != previousZonesBlink) {
+        previousBlink = panelBlink;
+        previousZonesBlink = panelZonesBlink;
+        panelCommand5D[1] = panelBlink;
+        panelCommand5D[2] = panelZonesBlink;
+
+        int dataSum = 0;
+        for (byte panelByte = 0; panelByte < 6; panelByte++) dataSum += panelCommand5D[panelByte];
+        panelCommand5D[6] = dataSum % 256;
+
+        for (byte i = 0; i < 7; i++) panelCommand[i] = panelCommand5D[i];
+        panelCommandByteTotal = 7;
+      }
+
+      // Sets next panel command to 0x64 beep if beep() is called
+      else if (setBeep) {
+        setBeep = false;
+        for (byte i = 0; i < 3; i++) panelCommand[i] = panelCommand64[i];
+        panelCommandByteTotal = 3;
+      }
+
+      else if (setTone) {
+        setTone = false;
+        for (byte i = 0; i < 3; i++) panelCommand[i] = panelCommand75[i];
+        panelCommandByteTotal = 3;
+      }
+
+      else if (setBuzzer) {
+        setBuzzer = false;
+        for (byte i = 0; i < 3; i++) panelCommand[i] = panelCommand7F[i];
+        panelCommandByteTotal = 3;
+      }
+
       // Sets next panel command to 0x05 status command
       else {
         for (byte i = 0; i < 5; i++) panelCommand[i] = panelCommand05[i];
@@ -208,84 +248,167 @@ bool dscKeypadInterface::loop() {
   else if (!commandReady) intervalStart = millis();
 
   // Sets panel lights
-  if (Ready) bitWrite(panelLights, 0, 1);
-  else bitWrite(panelLights, 0, 0);
-  if (Armed) bitWrite(panelLights, 1, 1);
-  else bitWrite(panelLights, 1, 0);
-  if (Memory) bitWrite(panelLights, 2, 1);
-  else bitWrite(panelLights, 2, 0);
-  if (Bypass) bitWrite(panelLights, 3, 1);
-  else bitWrite(panelLights, 3, 0);
-  if (Trouble) bitWrite(panelLights, 4, 1);
-  else bitWrite(panelLights, 4, 0);
-  if (Program) bitWrite(panelLights, 5, 1);
-  else bitWrite(panelLights, 5, 0);
-  if (Fire) bitWrite(panelLights, 6, 1);
-  else bitWrite(panelLights, 6, 0);
-  if (Backlight) bitWrite(panelLights, 7, 1);
-  else bitWrite(panelLights, 7, 0);
+  panelLight(lightReady, 0);
+  panelLight(lightArmed, 1);
+  panelLight(lightMemory, 2);
+  panelLight(lightBypass, 3);
+  panelLight(lightTrouble, 4);
+  panelLight(lightProgram, 5);
+  panelLight(lightFire, 6);
+  panelLight(lightBacklight, 7);
 
   // Sets zone lights
-  if (Zone1) bitWrite(panelZones, 0, 1);
-  else bitWrite(panelZones, 0, 0);
-  if (Zone2) bitWrite(panelZones, 1, 1);
-  else bitWrite(panelZones, 1, 0);
-  if (Zone3) bitWrite(panelZones, 2, 1);
-  else bitWrite(panelZones, 2, 0);
-  if (Zone4) bitWrite(panelZones, 3, 1);
-  else bitWrite(panelZones, 3, 0);
-  if (Zone5) bitWrite(panelZones, 4, 1);
-  else bitWrite(panelZones, 4, 0);
-  if (Zone6) bitWrite(panelZones, 5, 1);
-  else bitWrite(panelZones, 5, 0);
-  if (Zone7) bitWrite(panelZones, 6, 1);
-  else bitWrite(panelZones, 6, 0);
-  if (Zone8) bitWrite(panelZones, 7, 1);
-  else bitWrite(panelZones, 7, 0);
+  zoneLight(lightZone1, 0);
+  zoneLight(lightZone2, 1);
+  zoneLight(lightZone3, 2);
+  zoneLight(lightZone4, 3);
+  zoneLight(lightZone5, 4);
+  zoneLight(lightZone6, 5);
+  zoneLight(lightZone7, 6);
+  zoneLight(lightZone8, 7);
 
-  if (moduleDataCaptured) {
-    moduleDataCaptured = false;
-    if (alarmKeyData != 0xFF) {
-      KeyAvailable = true;
-      switch (alarmKeyData) {
-        case 0xBB: Key = 0x0B; break;  // Fire alarm
-        case 0xDD: Key = 0x0D; break;  // Aux alarm
-        case 0xEE: Key = 0x0E; break;  // Panic alarm
-        default: KeyAvailable = false; break;
-      }
-      alarmKeyData = 0xFF;
+  // Skips key processing if the key buffer is empty
+  if (keyBufferLength == 0) return false;
+
+  // Copies data from the buffer to keyData
+  static byte keyBufferIndex = 1;
+  byte dataIndex = keyBufferIndex - 1;
+  keyData = keyBuffer[dataIndex];
+  keyBufferIndex++;
+
+  // Resets counters when the buffer is cleared
+  #if defined(ESP32)
+  portENTER_CRITICAL(&timer0Mux);
+  #else
+  noInterrupts();
+  #endif
+
+  if (keyBufferIndex > keyBufferLength) {
+    keyBufferIndex = 1;
+    keyBufferLength = 0;
+  }
+
+  #if defined(ESP32)
+  portEXIT_CRITICAL(&timer0Mux);
+  #else
+  interrupts();
+  #endif
+
+  if (keyData != 0xFF) {
+    keyAvailable = true;
+    switch (keyData) {
+      case 0x00: key = 0x00; break;  // 0
+      case 0x05: key = 0x05; break;  // 1
+      case 0x0A: key = 0x0A; break;  // 2
+      case 0x0F: key = 0x0F; break;  // 3
+      case 0x11: key = 0x11; break;  // 4
+      case 0x16: key = 0x16; break;  // 5
+      case 0x1B: key = 0x1B; break;  // 6
+      case 0x1C: key = 0x1C; break;  // 7
+      case 0x22: key = 0x22; break;  // 8
+      case 0x27: key = 0x27; break;  // 9
+      case 0x28: key = 0x28; break;  // *
+      case 0x2D: key = 0x2D; break;  // #
+      case 0x82: key = 0x82; break;  // Enter
+      case 0x87: key = 0x87; break;  // Right arrow
+      case 0x88: key = 0x88; break;  // Left arrow
+      case 0xAF: key = 0xAF; break;  // Arm: Stay
+      case 0xB1: key = 0xB1; break;  // Arm: Away
+      case 0xBB: key = 0xBB; break;  // Door chime
+      case 0xDA: key = 0xDA; break;  // Reset
+      case 0xE1: key = 0xE1; break;  // Quick exit
+      case 0xF7: key = 0xF7; break;  // LCD keypad navigation
+      case 0x0B: key = 0x0B; break;  // Fire alarm
+      case 0x0D: key = 0x0D; break;  // Aux alarm
+      case 0x0E: key = 0x0E; break;  // Panic alarm
+      default: keyAvailable = false; break;  // Skips other DSC key values and invalid data
     }
-    else if (keyData != 0xFF) {
-      KeyAvailable = true;
-      switch (keyData) {
-        case 0x00: Key = 0x00; break;  // 0
-        case 0x05: Key = 0x05; break;  // 1
-        case 0x0A: Key = 0x0A; break;  // 2
-        case 0x0F: Key = 0x0F; break;  // 3
-        case 0x11: Key = 0x11; break;  // 4
-        case 0x16: Key = 0x16; break;  // 5
-        case 0x1B: Key = 0x1B; break;  // 6
-        case 0x1C: Key = 0x1C; break;  // 7
-        case 0x22: Key = 0x22; break;  // 8
-        case 0x27: Key = 0x27; break;  // 9
-        case 0x28: Key = 0x28; break;  // *
-        case 0x2D: Key = 0x2D; break;  // #
-        case 0x82: Key = 0x82; break;  // Enter
-        case 0x87: Key = 0x87; break;  // Right arrow
-        case 0x88: Key = 0x88; break;  // Left arrow
-        case 0xAF: Key = 0xAF; break;  // Arm: Stay
-        case 0xB1: Key = 0xB1; break;  // Arm: Away
-        case 0xBB: Key = 0xBB; break;  // Door chime
-        case 0xDA: Key = 0xDA; break;  // Reset
-        case 0xE1: Key = 0xE1; break;  // Quick exit
-        case 0xF7: Key = 0xF7; break;  // LCD keypad navigation
-        default: KeyAvailable = false; break;
-      }
-      keyData = 0xFF;
-    }
+    keyData = 0xFF;
   }
 
   return true;
+}
+
+
+void dscKeypadInterface::panelLight(Light lightPanel, byte zoneBit) {
+  if (lightPanel == on) {
+    bitWrite(panelLights, zoneBit, 1);
+    bitWrite(panelBlink, zoneBit, 0);
+  }
+  else if (lightPanel == blink) bitWrite(panelBlink, zoneBit, 1);
+  else {
+    bitWrite(panelLights, zoneBit, 0);
+    bitWrite(panelBlink, zoneBit, 0);
+  }
+}
+
+
+void dscKeypadInterface::zoneLight(Light lightZone, byte zoneBit) {
+  if (lightZone == on ) {
+    bitWrite(panelZones, zoneBit, 1);
+    bitWrite(panelZonesBlink, zoneBit, 0);
+  }
+  else if (lightZone == blink) bitWrite(panelZonesBlink, zoneBit, 1);
+  else {
+    bitWrite(panelZones, zoneBit, 0);
+    bitWrite(panelZonesBlink, zoneBit, 0);
+  }
+}
+
+
+
+void dscKeypadInterface::beep(byte beeps) {
+  if (!beeps) {
+    setBeep = false;
+    return;
+  }
+
+  if (beeps >= 128) beeps = 255;
+  else beeps *= 2;
+  panelCommand64[1] = beeps;
+
+  int dataSum = 0;
+  for (byte panelByte = 0; panelByte < 2; panelByte++) dataSum += panelCommand64[panelByte];
+  panelCommand64[2] = dataSum % 256;
+
+  setBeep = true;
+}
+
+
+void dscKeypadInterface::tone(byte beep, bool tone, byte interval) {
+  panelCommand75[1] = 0;
+
+  if (tone >= 1) panelCommand75[1] |= 0x80;
+
+  if (beep > 7) beep = 7;
+  if (beep >= 1) {
+    panelCommand75[1] |= beep << 4;
+  }
+
+  if (interval > 15) interval = 15;
+  panelCommand75[1] |= interval;
+
+  int dataSum = 0;
+  for (byte panelByte = 0; panelByte < 2; panelByte++) dataSum += panelCommand75[panelByte];
+  panelCommand75[2] = dataSum % 256;
+
+  setTone = true;
+}
+
+
+void dscKeypadInterface::buzzer(byte seconds) {
+  if (!seconds) {
+    setBuzzer = false;
+    return;
+  }
+
+  panelCommand7F[1] = seconds;
+
+  int dataSum = 0;
+  for (byte panelByte = 0; panelByte < 2; panelByte++) dataSum += panelCommand7F[panelByte];
+  panelCommand7F[2] = dataSum % 256;
+
+  setBuzzer = true;
 }
 
 
@@ -343,29 +466,46 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
       }
 
       // Write panel data
+
+      // Panel command byte 0 complete
       if (isrPanelBitTotal == 8) {
         digitalWrite(dscWritePin, HIGH);  // Stop bit
+
+        // Checks for an alarm key sent during 0x1C alarm key verification command to save in the key buffer
         if (panelCommand[0] == 0x1C) {
           alarmKeyResponsePending = false;
-          alarmKeyData = isrModuleData[0];
+
+          if (isrModuleData[0] != 0xFF) {
+            if (keyBufferLength >= dscBufferSize) bufferOverflow = true;
+            else {
+
+              // Converts the DSC alarm key value to handle a conflict with the door chime key (0xBB)
+              switch (isrModuleData[0]) {
+                case 0xBB: keyBuffer[keyBufferLength] = 0x0B; keyBufferLength++; break;  // Fire alarm
+                case 0xDD: keyBuffer[keyBufferLength] = 0x0D; keyBufferLength++; break;  // Aux alarm
+                case 0xEE: keyBuffer[keyBufferLength] = 0x0E; keyBufferLength++; break;  // Panic alarm
+                default: break;
+              }
+            }
+          }
         }
         isrPanelBitTotal++;
       }
+
+      // Panel command bytes bit 7
       else if (isrPanelBitCount == 7) {
         if (!bitRead(panelCommand[panelCommandByteCount], 0)) digitalWrite(dscWritePin, HIGH);
         isrPanelBitCount = 0;
         isrPanelBitTotal++;
         panelCommandByteCount++;
       }
+
+      // Panel command bytes bits 0-6
       else if (panelCommandByteCount < panelCommandByteTotal) {
-        switch (isrPanelBitCount) {
-          case 0: if (!bitRead(panelCommand[panelCommandByteCount], 7)) digitalWrite(dscWritePin, HIGH); break;
-          case 1: if (!bitRead(panelCommand[panelCommandByteCount], 6)) digitalWrite(dscWritePin, HIGH); break;
-          case 2: if (!bitRead(panelCommand[panelCommandByteCount], 5)) digitalWrite(dscWritePin, HIGH); break;
-          case 3: if (!bitRead(panelCommand[panelCommandByteCount], 4)) digitalWrite(dscWritePin, HIGH); break;
-          case 4: if (!bitRead(panelCommand[panelCommandByteCount], 3)) digitalWrite(dscWritePin, HIGH); break;
-          case 5: if (!bitRead(panelCommand[panelCommandByteCount], 2)) digitalWrite(dscWritePin, HIGH); break;
-          case 6: if (!bitRead(panelCommand[panelCommandByteCount], 1)) digitalWrite(dscWritePin, HIGH); break;
+        byte bitCount = 0;
+        for (byte i = 7; i > 0; i--) {
+          if (isrPanelBitCount == bitCount && !bitRead(panelCommand[panelCommandByteCount], i)) digitalWrite(dscWritePin, HIGH);
+          bitCount++;
         }
         isrPanelBitCount++;
         isrPanelBitTotal++;
@@ -381,17 +521,20 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     // Checks for module data
     if (moduleDataDetected) {
       moduleDataDetected = false;
-      moduleDataCaptured = true;
       for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
 
-      // Checks for an alarm key press
+      // Checks for an alarm key press and sets a flag to send panel command 0x1C alarm key verification
       if (isrModuleData[0] != 0xFF && panelCommand[0] != 0x1C) {
         alarmKeyDetected = true;
       }
 
-      // Checks for a partition 1 key
+      // Checks for a partition 1 key to save in the key buffer
       if (isrModuleData[2] != 0xFF && panelCommand[0] == 0x05) {
-        keyData = isrModuleData[2];
+        if (keyBufferLength >= dscBufferSize) bufferOverflow = true;
+        else {
+          keyBuffer[keyBufferLength] = isrModuleData[2];
+          keyBufferLength++;
+        }
       }
     }
 
@@ -404,6 +547,7 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     isrPanelBitTotal = 0;
     isrPanelBitCount = 0;
     commandReady = true;
+
     #if defined(__AVR__)
     TIMSK1 = 0;  // Disables AVR Timer 1 interrupt
     #elif defined(ESP8266)

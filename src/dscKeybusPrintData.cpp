@@ -92,7 +92,7 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x57: printPanel_0x57(); return;           // Wireless key query | Structure: complete | Content: *incomplete
     case 0x58: printPanel_0x58(); return;           // Module status query | Structure: complete | Content: *incomplete
     case 0x5D:
-    case 0x63: printPanel_0x5D_63(); return;        // Flash panel lights: status and zones 1-32, partition 2 | Structure: complete | Content: complete
+    case 0x63: printPanel_0x5D_63(); return;        // Flash panel lights: status and zones 1-32, partitions 1-2 | Structure: complete | Content: complete
     case 0x64: printPanel_0x64(); return;           // Beep, partition 1 | Structure: complete | Content: complete
     case 0x69: printPanel_0x69(); return;           // Beep, partition 2 | Structure: complete | Content: complete
     case 0x6E: printPanel_0x6E(); return;           // LCD keypad display | Structure: complete | Content: complete

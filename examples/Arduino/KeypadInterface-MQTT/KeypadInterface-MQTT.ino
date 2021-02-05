@@ -1,5 +1,5 @@
 /*
- *  DSC Keypad Interface 1.1 (esp32)
+ *  DSC Keypad Interface-MQTT 1.1 (Arduino with Ethernet)
  *
  *  Interfaces directly to a DSC PowerSeries keypad (without a DSC panel) to enable use of
  *  DSC keypads as physical inputs for any general purpose.
@@ -25,22 +25,22 @@
  *  Wiring:
  *      DSC Keypad R --- 12v DC
  *
- *      DSC Keypad B --- esp32 ground
+ *      DSC Keypad B --- Arduino ground
  *
  *      DSC Keypad Y ---+--- 1k ohm resistor --- 12v DC
  *                      |
  *                      +--- NPN collector --\
- *                                            |-- NPN base --- 1k ohm resistor --- dscClockPin  // esp32: 18
+ *                                            |-- NPN base --- 1k ohm resistor --- dscClockPin  // Arduino Uno: 3
  *                  Ground --- NPN emitter --/
  *
  *      DSC Keypad G ---+--- 1k ohm resistor --- 12v DC
  *                      |
- *                      +--- 33k ohm resistor ---+--- dscReadPin  // esp32: 19
+ *                      +--- 15k ohm resistor ---+--- dscReadPin  // Arduino Uno: 5
  *                      |                        |
  *                      |                        +--- 10k ohm resistor --- Ground
  *                      |
  *                      +--- NPN collector --\
- *                                            |-- NPN base --- 1k ohm resistor --- dscWritePin  // esp32: 21
+ *                                            |-- NPN base --- 1k ohm resistor --- dscWritePin  // Arduino Uno: 6
  *                  Ground --- NPN emitter --/
  *
  *  The keypad interface uses NPN transistors to pull the clock and data lines low - most small
@@ -55,20 +55,37 @@
  */
 #define dscKeypad
 
+#include <SPI.h>
+#include <Ethernet.h>
+#include <PubSubClient.h>
 #include <dscKeybusInterface.h>
 
-// Configures the Keybus interface with the specified pins
-#define dscClockPin 18  // 4,13,16-39
-#define dscReadPin  19  // 4,13,16-39
-#define dscWritePin 21  // 4,13,16-33
+// Settings
+byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
+const char* mqttServer = "";    // MQTT server domain name or IP address
+const int   mqttPort = 1883;    // MQTT server port
+const char* mqttUsername = "";  // Optional, leave blank if not required
+const char* mqttPassword = "";  // Optional, leave blank if not required
 
-dscKeypadInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+// MQTT topics
+const char* mqttClientName = "dscKeypadInterface";
+const char* mqttKeyTopic = "dsc/Key";               // Sends keypad keys
+const char* mqttSubscribeTopic = "dsc/Set";         // Receives messages to send to the keypad
+
+// Configures the Keybus interface with the specified pins
+#define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscReadPin  5  // Arduino Uno: 2-12
+#define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
+dscKeypadInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 bool lightOff, lightBlink, inputReceived;
 const byte inputLimit = 50;
 char input[inputLimit];
 byte beepLength, buzzerLength, toneLength;
+EthernetClient ipClient;
+PubSubClient mqtt(mqttServer, mqttPort, ipClient);
+unsigned long mqttPreviousTime;
 
 
 void setup() {
@@ -77,6 +94,19 @@ void setup() {
   Serial.println();
   Serial.println();
 
+  // Initializes ethernet with DHCP
+  Serial.print(F("Ethernet...."));
+  while(!Ethernet.begin(mac)) {
+      Serial.println(F("DHCP failed.  Retrying..."));
+      delay(5000);
+  }
+  Serial.print(F("connected: "));
+  Serial.println(Ethernet.localIP());
+
+  mqtt.setCallback(mqttCallback);
+  if (mqttConnect()) mqttPreviousTime = millis();
+  else mqttPreviousTime = 0;
+
   Serial.print(F("Keybus..."));
   dsc.begin();
   Serial.println(F("connected."));
@@ -84,8 +114,7 @@ void setup() {
 }
 
 void loop() {
-
-  inputSerial();  // Stores Serial data in input[], requires a newline character (NL, CR, or both)
+  mqttHandle();
 
   /*
    *  Sets keypad status via serial with the listed keys. Light status uses custom
@@ -138,30 +167,30 @@ void loop() {
   if (dsc.keyAvailable) {
     dsc.keyAvailable = false;
     switch (dsc.key) {
-      case 0x00: Serial.println("0"); break;
-      case 0x05: Serial.println("1"); break;
-      case 0x0A: Serial.println("2"); break;
-      case 0x0F: Serial.println("3"); break;
-      case 0x11: Serial.println("4"); break;
-      case 0x16: Serial.println("5"); break;
-      case 0x1B: Serial.println("6"); break;
-      case 0x1C: Serial.println("7"); break;
-      case 0x22: Serial.println("8"); break;
-      case 0x27: Serial.println("9"); break;
-      case 0x28: Serial.println("*"); break;
-      case 0x2D: Serial.println("#"); break;
-      case 0x82: Serial.println(F("Enter")); break;
-      case 0xAF: Serial.println(F("Arm: Stay")); break;
-      case 0xB1: Serial.println(F("Arm: Away")); break;
-      case 0xBB: Serial.println(F("Door chime")); break;
-      case 0xDA: Serial.println(F("Reset")); break;
-      case 0xE1: Serial.println(F("Quick exit")); break;
-      case 0xF7: Serial.println(F("Menu navigation")); break;
-      case 0x0B: Serial.println(F("Fire alarm")); break;
-      case 0x0D: Serial.println(F("Aux alarm")); break;
-      case 0x0E: Serial.println(F("Panic alarm")); break;
-      default: break;
+      case 0x00: mqtt.publish(mqttKeyTopic, "0", false); break;
+      case 0x05: mqtt.publish(mqttKeyTopic, "1", false); break;
+      case 0x0A: mqtt.publish(mqttKeyTopic, "2", false); break;
+      case 0x0F: mqtt.publish(mqttKeyTopic, "3", false); break;
+      case 0x11: mqtt.publish(mqttKeyTopic, "4", false); break;
+      case 0x16: mqtt.publish(mqttKeyTopic, "5", false); break;
+      case 0x1B: mqtt.publish(mqttKeyTopic, "6", false); break;
+      case 0x1C: mqtt.publish(mqttKeyTopic, "7", false); break;
+      case 0x22: mqtt.publish(mqttKeyTopic, "8", false); break;
+      case 0x27: mqtt.publish(mqttKeyTopic, "9", false); break;
+      case 0x28: mqtt.publish(mqttKeyTopic, "*", false); break;
+      case 0x2D: mqtt.publish(mqttKeyTopic, "#", false); break;
+      case 0x82: mqtt.publish(mqttKeyTopic, "Enter", false); break;
+      case 0xAF: mqtt.publish(mqttKeyTopic, "Arm: Stay", false); break;
+      case 0xB1: mqtt.publish(mqttKeyTopic, "Arm: Away", false); break;
+      case 0xBB: mqtt.publish(mqttKeyTopic, "Door chime", false); break;
+      case 0xDA: mqtt.publish(mqttKeyTopic, "Reset", false); break;
+      case 0xE1: mqtt.publish(mqttKeyTopic, "Quick exit", false); break;
+      case 0xF7: mqtt.publish(mqttKeyTopic, "Menu navigation", false); break;
+      case 0x0B: mqtt.publish(mqttKeyTopic, "Fire alarm", false); break;
+      case 0x0D: mqtt.publish(mqttKeyTopic, "Aux alarm", false); break;
+      case 0x0E: mqtt.publish(mqttKeyTopic, "Panic alarm", false); break;
     }
+    mqtt.subscribe(mqttSubscribeTopic);
   }
 }
 
@@ -273,21 +302,49 @@ Light setLight() {
 }
 
 
-// Stores Serial data in input[], requires a newline character (NL, CR, or both)
-void inputSerial() {
-  static byte inputCount = 0;
-  if (!inputReceived) {
-    while (Serial.available() > 0 && inputCount < inputLimit) {
-      input[inputCount] = Serial.read();
-      if (input[inputCount] == '\n' || input[inputCount] == '\r') {
-        input[inputCount] = '\0';
-        inputCount = 0;
-        inputReceived = true;
-        break;
-      }
-      else inputCount++;
-      yield();
-    }
-    if (input[0] == '\0') inputReceived = false;
+// Handles messages received in the mqttSubscribeTopic
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+
+  // Handles unused parameters
+  (void)topic;
+
+  for (unsigned int i = 0; i < length; i++) {
+    input[i] = payload[i];
   }
+
+  input[length] = '\0';
+  if (input[0] == '\0') inputReceived = false;
+  else inputReceived = true;
+}
+
+
+void mqttHandle() {
+  if (!mqtt.connected()) {
+    unsigned long mqttCurrentTime = millis();
+    if (mqttCurrentTime - mqttPreviousTime > 5000) {
+      mqttPreviousTime = mqttCurrentTime;
+      if (mqttConnect()) {
+        Serial.println(F("MQTT disconnected, successfully reconnected."));
+        mqttPreviousTime = 0;
+        mqtt.subscribe(mqttSubscribeTopic);
+      }
+      else Serial.println(F("MQTT disconnected, failed to reconnect."));
+    }
+  }
+  else mqtt.loop();
+}
+
+
+bool mqttConnect() {
+  Serial.print(F("MQTT...."));
+  if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword)) {
+    Serial.print(F("connected: "));
+    Serial.println(mqttServer);
+    mqtt.subscribe(mqttSubscribeTopic);
+  }
+  else {
+    Serial.print(F("connection error: "));
+    Serial.println(mqttServer);
+  }
+  return mqtt.connected();
 }

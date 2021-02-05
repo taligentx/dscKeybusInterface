@@ -86,6 +86,7 @@ ISR(TIMER1_OVF_vect) {
 
 // DSC Keypad Interface
 #elif defined dscKeypad
+
 #include "dscKeypad.h"
 
 byte dscKeypadInterface::dscClockPin;
@@ -93,12 +94,12 @@ byte dscKeypadInterface::dscReadPin;
 byte dscKeypadInterface::dscWritePin;
 int  dscKeypadInterface::clockInterval;
 volatile byte dscKeypadInterface::keyData;
-volatile byte dscKeypadInterface::alarmKeyData;
+volatile byte dscKeypadInterface::keyBufferLength;
+volatile byte dscKeypadInterface::keyBuffer[dscBufferSize];
+volatile bool dscKeypadInterface::bufferOverflow;
 volatile bool dscKeypadInterface::commandReady;
 volatile bool dscKeypadInterface::moduleDataDetected;
-volatile bool dscKeypadInterface::moduleDataCaptured;
 volatile bool dscKeypadInterface::alarmKeyDetected;
-volatile bool dscKeypadInterface::alarmKeyCaptured;
 volatile bool dscKeypadInterface::alarmKeyResponsePending;
 volatile byte dscKeypadInterface::clockCycleCount;
 volatile byte dscKeypadInterface::clockCycleTotal;

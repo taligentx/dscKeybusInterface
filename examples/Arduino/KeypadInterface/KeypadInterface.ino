@@ -1,5 +1,5 @@
 /*
- *  DSC Keypad Interface 1.0 (Arduino)
+ *  DSC Keypad Interface 1.1 (Arduino)
  *
  *  Interfaces directly to a DSC PowerSeries keypad (without a DSC panel) to enable use of
  *  DSC keypads as physical inputs for any general purpose.
@@ -9,16 +9,23 @@
  *  lower voltages down to 7v may work for key presses (the LEDs will be dim).
  *
  *  Supported features:
- *    - Read keypad key button presses, including fire/aux/panic alarms
- *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Backlight, Zones 1-8
+ *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
+ *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Backlight, Zones 1-8: dsc.lightReady, dsc.lightZone1, etc
+ *    - Set keypad beeps, 1-128: dsc.beep(3)
+ *    - Set keypad buzzer in seconds, 1-255: dsc.tone(5)
+ *    - Set keypad tone pattern with a number of beeps, an optional constant tone, and the interval in seconds between beeps:
+ *        2 beeps, no constant tone, 4 second interval: dsc.tone(2, false, 4)
+ *        3 beeps, constant tone, 2 second interval: dsc.tone(3, true, 2)
+ *        Disable the tone: dsc.tone() or dsc.tone(0, false, 0)
  *
  *  Release notes:
+ *    1.1 - Add keypad beep, buzzer, constant tone
  *    1.0 - Initial release
  *
  *  Wiring:
  *      DSC Keypad R --- 12v DC
  *
- *      DSC Keypad B --- Ground
+ *      DSC Keypad B --- Arduino ground
  *
  *      DSC Keypad Y ---+--- 1k ohm resistor --- 12v DC
  *                      |
@@ -50,12 +57,19 @@
 
 #include <dscKeybusInterface.h>
 
+// Configures the Keybus interface with the specified pins
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 dscKeypadInterface dsc(dscClockPin, dscReadPin, dscWritePin);
-bool lightOff;
+
+// Initialize components
+bool lightOff, lightBlink, inputReceived;
+const byte inputLimit = 50;
+char input[inputLimit];
+byte beepLength, buzzerLength, toneLength;
+
 
 void setup() {
   Serial.begin(115200);
@@ -63,57 +77,67 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  dsc.begin();
   Serial.print(F("Keybus..."));
-  unsigned long keybusTime = millis();
-  while (millis() - keybusTime < 4000) {  // Waits for the keypad to be powered on
-    if (!digitalRead(dscReadPin)) keybusTime = millis();
-  }
+  dsc.begin();
   Serial.println(F("connected."));
-  Serial.println(F("DSC Keybus Interface is online."));
+  Serial.println(F("DSC Keypad Interface is online."));
 }
 
 void loop() {
 
-  // Sets keypad lights via serial, send "-" before a light key to turn off
-  if (Serial.available() > 0) {
-    char input = Serial.read();
-    switch (input) {
-      case '-': lightOff = true; break;
-      case '1': dsc.Zone1 = setLight(); break;
-      case '2': dsc.Zone2 = setLight(); break;
-      case '3': dsc.Zone3 = setLight(); break;
-      case '4': dsc.Zone4 = setLight(); break;
-      case '5': dsc.Zone5 = setLight(); break;
-      case '6': dsc.Zone6 = setLight(); break;
-      case '7': dsc.Zone7 = setLight(); break;
-      case '8': dsc.Zone8 = setLight(); break;
-      case 'r':
-      case 'R': dsc.Ready = setLight(); break;
-      case 'a':
-      case 'A': dsc.Armed = setLight(); break;
-      case 'm':
-      case 'M': dsc.Memory = setLight(); break;
-      case 'b':
-      case 'B': dsc.Bypass = setLight(); break;
-      case 't':
-      case 'T': dsc.Trouble = setLight(); break;
-      case 'p':
-      case 'P': dsc.Program = setLight(); break;
-      case 'f':
-      case 'F': dsc.Fire = setLight(); break;
-      case 'l':
-      case 'L': dsc.Backlight = setLight(); break;
-      default: break;
+  inputSerial();  // Stores Serial data in input[], requires a newline character (NL, CR, or both)
+
+  /*
+   *  Sets keypad status via serial with the listed keys. Light status uses custom
+   *  values for control: off, on, blink (example: dsc.lightReady = blink;)
+   *
+   *  Light on: Send the keys listed below.  Turning on the armed light: "a"
+   *  Light off: Send "-" before a light key to turn it off.  Turning off the zone 4 light: "-4"
+   *  Light blink: Send "!" before a light key to blink.  Blinking the ready light: "!r"
+   *  Beep: Send "b" followed by the number of beeps, 1-128.  Setting 2 beeps: "b2"
+   *  Buzzer: Send "z" followed by the buzzer length in seconds, 1-255.  Setting the buzzer to 5 seconds: "z5"
+   *  Tone pattern: Send "n" followed by the number of beeps 1-7, constant tone true "t" or false "f", interval between beeps 1-15s
+   *        Setting a tone pattern with 2 beeps, no constant tone, 4 second interval: "n2f4"
+   *        Setting a tone pattern with 3 beeps, constant tone, 2 second interval: "n3t2"
+   *        Disabling the tone pattern: "n"
+   */
+  if (inputReceived) {
+    inputReceived = false;
+
+    for (byte i = 0; i < strlen(input); i++) {
+      switch (input[i]) {
+        case 'r': case 'R': dsc.lightReady = setLight(); break;
+        case 'a': case 'A': dsc.lightArmed = setLight(); break;
+        case 'm': case 'M': dsc.lightMemory = setLight(); break;
+        case 'y': case 'Y': dsc.lightBypass = setLight(); break;
+        case 't': case 'T': dsc.lightTrouble = setLight(); break;
+        case 'p': case 'P': dsc.lightProgram = setLight(); break;
+        case 'f': case 'F': dsc.lightFire = setLight(); break;
+        case 'l': case 'L': dsc.lightBacklight = setLight(); break;
+        case '1': dsc.lightZone1 = setLight(); break;
+        case '2': dsc.lightZone2 = setLight(); break;
+        case '3': dsc.lightZone3 = setLight(); break;
+        case '4': dsc.lightZone4 = setLight(); break;
+        case '5': dsc.lightZone5 = setLight(); break;
+        case '6': dsc.lightZone6 = setLight(); break;
+        case '7': dsc.lightZone7 = setLight(); break;
+        case '8': dsc.lightZone8 = setLight(); break;
+        case 'b': case 'B': sendBeeps(i); i += beepLength; break;
+        case 'n': case 'N': sendTone(i); i+= toneLength; break;
+        case 'z': case 'Z': sendBuzzer(i); i+= buzzerLength; break;
+        case '-': lightOff = true; break;
+        case '!': lightBlink = true; break;
+        default: break;
+      }
     }
   }
 
   dsc.loop();
 
   // Checks for a keypad key press
-  if (dsc.KeyAvailable) {
-    dsc.KeyAvailable = false;
-    switch (dsc.Key) {
+  if (dsc.keyAvailable) {
+    dsc.keyAvailable = false;
+    switch (dsc.key) {
       case 0x00: Serial.println("0"); break;
       case 0x05: Serial.println("1"); break;
       case 0x0A: Serial.println("2"); break;
@@ -136,16 +160,133 @@ void loop() {
       case 0x0B: Serial.println(F("Fire alarm")); break;
       case 0x0D: Serial.println(F("Aux alarm")); break;
       case 0x0E: Serial.println(F("Panic alarm")); break;
+      default: break;
     }
   }
 }
 
 
-// Sets keypad lights state
-bool setLight() {
+// Parse the number of beeps from the input
+void sendBeeps(byte position) {
+  char inputNumber[4];
+  byte beeps = 0;
+  beepLength = 0;
+
+  for (byte i = position + 1; i < strlen(input); i++) {
+    if (input[i] >= '0' && input[i] <= '9') {
+      inputNumber[beepLength] = input[i];
+      beepLength++;
+      if (beepLength >= 3) break;
+    }
+    else break;
+  }
+
+  inputNumber[beepLength] = '\0';
+  beeps = atoi(inputNumber);
+  if (beeps > 128) beeps = 128;
+
+  dsc.beep(beeps);
+}
+
+
+// Parse the buzzer length in seconds from the input
+void sendBuzzer(byte position) {
+  char inputNumber[4];
+  byte buzzerSeconds = 0;
+  buzzerLength = 0;
+
+  for (byte i = position + 1; i < strlen(input); i++) {
+    if (input[i] >= '0' && input[i] <= '9') {
+      inputNumber[buzzerLength] = input[i];
+      buzzerLength++;
+      if (buzzerLength >= 3) break;
+    }
+    else break;
+  }
+
+  inputNumber[buzzerLength] = '\0';
+  buzzerSeconds = atoi(inputNumber);
+  dsc.buzzer(buzzerSeconds);
+}
+
+
+// Parse the tone pattern number of beeps, constant tone state, and interval in seconds from the input
+void sendTone(byte position) {
+  byte beeps = 0, interval = 0, intervalLength = 0;
+  char beepNumber[2];
+  bool toneState;
+  char intervalNumber[3];
+  toneLength = 0;
+
+  if (strlen(input) < 4) {
+    dsc.tone(0, false, 0);
+    return;
+  }
+
+  // Parse beeps 0-7
+  if (input[position + 1] >= '0' && input[position + 1] <= '9') {
+    beepNumber[0] = input[position + 1];
+    beeps = atoi(beepNumber);
+    if (beeps > 7) beeps = 7;
+    toneLength++;
+  }
+  else return;
+
+  // Parse constant tone value
+  switch (input[position + 2]) {
+    case 't':
+    case 'T': toneState = true; toneLength++; break;
+    case 'f':
+    case 'F': toneState = false; toneLength++; break;
+    default: toneLength--; return;
+  }
+
+  // Parse interval
+  for (byte i = position + 3; i < strlen(input); i++) {
+    if (input[i] >= '0' && input[i] <= '9') {
+      intervalNumber[intervalLength] = input[i];
+      intervalLength++;
+      toneLength++;
+      if (intervalLength >= 2) break;
+    }
+    else break;
+  }
+  intervalNumber[intervalLength] = '\0';
+  interval = atoi(intervalNumber);
+  if (interval > 15) interval = 15;
+
+  dsc.tone(beeps, toneState, interval);
+}
+
+
+// Sets keypad lights state - lights use custom values for control: off, on, blink (example: dsc.lightReady = blink;)
+Light setLight() {
   if (lightOff) {
     lightOff = false;
-    return false;
+    return off;
   }
-  else return true;
+  else if (lightBlink) {
+    lightBlink = false;
+    return blink;
+  }
+  else return on;
+}
+
+
+// Stores Serial data in input[], requires a newline character (NL, CR, or both)
+void inputSerial() {
+  static byte inputCount = 0;
+  if (!inputReceived) {
+    while (Serial.available() > 0 && inputCount < inputLimit) {
+      input[inputCount] = Serial.read();
+      if (input[inputCount] == '\n' || input[inputCount] == '\r') {
+        input[inputCount] = '\0';
+        inputCount = 0;
+        inputReceived = true;
+        break;
+      }
+      else inputCount++;
+    }
+    if (input[0] == '\0') inputReceived = false;
+  }
 }
