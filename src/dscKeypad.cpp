@@ -18,6 +18,7 @@
  */
 
 #include "dscKeypad.h"
+#if defined dscKeypad_h
 
 
 #if defined(ESP32)
@@ -565,3 +566,5 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
   TCNT1 = clockInterval;
   #endif
 }
+
+#endif  // dscKeypad_h

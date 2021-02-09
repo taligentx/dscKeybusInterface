@@ -1,6 +1,7 @@
 dscKeybusInterface	KEYWORD1
 dscClassicInterface	KEYWORD1
 dscKeypadInterface	KEYWORD1
+dscClassicKeypadInterface	KEYWORD1
 dsc	KEYWORD1
 
 dscClockPin	LITERAL1

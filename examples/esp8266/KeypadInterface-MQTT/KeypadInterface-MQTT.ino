@@ -1,14 +1,14 @@
 /*
- *  DSC Keypad Interface-MQTT 1.1 (esp8266)
+ *  DSC Keypad Interface-MQTT 1.2 (esp8266)
  *
- *  Interfaces directly to a DSC PowerSeries keypad (without a DSC panel) to enable use of
- *  DSC keypads as physical inputs for any general purpose.
+ *  Interfaces directly to a DSC PowerSeries or Classic series keypad (without a DSC panel) to
+ *  enable use of DSC keypads as physical inputs for any general purpose.
  *
  *  This interface uses a different wiring setup from the standard Keybus interface, adding
  *  an NPN transistor on dscClockPin.  The DSC keypads require a 12v DC power source, though
  *  lower voltages down to 7v may work for key presses (the LEDs will be dim).
  *
- *  Supported features:
+ *  PowerSeries keypad features:
  *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
  *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Backlight, Zones 1-8: dsc.lightReady, dsc.lightZone1, etc
  *    - Set keypad beeps, 1-128: dsc.beep(3)
@@ -18,7 +18,12 @@
  *        3 beeps, constant tone, 2 second interval: dsc.tone(3, true, 2)
  *        Disable the tone: dsc.tone() or dsc.tone(0, false, 0)
  *
+ *  Classic keypad features:
+ *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
+ *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Zones 1-6: dsc.lightReady, dsc.lightZone1, etc
+ *
  *  Release notes:
+ *    1.2 - Add Classic keypad support - PC1500RK
  *    1.1 - Add keypad beep, buzzer, constant tone
  *    1.0 - Initial release
  *
@@ -53,7 +58,10 @@
  *
  *  This example code is in the public domain.
  */
+
+// Set the keypad type
 #define dscKeypad
+//#define dscClassicKeypad
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -78,7 +86,11 @@ const char* mqttSubscribeTopic = "dsc/Set";         // Receives messages to send
 #define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifdef dscKeypad
 dscKeypadInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicKeypadInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#endif
 bool lightOff, lightBlink, inputReceived;
 const byte inputLimit = 255;
 char input[inputLimit];

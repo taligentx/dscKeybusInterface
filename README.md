@@ -64,7 +64,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * Virtual keypad:
   - Write keys to the panel for all partitions
 * Keypad interface:
-  - Use DSC keypads as physical input devices for any general purpose without needing a DSC panel.
+  - Use DSC PowerSeries and Classic series keypads as physical input devices for any general purpose without needing a DSC panel.
 * Panel time - retrieve current panel date/time and set a new date/time (including an example with NTP sync)
 * Panel installer code unlocking - determine the 4-digit panel installer code
 * Direct Keybus interface:
@@ -105,7 +105,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
-  - New: `KeypadInterface` example sketch - interfaces with DSC keypads as physical input devices for any general purpose without needing a DSC panel.
+  - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
   - New: esp32-s2 microcontroller support
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
@@ -239,7 +239,7 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
 
-* **KeypadInterface**:  Interfaces directly to a DSC PowerSeries keypad (without a DSC panel) to enable use of DSC keypads as physical inputs for any general purpose.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the sketch.
+* **KeypadInterface**:  Interfaces directly to DSC PowerSeries and Classic series (tested with PC1500RK) keypads (without a DSC panel) to enable using these as physical inputs for any general purpose.  Examples included for interfacing via serial and MQTT.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the example sketch.
 
 * **KeybusReader**: Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual keypad.  This can be used to help decode the Keybus protocol and is also handy as a troubleshooting tool to verify that data is displayed without errors.  For esp8266/esp32, `KeybusReaderIP` enables connectivity over WiFi.
 

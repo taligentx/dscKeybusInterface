@@ -120,6 +120,48 @@ ISR(TIMER1_OVF_vect) {
 }
 #endif  // __AVR__
 
+// DSC Classic Keypad Interface
+#elif defined dscClassicKeypad
+
+#include "dscClassicKeypad.h"
+
+byte dscClassicKeypadInterface::dscClockPin;
+byte dscClassicKeypadInterface::dscReadPin;
+byte dscClassicKeypadInterface::dscWritePin;
+int  dscClassicKeypadInterface::clockInterval;
+volatile byte dscClassicKeypadInterface::keyData;
+volatile byte dscClassicKeypadInterface::keyBufferLength;
+volatile byte dscClassicKeypadInterface::keyBuffer[dscBufferSize];
+volatile bool dscClassicKeypadInterface::bufferOverflow;
+volatile bool dscClassicKeypadInterface::commandReady;
+volatile bool dscClassicKeypadInterface::moduleDataDetected;
+volatile bool dscClassicKeypadInterface::alarmKeyDetected;
+volatile bool dscClassicKeypadInterface::alarmKeyResponsePending;
+volatile byte dscClassicKeypadInterface::clockCycleCount;
+volatile byte dscClassicKeypadInterface::clockCycleTotal;
+volatile byte dscClassicKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscClassicKeypadInterface::isrPanelBitTotal;
+volatile byte dscClassicKeypadInterface::isrPanelBitCount;
+volatile byte dscClassicKeypadInterface::panelCommandByteCount;
+volatile byte dscClassicKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscClassicKeypadInterface::isrModuleBitTotal;
+volatile byte dscClassicKeypadInterface::isrModuleBitCount;
+volatile byte dscClassicKeypadInterface::isrModuleByteCount;
+volatile byte dscClassicKeypadInterface::panelCommandByteTotal;
+volatile byte dscClassicKeypadInterface::moduleData[dscReadSize];
+volatile unsigned long dscClassicKeypadInterface::intervalStart;
+volatile unsigned long dscClassicKeypadInterface::beepInterval;
+volatile unsigned long dscClassicKeypadInterface::repeatInterval;
+volatile unsigned long dscClassicKeypadInterface::keyInterval;
+volatile unsigned long dscClassicKeypadInterface::alarmKeyTime;
+volatile unsigned long dscClassicKeypadInterface::alarmKeyInterval;
+
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  dscClassicKeypadInterface::dscClockInterrupt();
+}
+#endif  // __AVR__
+
 
 // DSC PowerSeries
 #else
