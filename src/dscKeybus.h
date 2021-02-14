@@ -158,6 +158,7 @@ class dscKeybusInterface {
 
     void processPanelStatus();
     void processPanelStatus0(byte partition, byte panelByte);
+    void processPanelStatus1(byte partition, byte panelByte);
     void processPanelStatus2(byte partition, byte panelByte);
     void processPanelStatus4(byte partition, byte panelByte);
     void processPanelStatus5(byte partition, byte panelByte);
@@ -179,6 +180,7 @@ class dscKeybusInterface {
     void processAlarmStatus(byte partitionIndex, bool status);
     void processExitDelayStatus(byte partitionIndex, bool status);
     void processEntryDelayStatus(byte partitionIndex, bool status);
+    void processNoEntryDelayStatus(byte partitionIndex, bool status);
     void processZoneStatus(byte zonesByte, byte panelByte);
     void processTime(byte panelByte);
     void processAlarmZones(byte panelByte, byte startByte, byte zoneCountOffset, byte writeValue);
@@ -313,7 +315,7 @@ class dscKeybusInterface {
     bool previousReady[dscPartitions];
     bool previousExitDelay[dscPartitions], previousEntryDelay[dscPartitions];
     byte previousExitState[dscPartitions];
-    bool previousArmed[dscPartitions], previousArmedStay[dscPartitions];
+    bool previousArmed[dscPartitions], previousArmedStay[dscPartitions], previousNoEntryDelay[dscPartitions];
     bool previousAlarm[dscPartitions];
     bool previousFire[dscPartitions];
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];

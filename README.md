@@ -1,6 +1,6 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.
+This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
@@ -363,7 +363,12 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 
 * PCB layouts are available in [`extras/PCB Layouts`](https://github.com/taligentx/dscKeybusInterface/tree/master/extras/PCB%20Layouts) - thanks to [sjlouw](https://github.com/sj-louw) for contributing these designs!
 
-* Support for other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250μs after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160μs after the clock falls.
+* Support for other platforms depends on adjusting the code to use their platform-specific timers.  In addition to hardware pin-change interrupts to capture the DSC clock, this library uses platform-specific timer interrupts to capture the DSC data line in a non-blocking way 250μs after the clock changes (without using `delayMicroseconds()`).  This is necessary because the clock and data are asynchronous - I've observed keypad data delayed up to 160μs after the clock falls.
+
+* Resource utilization:
+  * Arduino: 1 hardware interrupt digital pin, 2 digital pins (+1 for Classic series), Timer1 interrupt
+  * esp8266: 3 digital pins (+1 for Classic series), timer1 interrupt
+  * esp32/esp32-s2: 3 digital pins (+1 for Classic series), timer0 interrupt
 
 ## Troubleshooting
 If you are running into issues:
@@ -372,6 +377,8 @@ If you are running into issues:
 2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
     * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
 3. Run the `Status` example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.
+
+For general discussions, feature requests, or how-to issues, you can [post in Discussions](https://github.com/taligentx/dscKeybusInterface/discussions), or [post an Issue](https://github.com/taligentx/dscKeybusInterface/issues) if it looks like an issue with the library code itself.
 
 ## References
 [AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): An excellent discussion on how data is sent on the Keybus.

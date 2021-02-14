@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.4 (Arduino with Ethernet)
+ *  Homebridge-MQTT 1.5 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
  *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
@@ -146,6 +146,7 @@
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.5 - Support switching armed modes while armed
  *    1.4 - Added PGM outputs 1-14 status
  *          Added notes on Google Home integration
  *    1.2 - Resolved handling HomeKit target states
@@ -454,7 +455,52 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
-  // Resets the HomeKit target state if attempting to change the armed mode while armed or not ready
+  // Sets night arm (no entry delay) while armed
+  if (payload[payloadIndex] == 'N' && dsc.armed[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "N", 0);
+    exitState = 'N';
+    return;
+  }
+
+  // Disables night arm while armed stay
+  if (payload[payloadIndex] == 'S' && dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState = 'S';
+    return;
+  }
+
+  // Disables night arm while armed away
+  if (payload[payloadIndex] == 'A' && dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState = 'A';
+    return;
+  }
+
+  // Changes from arm away to arm stay after the exit delay
+  if (payload[payloadIndex] == 'S' && dsc.armedAway[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("s");
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState = 'S';
+    return;
+  }
+
+  // Changes from arm stay to arm away after the exit delay
+  if (payload[payloadIndex] == 'A' && dsc.armedStay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("w");
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState = 'A';
+    return;
+  }
+
+  // Resets the HomeKit target state if attempting to change the armed mode while not ready
   if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
     dsc.armedChanged[partition] = true;
     dsc.statusChanged = true;
