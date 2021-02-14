@@ -476,6 +476,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
     case 0x04: mqtt.publish(publishTopic, "Armed stay", true); break;
     case 0x05: mqtt.publish(publishTopic, "Armed away", true); break;
+    case 0x06: mqtt.publish(publishTopic, "No entry delay", true); break;
     case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
     case 0x08: mqtt.publish(publishTopic, "Exit delay", true); break;
     case 0x09: mqtt.publish(publishTopic, "No entry delay", true); break;

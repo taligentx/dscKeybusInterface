@@ -223,7 +223,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x03: stream->print(F("Zones open")); break;
     case 0x04: stream->print(F("Armed: Stay")); break;
     case 0x05: stream->print(F("Armed: Away")); break;
-    case 0x06: stream->print(F("Armed: No entry delay")); break;
+    case 0x06: stream->print(F("Armed: Stay with no entry delay")); break;
     case 0x07: stream->print(F("Failed to arm")); break;
     case 0x08: stream->print(F("Exit delay in progress")); break;
     case 0x09: stream->print(F("Arming: No entry delay")); break;
@@ -236,7 +236,7 @@ void dscKeybusInterface::printPanelMessages(byte panelByte) {
     case 0x12: stream->print(F("Battery check in progress")); break;
     case 0x14: stream->print(F("Auto-arm in progress")); break;
     case 0x15: stream->print(F("Arming with bypassed zones")); break;
-    case 0x16: stream->print(F("Armed: No entry delay")); break;
+    case 0x16: stream->print(F("Armed: Away with no entry delay")); break;
     case 0x19: stream->print(F("Disarmed: Alarm memory")); break;
     case 0x22: stream->print(F("Disarmed: Recent closing")); break;
     case 0x2F: stream->print(F("Keypad LCD test")); break;

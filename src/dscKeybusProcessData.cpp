@@ -310,7 +310,7 @@ void dscKeybusInterface::processPanelStatus() {
 
         // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
         if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) {
-          if (bitRead(lights[partitionIndex],3)) {
+          if (panelData[messageByte] == 0x06) {
             armedStay[partitionIndex] = true;
             previousArmedStay[partitionIndex] = armedStay[partitionIndex];
           }

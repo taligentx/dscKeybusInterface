@@ -484,7 +484,7 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x05: lcd.print(0, 0, "Armed:       ");
                lcd.print(0, 1, "Away            ");
                if (pausedZones) resetZones(); break;
-    case 0x06: lcd.print(0, 0, "Armed:       ");
+    case 0x06: lcd.print(0, 0, "Armed: Stay  ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
     case 0x07: lcd.print(0, 0, "Failed       ");
@@ -512,7 +512,7 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "in progress     "); break;
     case 0x15: lcd.print(0, 0, "Arming with  ");
                lcd.print(0, 1, "bypass zones    "); break;
-    case 0x16: lcd.print(0, 0, "Armed:       ");
+    case 0x16: lcd.print(0, 0, "Armed: Away  ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
     case 0x17: lcd.print(0, 0, "Power saving ");

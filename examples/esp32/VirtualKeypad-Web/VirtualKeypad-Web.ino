@@ -324,7 +324,7 @@ void setStatus(byte partition) {
       case 0x05: root["lcd_upper"] = "Armed:       ";
                  root["lcd_lower"] = "Away            ";
                  if (pausedZones) resetZones(); break;
-      case 0x06: root["lcd_upper"] = "Armed:       ";
+      case 0x06: root["lcd_upper"] = "Armed: Stay  ";
                  root["lcd_lower"] = "No entry delay  ";
                  if (pausedZones) resetZones(); break;
       case 0x07: root["lcd_upper"] = "Failed       ";
@@ -352,7 +352,7 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "in progress     "; break;
       case 0x15: root["lcd_upper"] = "Arming with  ";
                  root["lcd_lower"] = "bypass zones    "; break;
-      case 0x16: root["lcd_upper"] = "Armed:       ";
+      case 0x16: root["lcd_upper"] = "Armed: Away  ";
                  root["lcd_lower"] = "No entry delay  ";
                  if (pausedZones) resetZones(); break;
       case 0x17: root["lcd_upper"] = "Power saving ";

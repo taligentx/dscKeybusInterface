@@ -145,9 +145,9 @@ void loop() {
         if (dsc.armed[partition]) {
           char messageContent[25];
 
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night stay: Partition ");
           else if (dsc.armedStay[partition]) strcpy(messageContent, "Armed stay: Partition ");
 
           appendPartition(partition, messageContent);  // Appends the message with the partition number
