@@ -826,13 +826,8 @@ void dscClassicInterface::setWriteKey(const char receivedKey) {
 
 
 /*
- *  printPanelMessage() checks the first byte of a message from the
- *  panel (panelData[0]) to process known commands.
- *
- *  Structure decoding status refers to whether all bits of the message have
- *  a known purpose.
- *
- *  Content decoding status refers to whether all values of the message are known.
+ *  printPanelMessage() decodes and prints panel data from
+ *  panelData[] and pc16Data[]
  */
 void dscClassicInterface::printPanelMessage() {
 
@@ -843,6 +838,8 @@ void dscClassicInterface::printPanelMessage() {
     if (bitRead(panelData[1], 5)) stream->print(F("Memory "));
     if (bitRead(panelData[1], 4)) stream->print(F("Bypass "));
     if (bitRead(panelData[1], 3)) stream->print(F("Trouble "));
+    if (bitRead(panelData[1], 2)) stream->print(F("Program "));
+    if (bitRead(panelData[1], 1)) stream->print(F("Fire "));
     if (bitRead(panelData[1], 0)) stream->print(F("Beep "));
   }
   else stream->print(F("none "));
@@ -852,6 +849,7 @@ void dscClassicInterface::printPanelMessage() {
     if (bitRead(pc16Data[1], 7)) stream->print(F("Trouble "));
     if (bitRead(pc16Data[1], 6)) stream->print(F("Armed with bypassed zones "));
     if (bitRead(pc16Data[1], 5)) stream->print(F("Armed "));
+    if (bitRead(pc16Data[1], 4)) stream->print(F("Armed (B) "));
     if (bitRead(pc16Data[1], 3)) stream->print(F("Keypad Panic alarm "));
     if (bitRead(pc16Data[1], 2)) stream->print(F("Keypad Aux alarm "));
     if (bitRead(pc16Data[1], 1)) stream->print(F("Keypad Fire alarm "));
