@@ -20,10 +20,10 @@
 #include "dscClassic.h"
 
 #if defined(ESP32)
-portMUX_TYPE dscClassicInterface::timer0Mux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE dscClassicInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
 
 #if ESP_IDF_VERSION_MAJOR < 4
-hw_timer_t * dscClassicInterface::timer0 = NULL;
+hw_timer_t * dscClassicInterface::timer1 = NULL;
 
 #else  // ESP-IDF 4+
 esp_timer_handle_t timer1;
@@ -70,14 +70,14 @@ void dscClassicInterface::begin(Stream &_stream) {
   timer1_attachInterrupt(dscDataInterrupt);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
 
-  // esp32 timer0 calls dscDataInterrupt() from dscClockInterrupt()
+  // esp32 timer1 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timer0 = timerBegin(0, 80, true);
-  timerStop(timer0);
-  timerAttachInterrupt(timer0, &dscDataInterrupt, true);
-  timerAlarmWrite(timer0, 250, true);
-  timerAlarmEnable(timer0);
+  timer1 = timerBegin(1, 80, true);
+  timerStop(timer1);
+  timerAttachInterrupt(timer1, &dscDataInterrupt, true);
+  timerAlarmWrite(timer1, 250, true);
+  timerAlarmEnable(timer1);
   #else  // IDF4+
   esp_timer_create(&timer1Parameters, &timer1);
   #endif  // ESP_IDF_VERSION_MAJOR
@@ -99,11 +99,11 @@ void dscClassicInterface::stop() {
   timer1_disable();
   timer1_detachInterrupt();
 
-  // Disables esp32 timer0
+  // Disables esp32 timer1
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerAlarmDisable(timer0);
-  timerEnd(timer0);
+  timerAlarmDisable(timer1);
+  timerEnd(timer1);
   #else  // ESP-IDF 4+
   esp_timer_stop(timer1);
   #endif  // ESP_IDF_VERSION_MAJOR
@@ -138,7 +138,7 @@ bool dscClassicInterface::loop() {
 
   // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -147,7 +147,7 @@ bool dscClassicInterface::loop() {
   else keybusConnected = true;
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -178,7 +178,7 @@ bool dscClassicInterface::loop() {
 
   // Resets counters when the buffer is cleared
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -189,7 +189,7 @@ bool dscClassicInterface::loop() {
   }
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -842,13 +842,8 @@ void dscClassicInterface::setWriteKey(const char receivedKey) {
 
 
 /*
- *  printPanelMessage() checks the first byte of a message from the
- *  panel (panelData[0]) to process known commands.
- *
- *  Structure decoding status refers to whether all bits of the message have
- *  a known purpose.
- *
- *  Content decoding status refers to whether all values of the message are known.
+ *  printPanelMessage() decodes and prints panel data from
+ *  panelData[] and pc16Data[]
  */
 void dscClassicInterface::printPanelMessage() {
 
@@ -868,9 +863,9 @@ void dscClassicInterface::printPanelMessage() {
   stream->print(F("| Status: "));
   if (pc16Data[1]) {
     if (bitRead(pc16Data[1], 7)) stream->print(F("Trouble "));
-    if (bitRead(pc16Data[1], 5)) stream->print(F("Armed A "));
-    if (bitRead(pc16Data[1], 4)) stream->print(F("Armed B "));
-    if (bitRead(pc16Data[1], 6)) stream->print(F("with bypassed zones "));
+	if (bitRead(pc16Data[1], 6)) stream->print(F("Bypassed zones "));
+    if (bitRead(pc16Data[1], 5)) stream->print(F("Armed (side A) "));
+    if (bitRead(pc16Data[1], 4)) stream->print(F("Armed (side B) "));
     if (bitRead(pc16Data[1], 3)) stream->print(F("Keypad Panic alarm "));
     if (bitRead(pc16Data[1], 2)) stream->print(F("Keypad Aux alarm "));
     if (bitRead(pc16Data[1], 1)) stream->print(F("Keypad Fire alarm "));
@@ -1060,11 +1055,11 @@ void IRAM_ATTR dscClassicInterface::dscClockInterrupt() {
   // esp32 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerStart(timer0);
+  timerStart(timer1);
   #else  // IDF4+
   esp_timer_start_periodic(timer1, 250);
   #endif
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #endif
 
   static unsigned long previousClockHighTime;
@@ -1104,7 +1099,7 @@ void IRAM_ATTR dscClassicInterface::dscClockInterrupt() {
     }
   }
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #endif
 }
 
@@ -1117,11 +1112,11 @@ void ICACHE_RAM_ATTR dscClassicInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
   #if ESP_IDF_VERSION_MAJOR < 4
-  timerStop(timer0);
+  timerStop(timer1);
   #else // IDF 4+
   esp_timer_stop(timer1);
   #endif
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
 #endif
 
   static bool skipData = false;
@@ -1247,6 +1242,6 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
 
   }
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #endif
 }

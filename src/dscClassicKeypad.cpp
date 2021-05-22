@@ -20,10 +20,10 @@
 #include "dscClassicKeypad.h"
 
 #if defined(ESP32)
-portMUX_TYPE dscClassicKeypadInterface::timer0Mux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE dscClassicKeypadInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
 
 #if ESP_IDF_VERSION_MAJOR < 4
-hw_timer_t * dscClassicKeypadInterface::timer0 = NULL;
+hw_timer_t * dscClassicKeypadInterface::timer1 = NULL;
 
 #else  // ESP-IDF 4+
 esp_timer_handle_t timer3;
@@ -68,14 +68,14 @@ void dscClassicKeypadInterface::begin(Stream &_stream) {
   timer1_attachInterrupt(dscClockInterrupt);
   timer1_write(5000);
 
-  // esp32 timer0 calls dscClockInterrupt()
+  // esp32 timer1 calls dscClockInterrupt()
   #elif defined(ESP32)
   #if ESP_IDF_VERSION_MAJOR < 4
-  timer0 = timerBegin(0, 80, true);
-  timerStop(timer0);
-  timerAttachInterrupt(timer0, &dscClockInterrupt, true);
-  timerAlarmWrite(timer0, 1000, true);
-  timerAlarmEnable(timer0);
+  timer1 = timerBegin(1, 80, true);
+  timerStop(timer1);
+  timerAttachInterrupt(timer1, &dscClockInterrupt, true);
+  timerAlarmWrite(timer1, 1000, true);
+  timerAlarmEnable(timer1);
   #else  // IDF4+
   esp_timer_create(&timer3Parameters, &timer3);
   #endif  // ESP_IDF_VERSION_MAJOR
@@ -138,7 +138,7 @@ bool dscClassicKeypadInterface::loop() {
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
     #elif defined(ESP32)
     #if ESP_IDF_VERSION_MAJOR < 4
-    timerStart(timer0);
+    timerStart(timer1);
     #else  // IDF4+
     esp_timer_start_periodic(timer3, 1000);
     #endif  // ESP_IDF_VERSION_MAJOR
@@ -176,7 +176,7 @@ bool dscClassicKeypadInterface::loop() {
 
   // Resets counters when the buffer is cleared
   #if defined(ESP32)
-  portENTER_CRITICAL(&timer0Mux);
+  portENTER_CRITICAL(&timer1Mux);
   #else
   noInterrupts();
   #endif
@@ -187,7 +187,7 @@ bool dscClassicKeypadInterface::loop() {
   }
 
   #if defined(ESP32)
-  portEXIT_CRITICAL(&timer0Mux);
+  portEXIT_CRITICAL(&timer1Mux);
   #else
   interrupts();
   #endif
@@ -402,7 +402,7 @@ void IRAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
     timer1_disable();
     #elif defined(ESP32)
     #if ESP_IDF_VERSION_MAJOR < 4
-    timerStop(timer0);
+    timerStop(timer1);
     #else  // IDF4+
     esp_timer_stop(timer3);
     #endif  // ESP_IDF_VERSION_MAJOR
