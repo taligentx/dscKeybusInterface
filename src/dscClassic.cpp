@@ -274,6 +274,22 @@ void dscClassicInterface::processPanelStatus() {
     troubleLight = false;
     bitWrite(lights[0], 4, 0);
   }
+  if (bitRead(panelData[1], 2)) {
+    programLight = true;
+    bitWrite(lights[0], 5, 1);
+  }
+  else {
+    programLight = false;
+    bitWrite(lights[0], 5, 0);
+  }
+  if (bitRead(panelData[1], 1)) {
+    fireLight = true;
+    bitWrite(lights[0], 6, 1);
+  }
+  else {
+    fireLight = false;
+    bitWrite(lights[0], 6, 0);
+  }
   if (bitRead(panelData[1], 0)) beep = true;
   else beep = false;
 
@@ -843,6 +859,8 @@ void dscClassicInterface::printPanelMessage() {
     if (bitRead(panelData[1], 5)) stream->print(F("Memory "));
     if (bitRead(panelData[1], 4)) stream->print(F("Bypass "));
     if (bitRead(panelData[1], 3)) stream->print(F("Trouble "));
+    if (bitRead(panelData[1], 2)) stream->print(F("Program "));
+    if (bitRead(panelData[1], 1)) stream->print(F("Fire "));
     if (bitRead(panelData[1], 0)) stream->print(F("Beep "));
   }
   else stream->print(F("none "));
@@ -850,8 +868,9 @@ void dscClassicInterface::printPanelMessage() {
   stream->print(F("| Status: "));
   if (pc16Data[1]) {
     if (bitRead(pc16Data[1], 7)) stream->print(F("Trouble "));
-    if (bitRead(pc16Data[1], 6)) stream->print(F("Armed with bypassed zones "));
-    if (bitRead(pc16Data[1], 5)) stream->print(F("Armed "));
+    if (bitRead(pc16Data[1], 5)) stream->print(F("Armed A "));
+    if (bitRead(pc16Data[1], 4)) stream->print(F("Armed B "));
+    if (bitRead(pc16Data[1], 6)) stream->print(F("with bypassed zones "));
     if (bitRead(pc16Data[1], 3)) stream->print(F("Keypad Panic alarm "));
     if (bitRead(pc16Data[1], 2)) stream->print(F("Keypad Aux alarm "));
     if (bitRead(pc16Data[1], 1)) stream->print(F("Keypad Fire alarm "));
