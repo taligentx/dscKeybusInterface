@@ -1,5 +1,5 @@
 /*
- *  TinyGSM SMS Notification 0.1 (Arduino)
+ *  TinyGSM SMS Notification 1.0 (Arduino)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via a TinyGSM-compatible SIM800L module which is connected
@@ -11,7 +11,7 @@
  *    2. Set the destination phone numbers in the sketch settings.
  *
  *  Release notes:
- *    0.1 - Just converted from ESP32 to Arduino. NOT TESTED - waiting to receive the SIM800L module to test with
+ *    1.0 - Just converted from ESP32 to Arduino. Tested with SIM800L module.
  *
  *  Wiring:
  *      DSC Aux(+) --- Arduino Vin pin
@@ -35,12 +35,12 @@
  *
  *
  *      Connecting SIM800L module with Arduino Uno:
- *      SIM800 RX -+-- 5.6k ohm resistor -- SIM800RxPin (Arduino Uno: 2-12)
+ *      SIM800 RX -+-- 5.6k ohm resistor -- SIM800TxPin (Arduino Uno: 2-12)
  *                 |
  *                 |
  *                 +-- 10k ohm resistor -- Arduino Uno Ground
  *
- *      SIM800 TX ---- SIM800TxPin (Arduino Uno: 2-12)
+ *      SIM800 TX ---- SIM800RxPin (Arduino Uno: 2-12)
  *
  *      SIM800 GND --- Arduino Uno Ground
  *      
@@ -83,13 +83,6 @@ const char* sendToPhoneNumbers[] = {
 
 #define phone_number_count (sizeof (sendToPhoneNumbers) / sizeof (const char *))
 
-// Configures the GSM modem interface with the specified pins (eg. TTGO T-Call 1.3 v20190601).
-#define MODEM_RST       5
-#define MODEM_PWRKEY    4
-#define MODEM_POWER_ON 23
-#define MODEM_TX       27
-#define MODEM_RX       26
-
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
@@ -100,12 +93,15 @@ const char* sendToPhoneNumbers[] = {
 #define SIM800TxPin 10  // Arduino Uno: 2-12
 
 // Settings
-bool notifyOnPowerTroubles = true;
-bool notifyOnDisArming = true;
+//NOTE: I kept getting "Keybus buffer overflow" when sketch was sending multiple messages at once (example: AC power trouble and trouble status ON)
+bool notifyOnPartitionAlarm = true;
+bool notifyOnPowerTroubles = false;
+bool notifyOnKeypadAlarm = false;
+bool notifyOnDisArming = false;
 bool notifyOnTrouble = true;
 
 // Initialize components
-SoftwareSerial serialSIM800(SIM800TxPin,SIM800RxPin);
+SoftwareSerial serialSIM800(SIM800RxPin,SIM800TxPin);
 #ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 #else
@@ -114,25 +110,12 @@ dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 TinyGsm modem(serialSIM800);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(1000);
   Serial.println();
   Serial.println();
 
-  pinMode(MODEM_PWRKEY, OUTPUT);
-  pinMode(MODEM_POWER_ON, OUTPUT);
-
-  // Turn on the Modem power first
-  digitalWrite(MODEM_POWER_ON, HIGH);
-
-  // Pull down PWRKEY for more than 1 second according to manual requirements
-  digitalWrite(MODEM_PWRKEY, HIGH);
-  delay(100);
-  digitalWrite(MODEM_PWRKEY, LOW);
-  delay(1000);
-  digitalWrite(MODEM_PWRKEY, HIGH);
-
-  serialSIM800.begin(115200);
+  serialSIM800.begin(9600);
 
   while (!modem.isNetworkConnected()) {
     Serial.print(F("GSM..."));
@@ -178,93 +161,97 @@ void loop() {
       if (dsc.disabled[partition]) continue;
 
       // Checks alarm triggered status
-      if (dsc.alarmChanged[partition]) {
-        dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
+      if (notifyOnPartitionAlarm) {
+        if (dsc.alarmChanged[partition]) {
+          dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
 
-        if (dsc.alarm[partition]) {
-          char messageContent[19] = "Alarm: Partition ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
+          if (dsc.alarm[partition]) {
+            char messageContent[19] = "Alarm: Partition ";
+            appendPartition(partition, messageContent);  // Appends the message with the partition number
+            sendMessage(messageContent);
+          }
+          else {
+            char messageContent[34] = "Disarmed after alarm: Partition ";
+            appendPartition(partition, messageContent);  // Appends the message with the partition number
+            sendMessage(messageContent);
+          }
         }
-        else {
-          char messageContent[34] = "Disarmed after alarm: Partition ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
+
+        if (dsc.fireChanged[partition]) {
+          dsc.fireChanged[partition] = false;  // Resets the fire status flag
+
+          if (dsc.fire[partition]) {
+            char messageContent[24] = "Fire alarm: Partition ";
+            appendPartition(partition, messageContent);  // Appends the message with the partition number
+            sendMessage(messageContent);
+          }
+          else {
+            char messageContent[33] = "Fire alarm restored: Partition ";
+            appendPartition(partition, messageContent);  // Appends the message with the partition number
+            sendMessage(messageContent);
+          }
         }
       }
-
-      if (dsc.fireChanged[partition]) {
-        dsc.fireChanged[partition] = false;  // Resets the fire status flag
-
-        if (dsc.fire[partition]) {
-          char messageContent[24] = "Fire alarm: Partition ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
-        }
-        else {
-          char messageContent[33] = "Fire alarm restored: Partition ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
-        }
-      }
-
+      
       // Publishes armed/disarmed status
-      if (dsc.armedChanged[partition]) {
-        if (!notifyOnDisArming) continue;
-        if (dsc.armed[partition]) {
-          // Night armed away
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
-            char messageContent[33] = "Armed away - night: Partition: ";
+      if (notifyOnDisArming) {
+        if (dsc.armedChanged[partition]) {
+          if (dsc.armed[partition]) {
+            // Night armed away
+            if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+              char messageContent[33] = "Armed away - night: Partition: ";
+              appendPartition(partition, messageContent);  // Appends the message with the partition number
+              sendMessage(messageContent);
+            }
+
+            // Armed away
+            else if (dsc.armedAway[partition]) {
+              char messageContent[25] = "Armed away: Partition: ";
+              appendPartition(partition, messageContent);  // Appends the message with the partition number
+              sendMessage(messageContent);
+            }
+
+            // Night armed stay
+            else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+              char messageContent[33] = "Armed stay - night: Partition: ";
+              appendPartition(partition, messageContent);  // Appends the message with the partition number
+              sendMessage(messageContent);
+            }
+
+            // Armed stay
+            else if (dsc.armedStay[partition]) {
+              char messageContent[25] = "Armed stay: Partition: ";
+              appendPartition(partition, messageContent);  // Appends the message with the partition number
+              sendMessage(messageContent);
+            }
+          }
+
+          // Disarmed
+          else {
+            char messageContent[23] = "Disarmed: Partition: ";
             appendPartition(partition, messageContent);  // Appends the message with the partition number
             sendMessage(messageContent);
           }
-
-          // Armed away
-          else if (dsc.armedAway[partition]) {
-            char messageContent[25] = "Armed away: Partition: ";
-            appendPartition(partition, messageContent);  // Appends the message with the partition number
-            sendMessage(messageContent);
-          }
-
-          // Night armed stay
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
-            char messageContent[33] = "Armed stay - night: Partition: ";
-            appendPartition(partition, messageContent);  // Appends the message with the partition number
-            sendMessage(messageContent);
-          }
-
-          // Armed stay
-          else if (dsc.armedStay[partition]) {
-            char messageContent[25] = "Armed stay: Partition: ";
-            appendPartition(partition, messageContent);  // Appends the message with the partition number
-            sendMessage(messageContent);
-          }
-        }
-
-        // Disarmed
-        else {
-          char messageContent[23] = "Disarmed: Partition: ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
         }
       }
     }
+    
     // Checks trouble status
-    if (dsc.troubleChanged) {
-      if (!notifyOnTrouble) return;
-      dsc.troubleChanged = false;  // Resets the trouble status flag
-      if (dsc.trouble) sendMessage("Trouble status on");
-      else sendMessage("Trouble status restored");
+    if (notifyOnTrouble) {
+      if (dsc.troubleChanged) {
+        dsc.troubleChanged = false;  // Resets the trouble status flag
+        if (dsc.trouble) sendMessage("Trouble status on");
+        else sendMessage("Trouble status restored");
+      }
     }
-
     // Checks for AC power status
-    if (dsc.powerChanged) {
-      if (!notifyOnPowerTroubles) return;
-      dsc.powerChanged = false;  // Resets the battery trouble status flag
-      if (dsc.powerTrouble) sendMessage("AC power trouble");
-      else sendMessage("AC power restored");
+    if (notifyOnPowerTroubles) {
+      if (dsc.powerChanged) {
+        dsc.powerChanged = false;  // Resets the battery trouble status flag
+        if (dsc.powerTrouble) sendMessage("AC power trouble");
+        else sendMessage("AC power restored");
+      } 
     }
-
     // Checks panel battery status
     if (dsc.batteryChanged) {
       dsc.batteryChanged = false;  // Resets the battery trouble status flag
@@ -272,22 +259,24 @@ void loop() {
       else sendMessage("Panel battery restored");
     }
 
-    // Checks for keypad fire alarm status
-    if (dsc.keypadFireAlarm) {
-      dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
-      sendMessage("Keypad Fire alarm");
-    }
+    if (notifyOnKeypadAlarm) {
+      // Checks for keypad fire alarm status
+      if (dsc.keypadFireAlarm) {
+        dsc.keypadFireAlarm = false;  // Resets the keypad fire alarm status flag
+        sendMessage("Keypad Fire alarm");
+      }
 
-    // Checks for keypad aux auxiliary alarm status
-    if (dsc.keypadAuxAlarm) {
-      dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
-      sendMessage("Keypad Aux alarm");
-    }
+      // Checks for keypad aux auxiliary alarm status
+      if (dsc.keypadAuxAlarm) {
+        dsc.keypadAuxAlarm = false;  // Resets the keypad auxiliary alarm status flag
+        sendMessage("Keypad Aux alarm");
+      }
 
-    // Checks for keypad panic alarm status
-    if (dsc.keypadPanicAlarm) {
-      dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
-      sendMessage("Keypad Panic alarm");
+      // Checks for keypad panic alarm status
+      if (dsc.keypadPanicAlarm) {
+        dsc.keypadPanicAlarm = false;  // Resets the keypad panic alarm status flag
+        sendMessage("Keypad Panic alarm");
+      }
     }
   }
 }
