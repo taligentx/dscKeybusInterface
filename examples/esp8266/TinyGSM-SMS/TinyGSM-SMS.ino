@@ -227,6 +227,7 @@ void loop() {
             appendPartition(partition, messageContent);  // Appends the message with the partition number
             sendMessage(messageContent);
           }
+          dsc.armedChanged[partition] = false;  // Resets the partition armed status flag
         }
       }
     }
@@ -245,7 +246,7 @@ void loop() {
         dsc.powerChanged = false;  // Resets the battery trouble status flag
         if (dsc.powerTrouble) sendMessage("AC power trouble");
         else sendMessage("AC power restored");
-      } 
+      }
     }
     // Checks panel battery status
     if (dsc.batteryChanged) {
