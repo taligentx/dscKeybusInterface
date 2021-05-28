@@ -68,11 +68,8 @@
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
-// This value you would get from @BotFather when you create new bot.
-const char* telegramBotToken = "XXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";  
-// If the chat is a group, the chat id is negative. If it is a single person, then positive.
-// Use @myidbot (IDBot) to find out the chat ID of an individual or a group
-const char* telegramUserID = "123456789";    // Telegram User ID or Chat ID (negative)
+const char* telegramBotToken = "";  // Set the Telegram bot access token
+const char* telegramUserID = "";    // Set the Telegram chat user ID
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
@@ -87,67 +84,6 @@ WiFiClientSecure ipClient;
 UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
 const int telegramCheckInterval = 1000;
 bool wifiConnected = true;
-
-bool sendMessage(const char* messageContent) {
-  byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
-  char message[messageLength];
-  strcpy(message, messagePrefix);
-  strcat(message, messageContent);
-  if (telegramBot.sendMessage(telegramUserID, message, "")) return true;
-  else return false;
-}
-
-void appendPartition(byte sourceNumber, char* message) {
-  char partitionNumber[2];
-  itoa(sourceNumber + 1, partitionNumber, 10);
-  strcat(message, partitionNumber);
-}
-
-void handleTelegram(byte telegramMessages) {
-  static byte partition = 0;
-
-  for (byte i = 0; i < telegramMessages; i++) {
-
-    // Checks if a partition number 1-8 has been sent and sets the partition
-    if (telegramBot.messages[i].text[1] >= 0x31 && telegramBot.messages[i].text[1] <= 0x38) {
-      partition = telegramBot.messages[i].text[1] - 49;
-      char messageContent[17] = "Set: Partition ";
-      appendPartition(partition, messageContent);  // Appends the message with the partition number
-      sendMessage(messageContent);
-    }
-
-    // Resets status if attempting to change the armed mode while armed or not ready
-    if (telegramBot.messages[i].text != "/disarm" && !dsc.ready[partition]) {
-      dsc.armedChanged[partition] = true;
-      dsc.statusChanged = true;
-      return;
-    }
-
-    // Arm stay
-    if (telegramBot.messages[i].text == "/armstay" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('s');
-    }
-
-    // Arm away
-    else if (telegramBot.messages[i].text == "/armaway" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('w');
-    }
-
-    // Arm night
-    else if (telegramBot.messages[i].text == "/armnight" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('n');
-    }
-
-    // Disarm
-    else if (telegramBot.messages[i].text == "/disarm" && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write(accessCode);
-    }
-  }
-}
 
 
 void setup() {
@@ -386,4 +322,68 @@ void loop() {
       sendMessage("Keypad Panic alarm");
     }
   }
+}
+
+
+void handleTelegram(byte telegramMessages) {
+  static byte partition = 0;
+
+  for (byte i = 0; i < telegramMessages; i++) {
+
+    // Checks if a partition number 1-8 has been sent and sets the partition
+    if (telegramBot.messages[i].text[1] >= 0x31 && telegramBot.messages[i].text[1] <= 0x38) {
+      partition = telegramBot.messages[i].text[1] - 49;
+      char messageContent[17] = "Set: Partition ";
+      appendPartition(partition, messageContent);  // Appends the message with the partition number
+      sendMessage(messageContent);
+    }
+
+    // Resets status if attempting to change the armed mode while armed or not ready
+    if (telegramBot.messages[i].text != "/disarm" && !dsc.ready[partition]) {
+      dsc.armedChanged[partition] = true;
+      dsc.statusChanged = true;
+      return;
+    }
+
+    // Arm stay
+    if (telegramBot.messages[i].text == "/armstay" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('s');
+    }
+
+    // Arm away
+    else if (telegramBot.messages[i].text == "/armaway" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('w');
+    }
+
+    // Arm night
+    else if (telegramBot.messages[i].text == "/armnight" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write('n');
+    }
+
+    // Disarm
+    else if (telegramBot.messages[i].text == "/disarm" && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
+      dsc.writePartition = partition + 1;  // Sets writes to the partition number
+      dsc.write(accessCode);
+    }
+  }
+}
+
+
+bool sendMessage(const char* messageContent) {
+  byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
+  char message[messageLength];
+  strcpy(message, messagePrefix);
+  strcat(message, messageContent);
+  if (telegramBot.sendMessage(telegramUserID, message, "")) return true;
+  else return false;
+}
+
+
+void appendPartition(byte sourceNumber, char* message) {
+  char partitionNumber[2];
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(message, partitionNumber);
 }
