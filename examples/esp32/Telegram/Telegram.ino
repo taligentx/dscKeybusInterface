@@ -68,8 +68,11 @@
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
-const char* telegramBotToken = "";  // Set the Telegram bot access token
-const char* telegramUserID = "";    // Set the Telegram chat user ID
+// This value you would get from @BotFather when you create new bot.
+const char* telegramBotToken = "XXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+// If the chat is a group, the chat id is negative. If it is a single person, then positive.
+// Use @myidbot (IDBot) to find out the chat ID of an individual or a group
+const char* telegramUserID = "123456789";    // Telegram User ID or Chat ID (negative)
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
