@@ -1,0 +1,52 @@
+name: Compile examples for Arduino
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: 
+        - "examples/Arduino/HomeAssistant-MQTT/HomeAssistant-MQTT.ino"
+        - "examples/Arduino/Homebridge-MQTT/Homebridge-MQTT.ino"
+        - "examples/Arduino/KeybusReader/KeybusReader.ino"
+        - "examples/Arduino/OpenHAB-MQTT/OpenHAB-MQTT.ino"
+        - "examples/Arduino/Status/Status.ino"
+        - "examples/Arduino/TimeSyncNTP/TimeSyncNTP.ino"
+        - "examples/Arduino/Unlocker/Unlocker.ino"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Install 3rd party dependecies
+      run: | 
+        pio lib -g install \
+        https://github.com/SofaPirate/Chrono \
+        https://github.com/bblanchon/ArduinoJson \
+        https://github.com/taligentx/dscKeybusInterface \
+        https://github.com/knolleary/pubsubclient \
+        https://github.com/athombv/homey-arduino-library \
+        https://github.com/arduino-libraries/Ethernet \
+        https://github.com/PaulStoffregen/Time
+        
+    - name: Run PlatformIO Examples
+      run: pio ci --board=uno
+      env:
+        PLATFORMIO_CI_SRC: ${{ matrix.example }}
