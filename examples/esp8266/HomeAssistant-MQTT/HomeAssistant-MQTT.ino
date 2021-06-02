@@ -555,7 +555,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x12: mqtt.publish(publishTopic, "Battery check in progress"); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
     case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
-    case 0x06: mqtt.publish(publishTopic, "Armed: Away with no entry delay", true); break;
+    case 0x16: mqtt.publish(publishTopic, "Armed: Away with no entry delay", true); break;
     case 0x17: mqtt.publish(publishTopic, "Power saving: Keypad blanked", true); break;
     case 0x19: mqtt.publish(publishTopic, "Disarmed: Alarm memory"); break;
     case 0x22: mqtt.publish(publishTopic, "Disarmed: Recent closing", true); break;
