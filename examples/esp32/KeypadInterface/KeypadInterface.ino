@@ -25,10 +25,11 @@
  *
  *  Classic keypad features:
  *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
- *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Zones 1-6: dsc.lightReady, dsc.lightZone1, etc
+ *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Zones 1-8: dsc.lightReady, dsc.lightZone1, etc
  *
  *  Release notes:
  *    1.3a- Added ability to change LCD keypad messages - WOULD NOT COMPILE FOR CLASSIC SERIES, search for "remove"
+ *    1.3 - Added support for Program, Fire, Zone 7 and 8 lights on CLassic keypad PC2550RK
  *    1.2 - Add Classic keypad support - PC1500RK
  *    1.1 - Add keypad beep, buzzer, constant tone
  *    1.0 - Initial release
