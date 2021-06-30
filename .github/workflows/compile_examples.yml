@@ -1,6 +1,14 @@
-name: Compile examples for Arduino
+name: Compile Examples
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
 
 jobs:
   arduino:
