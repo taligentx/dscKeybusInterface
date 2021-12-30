@@ -1,0 +1,175 @@
+name: Compile Examples
+
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
+
+jobs:
+  arduino:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: 
+        - "examples/Arduino/HomeAssistant-MQTT/HomeAssistant-MQTT.ino"
+        - "examples/Arduino/Homebridge-MQTT/Homebridge-MQTT.ino"
+        - "examples/Arduino/KeybusReader/KeybusReader.ino"
+        - "examples/Arduino/OpenHAB-MQTT/OpenHAB-MQTT.ino"
+        - "examples/Arduino/Status/Status.ino"
+        - "examples/Arduino/TimeSyncNTP/TimeSyncNTP.ino"
+        - "examples/Arduino/Unlocker/Unlocker.ino"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Install 3rd party dependecies
+      run: | 
+        pio lib -g install \
+        https://github.com/SofaPirate/Chrono \
+        https://github.com/bblanchon/ArduinoJson \
+        https://github.com/taligentx/dscKeybusInterface \
+        https://github.com/knolleary/pubsubclient \
+        https://github.com/athombv/homey-arduino-library \
+        https://github.com/arduino-libraries/Ethernet \
+        https://github.com/PaulStoffregen/Time
+        
+    - name: Run PlatformIO Examples
+      run: pio ci --board=uno
+      env:
+        PLATFORMIO_CI_SRC: ${{ matrix.example }}
+
+  esp8266:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - "examples/esp8266/Email/Email.ino"
+          - "examples/esp8266/HomeAssistant-MQTT/HomeAssistant-MQTT.ino"
+          - "examples/esp8266/Homey/Homey.ino"
+          - "examples/esp8266/KeybusReader/KeybusReader.ino"
+          - "examples/esp8266/KeybusReaderIP/KeybusReaderIP.ino"
+          - "examples/esp8266/OpenHAB-MQTT/OpenHAB-MQTT.ino"
+          - "examples/esp8266/Pushbullet/Pushbullet.ino"
+          - "examples/esp8266/Status/Status.ino"
+          - "examples/esp8266/Telegram/Telegram.ino"
+          - "examples/esp8266/TimeSyncNTP/TimeSyncNTP.ino"
+          - "examples/esp8266/Twilio-SMS/Twilio-SMS.ino"
+          - "examples/esp8266/Unlocker/Unlocker.ino"
+          - "examples/esp8266/VirtualKeypad-Blynk/VirtualKeypad-Blynk.ino"
+          - "examples/esp8266/VirtualKeypad-Web/VirtualKeypad-Web.ino"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+      - name: Cache PlatformIO
+        uses: actions/cache@v2
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+      - name: Install 3rd party dependecies
+        run: |
+          pio lib -g install \
+          https://github.com/SofaPirate/Chrono \
+          https://github.com/bblanchon/ArduinoJson \
+          https://github.com/taligentx/dscKeybusInterface \
+          https://github.com/knolleary/pubsubclient \
+          https://github.com/athombv/homey-arduino-library \
+          https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot \
+          https://github.com/blynkkk/blynk-library \
+          https://github.com/me-no-dev/ESPAsyncWebServer
+
+      - name: Run PlatformIO Examples
+        run: pio ci --board=nodemcuv2
+        env:
+          PLATFORMIO_CI_SRC: ${{ matrix.example }}
+
+  esp32:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - "examples/esp32/Email/Email.ino"
+          - "examples/esp32/HomeAssistant-MQTT/HomeAssistant-MQTT.ino"
+          - "examples/esp32/Homebridge-MQTT/Homebridge-MQTT.ino"
+          - "examples/esp32/Homey/Homey.ino"
+          - "examples/esp32/KeybusReader/KeybusReader.ino"
+          - "examples/esp32/KeybusReaderIP/KeybusReaderIP.ino"
+          - "examples/esp32/OpenHAB-MQTT/OpenHAB-MQTT.ino"
+          - "examples/esp32/Pushbullet/Pushbullet.ino"
+          - "examples/esp32/Status/Status.ino"
+          - "examples/esp32/Telegram/Telegram.ino"
+          - "examples/esp32/TimeSyncNTP/TimeSyncNTP.ino"
+          - "examples/esp32/TinyGSM-SMS/TinyGSM-SMS.ino"
+          - "examples/esp32/Twilio-SMS/Twilio-SMS.ino"
+          - "examples/esp32/Unlocker/Unlocker.ino"
+          - "examples/esp32/VirtualKeypad-Blynk/VirtualKeypad-Blynk.ino"
+          - "examples/esp32/VirtualKeypad-Web/VirtualKeypad-Web.ino"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+      - name: Cache PlatformIO
+        uses: actions/cache@v2
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+      - name: Install 3rd party dependecies
+        run: |
+          pio lib -g install \
+          https://github.com/SofaPirate/Chrono \
+          https://github.com/bblanchon/ArduinoJson \
+          https://github.com/taligentx/dscKeybusInterface \
+          https://github.com/knolleary/pubsubclient \
+          https://github.com/athombv/homey-arduino-library \
+          https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot \
+          https://github.com/blynkkk/blynk-library \
+          https://github.com/me-no-dev/ESPAsyncWebServer \
+          https://github.com/vshymanskyy/TinyGSM
+
+      - name: Run PlatformIO Examples
+        run: pio ci --board=lolin32
+        env:
+          PLATFORMIO_CI_SRC: ${{ matrix.example }}
