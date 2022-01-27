@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.4 (esp32)
+ *  VirtualKeypad-Web 1.5 (esp32)
  *
  *  Provides a virtual keypad web interface using the esp32 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
@@ -7,8 +7,10 @@
  *
  *  Usage:
  *    1. Install the following libraries directly from each Github repository:
- *         ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
  *         AsyncTCP: https://github.com/me-no-dev/AsyncTCP
+ *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
+ *            * This fork of the original ESPAsyncWebServer fixes the web server crashing
+ *              when used with recent versions of Safari on macOS and iOS
  *
  *    2. Install the Arduino ESP32 filesystem uploader to enable uploading web server files:
  *         https://github.com/me-no-dev/arduino-esp32fs-plugin
@@ -29,6 +31,8 @@
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Changed ESPAsyncWebServer to a newer fork to fix web server crashes with Safari
  *    1.4 - Fix crash when pressing keys while Keybus is disconnected
  *    1.0 - Initial release
  *

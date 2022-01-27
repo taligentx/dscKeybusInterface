@@ -1,5 +1,5 @@
 /*
- *  Telegram Bot 1.0 (esp8266)
+ *  Telegram Bot 1.1 (esp8266)
  *
  *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
  *
@@ -27,6 +27,7 @@
  *    - Disarm: /disarm
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:

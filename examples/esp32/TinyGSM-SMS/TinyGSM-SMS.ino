@@ -1,5 +1,5 @@
 /*
- *  TinyGSM SMS Notification 1.0 (esp32)
+ *  TinyGSM SMS Notification 1.1 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via a TinyGSM-compatible module which can be integrated
@@ -11,6 +11,7 @@
  *    2. Set the destination phone numbers in the sketch settings.
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:

@@ -1,12 +1,21 @@
 /*
- *  VirtualKeypad-Blynk 1.3 (esp32)
+ *  VirtualKeypad-Blynk 1.4 (esp32)
  *
- *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android, similar
- *  to a physical DSC LED keypad.  Note that while the Blynk app has an LCD to display the partition status, the
- *  sketch currently does not emulate the menu navigation features of the DSC LCD keypads (PK5500, etc).
+ *  Provides a virtual keypad interface for the free Blynk legacy (https://www.blynk.cc) app on iOS and Android, similar
+ *  to a physical DSC LED keypad (the newer Blynk.Cloud app is not currently supported):
+ *
+ *    iOS: https://apps.apple.com/us/app/blynk-0-1-legacy/id808760481
+ *    Android: https://play.google.com/store/apps/details?id=cc.blynk&hl=en&gl=US
+ *
+ *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
+ *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
+ *  servers can setup users with any amount of Blynk Energy.
+ *
+ *  Note that while the Blynk legacy app has an LCD to display the partition status, the sketch currently does
+ *  not emulate the menu navigation features of the DSC LCD keypads (PK5500, etc).
  *
  *  Usage:
- *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
+ *    1. Scan one of the following QR codes from within the Blynk legacy app for an example keypad layout - as QR codes
  *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
  *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.  Some Android devices have
  *       issues reading these QR codes and may need to be used with a different monitor/device.
@@ -20,11 +29,6 @@
  *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
  *    5. Add the auth token to the sketch below.
  *    6. Upload the sketch.
- *
- *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
- *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
- *  servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above
- *  example layouts requires more of Blynk's Energy units than available on the free usage tier.
  *
  *  The Blynk layout can be customized with widgets using these virtual pin mappings:
  *    V0 - Keypad 0 ... V9 - Keypad 9
@@ -53,6 +57,7 @@
       V61 - Zone 1 ... V124 - Zone 64
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Display alarm memory, programming zone lights, and event buffer
  *          Add PGM outputs 1-14 status
  *    1.0 - Initial release

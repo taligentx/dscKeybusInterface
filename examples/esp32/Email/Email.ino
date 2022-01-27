@@ -1,5 +1,5 @@
 /*
- *  Email Notification 1.0 (esp32)
+ *  Email Notification 1.1 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendEmail().
@@ -9,6 +9,7 @@
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:

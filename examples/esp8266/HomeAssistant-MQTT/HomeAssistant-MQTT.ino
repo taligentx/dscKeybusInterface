@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.4 (esp8266)
+ *  HomeAssistant-MQTT 1.5 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -160,6 +160,8 @@ entity: alarm_control_panel.security_partition_1
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Fixed armed away with no entry delay status message
  *    1.4 - Added PGM outputs 1-14 status
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Added sensor component to display partition status messages
@@ -555,7 +557,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x12: mqtt.publish(publishTopic, "Battery check in progress"); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
     case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
-    case 0x06: mqtt.publish(publishTopic, "Armed: Away with no entry delay", true); break;
+    case 0x16: mqtt.publish(publishTopic, "Armed: Away with no entry delay", true); break;
     case 0x17: mqtt.publish(publishTopic, "Power saving: Keypad blanked", true); break;
     case 0x19: mqtt.publish(publishTopic, "Disarmed: Alarm memory"); break;
     case 0x22: mqtt.publish(publishTopic, "Disarmed: Recent closing", true); break;

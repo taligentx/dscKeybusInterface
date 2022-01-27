@@ -1,10 +1,11 @@
 /*
- *  Twilio SMS Notification 1.3 (esp8266)
+ *  Twilio SMS Notification 1.4 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection
  *          Add appendPartition() to simplify sketch

@@ -1,10 +1,11 @@
 /*
- *  Twilio SMS Notification 1.0 (esp32)
+ *  Twilio SMS Notification 1.1 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:

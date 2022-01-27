@@ -1,5 +1,5 @@
 /*
- *  Homey 1.0 (esp32)
+ *  Homey 1.1 (esp32)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -12,6 +12,7 @@
  *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:

@@ -1,11 +1,12 @@
 /*
- *  DSC Status 1.3 (Arduino)
+ *  DSC Status 1.4 (Arduino)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Added PGM outputs 1-14 status
  *    1.1 - Added partition ready, access code, and timestamp status
  *    1.0 - Initial release
@@ -112,7 +113,7 @@ void loop() {
         if (dsc.disabled[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" disabled"));
+          Serial.println(F(": Disabled"));
         }
       }
       if (dsc.disabled[partition]) continue;

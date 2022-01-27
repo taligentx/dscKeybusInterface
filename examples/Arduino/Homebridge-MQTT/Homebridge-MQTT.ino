@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.5 (Arduino with Ethernet)
+ *  Homebridge-MQTT 1.6 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
  *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
@@ -146,6 +146,7 @@
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.6 - Added DSC Classic series support
  *    1.5 - Support switching armed modes while armed
  *    1.4 - Added PGM outputs 1-14 status
  *          Added notes on Google Home integration

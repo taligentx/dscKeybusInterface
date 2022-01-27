@@ -12,6 +12,7 @@
  *
  *  Release notes:
  *    1.5 - Update HTTPS root certificate for api.pushbullet.com
+ *          Added DSC Classic series support
  *    1.4 - Add HTTPS certificate validation, add customizable message prefix
  *    1.0 - Initial release
  *

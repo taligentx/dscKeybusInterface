@@ -12,6 +12,7 @@
  *
  *  Release notes:
  *    1.5 - Update HTTPS root certificate for api.pushbullet.com
+ *          Added DSC Classic series support
  *    1.4 - Add HTTPS certificate validation, add customizable message prefix
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection

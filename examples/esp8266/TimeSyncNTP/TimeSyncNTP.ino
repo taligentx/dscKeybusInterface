@@ -54,7 +54,6 @@ const byte timePartition = 1;            // Set the partition to use for setting
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // GPIO 5
 #define dscReadPin  D2  // GPIO 4
-#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 #define dscWritePin D8  // GPIO 15
 
 // Initialize components
