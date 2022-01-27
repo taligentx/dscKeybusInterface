@@ -131,12 +131,12 @@ void loop() {
         if (dsc.alarm[partition]) {
           char messageContent[19] = "Alarm: Partition ";
           appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent, messageContent);
+          sendMessage(messageContent);
         }
         else {
           char messageContent[34] = "Disarmed after alarm: Partition ";
           appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent, messageContent);
+          sendMessage(messageContent);
         }
       }
 
@@ -146,12 +146,12 @@ void loop() {
         if (dsc.fire[partition]) {
           char messageContent[24] = "Fire alarm: Partition ";
           appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent, messageContent);
+          sendMessage(messageContent);
         }
         else {
           char messageContent[33] = "Fire alarm restored: Partition ";
           appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent, messageContent);
+          sendMessage(messageContent);
         }
       }
     }
