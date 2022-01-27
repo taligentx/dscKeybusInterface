@@ -82,9 +82,7 @@ class dscClassicKeypadInterface {
     bool keyBeep, beepStart;
 
     #if defined(ESP32)
-    #if ESP_IDF_VERSION_MAJOR < 4
     static hw_timer_t * timer1;
-    #endif
     static portMUX_TYPE timer1Mux;
     #endif
 

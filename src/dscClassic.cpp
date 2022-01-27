@@ -21,16 +21,8 @@
 
 #if defined(ESP32)
 portMUX_TYPE dscClassicInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
-
-#if ESP_IDF_VERSION_MAJOR < 4
 hw_timer_t * dscClassicInterface::timer1 = NULL;
-
-#else  // ESP-IDF 4+
-esp_timer_handle_t timer1;
-const esp_timer_create_args_t timer1Parameters = { .callback = reinterpret_cast<esp_timer_cb_t>(&dscClassicInterface::dscDataInterrupt) };
-
-#endif  // ESP_IDF_VERSION_MAJOR
-#endif  // ESP32
+#endif
 
 dscClassicInterface::dscClassicInterface(byte setClockPin, byte setReadPin, byte setPC16Pin, byte setWritePin, const char * setAccessCode) {
   dscClockPin = setClockPin;
@@ -72,16 +64,12 @@ void dscClassicInterface::begin(Stream &_stream) {
 
   // esp32 timer1 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timer1 = timerBegin(1, 80, true);
   timerStop(timer1);
   timerAttachInterrupt(timer1, &dscDataInterrupt, true);
   timerAlarmWrite(timer1, 250, true);
   timerAlarmEnable(timer1);
-  #else  // IDF4+
-  esp_timer_create(&timer1Parameters, &timer1);
-  #endif  // ESP_IDF_VERSION_MAJOR
-  #endif  // ESP32
+  #endif
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
@@ -101,13 +89,9 @@ void dscClassicInterface::stop() {
 
   // Disables esp32 timer1
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerAlarmDisable(timer1);
   timerEnd(timer1);
-  #else  // ESP-IDF 4+
-  esp_timer_stop(timer1);
-  #endif  // ESP_IDF_VERSION_MAJOR
-  #endif  // ESP32
+  #endif
 
   // Disables the Keybus clock pin interrupt
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
@@ -1038,11 +1022,7 @@ void IRAM_ATTR dscClassicInterface::dscClockInterrupt() {
 
   // esp32 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerStart(timer1);
-  #else  // IDF4+
-  esp_timer_start_periodic(timer1, 250);
-  #endif
   portENTER_CRITICAL(&timer1Mux);
   #endif
 
@@ -1095,11 +1075,7 @@ void dscClassicInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscClassicInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerStop(timer1);
-  #else // IDF 4+
-  esp_timer_stop(timer1);
-  #endif
   portENTER_CRITICAL(&timer1Mux);
 #endif
 
