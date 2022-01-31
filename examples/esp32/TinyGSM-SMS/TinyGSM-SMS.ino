@@ -102,13 +102,13 @@ void setup() {
   Serial1.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
 
   while (!modem.isNetworkConnected()) {
-    Serial.print(F("GSM..."));
+    Serial.print(F("GSM...."));
     while (!modem.restart()) {
       Serial.print(".");
     }
     Serial.println();
 
-    Serial.print(F("Waiting for network..."));
+    Serial.print(F("Waiting for network...."));
     if (modem.waitForNetwork(600000L) && modem.isNetworkConnected()) {
       Serial.println(F("connected."));
     }

@@ -128,7 +128,7 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-  Serial.print(F("DSC Keybus Interface..."));
+  Serial.print(F("DSC Keybus Interface...."));
 
   // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
   // "Stay/away zones open" (0x02), or "Zones open" (0x03)

@@ -71,7 +71,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -81,7 +81,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   configTime(timeZoneOffset, daylightOffset, ntpServer);  // Initiates the NTP client, synced hourly
   while (!getLocalTime(&ntpTime)) {
     Serial.print(".");

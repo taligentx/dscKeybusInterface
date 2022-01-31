@@ -9,8 +9,8 @@
  *    1. Install the following libraries directly from each Github repository:
  *         ESPAsyncTCP: https://github.com/me-no-dev/ESPAsyncTCP
  *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
- *            * This fork of the original ESPAsyncWebServer fixes the web server crashing
- *              when used with recent versions of Safari on macOS and iOS
+ *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
+ *              when used with recent versions of Safari on macOS and iOS.
  *
  *    2. Install ESP8266FS to enable uploading web server files to the esp8266:
  *         https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#uploading-files-to-file-system
@@ -129,7 +129,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

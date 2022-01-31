@@ -5,6 +5,8 @@
  *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
  *
  *  Release notes:
+ *    1.2 - Add TLS root certificate for Twilio
+ *          Encode authorization data in base64 directly within the sketch
  *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
@@ -42,13 +44,13 @@
 
 #include <WiFiClientSecure.h>
 #include <dscKeybusInterface.h>
+#include "mbedtls/base64.h"
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
 const char* AccountSID = "";	       // Set the account SID from the Twilio Account Dashboard
 const char* AuthToken = "";		       // Set the auth token from the Twilio Account Dashboard
-const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "AccountSID:AuthToken" | base64 -w 0
 const char* From = "";	             // i.e. 16041234567
 const char* To = "";		             // i.e. 16041234567
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
@@ -58,6 +60,32 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 #define dscReadPin  19  // 4,13,16-39
 #define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
 
+// HTTPS root certificate for api.twilio.com: DigiCert Global Root CA, expires 2031.11.10
+const char twilioCertificateRoot[] = R"=EOF=(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)=EOF=";
+
 // Initialize components
 #ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
@@ -66,6 +94,9 @@ dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 #endif
 WiFiClientSecure ipClient;
 bool wifiConnected = true;
+char twilioAuth[128];
+size_t twilioAuthLength = 128;
+unsigned char encodedTwilioAuth[128];
 
 
 void setup() {
@@ -74,9 +105,10 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
+  ipClient.setCACert(twilioCertificateRoot);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -84,7 +116,22 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
+  Serial.print(F("NTP time...."));
+  configTime(0, 0, "pool.ntp.org");
+  time_t now = time(nullptr);
+  while (now < 24 * 3600)
+  {
+    Serial.print(".");
+    delay(2000);
+    now = time(nullptr);
+  }
+  Serial.println(F("synchronized."));
+
   // Sends a message on startup to verify connectivity
+  strcat(twilioAuth, AccountSID);
+  strcat(twilioAuth, ":");
+  strcat(twilioAuth, AuthToken);
+  mbedtls_base64_encode(encodedTwilioAuth,twilioAuthLength,&twilioAuthLength,(unsigned char*)twilioAuth, strlen(twilioAuth));
   Serial.print(F("Twilio...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
@@ -138,7 +185,7 @@ void loop() {
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          char messageContent[25];
+          char messageContent[30];
 
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
@@ -279,6 +326,7 @@ void loop() {
 
 
 bool sendMessage(const char* messageContent) {
+  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
 
   // Connects and sends the message as x-www-form-urlencoded
   if (!ipClient.connect("api.twilio.com", 443)) return false;
@@ -286,7 +334,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.print(AccountSID);
   ipClient.println(F("/Messages.json HTTP/1.1"));
   ipClient.print(F("Authorization: Basic "));
-  ipClient.println(Base64EncodedAuth);
+  ipClient.println((char*)encodedTwilioAuth);
   ipClient.println(F("Host: api.twilio.com"));
   ipClient.println(F("User-Agent: ESP32"));
   ipClient.println(F("Accept: */*"));

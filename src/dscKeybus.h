@@ -151,7 +151,6 @@ class dscKeybusInterface {
     static void dscDataInterrupt();
 
     // Deprecated
-    bool handlePanel();         // Returns true if valid panel data is available.  Relabeled to loop()
     bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
 
   private:

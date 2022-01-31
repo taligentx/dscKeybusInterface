@@ -106,7 +106,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -120,7 +120,7 @@ void setup() {
   if (mqttConnect()) mqttPreviousTime = millis();
   else mqttPreviousTime = 0;
 
-  Serial.print(F("Keybus..."));
+  Serial.print(F("Keybus...."));
   dsc.begin();
   Serial.println(F("connected."));
   Serial.println(F("DSC Keypad Interface is online."));

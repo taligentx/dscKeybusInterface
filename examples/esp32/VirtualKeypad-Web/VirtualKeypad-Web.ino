@@ -9,8 +9,8 @@
  *    1. Install the following libraries directly from each Github repository:
  *         AsyncTCP: https://github.com/me-no-dev/AsyncTCP
  *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
- *            * This fork of the original ESPAsyncWebServer fixes the web server crashing
- *              when used with recent versions of Safari on macOS and iOS
+ *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
+ *              when used with recent versions of Safari on macOS and iOS.
  *
  *    2. Install the Arduino ESP32 filesystem uploader to enable uploading web server files:
  *         https://github.com/me-no-dev/arduino-esp32fs-plugin
@@ -122,7 +122,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

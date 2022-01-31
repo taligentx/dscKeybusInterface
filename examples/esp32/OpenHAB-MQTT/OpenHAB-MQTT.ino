@@ -183,7 +183,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -271,7 +271,7 @@ void loop() {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
         // Disarmed during exit delay
-        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
+        if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
           publishState(mqttPartitionTopic, partition, "D");
         }
       }
@@ -486,7 +486,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x10: mqtt.publish(publishTopic, "Keypad lockout", true); break;
     case 0x11: mqtt.publish(publishTopic, "Alarm", true); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm", true); break;
-    case 0x15: mqtt.publish(publishTopic, "Arm with bypass"); break;
+    case 0x15: mqtt.publish(publishTopic, "Arm with bypass", true); break;
     case 0x16: mqtt.publish(publishTopic, "No entry delay", true); break;
     case 0x22: mqtt.publish(publishTopic, "Alarm memory", true); break;
     case 0x33: mqtt.publish(publishTopic, "Busy", true); break;
@@ -542,4 +542,3 @@ void publishMessage(const char* sourceTopic, byte partition) {
     default: return;
   }
 }
-

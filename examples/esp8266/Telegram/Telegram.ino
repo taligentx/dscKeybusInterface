@@ -108,7 +108,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   ipClient.setTrustAnchors(&telegramCert);
@@ -119,7 +119,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time"));
+  Serial.print(F("NTP time...."));
   configTime(0, 0, "pool.ntp.org");
   time_t now = time(nullptr);
   while (now < 24 * 3600)
@@ -201,7 +201,7 @@ void loop() {
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          char messageContent[25];
+          char messageContent[30];
 
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");

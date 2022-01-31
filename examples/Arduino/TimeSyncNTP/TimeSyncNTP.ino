@@ -80,7 +80,7 @@ void setup() {
   Serial.println();
 
   // Initializes ethernet with DHCP
-  Serial.print(F("Ethernet..."));
+  Serial.print(F("Ethernet...."));
   while(!Ethernet.begin(mac)) {
       Serial.print(".");
       delay(1000);
@@ -89,7 +89,7 @@ void setup() {
   Serial.println(Ethernet.localIP());
   ipClient.begin(localPort);
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   setSyncProvider(getDstCorrectedTime);  // Initiates the NTP client, synced hourly
   setSyncInterval(3600);
   while (timeStatus() != timeSet) {

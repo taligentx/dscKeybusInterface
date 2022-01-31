@@ -231,13 +231,13 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   Blynk.begin(blynkAuthToken, wifiSSID, wifiPassword, blynkServer, blynkPort);
   while (WiFi.status() != WL_CONNECTED) yield();
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  Serial.print(F("Blynk..."));
+  Serial.print(F("Blynk...."));
   while (!Blynk.connected()) {
     Blynk.run();
     yield();

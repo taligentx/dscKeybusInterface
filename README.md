@@ -108,7 +108,9 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
+  - Updated: Added TLS root certificate to `Twilio-SMS`
   - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
+  - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165)
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
