@@ -243,6 +243,7 @@ bool smtpValidResponse() {
   while (!ipClient.available()) {
     dsc.loop();  // Processes Keybus data while waiting on the SMTP response
     if (millis() - previousMillis > 3000) {
+      Serial.println();
       Serial.println(F("Connection timed out waiting for a response."));
       ipClient.stop();
       return false;
@@ -261,6 +262,7 @@ bool smtpValidResponse() {
 
   // Unsuccessful, prints the response to serial to help debug
   else {
+    Serial.println();
     Serial.println(F("Email send error, response:"));
     Serial.print(replyCode);
     while (ipClient.available()) Serial.print((char)ipClient.read());

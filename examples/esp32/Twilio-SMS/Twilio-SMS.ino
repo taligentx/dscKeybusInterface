@@ -356,6 +356,7 @@ bool sendMessage(const char* messageContent) {
   while (!ipClient.available()) {
     dsc.loop();
     if (millis() - previousMillis > 3000) {
+      Serial.println();
       Serial.println(F("Connection timed out waiting for a response."));
       ipClient.stop();
       return false;
@@ -380,6 +381,7 @@ bool sendMessage(const char* messageContent) {
 
   // Unsuccessful, prints the response to serial to help debug
   else {
+    Serial.println();
     Serial.println(F("SMS messaging error, response:"));
     Serial.print(statusCode);
     while (ipClient.available()) Serial.print((char)ipClient.read());

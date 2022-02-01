@@ -6,7 +6,7 @@ This enables existing DSC security system installations to retain the features a
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot, [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
+* Notifications: [Telegram](https://www.telegram.org) bot (with arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 * Keypad interface: Use DSC keypads as physical input devices for any general purpose (without a DSC panel).
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
@@ -95,9 +95,9 @@ This library uses a combination of hardware and timer interrupts to accurately c
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino) and WiFi for ~$3USD shipped.
     - esp32:
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v1.0.5-rc6 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
     - esp32-s2:
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (idf-release/v4.2 branch required) and WiFi.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required) and WiFi.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -106,6 +106,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
+  - New: `Pushover` example sketch for esp8266 and esp32
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
@@ -218,6 +219,8 @@ The included examples demonstrate how to use the library and can be used as-is o
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
 * **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.
+
+* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushover](https://www.pushover.net).
 
 * **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).
 
