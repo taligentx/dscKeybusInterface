@@ -324,7 +324,7 @@ bool sendMessage(const char* messageContent) {
   if (!ipClient.connect("api.pushover.net", 443)) return false;
   ipClient.println(F("POST /1/messages.json HTTP/1.1"));
   ipClient.println(F("Host: api.pushover.net"));
-  ipClient.println(F("User-Agent: ESP32"));
+  ipClient.println(F("User-Agent: ESP8266"));
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/json"));
   ipClient.print(F("Content-Length: "));

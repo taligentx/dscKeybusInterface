@@ -1,40 +1,40 @@
 /*
- *  Twilio SMS Notification 1.1 (esp32)
+ *  Pushsafer Push Notification 1.0 (esp8266)
  *
- *  Processes the security system status and demonstrates how to send an SMS text message when the status has
- *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
+ *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
+ *  This example sends notifications via Pushsafer: https://www.pushsafer.com
+ *
+ *  Usage:
+ *    1. Set the WiFi SSID and password in the sketch.
+ *    2. Create a Pushsafer account: https://www.pushsafer.com
+ *    3. Copy the private key to pushsaferKey.
+ *    4. Upload the sketch.
  *
  *  Release notes:
- *    1.2 - Add TLS root certificate for Twilio
- *          Encode authorization data in base64 directly within the sketch
- *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
- *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
+ *      DSC Aux(+) --- 5v voltage regulator --- esp8266 development board 5v pin (NodeMCU, Wemos)
  *
- *      DSC Aux(-) --- esp32 Ground
+ *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin  // Default: 18
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin   // Default: 19
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *      Classic series only, PGM configured for PC-16 output:
  *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
  *                 |
- *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
  *                 +-- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
- *
- *  Many thanks to ColinNG for contributing this example: https://github.com/ColinNG
  *
  *  This example code is in the public domain.
  */
@@ -42,47 +42,52 @@
 // DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
-#include <WiFiClientSecure.h>
+#include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
-#include "mbedtls/base64.h"
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* AccountSID = "";    // Set the account SID from the Twilio Account Dashboard
-const char* AuthToken = "";     // Set the auth token from the Twilio Account Dashboard
-const char* From = "";          // From phone number, starting with the country code without the + sign: 18005551234
-const char* To = "";            // To phone number, starting with the country code without the + sign: 18005551234
+const char* pushsaferKey = "";   // Set the private key generated in the Pushsafer account settings
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin 18  // 4,13,16-39
-#define dscReadPin  19  // 4,13,16-39
-#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 
-// HTTPS root certificate for api.twilio.com: DigiCert Global Root CA, expires 2031.11.10
-const char twilioCertificateRoot[] = R"=EOF=(
+// HTTPS root certificate for www.pushsafer.com: ISRG Root X1, expires 2035.06.04
+const char pushsaferCertificateRoot[] = R"=EOF=(
 -----BEGIN CERTIFICATE-----
-MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
-QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
-CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
-nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
-43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
-T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
-gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
-BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
-TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
-DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
-hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
-06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
-PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
-YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
-CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 -----END CERTIFICATE-----
 )=EOF=";
 
@@ -92,11 +97,9 @@ dscKeybusInterface dsc(dscClockPin, dscReadPin);
 #else
 dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 #endif
+X509List pushsaferCert(pushsaferCertificateRoot);
 WiFiClientSecure ipClient;
 bool wifiConnected = true;
-char twilioAuth[128];
-size_t twilioAuthLength = 128;
-unsigned char encodedTwilioAuth[128];
 char encodedMessagePrefix[128], encodedMessageContent[480];
 
 
@@ -109,7 +112,7 @@ void setup() {
   Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  ipClient.setCACert(twilioCertificateRoot);
+  ipClient.setTrustAnchors(&pushsaferCert);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -128,15 +131,11 @@ void setup() {
   }
   Serial.println(F("synchronized."));
 
-  // Encodes authentication in base64 and message prefix in URL encoding
-  strcat(twilioAuth, AccountSID);
-  strcat(twilioAuth, ":");
-  strcat(twilioAuth, AuthToken);
-  mbedtls_base64_encode(encodedTwilioAuth, twilioAuthLength, &twilioAuthLength, (unsigned char*)twilioAuth, strlen(twilioAuth));
+  // Encodes message prefix in URL encoding
   encodeURL(messagePrefix, encodedMessagePrefix);
 
   // Sends a message on startup to verify connectivity
-  Serial.print(F("Twilio...."));
+  Serial.print(F("Pushsafer...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
 
@@ -330,29 +329,20 @@ void loop() {
 
 
 bool sendMessage(const char* messageContent) {
-  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
   encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
-  // Connects and sends the message as x-www-form-urlencoded
-  if (!ipClient.connect("api.twilio.com", 443)) return false;
-  ipClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
-  ipClient.print(AccountSID);
-  ipClient.println(F("/Messages.json HTTP/1.1"));
-  ipClient.print(F("Authorization: Basic "));
-  ipClient.println((char*)encodedTwilioAuth);
-  ipClient.println(F("Host: api.twilio.com"));
-  ipClient.println(F("User-Agent: ESP32"));
+  if (!ipClient.connect("www.pushsafer.com", 443)) return false;
+  ipClient.println(F("POST /api HTTP/1.1"));
+  ipClient.println(F("Host: www.pushsafer.com"));
+  ipClient.println(F("User-Agent: ESP8266"));
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);  // Length including data
-  ipClient.println("Connection: Close");
+  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);  // Total length of the request body
   ipClient.println();
-  ipClient.print(F("To=%2B"));
-  ipClient.print(To);
-  ipClient.print(F("&From=%2B"));
-  ipClient.print(From);
-  ipClient.print(F("&Body="));
+  ipClient.print(F("k="));
+  ipClient.print(pushsaferKey);
+  ipClient.print(F("&m="));
   ipClient.print(encodedMessagePrefix);
   ipClient.print(encodedMessageContent);
 
@@ -387,7 +377,7 @@ bool sendMessage(const char* messageContent) {
   // Unsuccessful, prints the response to serial to help debug
   else {
     Serial.println();
-    Serial.println(F("SMS messaging error, response:"));
+    Serial.println(F("Push notification error, response:"));
     Serial.print(statusCode);
     while (ipClient.available()) Serial.print((char)ipClient.read());
     Serial.println();

@@ -6,7 +6,7 @@ This enables existing DSC security system installations to retain the features a
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot (with arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
+* Notifications: [Telegram](https://www.telegram.org) bot (with arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com) [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 * Keypad interface: Use DSC keypads as physical input devices for any general purpose (without a DSC panel).
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
@@ -106,7 +106,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
-  - New: `Pushover` example sketch for esp8266 and esp32
+  - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
@@ -218,11 +218,13 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.
+* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.  Supports iOS, Android, and macOS/Windows/Linux desktop notifications (free).
 
-* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushover](https://www.pushover.net).
+* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushover](https://www.pushover.net).  Supports iOS, Android, macOS native desktop notifications, and Chrome/Firefox/Safari browser popups ($4.99USD one-time purchase per client platform).
 
-* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).
+* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).  Supports Android, Windows desktop notifications, and Chrome/Firefox browser popups (free).  Note that iOS is no longer supported.
+
+* **Pushsafer** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushsafer](https://www.pushsafer.com).  Supports iOS, Android, Windows desktop notifications, and Chrome/Firefox/Edge/Opera/Yandex browser popups (€0.99EUR or less per 1000 notifications).
 
 * **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
@@ -233,12 +235,12 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Verizon: 5558675309@vtext.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk legacy](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  The newer generation Blynk app is not currently supported.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103719316-5f6f1d80-4f8e-11eb-8a7c-4bd7bfe3cd8a.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/103719459-af4de480-4f8e-11eb-8e4a-7172961e2d29.png)
   - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103719518-cc82b300-4f8e-11eb-8b2a-97299e7be3a2.png)
 
-  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
+  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.
 
 * **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266/esp32 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 

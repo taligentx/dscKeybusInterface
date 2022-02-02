@@ -54,10 +54,10 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* AccountSID = "";	// Set the account SID from the Twilio Account Dashboard
-const char* AuthToken = "";		// Set the auth token from the Twilio Account Dashboard
-const char* From = "";	// i.e. 16041234567
-const char* To = "";		// i.e. 16041234567
+const char* AccountSID = "";    // Set the account SID from the Twilio Account Dashboard
+const char* AuthToken = "";     // Set the auth token from the Twilio Account Dashboard
+const char* From = "";          // From phone number, starting with the country code without the + sign: 18005551234
+const char* To = "";            // To phone number, starting with the country code without the + sign: 18005551234
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
@@ -102,7 +102,7 @@ WiFiClientSecure ipClient;
 bool wifiConnected = true;
 char twilioAuth[128];
 size_t twilioAuthLength = 128;
-char encodedTwilioAuth[128];
+char encodedTwilioAuth[128], encodedMessagePrefix[128], encodedMessageContent[480];
 
 
 void setup() {
@@ -121,7 +121,6 @@ void setup() {
   }
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  ipClient.setInsecure();
 
   Serial.print(F("NTP time...."));
   configTime(0, 0, "pool.ntp.org");
@@ -134,11 +133,14 @@ void setup() {
   }
   Serial.println(F("synchronized."));
 
-  // Sends a message on startup to verify connectivity
+  // Encodes authentication in base64 and message prefix in URL encoding
   strcat(twilioAuth, AccountSID);
   strcat(twilioAuth, ":");
   strcat(twilioAuth, AuthToken);
   base64::encode(String(twilioAuth)).toCharArray(encodedTwilioAuth, 128);
+  encodeURL(messagePrefix, encodedMessagePrefix);
+
+  // Sends a message on startup to verify connectivity
   Serial.print(F("Twilio...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
@@ -333,8 +335,8 @@ void loop() {
 
 
 bool sendMessage(const char* messageContent) {
+  encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
-  // Connects and sends the message as x-www-form-urlencoded
   if (!ipClient.connect("api.twilio.com", 443)) return false;
   ipClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
   ipClient.print(AccountSID);
@@ -346,16 +348,16 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(To) + strlen(From) + strlen(messagePrefix) + strlen(messageContent) + 18);  // Length including data
+  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);  // Length including data
   ipClient.println("Connection: Close");
   ipClient.println();
-  ipClient.print(F("To=+"));
+  ipClient.print(F("To=%2B"));
   ipClient.print(To);
-  ipClient.print(F("&From=+"));
+  ipClient.print(F("&From=%2B"));
   ipClient.print(From);
   ipClient.print(F("&Body="));
-  ipClient.print(messagePrefix);
-  ipClient.println(messageContent);
+  ipClient.print(encodedMessagePrefix);
+  ipClient.print(encodedMessageContent);
 
   // Waits for a response
   unsigned long previousMillis = millis();
@@ -386,6 +388,7 @@ bool sendMessage(const char* messageContent) {
 
   // Unsuccessful, prints the response to serial to help debug
   else {
+    Serial.println();
     Serial.println(F("SMS messaging error, response:"));
     Serial.print(statusCode);
     while (ipClient.available()) Serial.print((char)ipClient.read());
@@ -400,4 +403,32 @@ void appendPartition(byte sourceNumber, char* messageContent) {
   char partitionNumber[2];
   itoa(sourceNumber + 1, partitionNumber, 10);
   strcat(messageContent, partitionNumber);
+}
+
+
+// Helper for encodeURL()
+static char encodeHex(char c) {
+  return "0123456789ABCDEF"[c & 0x0F];
+}
+
+
+// Encodes a char array to URL encoded using '+' for spaces as required for application/x-www-form-urlencoded
+char *encodeURL(const char *src, char *dst) {
+   char c, *d = dst;
+   while (c = *src++) {
+     if (c == ' ') {
+      *d++ = '+';
+      continue;
+     }
+     else if (!('a' <= c && c <= 'z')
+         && !('A' <= c && c <= 'Z')
+         && !('0' <= c && c <= '9')) {
+       *d++ = '%';
+       *d++ = encodeHex(c >> 4);
+       c = encodeHex(c);
+     }
+     *d++ = c;
+   }
+   *d = '\0';
+   return dst;
 }
