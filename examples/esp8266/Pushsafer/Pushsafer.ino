@@ -338,7 +338,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);  // Total length of the request body
+  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);
   ipClient.println();
   ipClient.print(F("k="));
   ipClient.print(pushsaferKey);

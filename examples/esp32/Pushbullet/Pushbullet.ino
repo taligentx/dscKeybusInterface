@@ -330,7 +330,7 @@ void loop() {
 bool sendMessage(const char* messageContent) {
   ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
 
-  // Connects and sends the message as JSON
+  // Connects and sends the message as a Pushbullet note-type push
   if (!ipClient.connect("api.pushbullet.com", 443)) return false;
   ipClient.println(F("POST /v2/pushes HTTP/1.1"));
   ipClient.println(F("Host: api.pushbullet.com"));
@@ -338,7 +338,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/json"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(messagePrefix) + strlen(messageContent) + 25);  // Length including JSON data
+  ipClient.println(strlen(messagePrefix) + strlen(messageContent) + 25);
   ipClient.print(F("Access-Token: "));
   ipClient.println(pushbulletToken);
   ipClient.println();

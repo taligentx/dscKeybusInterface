@@ -348,7 +348,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);  // Length including data
+  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);
   ipClient.println("Connection: Close");
   ipClient.println();
   ipClient.print(F("To=%2B"));

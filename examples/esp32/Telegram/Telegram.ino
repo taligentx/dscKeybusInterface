@@ -1,5 +1,5 @@
 /*
- *  Telegram Bot 1.1 (esp32)
+ *  Telegram Bot 1.2 (esp32)
  *
  *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
  *
@@ -27,6 +27,7 @@
  *    - Disarm: /disarm
  *
  *  Release notes:
+ *    1.2 - Workaround for upstream esp32 TLS handshake issue https://github.com/espressif/arduino-esp32/issues/6165
  *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
@@ -157,6 +158,8 @@ void loop() {
   // Checks for incoming Telegram messages
   static unsigned long telegramPreviousTime;
   if (millis() - telegramPreviousTime > telegramCheckInterval) {
+    ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
+
     byte telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
     while (telegramMessages) {
       handleTelegram(telegramMessages);

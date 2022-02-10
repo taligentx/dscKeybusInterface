@@ -110,8 +110,9 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
+  - Bugfix: `VirtualKeypad-Web` updated notes to switch to [this fork of ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer) to resolve crashes with iOS and macOS clients.
   - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
-  - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165)
+  - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165) preventing making a TLS connection more than once.
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
@@ -244,9 +245,9 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266/esp32 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
-* **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
+* **TimeSyncNTP**:  Synchronizes and maintains time on PowerSeries panels via an NTP server, including DST adjustments.
 
-* **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
+* **Unlocker**: Finds the 4-digit installer code for PowerSeries panels by checking all possible codes, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.  Arduino checks each code sequentially but esp8266/esp32 may find the code more quickly as they check in order of the [most commonly used general 4-digit codes](https://www.datagenetics.com/blog/september32012).
 
 * **KeypadInterface**:  Interfaces directly to DSC PowerSeries and Classic series (tested with PC1500RK) keypads (without a DSC panel) to enable using these as physical inputs for any general purpose.  Examples included for interfacing via serial and MQTT.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the example sketch.
 

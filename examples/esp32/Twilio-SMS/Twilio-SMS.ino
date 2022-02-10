@@ -333,7 +333,6 @@ bool sendMessage(const char* messageContent) {
   ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
   encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
-  // Connects and sends the message as x-www-form-urlencoded
   if (!ipClient.connect("api.twilio.com", 443)) return false;
   ipClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
   ipClient.print(AccountSID);
@@ -345,7 +344,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);  // Length including data
+  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);
   ipClient.println("Connection: Close");
   ipClient.println();
   ipClient.print(F("To=%2B"));

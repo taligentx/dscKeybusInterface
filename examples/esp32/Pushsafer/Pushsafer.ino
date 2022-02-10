@@ -328,8 +328,8 @@ void loop() {
 
 
 bool sendMessage(const char* messageContent) {
-  encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
   ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
+  encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
   if (!ipClient.connect("www.pushsafer.com", 443)) return false;
   ipClient.println(F("POST /api HTTP/1.1"));
@@ -338,7 +338,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);  // Total length of the request body
+  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);
   ipClient.println();
   ipClient.print(F("k="));
   ipClient.print(pushsaferKey);

@@ -321,7 +321,6 @@ void loop() {
 bool sendMessage(const char* messageContent) {
   ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
 
-  // Connects and sends the message as JSON
   if (!ipClient.connect("api.pushover.net", 443)) return false;
   ipClient.println(F("POST /1/messages.json HTTP/1.1"));
   ipClient.println(F("Host: api.pushover.net"));
@@ -329,7 +328,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/json"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(pushoverAPIToken) + strlen(pushoverUserKey) + strlen(messagePrefix) + strlen(messageContent) + 35);  // Length including JSON data
+  ipClient.println(strlen(pushoverAPIToken) + strlen(pushoverUserKey) + strlen(messagePrefix) + strlen(messageContent) + 35);
   ipClient.println();
   ipClient.print(F("{\"token\":\""));
   ipClient.print(pushoverAPIToken);

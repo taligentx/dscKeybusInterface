@@ -343,7 +343,7 @@ bool sendMessage(const char* messageContent) {
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/json"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(messagePrefix) + strlen(messageContent) + 25);  // Length including JSON data
+  ipClient.println(strlen(messagePrefix) + strlen(messageContent) + 25);
   ipClient.print(F("Access-Token: "));
   ipClient.println(pushbulletToken);
   ipClient.println();

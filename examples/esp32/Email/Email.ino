@@ -201,6 +201,7 @@ void loop() {
 // server - the login and password must be base64 encoded. For example, on the macOS/Linux terminal:
 // $ echo -n 'mylogin@example.com' | base64 -w 0
 bool sendMessage(const char* messageContent) {
+  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
   if (!ipClient.connect("smtp.example.com", 465)) return false;       // Set the SMTP server address - for example: smtp.gmail.com
   if(!smtpValidResponse()) return false;
   ipClient.println(F("HELO ESP32"));
