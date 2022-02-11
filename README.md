@@ -75,10 +75,10 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Extensive data decoding: the majority of Keybus data as seen in the [DSC IT-100 Data Interface developer's guide](https://cms.dsc.com/download.php?t=1&id=16238) has been reverse engineered and documented in [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp).
   - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
 * Supported security systems:
-  - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify) - all panels are supported, tested with: PC585, PC1555MX, PC1565, PC5005, PC5010, PC5015, PC5020, PC1616, PC1808, PC1832, PC1864
-  - [DSC Classic series](https://www.dsc.com/?n=enduser&o=identify): PC1500, PC1550
+  - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify) - all panels are supported, tested with: PC585, PC1555MX, PC1565, PC1565-2P, PC5005, PC5010, PC5015, PC5020, PC1616, PC1808, PC1832, PC1864
+  - [DSC Classic series](https://www.dsc.com/?n=enduser&o=identify): PC1500, PC1550, PC2550
     * Requires configuring the panel through *8 programming to enable PC16-OUT: section 19, option 4.
-    * PC2500, PC2550, PC3000 are untested, [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you're able to test these panels.
+    * PC2500 and PC3000 are untested, [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you're able to test these panels.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Unsupported security systems:
   - DSC Alexor (PC9155) is all wireless and does not have an accessible Keybus interface.

@@ -1921,7 +1921,6 @@ void dscKeybusInterface::printPanel_0x87() {
  *  10001101 0 00010001 00111001 00000000 00000111 11111111 11111111 11111111 11011011 [0x8D] Wls programming key response	  // Set RF jamming zone 07 in [804][93] subsection
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
-
 void dscKeybusInterface::printPanel_0x8D() {
   #if !defined(__AVR__)
   stream->print(F("Module programming entry: "));
@@ -1954,7 +1953,6 @@ void dscKeybusInterface::printPanel_0x8D() {
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 01001100 11111100 [0x94] Unknown data
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
-
 void dscKeybusInterface::printPanel_0x94() {
   #if !defined(__AVR__)
   stream->print(F("Module programming request: "));
@@ -3463,7 +3461,6 @@ void dscKeybusInterface::printModule_0x70() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  */
-
 void dscKeybusInterface::printModule_0x94() {
   stream->print(F("Module programming response"));
 }
