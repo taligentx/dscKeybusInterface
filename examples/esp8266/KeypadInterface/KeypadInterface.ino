@@ -29,7 +29,7 @@
  *
  *  Release notes:
  *    1.4 - Added ability to change LCD keypad messages
- *    1.3 - Added support for Program, Fire, Zone 7 and 8 lights on CLassic keypad PC2550RK
+ *    1.3 - Add Classic keypad support - PC2550RK
  *    1.2 - Add Classic keypad support - PC1500RK
  *    1.1 - Add keypad beep, buzzer, constant tone
  *    1.0 - Initial release
@@ -121,6 +121,7 @@ void loop() {
    */
   if (inputReceived) {
     inputReceived = false;
+
     #if defined(dscKeypad)
     if (String(input).startsWith("0x")) dsc.panelCommand05[2] = strtoul(input, NULL, 16);
     else {

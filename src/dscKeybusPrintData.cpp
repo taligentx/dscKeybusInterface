@@ -102,8 +102,8 @@ void dscKeybusInterface::printPanelMessage() {
     case 0x7F: printPanel_0x7F(); return;           // Buzzer, partition 1 | Structure: complete | Content: complete
     case 0x82: printPanel_0x82(); return;           // Buzzer, partition 2 | Structure: complete | Content: complete
     case 0x87: printPanel_0x87(); return;           // PGM outputs | Structure: complete | Content: complete
-//    case 0x8D: printPanel_0x8D(); return;           // RF module programming - it sends data from panel to RF module after programming entry is done | Structure: *incomplete | Content: *incomplete
-//    case 0x94: printPanel_0x94(); return;           // Requesting and getting data from RF module to the panel | Structure: *incomplete | Content: *incomplete
+    case 0x8D: printPanel_0x8D(); return;           // RF module programming - it sends data from panel to RF module after programming entry is done | Structure: *incomplete | Content: *incomplete
+    case 0x94: printPanel_0x94(); return;           // Requesting and getting data from RF module to the panel | Structure: *incomplete | Content: *incomplete
     case 0x9E: printPanel_0x9E(); return;           // DLS query | Structure: complete | Content: complete
     case 0xA5: printPanel_0xA5(); return;           // Date, time, system status messages - partitions 1-2 | Structure: *incomplete | Content: *incomplete
     case 0xAA: printPanel_0xAA(); return;           // Event buffer messages | Structure: complete | Content: *incomplete
@@ -157,7 +157,7 @@ void dscKeybusInterface::printModuleMessage() {
     case 0x57: printModule_0x57(); return;      // Wireless key query response | Structure: *incomplete | Content: *incomplete
     case 0x58: printModule_0x58(); return;      // Module status query response | Structure: *incomplete | Content: *incomplete
     case 0x70: printModule_0x70(); return;      // LCD keypad data entry | Structure: complete | Content: complete
-//    case 0x94: printModule_0x94(); return;      // Module programming response | Structure: *incomplete | Content: *incomplete
+    case 0x94: printModule_0x94(); return;      // Module programming response | Structure: *incomplete | Content: *incomplete
     case 0xD5: printModule_0xD5(); return;      // Keypad zone query response | Structure: *incomplete | Content: *incomplete
     case 0x22:
     case 0x28:
@@ -1921,12 +1921,16 @@ void dscKeybusInterface::printPanel_0x87() {
  *  10001101 0 00010001 00111001 00000000 00000111 11111111 11111111 11111111 11011011 [0x8D] Wls programming key response	  // Set RF jamming zone 07 in [804][93] subsection
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
-/*
+
 void dscKeybusInterface::printPanel_0x8D() {
+  #if !defined(__AVR__)
   stream->print(F("Module programming entry: "));
   printModuleProgramming(panelData[2], panelData[3]);
+  #else
+  stream->print(F("Module programming entry"));
+  #endif
 }
-*/
+
 
 /*
  *  0x94: Used to request programming data from modules
@@ -1950,12 +1954,16 @@ void dscKeybusInterface::printPanel_0x8D() {
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 01001100 11111100 [0x94] Unknown data
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
  */
-/*
+
 void dscKeybusInterface::printPanel_0x94() {
+  #if !defined(__AVR__)
   stream->print(F("Module programming request: "));
   printModuleProgramming(panelData[2], panelData[3]);
+  #else
+  stream->print(F("Module programming request"));
+  #endif
 }
-*/
+
 
 /*
  *  0x9E: DLS query
@@ -3455,11 +3463,11 @@ void dscKeybusInterface::printModule_0x70() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  */
-/*
+
 void dscKeybusInterface::printModule_0x94() {
   stream->print(F("Module programming response"));
 }
-*/
+
 
 /*
  *  Module data during panel command: 0xD5 Keypad zone query
