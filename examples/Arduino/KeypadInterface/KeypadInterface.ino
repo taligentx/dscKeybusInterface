@@ -1,5 +1,5 @@
 /*
- *  DSC Keypad Interface 1.3a (Arduino)
+ *  DSC Keypad Interface 1.4 (Arduino)
  *
  *  Interfaces directly to a DSC PowerSeries or Classic series keypad (without a DSC panel) to
  *  enable use of DSC keypads as physical inputs for any general purpose.
@@ -28,7 +28,7 @@
  *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Zones 1-8: dsc.lightReady, dsc.lightZone1, etc
  *
  *  Release notes:
- *    1.3a- Added ability to change LCD keypad messages - WOULD NOT COMPILE FOR CLASSIC SERIES, search for "remove"
+ *    1.4 - Added ability to change LCD keypad messages
  *    1.3 - Added support for Program, Fire, Zone 7 and 8 lights on CLassic keypad PC2550RK
  *    1.2 - Add Classic keypad support - PC1500RK
  *    1.1 - Add keypad beep, buzzer, constant tone
@@ -121,8 +121,9 @@ void loop() {
    */
   if (inputReceived) {
     inputReceived = false;
-    if (String(input).startsWith("0x")) dsc.panelCommand05[2] = strtoul(input, NULL, 16); //remove or comment this line for classic series support
-    else {                                                                                //remove or comment this line for classic series support
+    #if defined(dscKeypad)
+    if (String(input).startsWith("0x")) dsc.panelCommand05[2] = strtoul(input, NULL, 16);
+    else {
       for (byte i = 0; i < strlen(input); i++) {
         switch (input[i]) {
           case 'r': case 'R': dsc.lightReady = setLight(); break;
@@ -149,7 +150,35 @@ void loop() {
           default: break;
         }
       }
-    }                                                                                     //remove or comment this line for classic series support
+    }
+    #else
+    for (byte i = 0; i < strlen(input); i++) {
+      switch (input[i]) {
+        case 'r': case 'R': dsc.lightReady = setLight(); break;
+        case 'a': case 'A': dsc.lightArmed = setLight(); break;
+        case 'm': case 'M': dsc.lightMemory = setLight(); break;
+        case 'y': case 'Y': dsc.lightBypass = setLight(); break;
+        case 't': case 'T': dsc.lightTrouble = setLight(); break;
+        case 'p': case 'P': dsc.lightProgram = setLight(); break;
+        case 'f': case 'F': dsc.lightFire = setLight(); break;
+        case 'l': case 'L': dsc.lightBacklight = setLight(); break;
+        case '1': dsc.lightZone1 = setLight(); break;
+        case '2': dsc.lightZone2 = setLight(); break;
+        case '3': dsc.lightZone3 = setLight(); break;
+        case '4': dsc.lightZone4 = setLight(); break;
+        case '5': dsc.lightZone5 = setLight(); break;
+        case '6': dsc.lightZone6 = setLight(); break;
+        case '7': dsc.lightZone7 = setLight(); break;
+        case '8': dsc.lightZone8 = setLight(); break;
+        case 'b': case 'B': sendBeeps(i); i += beepLength; break;
+        case 'n': case 'N': sendTone(i); i+= toneLength; break;
+        case 'z': case 'Z': sendBuzzer(i); i+= buzzerLength; break;
+        case '-': lightOff = true; break;
+        case '!': lightBlink = true; break;
+        default: break;
+      }
+    }
+    #endif
   }
 
   dsc.loop();

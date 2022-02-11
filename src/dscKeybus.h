@@ -287,6 +287,7 @@ class dscKeybusInterface {
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
+    void printModuleProgramming(byte panelByte2, byte panelByte3);
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);

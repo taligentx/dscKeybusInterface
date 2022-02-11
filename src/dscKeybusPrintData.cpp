@@ -1921,7 +1921,8 @@ void dscKeybusInterface::printPanel_0x87() {
  */
 /*
 void dscKeybusInterface::printPanel_0x8D() {
-  stream->print(F("Module programming entry"));
+  stream->print(F("Module programming entry: "));
+  printModuleProgramming(panelData[2], panelData[3]);
 }
 */
 
@@ -1949,7 +1950,8 @@ void dscKeybusInterface::printPanel_0x8D() {
  */
 /*
 void dscKeybusInterface::printPanel_0x94() {
-  stream->print(F("Module programming request"));
+  stream->print(F("Module programming request: "));
+  printModuleProgramming(panelData[2], panelData[3]);
 }
 */
 
@@ -2161,14 +2163,12 @@ void dscKeybusInterface::printPanel_0xBB() {
  */
 void dscKeybusInterface::printPanel_0xC3() {
   if (panelData[3] == 0xFF) {
+    stream->print(F("TLM: "));
+    if (panelData[2] & 0x10) stream->print(F("trouble/attempt"));
+    else stream->print(F("available/disabled"));
 
-
-	  stream->print(F("TLM: "));
-      if (panelData[2] & 0x10) stream->print(F("trouble/attempt"));
-      else stream->print(F("available/disabled"));
-
-      if (panelData[2] & 0x08) stream->print(F(" | Dialer call attempt"));
-      if (panelData[2] & 0x20) stream->print(F(" | Keypad lockout"));
+    if (panelData[2] & 0x08) stream->print(F(" | Dialer call attempt"));
+    if (panelData[2] & 0x20) stream->print(F(" | Keypad lockout"));
   }
   else printUnknownData();
 }
@@ -3731,6 +3731,24 @@ bool dscKeybusInterface::printModuleSlots(byte outputNumber, byte startByte, byt
   }
 
   return false;
+}
+
+
+// Print 0x8D and 0x94 section and command subsection data used for programming modules
+void dscKeybusInterface::printModuleProgramming(byte panelByte2, byte panelByte3) {
+  switch (panelByte2) {
+    case 0x11: stream->print(F("RF5132")); break; //section 804 verified on pc1832 and pc5020
+    case 0x14: stream->print(F("RF5400")); break; //section 801 not verified
+    case 0x15: stream->print(F("RF5936")); break; //section 802 not verified
+    case 0x16: stream->print(F("LINKS2X50")); break; //section 803 not verified
+    case 0x17: stream->print(F("PC5108L")); break; //section 806 not verified
+    case 0x19: stream->print(F("RF5100")); break; //section 805 not verified
+    case 0x31: stream->print(F("*5 user")); break; //*5 access codes verified on pc1832 and pc5020
+    default: stream->print("Unknown data");
+  }
+  stream->print(" | ");
+  if (panelByte3 < 16) stream->print("0");
+  stream->print(panelByte3, HEX);
 }
 
 

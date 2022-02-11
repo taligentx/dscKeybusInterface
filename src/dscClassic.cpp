@@ -863,7 +863,7 @@ void dscClassicInterface::printPanelMessage() {
   stream->print(F("| Status: "));
   if (pc16Data[1]) {
     if (bitRead(pc16Data[1], 7)) stream->print(F("Trouble "));
-	if (bitRead(pc16Data[1], 6)) stream->print(F("Bypassed zones "));
+    if (bitRead(pc16Data[1], 6)) stream->print(F("Bypassed zones "));
     if (bitRead(pc16Data[1], 5)) stream->print(F("Armed (side A) "));
     if (bitRead(pc16Data[1], 4)) stream->print(F("Armed (side B) "));
     if (bitRead(pc16Data[1], 3)) stream->print(F("Keypad Panic alarm "));
