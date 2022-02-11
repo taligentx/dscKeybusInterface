@@ -95,7 +95,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("Keybus..."));
+  Serial.print(F("Keybus...."));
   dsc.begin();
   Serial.println(F("connected."));
   Serial.println(F("DSC Keypad Interface is online."));

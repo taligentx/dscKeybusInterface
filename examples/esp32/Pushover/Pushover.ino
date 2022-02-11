@@ -1,34 +1,18 @@
 /*
- *  Telegram Bot 1.2 (esp32)
+ *  Pushover Push Notification 1.0 (esp32)
  *
- *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
- *
- *  Setup:
- *    1. Install the UniversalTelegramBot library from the Arduino IDE/PlatformIO library manager:
- *         https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot
- *    2. Install the ArduinoJSON library from the Arduino IDE/PlatformIO library manager:
- *         https://github.com/bblanchon/ArduinoJson
- *    3. Set the WiFi SSID and password in the sketch.
- *    4. Set an access code in the sketch to manage the security system.
- *    5. Send a message to BotFather: https://t.me/botfather
- *    6. Create a new bot through BotFather: /newbot
- *    7. Copy the bot token to the sketch in telegramBotToken.
- *    8. Send a message to the newly created bot to start a conversation.
- *    9. Send a message to @myidbot: https://telegram.me/myidbot
- *   10. Get your user ID: /getid
- *   11. Copy the user ID to the sketch in telegramUserID.
- *   12. Upload the sketch.
+ *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
+ *  This example sends notifications via Pushover: https://www.pushover.net
  *
  *  Usage:
- *    - Set the partition number to manage: /X (where X = 1-8)
- *    - Arm stay: /armstay
- *    - Arm away: /armaway
- *    - Arm night (no entry delay): /armnight
- *    - Disarm: /disarm
+ *    1. Set the WiFi SSID and password in the sketch.
+ *    2. Create a Pushover account: https://www.pushover.net
+ *    3. Copy the user key to pushoverUserKey.
+ *    4. Create a Pushover application to get an API token: https://pushover.net/apps/build
+ *    5. Copy the API token to pushoverAPIToken.
+ *    6. Upload the sketch.
  *
  *  Release notes:
- *    1.2 - Workaround for upstream esp32 TLS handshake issue https://github.com/espressif/arduino-esp32/issues/6165
- *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -51,15 +35,6 @@
  *                 +-- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *      Virtual keypad (optional):
- *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
- *            Ground --- NPN emitter --/
- *
- *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
- *  be suitable, for example:
- *   -- 2N3904
- *   -- BC547, BC548, BC549
  *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
@@ -70,36 +45,56 @@
 // DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
-#include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
-#include <ArduinoJson.h>
 #include <dscKeybusInterface.h>
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
-const char* telegramBotToken = "";  // Set the Telegram bot access token
-const char* telegramUserID = "";    // Set the Telegram chat user ID
+const char* pushoverUserKey = "";   // Set the user key generated in the Pushover account settings
+const char* pushoverAPIToken = "";  // Set the API token generated in the Pushover account settings
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // 4,13,16-39
 #define dscReadPin  19  // 4,13,16-39
 #define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
-#define dscWritePin 21  // 4,13,16-33
+
+// HTTPS root certificate for api.pushover.net: DigiCert Global Root CA, expires 2031.11.10
+const char pushoverCertificateRoot[] = R"=EOF=(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)=EOF=";
 
 // Initialize components
 #ifndef dscClassicSeries
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+dscKeybusInterface dsc(dscClockPin, dscReadPin);
 #else
-dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 #endif
 WiFiClientSecure ipClient;
-UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
-const int telegramCheckInterval = 1000;
 bool wifiConnected = true;
+
 
 void setup() {
   Serial.begin(115200);
@@ -110,7 +105,7 @@ void setup() {
   Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  ipClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+  ipClient.setCACert(pushoverCertificateRoot);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -129,8 +124,8 @@ void setup() {
   }
   Serial.println(F("synchronized."));
 
-  // Sends a message on startup to verify connectivity
-  Serial.print(F("Telegram...."));
+  // Sends a push notification on startup to verify connectivity
+  Serial.print(F("Pushover...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
 
@@ -155,19 +150,6 @@ void loop() {
     dsc.pauseStatus = true;
   }
 
-  // Checks for incoming Telegram messages
-  static unsigned long telegramPreviousTime;
-  if (millis() - telegramPreviousTime > telegramCheckInterval) {
-    ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
-
-    byte telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
-    while (telegramMessages) {
-      handleTelegram(telegramMessages);
-      telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
-    }
-    telegramPreviousTime = millis();
-  }
-
   dsc.loop();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
@@ -185,12 +167,6 @@ void loop() {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
       if (dsc.keybusConnected) sendMessage("Connected");
       else sendMessage("Disconnected");
-    }
-
-    // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt) {
-      dsc.accessCodePrompt = false;
-      dsc.write(accessCode);
     }
 
     // Checks status per partition
@@ -213,13 +189,13 @@ void loop() {
           sendMessage(messageContent);
         }
         else {
-          char messageContent[22] = "Disarmed: Partition ";
-          appendPartition(partition, messageContent);  // Appends the message with the partition number
-          sendMessage(messageContent);
+          char pushMessage[22] = "Disarmed: Partition ";
+          appendPartition(partition, pushMessage);  // Appends the push message with the partition number
+          sendMessage(pushMessage);
         }
       }
 
-      // Publishes exit delay status
+      // Checks exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
@@ -238,7 +214,6 @@ void loop() {
       // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
-
 
         if (dsc.alarm[partition]) {
           char messageContent[19] = "Alarm: Partition ";
@@ -283,18 +258,18 @@ void loop() {
           if (bitRead(dsc.alarmZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual alarm zone status flag
             bitWrite(dsc.alarmZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual alarm zone status flag
             if (bitRead(dsc.alarmZones[zoneGroup], zoneBit)) {       // Zone alarm
-              char messageContent[15] = "Zone alarm: ";
+              char pushMessage[15] = "Zone alarm: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
-              strcat(messageContent, zoneNumber);
-              sendMessage(messageContent);
+              strcat(pushMessage, zoneNumber);
+              sendMessage(pushMessage);
             }
             else {
-              char messageContent[24] = "Zone alarm restored: ";
+              char pushMessage[24] = "Zone alarm restored: ";
               char zoneNumber[3];
               itoa((zoneBit + 1 + (zoneGroup * 8)), zoneNumber, 10); // Determines the zone number
-              strcat(messageContent, zoneNumber);
-              sendMessage(messageContent);
+              strcat(pushMessage, zoneNumber);
+              sendMessage(pushMessage);
             }
           }
         }
@@ -343,66 +318,70 @@ void loop() {
 }
 
 
-void handleTelegram(byte telegramMessages) {
-  static byte partition = 0;
+bool sendMessage(const char* messageContent) {
+  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
 
-  for (byte i = 0; i < telegramMessages; i++) {
+  if (!ipClient.connect("api.pushover.net", 443)) return false;
+  ipClient.println(F("POST /1/messages.json HTTP/1.1"));
+  ipClient.println(F("Host: api.pushover.net"));
+  ipClient.println(F("User-Agent: ESP32"));
+  ipClient.println(F("Accept: */*"));
+  ipClient.println(F("Content-Type: application/json"));
+  ipClient.print(F("Content-Length: "));
+  ipClient.println(strlen(pushoverAPIToken) + strlen(pushoverUserKey) + strlen(messagePrefix) + strlen(messageContent) + 35);
+  ipClient.println();
+  ipClient.print(F("{\"token\":\""));
+  ipClient.print(pushoverAPIToken);
+  ipClient.print(F("\",\"user\":\""));
+  ipClient.print(pushoverUserKey);
+  ipClient.print(F("\",\"message\":\""));
+  ipClient.print(messagePrefix);
+  ipClient.print(messageContent);
+  ipClient.print(F("\"}"));
 
-    // Checks if a partition number 1-8 has been sent and sets the partition
-    if (telegramBot.messages[i].text[1] >= 0x31 && telegramBot.messages[i].text[1] <= 0x38) {
-      partition = telegramBot.messages[i].text[1] - 49;
-      char messageContent[17] = "Set: Partition ";
-      appendPartition(partition, messageContent);  // Appends the message with the partition number
-      sendMessage(messageContent);
+  // Waits for a response
+  unsigned long previousMillis = millis();
+  while (!ipClient.available()) {
+    dsc.loop();
+    if (millis() - previousMillis > 3000) {
+      Serial.println();
+      Serial.println(F("Connection timed out waiting for a response."));
+      ipClient.stop();
+      return false;
     }
+  }
 
-    // Resets status if attempting to change the armed mode while armed or not ready
-    if (telegramBot.messages[i].text != "/disarm" && !dsc.ready[partition]) {
-      dsc.armedChanged[partition] = true;
-      dsc.statusChanged = true;
-      return;
-    }
+  // Reads the response until the first space - the next characters will be the HTTP status code
+  while (ipClient.available()) {
+    if (ipClient.read() == ' ') break;
+  }
 
-    // Arm stay
-    if (telegramBot.messages[i].text == "/armstay" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('s');
-    }
+  // Checks the first character of the HTTP status code - the message was sent successfully if the status code
+  // begins with "2"
+  char statusCode = ipClient.read();
 
-    // Arm away
-    else if (telegramBot.messages[i].text == "/armaway" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('w');
-    }
+  // Successful, reads the remaining response to clear the client buffer
+  if (statusCode == '2') {
+    while (ipClient.available()) ipClient.read();
+    ipClient.stop();
+    return true;
+  }
 
-    // Arm night
-    else if (telegramBot.messages[i].text == "/armnight" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('n');
-    }
-
-    // Disarm
-    else if (telegramBot.messages[i].text == "/disarm" && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write(accessCode);
-    }
+  // Unsuccessful, prints the response to serial to help debug
+  else {
+    Serial.println();
+    Serial.println(F("Push notification error, response:"));
+    Serial.print(statusCode);
+    while (ipClient.available()) Serial.print((char)ipClient.read());
+    Serial.println();
+    ipClient.stop();
+    return false;
   }
 }
 
 
-bool sendMessage(const char* messageContent) {
-  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
-  byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
-  char message[messageLength];
-  strcpy(message, messagePrefix);
-  strcat(message, messageContent);
-  if (telegramBot.sendMessage(telegramUserID, message, "")) return true;
-  else return false;
-}
-
-
-void appendPartition(byte sourceNumber, char* message) {
+void appendPartition(byte sourceNumber, char* pushMessage) {
   char partitionNumber[2];
   itoa(sourceNumber + 1, partitionNumber, 10);
-  strcat(message, partitionNumber);
+  strcat(pushMessage, partitionNumber);
 }

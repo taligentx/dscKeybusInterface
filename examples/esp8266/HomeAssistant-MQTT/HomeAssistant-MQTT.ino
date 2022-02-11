@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.4 (esp8266)
+ *  HomeAssistant-MQTT 1.5 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -160,6 +160,8 @@ entity: alarm_control_panel.security_partition_1
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Fixed armed away with no entry delay status message
  *    1.4 - Added PGM outputs 1-14 status
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Added sensor component to display partition status messages
@@ -260,7 +262,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

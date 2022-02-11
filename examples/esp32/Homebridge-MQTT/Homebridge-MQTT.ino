@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.5 (esp32)
+ *  Homebridge-MQTT 1.6 (esp32)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
  *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
@@ -147,6 +147,7 @@
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.6 - Added DSC Classic series support
  *    1.5 - Support switching armed modes while armed
  *    1.4 - Added PGM outputs 1-14 status
  *          Added notes on Google Home integration
@@ -237,7 +238,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

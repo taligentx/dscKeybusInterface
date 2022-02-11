@@ -120,7 +120,7 @@ void setup() {
   if (mqttConnect()) mqttPreviousTime = millis();
   else mqttPreviousTime = 0;
 
-  Serial.print(F("Keybus..."));
+  Serial.print(F("Keybus...."));
   dsc.begin();
   Serial.println(F("connected."));
   Serial.println(F("DSC Keypad Interface is online."));

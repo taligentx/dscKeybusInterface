@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.2 (Arduino with Ethernet)
+ *  OpenHAB-MQTT 1.3 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates using panel and partition states
@@ -81,6 +81,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *    Fire alarm restored: "0"
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Added PGM outputs 1-14 status
  *          Removed partition exit delay MQTT message, not used in this OpenHAB example
  *    1.0 - Initial release

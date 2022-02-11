@@ -1,10 +1,13 @@
 /*
- *  Twilio SMS Notification 1.3 (esp8266)
+ *  Twilio SMS Notification 1.5 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via Twilio: https://www.twilio.com
  *
  *  Release notes:
+ *    1.5 - Add TLS root certificate for Twilio
+ *          Encode authorization data in base64 directly within the sketch
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection
  *          Add appendPartition() to simplify sketch
@@ -46,15 +49,15 @@
 
 #include <ESP8266WiFi.h>
 #include <dscKeybusInterface.h>
+#include "base64.h"
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* AccountSID = "";	// Set the account SID from the Twilio Account Dashboard
-const char* AuthToken = "";		// Set the auth token from the Twilio Account Dashboard
-const char* Base64EncodedAuth = "";	 // macOS/Linux terminal: $ echo -n "AccountSID:AuthToken" | base64 -w 0
-const char* From = "";	// i.e. 16041234567
-const char* To = "";		// i.e. 16041234567
+const char* AccountSID = "";    // Set the account SID from the Twilio Account Dashboard
+const char* AuthToken = "";     // Set the auth token from the Twilio Account Dashboard
+const char* From = "";          // From phone number, starting with the country code without the + sign: 18005551234
+const char* To = "";            // To phone number, starting with the country code without the + sign: 18005551234
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
@@ -62,14 +65,44 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 #define dscReadPin  D2  // GPIO 4
 #define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 
+// HTTPS root certificate for api.twilio.com: DigiCert Global Root CA, expires 2031.11.10
+const char twilioCertificateRoot[] = R"=EOF=(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)=EOF=";
+
 // Initialize components
 #ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin);
 #else
 dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 #endif
+X509List twilioCert(twilioCertificateRoot);
 WiFiClientSecure ipClient;
 bool wifiConnected = true;
+char twilioAuth[128];
+size_t twilioAuthLength = 128;
+char encodedTwilioAuth[128], encodedMessagePrefix[128], encodedMessageContent[480];
 
 
 void setup() {
@@ -78,16 +111,34 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
+  ipClient.setTrustAnchors(&twilioCert);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
   }
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  ipClient.setInsecure();
+
+  Serial.print(F("NTP time...."));
+  configTime(0, 0, "pool.ntp.org");
+  time_t now = time(nullptr);
+  while (now < 24 * 3600)
+  {
+    Serial.print(".");
+    delay(2000);
+    now = time(nullptr);
+  }
+  Serial.println(F("synchronized."));
+
+  // Encodes authentication in base64 and message prefix in URL encoding
+  strcat(twilioAuth, AccountSID);
+  strcat(twilioAuth, ":");
+  strcat(twilioAuth, AuthToken);
+  base64::encode(String(twilioAuth)).toCharArray(encodedTwilioAuth, 128);
+  encodeURL(messagePrefix, encodedMessagePrefix);
 
   // Sends a message on startup to verify connectivity
   Serial.print(F("Twilio...."));
@@ -143,7 +194,7 @@ void loop() {
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          char messageContent[25];
+          char messageContent[30];
 
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
@@ -284,29 +335,29 @@ void loop() {
 
 
 bool sendMessage(const char* messageContent) {
+  encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
-  // Connects and sends the message as x-www-form-urlencoded
   if (!ipClient.connect("api.twilio.com", 443)) return false;
   ipClient.print(F("POST https://api.twilio.com/2010-04-01/Accounts/"));
   ipClient.print(AccountSID);
   ipClient.println(F("/Messages.json HTTP/1.1"));
   ipClient.print(F("Authorization: Basic "));
-  ipClient.println(Base64EncodedAuth);
+  ipClient.println(encodedTwilioAuth);
   ipClient.println(F("Host: api.twilio.com"));
   ipClient.println(F("User-Agent: ESP8266"));
   ipClient.println(F("Accept: */*"));
   ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
   ipClient.print(F("Content-Length: "));
-  ipClient.println(strlen(To) + strlen(From) + strlen(messagePrefix) + strlen(messageContent) + 18);  // Length including data
+  ipClient.println(strlen(To) + strlen(From) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 21);
   ipClient.println("Connection: Close");
   ipClient.println();
-  ipClient.print(F("To=+"));
+  ipClient.print(F("To=%2B"));
   ipClient.print(To);
-  ipClient.print(F("&From=+"));
+  ipClient.print(F("&From=%2B"));
   ipClient.print(From);
   ipClient.print(F("&Body="));
-  ipClient.print(messagePrefix);
-  ipClient.println(messageContent);
+  ipClient.print(encodedMessagePrefix);
+  ipClient.print(encodedMessageContent);
 
   // Waits for a response
   unsigned long previousMillis = millis();
@@ -337,6 +388,7 @@ bool sendMessage(const char* messageContent) {
 
   // Unsuccessful, prints the response to serial to help debug
   else {
+    Serial.println();
     Serial.println(F("SMS messaging error, response:"));
     Serial.print(statusCode);
     while (ipClient.available()) Serial.print((char)ipClient.read());
@@ -351,4 +403,32 @@ void appendPartition(byte sourceNumber, char* messageContent) {
   char partitionNumber[2];
   itoa(sourceNumber + 1, partitionNumber, 10);
   strcat(messageContent, partitionNumber);
+}
+
+
+// Helper for encodeURL()
+static char encodeHex(char c) {
+  return "0123456789ABCDEF"[c & 0x0F];
+}
+
+
+// Encodes a char array to URL encoded using '+' for spaces as required for application/x-www-form-urlencoded
+char *encodeURL(const char *src, char *dst) {
+   char c, *d = dst;
+   while (c = *src++) {
+     if (c == ' ') {
+      *d++ = '+';
+      continue;
+     }
+     else if (!('a' <= c && c <= 'z')
+         && !('A' <= c && c <= 'Z')
+         && !('0' <= c && c <= '9')) {
+       *d++ = '%';
+       *d++ = encodeHex(c >> 4);
+       c = encodeHex(c);
+     }
+     *d++ = c;
+   }
+   *d = '\0';
+   return dst;
 }

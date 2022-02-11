@@ -22,15 +22,7 @@
 
 #if defined(ESP32)
 portMUX_TYPE dscKeybusInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
-
-#if ESP_IDF_VERSION_MAJOR < 4
 hw_timer_t * dscKeybusInterface::timer1 = NULL;
-
-#else  // ESP-IDF 4+
-esp_timer_handle_t timer0;
-const esp_timer_create_args_t timer0Parameters = { .callback = reinterpret_cast<esp_timer_cb_t>(&dscKeybusInterface::dscDataInterrupt) };
-
-#endif  // ESP_IDF_VERSION_MAJOR
 #endif  // ESP32
 
 
@@ -70,16 +62,12 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // esp32 timer1 calls dscDataInterrupt() from dscClockInterrupt()
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timer1 = timerBegin(1, 80, true);
   timerStop(timer1);
   timerAttachInterrupt(timer1, &dscDataInterrupt, true);
   timerAlarmWrite(timer1, 250, true);
   timerAlarmEnable(timer1);
-  #else  // IDF4+
-  esp_timer_create(&timer0Parameters, &timer0);
-  #endif  // ESP_IDF_VERSION_MAJOR
-  #endif  // ESP32
+  #endif
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
@@ -99,13 +87,9 @@ void dscKeybusInterface::stop() {
 
   // Disables esp32 timer1
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerAlarmDisable(timer1);
   timerEnd(timer1);
-  #else  // ESP-IDF 4+
-  esp_timer_stop(timer0);
-  #endif  // ESP_IDF_VERSION_MAJOR
-  #endif  // ESP32
+  #endif
 
   // Disables the Keybus clock pin interrupt
   detachInterrupt(digitalPinToInterrupt(dscClockPin));
@@ -233,160 +217,6 @@ bool dscKeybusInterface::loop() {
     case 0x34: processPanel_0x34(); break;
     case 0x3E: processPanel_0x3E(); break;
     case 0x87: processPanel_0x87(); break;
-    case 0xA5: processPanel_0xA5(); break;
-    case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
-    case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;
-  }
-
-  return true;
-}
-
-
-// Deprecated, replaced by loop()
-bool dscKeybusInterface::handlePanel() {
-
-  // Checks if Keybus data is detected and sets a status flag if data is not detected for 3s
-  #if defined(ESP32)
-  portENTER_CRITICAL(&timer1Mux);
-  #else
-  noInterrupts();
-  #endif
-
-  if (millis() - keybusTime > 3000) keybusConnected = false;  // keybusTime is set in dscDataInterrupt() when the clock resets
-  else keybusConnected = true;
-
-  #if defined(ESP32)
-  portEXIT_CRITICAL(&timer1Mux);
-  #else
-  interrupts();
-  #endif
-
-  if (previousKeybus != keybusConnected) {
-    previousKeybus = keybusConnected;
-    keybusChanged = true;
-    if (!pauseStatus) statusChanged = true;
-    if (!keybusConnected) return true;
-  }
-
-  // Writes keys when multiple keys are sent as a char array
-  if (writeKeysPending) writeKeys(writeKeysArray);
-
-  // Skips processing if the panel data buffer is empty
-  if (panelBufferLength == 0) return false;
-
-  // Copies data from the buffer to panelData[]
-  static byte panelBufferIndex = 1;
-  byte dataIndex = panelBufferIndex - 1;
-  for (byte i = 0; i < dscReadSize; i++) panelData[i] = panelBuffer[dataIndex][i];
-  panelBitCount = panelBufferBitCount[dataIndex];
-  panelByteCount = panelBufferByteCount[dataIndex];
-  panelBufferIndex++;
-
-  // Resets counters when the buffer is cleared
-  #if defined(ESP32)
-  portENTER_CRITICAL(&timer1Mux);
-  #else
-  noInterrupts();
-  #endif
-
-  if (panelBufferIndex > panelBufferLength) {
-    panelBufferIndex = 1;
-    panelBufferLength = 0;
-  }
-
-  #if defined(ESP32)
-  portEXIT_CRITICAL(&timer1Mux);
-  #else
-  interrupts();
-  #endif
-
-  // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
-  static bool firstClockCycle = true;
-  if (firstClockCycle) {
-    if ((validCRC() || panelData[0] == 0x05) && panelData[0] != 0) firstClockCycle = false;
-    else return false;
-  }
-
-  // Skips redundant data sent constantly while in installer programming
-  static byte previousCmd0A[dscReadSize];
-  static byte previousCmdE6_20[dscReadSize];
-  switch (panelData[0]) {
-    case 0x0A:  // Status in programming
-      if (redundantPanelData(previousCmd0A, panelData)) return false;
-      break;
-
-    case 0xE6:
-      if (panelData[2] == 0x20 && redundantPanelData(previousCmdE6_20, panelData)) return false;  // Status in programming, zone lights 33-64
-      break;
-  }
-  if (dscPartitions > 4) {
-    static byte previousCmdE6_03[dscReadSize];
-    if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8)) return false;  // Status in alarm/programming, partitions 5-8
-  }
-
-  // Skips redundant data from periodic commands sent at regular intervals, by default this data is processed
-  if (!processRedundantData) {
-    static byte previousCmd11[dscReadSize];
-    static byte previousCmd16[dscReadSize];
-    static byte previousCmd27[dscReadSize];
-    static byte previousCmd2D[dscReadSize];
-    static byte previousCmd34[dscReadSize];
-    static byte previousCmd3E[dscReadSize];
-    static byte previousCmd5D[dscReadSize];
-    static byte previousCmd63[dscReadSize];
-    static byte previousCmdB1[dscReadSize];
-    static byte previousCmdC3[dscReadSize];
-    switch (panelData[0]) {
-      case 0x11:  // Keypad slot query
-        if (redundantPanelData(previousCmd11, panelData)) return false;
-        break;
-
-      case 0x16:  // Zone wiring
-        if (redundantPanelData(previousCmd16, panelData)) return false;
-        break;
-
-      case 0x27:  // Status with zone 1-8 info
-        if (redundantPanelData(previousCmd27, panelData)) return false;
-        break;
-
-      case 0x2D:  // Status with zone 9-16 info
-        if (redundantPanelData(previousCmd2D, panelData)) return false;
-        break;
-
-      case 0x34:  // Status with zone 17-24 info
-        if (redundantPanelData(previousCmd34, panelData)) return false;
-        break;
-
-      case 0x3E:  // Status with zone 25-32 info
-        if (redundantPanelData(previousCmd3E, panelData)) return false;
-        break;
-
-      case 0x5D:  // Flash panel lights: status and zones 1-32
-        if (redundantPanelData(previousCmd5D, panelData)) return false;
-        break;
-
-      case 0x63:  // Flash panel lights: status and zones 33-64
-        if (redundantPanelData(previousCmd63, panelData)) return false;
-        break;
-
-      case 0xB1:  // Enabled zones 1-32
-        if (redundantPanelData(previousCmdB1, panelData)) return false;
-        break;
-
-      case 0xC3:  // Unknown command
-        if (redundantPanelData(previousCmdC3, panelData)) return false;
-        break;
-    }
-  }
-
-  // Processes valid panel data
-  switch (panelData[0]) {
-    case 0x05:
-    case 0x1B: processPanelStatus(); break;
-    case 0x27: processPanel_0x27(); break;
-    case 0x2D: processPanel_0x2D(); break;
-    case 0x34: processPanel_0x34(); break;
-    case 0x3E: processPanel_0x3E(); break;
     case 0xA5: processPanel_0xA5(); break;
     case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;
     case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;
@@ -644,11 +474,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
   // esp32 timer1 calls dscDataInterrupt() in 250us
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerStart(timer1);
-  #else  // IDF4+
-  esp_timer_start_periodic(timer0, 250);
-  #endif
   portENTER_CRITICAL(&timer1Mux);
   #endif
 
@@ -794,11 +620,7 @@ void dscKeybusInterface::dscDataInterrupt() {
 void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
-  #if ESP_IDF_VERSION_MAJOR < 4
   timerStop(timer1);
-  #else // IDF 4+
-  esp_timer_stop(timer0);
-  #endif
   portENTER_CRITICAL(&timer1Mux);
 #endif
 

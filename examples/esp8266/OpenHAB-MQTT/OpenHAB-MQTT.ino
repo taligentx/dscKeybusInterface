@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.2 (esp8266)
+ *  OpenHAB-MQTT 1.3 (esp8266)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates sending the panel status as a
@@ -89,6 +89,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Added PGM outputs 1-14 status
  *    1.1 - Removed partition exit delay MQTT message, not used in this OpenHAB example
  *          Updated esp8266 wiring diagram for 33k/10k resistors
@@ -183,7 +184,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

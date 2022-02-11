@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.4 (esp32)
+ *  HomeAssistant-MQTT 1.5 (esp32)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -160,6 +160,7 @@ entity: alarm_control_panel.security_partition_1
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
  *    1.4 - Added PGM outputs 1-14 status
  *    1.0 - Initial release
  *
@@ -252,7 +253,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

@@ -1,5 +1,5 @@
 /*
- *  DSC Keybus Reader IP 1.2 (esp32)
+ *  DSC Keybus Reader IP 1.3 (esp32)
  *
  *  Decodes and prints data from the Keybus to a TCP connection including virtual keyboard over IP. This is
  *  primarily to help decode the Keybus protocol - see the Status example to put the interface to productive use.
@@ -9,6 +9,7 @@
  *    2. For macOS/Linux: telnet dsc.local
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Updated to connect via telnet
  *          Handle spurious data while keybus is disconnected
  *          Removed redundant data processing
@@ -88,7 +89,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

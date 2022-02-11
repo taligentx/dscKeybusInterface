@@ -1,12 +1,12 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and Classic series security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.
+This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot, [PushBullet](https://www.pushbullet.com), [Twilio SMS](https://www.twilio.com), E-mail
+* Notifications: [Telegram](https://www.telegram.org) bot (with arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com) [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 * Keypad interface: Use DSC keypads as physical input devices for any general purpose (without a DSC panel).
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
@@ -95,9 +95,9 @@ This library uses a combination of hardware and timer interrupts to accurately c
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino) and WiFi for ~$3USD shipped.
     - esp32:
       * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v1.0.5-rc6 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
     - esp32-s2:
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (idf-release/v4.2 branch required) and WiFi.
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required) and WiFi.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -106,8 +106,13 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
+  - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
+  - Updated: Added TLS root certificate to `Twilio-SMS`
+  - Bugfix: `VirtualKeypad-Web` updated notes to switch to [this fork of ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer) to resolve crashes with iOS and macOS clients.
+  - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
+  - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165) preventing making a TLS connection more than once.
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT
@@ -214,9 +219,13 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.
+* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.  Supports iOS, Android, and macOS/Windows/Linux desktop notifications (free).
 
-* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).
+* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushover](https://www.pushover.net).  Supports iOS, Android, macOS native desktop notifications, and Chrome/Firefox/Safari browser popups ($4.99USD one-time purchase per client platform).
+
+* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).  Supports Android, Windows desktop notifications, and Chrome/Firefox browser popups (free).  Note that iOS is no longer supported.
+
+* **Pushsafer** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushsafer](https://www.pushsafer.com).  Supports iOS, Android, Windows desktop notifications, and Chrome/Firefox/Edge/Opera/Yandex browser popups (€0.99EUR or less per 1000 notifications).
 
 * **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
@@ -227,18 +236,18 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Verizon: 5558675309@vtext.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk legacy](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  The newer generation Blynk app is not currently supported.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103719316-5f6f1d80-4f8e-11eb-8a7c-4bd7bfe3cd8a.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/103719459-af4de480-4f8e-11eb-8e4a-7172961e2d29.png)
   - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103719518-cc82b300-4f8e-11eb-8b2a-97299e7be3a2.png)
 
-  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.  This also lets you use as many widgets as needed for free - local servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above example layouts requires more of Blynk's Energy units than available on the free usage tier.
+  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.
 
 * **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266/esp32 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
-* **TimeSyncNTP**:  Synchronizes and maintains the panel time via an NTP server, including DST adjustments.
+* **TimeSyncNTP**:  Synchronizes and maintains time on PowerSeries panels via an NTP server, including DST adjustments.
 
-* **Unlocker**: Checks all possible 4-digit installer codes until a valid code is found, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.
+* **Unlocker**: Finds the 4-digit installer code for PowerSeries panels by checking all possible codes, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.  Arduino checks each code sequentially but esp8266/esp32 may find the code more quickly as they check in order of the [most commonly used general 4-digit codes](https://www.datagenetics.com/blog/september32012).
 
 * **KeypadInterface**:  Interfaces directly to DSC PowerSeries and Classic series (tested with PC1500RK) keypads (without a DSC panel) to enable using these as physical inputs for any general purpose.  Examples included for interfacing via serial and MQTT.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the example sketch.
 

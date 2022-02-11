@@ -151,7 +151,6 @@ class dscKeybusInterface {
     static void dscDataInterrupt();
 
     // Deprecated
-    bool handlePanel();         // Returns true if valid panel data is available.  Relabeled to loop()
     bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
 
   private:
@@ -296,9 +295,7 @@ class dscKeybusInterface {
     static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
-    #if ESP_IDF_VERSION_MAJOR < 4
     static hw_timer_t * timer1;
-    #endif
     static portMUX_TYPE timer1Mux;
     #endif
 

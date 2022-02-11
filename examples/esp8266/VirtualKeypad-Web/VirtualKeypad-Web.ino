@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.4 (esp8266)
+ *  VirtualKeypad-Web 1.5 (esp8266)
  *
  *  Provides a virtual keypad web interface using the esp8266 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
@@ -7,8 +7,10 @@
  *
  *  Usage:
  *    1. Install the following libraries directly from each Github repository:
- *         ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
  *         ESPAsyncTCP: https://github.com/me-no-dev/ESPAsyncTCP
+ *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
+ *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
+ *              when used with recent versions of Safari on macOS and iOS.
  *
  *    2. Install ESP8266FS to enable uploading web server files to the esp8266:
  *         https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#uploading-files-to-file-system
@@ -21,8 +23,8 @@
  *    4. Set the WiFi SSID and password in the sketch.
  *    5. If desired, update the DNS hostname in the sketch.  By default, this is set to
  *       "dsc" and the web interface will be accessible at: http://dsc.local
- *    6. Set the esp8266 flash size to use 1M SPIFFS.
- *         Arduino IDE: Tools > Flash Size > 4M (1M SPIFFS)
+ *    6. Set the esp8266 flash size to use at least 1MB for the filesystem.
+ *         Arduino IDE: Tools > Flash Size > 4MB (FS:1MB ...)
  *    7. Upload the sketch.
  *    8. Upload the SPIFFS data containing the web server files:
  *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
@@ -30,6 +32,8 @@
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Changed ESPAsyncWebServer to a newer fork to fix web server crashes with Safari
  *    1.4 - Fix crash when pressing keys while Keybus is disconnected
  *    1.3 - Add event buffer display
  *          Display zone lights in alarm memory and programming
@@ -125,7 +129,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

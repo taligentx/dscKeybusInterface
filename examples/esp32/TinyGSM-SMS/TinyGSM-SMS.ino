@@ -1,5 +1,5 @@
 /*
- *  TinyGSM SMS Notification 1.0 (esp32)
+ *  TinyGSM SMS Notification 1.1 (esp32)
  *
  *  Processes the security system status and demonstrates how to send an SMS text message when the status has
  *  changed.  This example sends SMS text messages via a TinyGSM-compatible module which can be integrated
@@ -11,6 +11,7 @@
  *    2. Set the destination phone numbers in the sketch settings.
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -101,13 +102,13 @@ void setup() {
   Serial1.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
 
   while (!modem.isNetworkConnected()) {
-    Serial.print(F("GSM..."));
+    Serial.print(F("GSM...."));
     while (!modem.restart()) {
       Serial.print(".");
     }
     Serial.println();
 
-    Serial.print(F("Waiting for network..."));
+    Serial.print(F("Waiting for network...."));
     if (modem.waitForNetwork(600000L) && modem.isNetworkConnected()) {
       Serial.println(F("connected."));
     }

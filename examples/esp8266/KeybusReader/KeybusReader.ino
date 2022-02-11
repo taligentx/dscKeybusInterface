@@ -1,11 +1,12 @@
 /*
- *  DSC Keybus Reader 1.2 (esp8266)
+ *  DSC Keybus Reader 1.3 (esp8266)
  *
  *  Decodes and prints data from the Keybus to a serial interface, including reading from serial for the virtual
  *  keypad.  This is primarily to help decode the Keybus protocol - see the Status example to put the interface
  *  to productive use.
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Handle spurious data while keybus is disconnected
  *          Removed redundant data processing
  *    1.1 - Updated esp8266 wiring diagram for 33k/10k resistors

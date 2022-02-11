@@ -985,12 +985,14 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
  *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
  */
 void dscKeybusInterface::printPanelStatus14(byte panelByte) {
+  #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
   switch (panelData[panelByte]) {
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
   }
+  #endif
 
   printUnknownData();
 }

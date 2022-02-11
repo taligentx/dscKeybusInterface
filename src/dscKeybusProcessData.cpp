@@ -256,7 +256,6 @@ void dscKeybusInterface::processPanelStatus() {
       // Exit delay in progress
       case 0x08: {
         writeArm[partitionIndex] = false;
-        accessCodePrompt = false;
 
         processExitDelayStatus(partitionIndex, true);
 

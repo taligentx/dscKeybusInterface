@@ -1,11 +1,12 @@
 /*
- *  DSC Status 1.3 (esp8266)
+ *  DSC Status 1.4 (esp8266)
  *
  *  Processes and prints the security system status to a serial interface, including reading from serial for the
  *  virtual keypad.  This demonstrates how to determine if the security system status has changed, what has
  *  changed, and how to take action based on those changes.
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Added PGM outputs 1-14 status
  *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.1 - Added partition ready, access code, and timestamp status
@@ -113,7 +114,7 @@ void loop() {
         if (dsc.disabled[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" disabled"));
+          Serial.println(F(": Disabled"));
         }
       }
       if (dsc.disabled[partition]) continue;
@@ -124,12 +125,12 @@ void loop() {
         if (dsc.ready[partition]) {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" ready"));
+          Serial.println(F(": Ready"));
         }
         else {
           Serial.print(F("Partition "));
           Serial.print(partition + 1);
-          Serial.println(F(" not ready"));
+          Serial.println(F(": Not ready"));
         }
       }
 

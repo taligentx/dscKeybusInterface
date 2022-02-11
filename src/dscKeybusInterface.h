@@ -20,9 +20,6 @@
 #ifndef dscKeybusInterface_h
 #define dscKeybusInterface_h
 
-#if defined ESP32 && ESP_IDF_VERSION_MAJOR >= 4
-#include "esp_timer.h"
-#endif
 
 // DSC Classic Series
 #if defined dscClassicSeries

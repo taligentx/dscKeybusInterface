@@ -1,5 +1,5 @@
 /*
- *  Email Notification 1.3 (esp8266)
+ *  Email Notification 1.4 (esp8266)
  *
  *  Processes the security system status and demonstrates how to send an email when the status has changed.  Configure
  *  the email SMTP server settings in sendMessage().
@@ -9,6 +9,7 @@
  *  apps: https://support.google.com/accounts/answer/6010255
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Check if WiFi disconnects and wait to send updates until reconnection
  *          Add appendPartition() to simplify sketch
@@ -74,7 +75,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

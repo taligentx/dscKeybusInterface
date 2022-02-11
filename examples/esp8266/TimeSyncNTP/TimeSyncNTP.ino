@@ -54,7 +54,6 @@ const byte timePartition = 1;            // Set the partition to use for setting
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // GPIO 5
 #define dscReadPin  D2  // GPIO 4
-#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 #define dscWritePin D8  // GPIO 15
 
 // Initialize components
@@ -73,7 +72,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -83,7 +82,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   configTime(ntpTimeZone, ntpServer);  // Initiates the NTP client, synced hourly
   time(&ntpNow);
   while (ntpNow < 1606784461)

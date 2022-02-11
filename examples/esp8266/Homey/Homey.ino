@@ -1,5 +1,5 @@
 /*
- *  Homey 1.2 (esp8266)
+ *  Homey 1.3 (esp8266)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -12,6 +12,7 @@
  *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.1 - Added status update on WiFi reconnection
  *          Removed writeReady check, moved into library
@@ -89,7 +90,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {

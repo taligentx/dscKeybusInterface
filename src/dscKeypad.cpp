@@ -23,15 +23,7 @@
 
 #if defined(ESP32)
 portMUX_TYPE dscKeypadInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
-
-#if ESP_IDF_VERSION_MAJOR < 4
 hw_timer_t * dscKeypadInterface::timer1 = NULL;
-
-#else  // ESP-IDF 4+
-esp_timer_handle_t timer2;
-const esp_timer_create_args_t timer2Parameters = { .callback = reinterpret_cast<esp_timer_cb_t>(&dscKeypadInterface::dscClockInterrupt) };
-
-#endif  // ESP_IDF_VERSION_MAJOR
 #endif  // ESP32
 
 
@@ -70,16 +62,12 @@ void dscKeypadInterface::begin(Stream &_stream) {
 
   // esp32 timer1 calls dscClockInterrupt()
   #elif defined(ESP32)
-  #if ESP_IDF_VERSION_MAJOR < 4
   timer1 = timerBegin(1, 80, true);
   timerStop(timer1);
   timerAttachInterrupt(timer1, &dscClockInterrupt, true);
   timerAlarmWrite(timer1, 500, true);
   timerAlarmEnable(timer1);
-  #else  // IDF4+
-  esp_timer_create(&timer2Parameters, &timer2);
-  #endif  // ESP_IDF_VERSION_MAJOR
-  #endif  // ESP32
+  #endif
 
   intervalStart = millis();
 
@@ -239,11 +227,7 @@ bool dscKeypadInterface::loop() {
     #elif defined(ESP8266)
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
     #elif defined(ESP32)
-    #if ESP_IDF_VERSION_MAJOR < 4
     timerStart(timer1);
-    #else  // IDF4+
-    esp_timer_start_periodic(timer2, 500);
-    #endif  // ESP_IDF_VERSION_MAJOR
     #endif
   }
   else if (!commandReady) intervalStart = millis();
@@ -554,11 +538,7 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     #elif defined(ESP8266)
     timer1_disable();
     #elif defined(ESP32)
-    #if ESP_IDF_VERSION_MAJOR < 4
     timerStop(timer1);
-    #else  // IDF4+
-    esp_timer_stop(timer2);
-    #endif  // ESP_IDF_VERSION_MAJOR
     #endif
   }
 

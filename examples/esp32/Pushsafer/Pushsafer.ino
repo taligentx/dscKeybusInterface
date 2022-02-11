@@ -1,34 +1,16 @@
 /*
- *  Telegram Bot 1.2 (esp32)
+ *  Pushsafer Push Notification 1.0 (esp32)
  *
- *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
- *
- *  Setup:
- *    1. Install the UniversalTelegramBot library from the Arduino IDE/PlatformIO library manager:
- *         https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot
- *    2. Install the ArduinoJSON library from the Arduino IDE/PlatformIO library manager:
- *         https://github.com/bblanchon/ArduinoJson
- *    3. Set the WiFi SSID and password in the sketch.
- *    4. Set an access code in the sketch to manage the security system.
- *    5. Send a message to BotFather: https://t.me/botfather
- *    6. Create a new bot through BotFather: /newbot
- *    7. Copy the bot token to the sketch in telegramBotToken.
- *    8. Send a message to the newly created bot to start a conversation.
- *    9. Send a message to @myidbot: https://telegram.me/myidbot
- *   10. Get your user ID: /getid
- *   11. Copy the user ID to the sketch in telegramUserID.
- *   12. Upload the sketch.
+ *  Processes the security system status and demonstrates how to send a push notification when the status has changed.
+ *  This example sends notifications via Pushsafer: https://www.pushsafer.com
  *
  *  Usage:
- *    - Set the partition number to manage: /X (where X = 1-8)
- *    - Arm stay: /armstay
- *    - Arm away: /armaway
- *    - Arm night (no entry delay): /armnight
- *    - Disarm: /disarm
+ *    1. Set the WiFi SSID and password in the sketch.
+ *    2. Create a Pushsafer account: https://www.pushsafer.com
+ *    3. Copy the private key to pushsaferKey.
+ *    4. Upload the sketch.
  *
  *  Release notes:
- *    1.2 - Workaround for upstream esp32 TLS handshake issue https://github.com/espressif/arduino-esp32/issues/6165
- *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -51,16 +33,6 @@
  *                 +-- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *      Virtual keypad (optional):
- *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
- *            Ground --- NPN emitter --/
- *
- *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
- *  be suitable, for example:
- *   -- 2N3904
- *   -- BC547, BC548, BC549
- *
  *  Issues and (especially) pull requests are welcome:
  *  https://github.com/taligentx/dscKeybusInterface
  *
@@ -70,36 +42,65 @@
 // DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
-#include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
-#include <ArduinoJson.h>
 #include <dscKeybusInterface.h>
 
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
-const char* telegramBotToken = "";  // Set the Telegram bot access token
-const char* telegramUserID = "";    // Set the Telegram chat user ID
+const char* pushsaferKey = "";   // Set the private key generated in the Pushsafer account settings
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // 4,13,16-39
 #define dscReadPin  19  // 4,13,16-39
 #define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
-#define dscWritePin 21  // 4,13,16-33
+
+// HTTPS root certificate for www.pushsafer.com: ISRG Root X1, expires 2035.06.04
+const char pushsaferCertificateRoot[] = R"=EOF=(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----
+)=EOF=";
 
 // Initialize components
 #ifndef dscClassicSeries
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+dscKeybusInterface dsc(dscClockPin, dscReadPin);
 #else
-dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin);
 #endif
 WiFiClientSecure ipClient;
-UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
-const int telegramCheckInterval = 1000;
 bool wifiConnected = true;
+char encodedMessagePrefix[128], encodedMessageContent[480];
+
 
 void setup() {
   Serial.begin(115200);
@@ -110,7 +111,7 @@ void setup() {
   Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
-  ipClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+  ipClient.setCACert(pushsaferCertificateRoot);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
@@ -129,8 +130,11 @@ void setup() {
   }
   Serial.println(F("synchronized."));
 
+  // Encodes message prefix in URL encoding
+  encodeURL(messagePrefix, encodedMessagePrefix);
+
   // Sends a message on startup to verify connectivity
-  Serial.print(F("Telegram...."));
+  Serial.print(F("Pushsafer...."));
   if (sendMessage("Initializing")) Serial.println(F("connected."));
   else Serial.println(F("connection error."));
 
@@ -155,19 +159,6 @@ void loop() {
     dsc.pauseStatus = true;
   }
 
-  // Checks for incoming Telegram messages
-  static unsigned long telegramPreviousTime;
-  if (millis() - telegramPreviousTime > telegramCheckInterval) {
-    ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
-
-    byte telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
-    while (telegramMessages) {
-      handleTelegram(telegramMessages);
-      telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
-    }
-    telegramPreviousTime = millis();
-  }
-
   dsc.loop();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
@@ -185,12 +176,6 @@ void loop() {
       dsc.keybusChanged = false;  // Resets the Keybus data status flag
       if (dsc.keybusConnected) sendMessage("Connected");
       else sendMessage("Disconnected");
-    }
-
-    // Sends the access code when needed by the panel for arming
-    if (dsc.accessCodePrompt) {
-      dsc.accessCodePrompt = false;
-      dsc.write(accessCode);
     }
 
     // Checks status per partition
@@ -219,7 +204,7 @@ void loop() {
         }
       }
 
-      // Publishes exit delay status
+      // Checks exit delay status
       if (dsc.exitDelayChanged[partition]) {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
@@ -238,7 +223,6 @@ void loop() {
       // Checks alarm triggered status
       if (dsc.alarmChanged[partition]) {
         dsc.alarmChanged[partition] = false;  // Resets the partition alarm status flag
-
 
         if (dsc.alarm[partition]) {
           char messageContent[19] = "Alarm: Partition ";
@@ -343,66 +327,96 @@ void loop() {
 }
 
 
-void handleTelegram(byte telegramMessages) {
-  static byte partition = 0;
+bool sendMessage(const char* messageContent) {
+  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
+  encodeURL(messageContent, encodedMessageContent);  // Encodes message content in URL encoding
 
-  for (byte i = 0; i < telegramMessages; i++) {
+  if (!ipClient.connect("www.pushsafer.com", 443)) return false;
+  ipClient.println(F("POST /api HTTP/1.1"));
+  ipClient.println(F("Host: www.pushsafer.com"));
+  ipClient.println(F("User-Agent: ESP32"));
+  ipClient.println(F("Accept: */*"));
+  ipClient.println(F("Content-Type: application/x-www-form-urlencoded"));
+  ipClient.print(F("Content-Length: "));
+  ipClient.println(strlen(pushsaferKey) + strlen(encodedMessagePrefix) + strlen(encodedMessageContent) + 5);
+  ipClient.println();
+  ipClient.print(F("k="));
+  ipClient.print(pushsaferKey);
+  ipClient.print(F("&m="));
+  ipClient.print(encodedMessagePrefix);
+  ipClient.print(encodedMessageContent);
 
-    // Checks if a partition number 1-8 has been sent and sets the partition
-    if (telegramBot.messages[i].text[1] >= 0x31 && telegramBot.messages[i].text[1] <= 0x38) {
-      partition = telegramBot.messages[i].text[1] - 49;
-      char messageContent[17] = "Set: Partition ";
-      appendPartition(partition, messageContent);  // Appends the message with the partition number
-      sendMessage(messageContent);
+  // Waits for a response
+  unsigned long previousMillis = millis();
+  while (!ipClient.available()) {
+    dsc.loop();
+    if (millis() - previousMillis > 3000) {
+      Serial.println();
+      Serial.println(F("Connection timed out waiting for a response."));
+      ipClient.stop();
+      return false;
     }
+  }
 
-    // Resets status if attempting to change the armed mode while armed or not ready
-    if (telegramBot.messages[i].text != "/disarm" && !dsc.ready[partition]) {
-      dsc.armedChanged[partition] = true;
-      dsc.statusChanged = true;
-      return;
-    }
+  // Reads the response until the first space - the next characters will be the HTTP status code
+  while (ipClient.available()) {
+    if (ipClient.read() == ' ') break;
+  }
 
-    // Arm stay
-    if (telegramBot.messages[i].text == "/armstay" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('s');
-    }
+  // Checks the first character of the HTTP status code - the message was sent successfully if the status code
+  // begins with "2"
+  char statusCode = ipClient.read();
 
-    // Arm away
-    else if (telegramBot.messages[i].text == "/armaway" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('w');
-    }
+  // Successful, reads the remaining response to clear the client buffer
+  if (statusCode == '2') {
+    while (ipClient.available()) ipClient.read();
+    ipClient.stop();
+    return true;
+  }
 
-    // Arm night
-    else if (telegramBot.messages[i].text == "/armnight" && !dsc.armed[partition] && !dsc.exitDelay[partition]) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write('n');
-    }
-
-    // Disarm
-    else if (telegramBot.messages[i].text == "/disarm" && (dsc.armed[partition] || dsc.exitDelay[partition] || dsc.alarm[partition])) {
-      dsc.writePartition = partition + 1;  // Sets writes to the partition number
-      dsc.write(accessCode);
-    }
+  // Unsuccessful, prints the response to serial to help debug
+  else {
+    Serial.println();
+    Serial.println(F("Push notification error, response:"));
+    Serial.print(statusCode);
+    while (ipClient.available()) Serial.print((char)ipClient.read());
+    Serial.println();
+    ipClient.stop();
+    return false;
   }
 }
 
 
-bool sendMessage(const char* messageContent) {
-  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
-  byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
-  char message[messageLength];
-  strcpy(message, messagePrefix);
-  strcat(message, messageContent);
-  if (telegramBot.sendMessage(telegramUserID, message, "")) return true;
-  else return false;
+void appendPartition(byte sourceNumber, char* messageContent) {
+  char partitionNumber[2];
+  itoa(sourceNumber + 1, partitionNumber, 10);
+  strcat(messageContent, partitionNumber);
 }
 
 
-void appendPartition(byte sourceNumber, char* message) {
-  char partitionNumber[2];
-  itoa(sourceNumber + 1, partitionNumber, 10);
-  strcat(message, partitionNumber);
+// Helper for encodeURL()
+static char encodeHex(char c) {
+  return "0123456789ABCDEF"[c & 0x0F];
+}
+
+
+// Encodes a char array to URL encoded using '+' for spaces as required for application/x-www-form-urlencoded
+char *encodeURL(const char *src, char *dst) {
+   char c, *d = dst;
+   while (c = *src++) {
+     if (c == ' ') {
+      *d++ = '+';
+      continue;
+     }
+     else if (!('a' <= c && c <= 'z')
+         && !('A' <= c && c <= 'Z')
+         && !('0' <= c && c <= '9')) {
+       *d++ = '%';
+       *d++ = encodeHex(c >> 4);
+       c = encodeHex(c);
+     }
+     *d++ = c;
+   }
+   *d = '\0';
+   return dst;
 }
