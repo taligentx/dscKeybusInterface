@@ -349,23 +349,23 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '9': writeKey = 0x27; break;
         case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) starKeyCheck = true; break;
         case '#': writeKey = 0x2D; break;
-        case 'f': case 'F': writeKey = 0xBB; writeAlarm = true; break;                    // Keypad fire alarm
-        case 'b': case 'B': writeKey = 0x82; break;                                       // Enter event buffer
-        case '>': writeKey = 0x87; break;                                                 // Event buffer right arrow
-        case '<': writeKey = 0x88; break;                                                 // Event buffer left arrow
-        case 'l': case 'L': writeKey = 0xA5; break;                                       // LCD keypad data request
-        case 's': case 'S': writeKey = 0xAF; writeArm[writePartition - 1] = true; break;  // Arm stay
-        case 'w': case 'W': writeKey = 0xB1; writeArm[writePartition - 1] = true; break;  // Arm away
-        case 'n': case 'N': writeKey = 0xB6; writeArm[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
-        case 'a': case 'A': writeKey = 0xDD; writeAlarm = true; break;                    // Keypad auxiliary alarm
-        case 'c': case 'C': writeKey = 0xBB; break;                                       // Door chime
-        case 'r': case 'R': writeKey = 0xDA; break;                                       // Reset
-        case 'p': case 'P': writeKey = 0xEE; writeAlarm = true; break;                    // Keypad panic alarm
-        case 'x': case 'X': writeKey = 0xE1; break;                                       // Exit
-        case '[': writeKey = 0xD5; break;                                                 // Command output 1
-        case ']': writeKey = 0xDA; break;                                                 // Command output 2
-        case '{': writeKey = 0x70; break;                                                 // Command output 3
-        case '}': writeKey = 0xEC; break;                                                 // Command output 4
+        case 'f': case 'F': writeKey = 0xBB; writeAlarm = true; break;                           // Keypad fire alarm
+        case 'b': case 'B': writeKey = 0x82; break;                                              // Enter event buffer
+        case '>': writeKey = 0x87; break;                                                        // Event buffer right arrow
+        case '<': writeKey = 0x88; break;                                                        // Event buffer left arrow
+        case 'l': case 'L': writeKey = 0xA5; break;                                              // LCD keypad data request
+        case 's': case 'S': writeKey = 0xAF; writeAccessCode[writePartition - 1] = true; break;  // Arm stay
+        case 'w': case 'W': writeKey = 0xB1; writeAccessCode[writePartition - 1] = true; break;  // Arm away
+        case 'n': case 'N': writeKey = 0xB6; writeAccessCode[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
+        case 'a': case 'A': writeKey = 0xDD; writeAlarm = true; break;                           // Keypad auxiliary alarm
+        case 'c': case 'C': writeKey = 0xBB; break;                                              // Door chime
+        case 'r': case 'R': writeKey = 0xDA; break;                                              // Reset
+        case 'p': case 'P': writeKey = 0xEE; writeAlarm = true; break;                           // Keypad panic alarm
+        case 'x': case 'X': writeKey = 0xE1; break;                                              // Exit
+        case '[': writeKey = 0xD5; writeAccessCode[writePartition - 1] = true; break;            // Command output 1
+        case ']': writeKey = 0xDA; writeAccessCode[writePartition - 1] = true; break;            // Command output 2
+        case '{': writeKey = 0x70; writeAccessCode[writePartition - 1] = true; break;            // Command output 3
+        case '}': writeKey = 0xEC; writeAccessCode[writePartition - 1] = true; break;            // Command output 4
         default: {
           validKey = false;
           break;

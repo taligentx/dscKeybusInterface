@@ -140,7 +140,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -213,7 +213,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;

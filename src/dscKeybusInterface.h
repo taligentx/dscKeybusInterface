@@ -83,7 +83,6 @@ ISR(TIMER1_OVF_vect) {
 
 // DSC Keypad Interface
 #elif defined dscKeypad
-
 #include "dscKeypad.h"
 
 byte dscKeypadInterface::dscClockPin;
@@ -119,7 +118,6 @@ ISR(TIMER1_OVF_vect) {
 
 // DSC Classic Keypad Interface
 #elif defined dscClassicKeypad
-
 #include "dscClassicKeypad.h"
 
 byte dscClassicKeypadInterface::dscClockPin;

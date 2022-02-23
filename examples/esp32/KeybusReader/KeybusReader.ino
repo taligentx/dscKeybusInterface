@@ -104,7 +104,7 @@ void loop() {
     }
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;

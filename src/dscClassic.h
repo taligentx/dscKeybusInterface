@@ -28,8 +28,10 @@ const byte dscReadSize = 2;     // Maximum bytes of a Keybus command
 
 #if defined(__AVR__)
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-#elif defined(ESP8266) || defined(ESP32)
+#elif defined(ESP8266)
 const byte dscBufferSize = 50;
+#elif defined(ESP32)
+const DRAM_ATTR byte dscBufferSize = 50;
 #endif
 
 // Exit delay target states

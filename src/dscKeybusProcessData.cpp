@@ -236,7 +236,7 @@ void dscKeybusInterface::processPanelStatus() {
           armedAway[partitionIndex] = true;
         }
 
-        writeArm[partitionIndex] = false;
+        writeAccessCode[partitionIndex] = false;
 
         armed[partitionIndex] = true;
         if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
@@ -255,7 +255,7 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Exit delay in progress
       case 0x08: {
-        writeArm[partitionIndex] = false;
+        writeAccessCode[partitionIndex] = false;
 
         processExitDelayStatus(partitionIndex, true);
 
@@ -356,8 +356,8 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Enter access code
       case 0x9F: {
-        if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
-          writeArm[partitionIndex] = false;
+        if (writeAccessCode[partitionIndex]) {  // Ensures access codes are only sent when an arm or command output key is sent through this interface
+          writeAccessCode[partitionIndex] = false;
           accessCodePrompt = true;
           if (!pauseStatus) statusChanged = true;
         }
@@ -475,6 +475,11 @@ void dscKeybusInterface::processPanel_0x3E() {
  */
 void dscKeybusInterface::processPanel_0x87() {
   if (!validCRC()) return;
+
+  // Resets flag to write access code if needed when writing command output keys
+  for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    writeAccessCode[partitionIndex] = false;
+  }
 
   pgmOutputs[0] = panelData[3] & 0x03;
   pgmOutputs[0] |= panelData[2] << 2;
