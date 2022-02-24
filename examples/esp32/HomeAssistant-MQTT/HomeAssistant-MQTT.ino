@@ -296,7 +296,7 @@ void loop() {
       else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);

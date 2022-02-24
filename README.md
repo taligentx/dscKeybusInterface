@@ -1,17 +1,15 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and interfacing with DSC keypads (without a panel) for use as general purpose input devices.
+This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and emulating DSC panels to connect DSC keypads as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot (with arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com) [Twilio SMS](https://www.twilio.com), E-mail
+* Notifications: [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com) [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
-* Keypad interface: Use DSC keypads as physical input devices for any general purpose (without a DSC panel).
+* Keypad interface: Emulates a DSC panel to connect DSC keypads as physical input devices for any general purpose, without a DSC panel.
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
-
-See the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) repository for a port of this library to [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos) - this enables a standalone esp8266 HomeKit accessory using [esp-homekit](https://github.com/maximkulkin/esp-homekit).
 
 Example integrations:
 * [Apple Home & Siri](https://www.apple.com/ios/home/):  
@@ -63,6 +61,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * Monitor PGM outputs 1-14 status
 * Virtual keypad:
   - Write keys to the panel for all partitions
+  - Trigger panel command outputs
 * Keypad interface:
   - Use DSC PowerSeries and Classic series keypads as physical input devices for any general purpose without needing a DSC panel.
 * Panel time - retrieve current panel date/time and set a new date/time (including an example with NTP sync)
@@ -105,7 +104,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: DSC Classic series panel support: PC1500, PC1550
-  - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - interface with DSC PowerSeries and Classic keypads as physical input devices for any general purpose without needing a DSC panel.
+  - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
+  - New: `HomeKit-HomeSpan` example sketch (esp32) - integrate directly with Apple HomeKit as a native standalone accessory using [HomeSpan](https://github.com/HomeSpan/HomeSpan)
   - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
@@ -208,8 +208,10 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Panel trouble
   * Keybus connected
 
+* **HomeKit-HomeSpan** (esp32): Integrates directly with Apple HomeKit as a native accessory (for the Home app and Siri) using [HomeSpan](https://github.com/HomeSpan/HomeSpan), without needing a separate service or device.  Demonstrates arming/disarming partitions, zones status, fire alarms, PGM outputs status, and controlling panel command outputs.
+    - For esp8266, the [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) library includes a native HomeKit implementation that runs directly on the esp8266, without requiring a separate device running MQTT or Homebridge.
+
 * **Homebridge-MQTT**: Interfaces with [Homebridge](https://github.com/nfarina/homebridge) via MQTT to integrate with Apple HomeKit (including the iOS Home app and Siri) and [Google Home](https://github.com/oznu/homebridge-gsh).  Demonstrates arming/disarming partitions and for HomeKit, viewing the status of zones, PGM outputs, and fire alarms.
-    - The [dscKeybusInterface-RTOS](https://github.com/taligentx/dscKeybusInterface-RTOS) library includes a native HomeKit implementation that runs directly on esp8266, without requiring a separate device running MQTT or Homebridge.
 
 * **HomeAssistant-MQTT**: Interfaces with [Home Assistant](https://www.home-assistant.io) via MQTT.  Demonstrates arming/disarming partitions and viewing the status of zones, PGM outputs, fire alarms, and trouble.  For esp8266/esp32, the partition status is available as a text message for display.
 
@@ -219,17 +221,17 @@ The included examples demonstrate how to use the library and can be used as-is o
 
 * **Homey**: Integrates with [Athom Homey](https://www.athom.com/en/) and the [Homeyduino](https://github.com/athombv/homey-arduino-library/) library, including armed, alarm, and fire states (currently limited to one partition), and zone states.  Thanks to [MagnusPer](https://github.com/MagnusPer) for contributing this example!
 
-* **Telegram** (esp8266/esp32):  Demonstrates sending status updates and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.  Supports iOS, Android, and macOS/Windows/Linux desktop notifications (free).
+* **Telegram** (esp8266/esp32):  Demonstrates sending status updates as push notifications and arming/disarming the security system via a [Telegram](https://www.telegram.org) bot.  Supports iOS, Android, and macOS/Windows/Linux desktop notifications (free).
 
-* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushover](https://www.pushover.net).  Supports iOS, Android, macOS native desktop notifications, and Chrome/Firefox/Safari browser popups ($4.99USD one-time purchase per client platform).
+* **Pushover** (esp8266/esp32):  Demonstrates sending status updates as push notifications via [Pushover](https://www.pushover.net).  Supports iOS, Android, macOS native desktop notifications, and Chrome/Firefox/Safari browser popups ($4.99USD one-time purchase per client platform).
 
-* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushbullet](https://www.pushbullet.com).  Supports Android, Windows desktop notifications, and Chrome/Firefox browser popups (free).  Note that iOS is no longer supported.
+* **Pushbullet** (esp8266/esp32):  Demonstrates sending status updates as push notifications via [Pushbullet](https://www.pushbullet.com).  Supports Android, Windows desktop notifications, and Chrome/Firefox browser popups (free).  Note that iOS is no longer supported.
 
-* **Pushsafer** (esp8266/esp32):  Demonstrates sending status updates as a push notification via [Pushsafer](https://www.pushsafer.com).  Supports iOS, Android, Windows desktop notifications, and Chrome/Firefox/Edge/Opera/Yandex browser popups (€0.99EUR or less per 1000 notifications).
+* **Pushsafer** (esp8266/esp32):  Demonstrates sending status updates as push notifications via [Pushsafer](https://www.pushsafer.com).  Supports iOS, Android, Windows desktop notifications, and Chrome/Firefox/Edge/Opera/Yandex browser popups (€0.99EUR or less per 1000 notifications).
 
-* **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as an SMS text message via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
+* **Twilio-SMS** (esp8266/esp32): Demonstrates sending status updates as SMS text messages via [Twilio](https://www.twilio.com) - thanks to [ColingNG](https://github.com/ColinNg) for contributing this example!
 
-* **Email** (esp8266/esp32): Demonstrates sending status updates as an email.  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
+* **Email** (esp8266/esp32): Demonstrates sending status updates as email.  Email is sent using SMTPS (port 465) with SSL for encryption - this is necessary on the esp8266/esp32 until STARTTLS can be supported.  For example, this will work with Gmail after changing the account settings to [allow less secure apps](https://support.google.com/accounts/answer/6010255).
 
   This can be used to send SMS text messages if the number's service provider has an [email to SMS gateway](https://en.wikipedia.org/wiki/SMS_gateway#Email_clients) - examples for the US:
   * T-mobile: 5558675309@tmomail.net
@@ -367,7 +369,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
       dsc.stop();
     ...
   ```
-* Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybusInterface.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusInterface.h).  Default settings:
+* Memory usage can be adjusted based on the number of partitions, zones, and data buffer size specified in [`src/dscKeybus.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybus.h) or [`src/dscClassic.h`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscClassic.h).   Default settings:
   * Arduino: up to 4 partitions, 32 zones, 10 buffered commands
   * esp8266/esp32: up to 8 partitions, 64 zones, 50 buffered commands
 

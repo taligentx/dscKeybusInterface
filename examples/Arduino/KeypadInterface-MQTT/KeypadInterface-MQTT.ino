@@ -1,12 +1,9 @@
 /*
  *  DSC Keypad Interface-MQTT 1.2 (Arduino with Ethernet)
  *
- *  Interfaces directly to a DSC PowerSeries or Classic series keypad (without a DSC panel) to
- *  enable use of DSC keypads as physical inputs for any general purpose.
- *
- *  This interface uses a different wiring setup from the standard Keybus interface, adding
- *  an NPN transistor on dscClockPin.  The DSC keypads require a 12v DC power source, though
- *  lower voltages down to 7v may work for key presses (the LEDs will be dim).
+ *  Emulates a DSC panel to directly interface DSC PowerSeries or Classic series keypads as physical
+ *  input devices for any general purpose, without needing a DSC panel.  This sketch uses MQTT to
+ *  send pressed keypad keys and receive commands to control keypad lights and tones.
  *
  *  PowerSeries keypad features:
  *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
@@ -21,6 +18,10 @@
  *  Classic keypad features:
  *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
  *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Zones 1-6: dsc.lightReady, dsc.lightZone1, etc
+ *
+ *  This interface uses a different wiring setup from the standard Keybus interface, adding
+ *  an NPN transistor on dscClockPin.  The DSC keypads require a 12v DC power source, though
+ *  lower voltages down to 7v may work for key presses (the LEDs will be dim).
  *
  *  Release notes:
  *    1.2 - Add Classic keypad support - PC1500RK

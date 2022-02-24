@@ -280,7 +280,7 @@ void loop() {
       dsc.bufferOverflow = false;
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
