@@ -99,7 +99,7 @@ class dscClassicInterface {
     byte alarmZones[dscZones], alarmZonesChanged[dscZones];  // Zone alarm status is stored in an array using 1 bit per zone, up to 64 zones
     bool pgmOutputsStatusChanged;
     byte pgmOutputs[1], pgmOutputsChanged[1];
-    bool armedLight, memoryLight, bypassLight, troubleLight, beep;
+    bool armedLight, memoryLight, bypassLight, troubleLight, programLight, fireLight, beep;
     static volatile bool readyLight, lightBlink;
     bool readyBlink, armedBlink, memoryBlink, bypassBlink, troubleBlink;
 

@@ -17,13 +17,14 @@
  *
  *  Classic keypad features:
  *    - Read keypad key button presses, including fire/aux/panic alarm keys: dsc.key
- *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Zones 1-6: dsc.lightReady, dsc.lightZone1, etc
+ *    - Set keypad lights: Ready, Armed, Trouble, Memory, Bypass, Fire, Program, Zones 1-8: dsc.lightReady, dsc.lightZone1, etc
  *
  *  This interface uses a different wiring setup from the standard Keybus interface, adding
  *  an NPN transistor on dscClockPin.  The DSC keypads require a 12v DC power source, though
  *  lower voltages down to 7v may work for key presses (the LEDs will be dim).
  *
  *  Release notes:
+ *    1.3 - Add Classic keypad support - PC2550RK
  *    1.2 - Add Classic keypad support - PC1500RK
  *    1.1 - Add keypad beep, buzzer, constant tone
  *    1.0 - Initial release

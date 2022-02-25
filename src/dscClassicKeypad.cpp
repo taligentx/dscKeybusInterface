@@ -136,6 +136,8 @@ bool dscClassicKeypadInterface::loop() {
   panelLight(lightMemory, 5);
   panelLight(lightBypass, 4);
   panelLight(lightTrouble, 3);
+  panelLight(lightProgram, 2);
+  panelLight(lightFire, 1);
 
   // Sets zone lights
   zoneLight(lightZone1, 7);
@@ -144,6 +146,8 @@ bool dscClassicKeypadInterface::loop() {
   zoneLight(lightZone4, 4);
   zoneLight(lightZone5, 3);
   zoneLight(lightZone6, 2);
+  zoneLight(lightZone7, 1);
+  zoneLight(lightZone8, 0);
 
   // Skips key processing if the key buffer is empty
   if (keyBufferLength == 0) return false;
