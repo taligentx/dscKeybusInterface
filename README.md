@@ -1,12 +1,12 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, and emulating DSC panels to connect DSC keypads as general purpose input devices.
+This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, unlocking installer codes, and emulating DSC panels to connect DSC keypads as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com) [Twilio SMS](https://www.twilio.com), E-mail
+* Notifications: [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), E-mail
 * Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
 * Keypad interface: Emulates a DSC panel to connect DSC keypads as physical input devices for any general purpose, without a DSC panel.
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
@@ -43,7 +43,7 @@ Example integrations:
 
 I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel, keypads, and other modules (instead of using the DSC IT-100 serial module).  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) and [FreeRTOS](https://www.freertos.org) (via [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos)) platforms.
 
-While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol) and a several existing projects, there were a few issues that remained unsolved:
+While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol) and several existing projects, there were a few issues that remained unsolved:
 * Error-prone Keybus data capture.
 * Limited data decoding - there was good progress for armed/disarmed states and partial zone status for a single partition, but otherwise most of the data was undecoded (notably missing the alarm triggered state).
 * Read-only - unable to control the Keybus to act as a virtual keypad.
@@ -63,13 +63,13 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Write keys to the panel for all partitions
   - Trigger panel command outputs
 * Keypad interface:
-  - Use DSC PowerSeries and Classic series keypads as physical input devices for any general purpose without needing a DSC panel.
+  - Emulates a DSC panel to use DSC PowerSeries and Classic series keypads as physical input devices for any general purpose, without needing a DSC panel.
 * Panel time - retrieve current panel date/time and set a new date/time (including an example with NTP sync)
 * Panel installer code unlocking - determine the 4-digit panel installer code
 * Direct Keybus interface:
   - Does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
 * Designed for reliable data decoding and performance:
-  - Pin change and timer interrupts for accurate data capture timing
+  - Hardware GPIO pin interrupts and timer interrupts for accurate data capture timing
   - Data buffering: helps prevent lost Keybus data if the sketch is busy
   - Extensive data decoding: the majority of Keybus data as seen in the [DSC IT-100 Data Interface developer's guide](https://cms.dsc.com/download.php?t=1&id=16238) has been reverse engineered and documented in [`src/dscKeybusPrintData.cpp`](https://github.com/taligentx/dscKeybusInterface/blob/master/src/dscKeybusPrintData.cpp).
   - Non-blocking code: Allows sketches to run as quickly as possible without using `delay` or `delayMicroseconds`
@@ -110,9 +110,11 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - New: esp32-s2 microcontroller support
   - Updated: `Homebridge-MQTT` support switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
+  - Updated: removed deprecated `handlePanel()`
   - Bugfix: `VirtualKeypad-Web` updated notes to switch to [this fork of ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer) to resolve crashes with iOS and macOS clients.
   - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
   - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165) preventing making a TLS connection more than once.
+  - Bugfix: Fixed `Homebridge-MQTT` handling exit delay states while multiple partitions are arming
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT

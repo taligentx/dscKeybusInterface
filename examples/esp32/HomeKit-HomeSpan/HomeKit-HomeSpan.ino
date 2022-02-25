@@ -185,7 +185,7 @@ void loop() {
       dsc.write(accessCode);
     }
 
-    // Publishes status per partition
+    // Checks status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
       // Skips processing if the partition is disabled or in installer programming

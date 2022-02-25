@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.6 (esp8266)
+ *  Homebridge-MQTT 1.7 (esp8266)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
  *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
@@ -147,6 +147,7 @@
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.7 - Fixed exit delay states while multiple partitions are arming
  *    1.6 - Added DSC Classic series support
  *    1.5 - Support switching armed modes while armed
  *    1.4 - Added PGM outputs 1-14 status
@@ -235,7 +236,7 @@ dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, access
 WiFiClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;
-char exitState;
+char exitState[8];
 
 
 void setup() {
@@ -295,7 +296,7 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          exitState = 0;
+          exitState[partition] = 0;
 
           // Night armed away
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
@@ -330,21 +331,21 @@ void loop() {
         if (dsc.exitDelay[partition]) {
 
           // Sets the arming target state if the panel is armed externally
-          if (exitState == 0 || dsc.exitStateChanged[partition]) {
+          if (exitState[partition] == 0 || dsc.exitStateChanged[partition]) {
             dsc.exitStateChanged[partition] = 0;
             switch (dsc.exitState[partition]) {
               case DSC_EXIT_STAY: {
-                exitState = 'S';
+                exitState[partition] = 'S';
                 publishState(mqttPartitionTopic, partition, "S", 0);
                 break;
               }
               case DSC_EXIT_AWAY: {
-                exitState = 'A';
+                exitState[partition] = 'A';
                 publishState(mqttPartitionTopic, partition, "A", 0);
                 break;
               }
               case DSC_EXIT_NO_ENTRY_DELAY: {
-                exitState = 'N';
+                exitState[partition] = 'N';
                 publishState(mqttPartitionTopic, partition, "N", 0);
                 break;
               }
@@ -354,7 +355,7 @@ void loop() {
 
         // Disarmed during exit delay
         else if (!dsc.armed[partition]) {
-          exitState = 0;
+          exitState[partition] = 0;
           publishState(mqttPartitionTopic, partition, "D", "D");
         }
       }
@@ -464,7 +465,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad no entry delay
     publishState(mqttPartitionTopic, partition, "N", 0);
-    exitState = 'N';
+    exitState[partition] = 'N';
     return;
   }
 
@@ -473,7 +474,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad no entry delay
     publishState(mqttPartitionTopic, partition, "S", 0);
-    exitState = 'S';
+    exitState[partition] = 'S';
     return;
   }
 
@@ -482,7 +483,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad no entry delay
     publishState(mqttPartitionTopic, partition, "A", 0);
-    exitState = 'A';
+    exitState[partition] = 'A';
     return;
   }
 
@@ -491,7 +492,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write("s");
     publishState(mqttPartitionTopic, partition, "S", 0);
-    exitState = 'S';
+    exitState[partition] = 'S';
     return;
   }
 
@@ -500,7 +501,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write("w");
     publishState(mqttPartitionTopic, partition, "A", 0);
-    exitState = 'A';
+    exitState[partition] = 'A';
     return;
   }
 
@@ -512,10 +513,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Resets the HomeKit target state if attempting to change the arming mode during the exit delay
-  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState != 0) {
-    if (exitState == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
-    else if (exitState == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
-    else if (exitState == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
+  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState[partition] != 0) {
+    if (exitState[partition] == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
+    else if (exitState[partition] == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
+    else if (exitState[partition] == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
   }
 
 
@@ -524,7 +525,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('s');  // Keypad stay arm
     publishState(mqttPartitionTopic, partition, "S", 0);
-    exitState = 'S';
+    exitState[partition] = 'S';
     return;
   }
 
@@ -533,7 +534,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('w');  // Keypad away arm
     publishState(mqttPartitionTopic, partition, "A", 0);
-    exitState = 'A';
+    exitState[partition] = 'A';
     return;
   }
 
@@ -542,7 +543,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad arm with no entry delay
     publishState(mqttPartitionTopic, partition, "N", 0);
-    exitState = 'N';
+    exitState[partition] = 'N';
     return;
   }
 
