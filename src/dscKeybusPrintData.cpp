@@ -1923,8 +1923,8 @@ void dscKeybusInterface::printPanel_0x87() {
  */
 void dscKeybusInterface::printPanel_0x8D() {
   #if !defined(__AVR__)
-  stream->print(F("Module programming entry: "));
-  printModuleProgramming(panelData[2], panelData[3]);
+  stream->print(F("Module pgm entry: "));
+  printModuleProgramming(panelData[2], panelData[3], panelData[4], panelData[5], panelData[6], panelData[7]);
   #else
   stream->print(F("Module programming entry"));
   #endif
@@ -1955,8 +1955,8 @@ void dscKeybusInterface::printPanel_0x8D() {
  */
 void dscKeybusInterface::printPanel_0x94() {
   #if !defined(__AVR__)
-  stream->print(F("Module programming request: "));
-  printModuleProgramming(panelData[2], panelData[3]);
+  stream->print(F("Module pgm request: "));
+  printModuleProgramming(panelData[2], panelData[3], panelData[4], panelData[5], panelData[6], panelData[7]);
   #else
   stream->print(F("Module programming request"));
   #endif
@@ -3462,7 +3462,21 @@ void dscKeybusInterface::printModule_0x70() {
  *  Content decoding: *incomplete
  */
 void dscKeybusInterface::printModule_0x94() {
-  stream->print(F("Module programming response"));
+  stream->print(F("Module pgm response: "));
+    
+  for (byte moduleByte = 2; moduleByte <= 7; moduleByte ++) {
+    stream->print(" | Byte");
+    stream->print(moduleByte);
+    stream->print(": ");
+    if (moduleData[moduleByte] < 16) stream->print("0");
+    stream->print(moduleData[moduleByte], HEX);
+  }
+  stream->print(" data: ");
+  for (byte moduleByte = 7; moduleByte <= 10; moduleByte ++) {
+	byte result = (moduleData[moduleByte] << 1) & (moduleData[moduleByte+1] & 0x80);
+	stream->print(result >> 4, HEX);
+    stream->print(result & 0x0F, HEX);
+  }
 }
 
 
@@ -3742,20 +3756,178 @@ bool dscKeybusInterface::printModuleSlots(byte outputNumber, byte startByte, byt
 
 
 // Print 0x8D and 0x94 section and command subsection data used for programming modules
-void dscKeybusInterface::printModuleProgramming(byte panelByte2, byte panelByte3) {
+void dscKeybusInterface::printModuleProgramming(byte panelByte2, byte panelByte3, byte panelByte4, byte panelByte5, byte panelByte6, byte panelByte7) {
   switch (panelByte2) {
-    case 0x11: stream->print(F("RF5132")); break; //section 804 verified on pc1832 and pc5020
-    case 0x14: stream->print(F("RF5400")); break; //section 801 not verified
+    case 0x11: stream->print(F("RF5132")); {
+	  if (panelByte4 == 0x82) {
+	    stream->print(F(": subsection"));
+		if (panelByte4 < 16) stream->print("0");
+		stream->print(panelByte3, HEX);
+	  }
+	  if (panelByte4 == 0x02) {
+	    switch (panelByte3) {
+		  case 0x02: stream->print(F(" v5.x | Keyfob 1 ESN input")); break;
+		  case 0x05: stream->print(F(" v5.x | Keyfob 2 ESN input")); break;
+		  case 0x08: stream->print(F(" v5.x | Keyfob 3 ESN input")); break;
+		  case 0x0B: stream->print(F(" v5.x | Keyfob 4 ESN input")); break;
+		  case 0x0E: stream->print(F(" v5.x | Keyfob 5 ESN input")); break;
+		  case 0x11: stream->print(F(" v5.x | Keyfob 6 ESN input")); break;
+		  case 0x14: stream->print(F(" v5.x | Keyfob 7 ESN input")); break;
+		  case 0x17: stream->print(F(" v5.x | Keyfob 8 ESN input")); break;
+		  case 0x1A: stream->print(F(" v5.x | Keyfob 9 ESN input")); break;
+		  case 0x1D: stream->print(F(" v5.x | Keyfob 10 ESN input")); break;
+		  case 0x20: stream->print(F(" v5.x | Keyfob 11 ESN input")); break;
+		  case 0x23: stream->print(F(" v5.x | Keyfob 12 ESN input")); break;
+		  case 0x26: stream->print(F(" v5.x | Keyfob 13 ESN input")); break;
+		  case 0x29: stream->print(F(" v5.x | Keyfob 14 ESN input")); break;
+		  case 0x2C: stream->print(F(" v5.x | Keyfob 15 ESN input")); break;
+		  case 0x2F: stream->print(F(" v5.x | Keyfob 16 ESN input")); break;
+	      case 0x44: stream->print(F(" v5.x | Zone 1 ESN input")); break;
+		  case 0x45: stream->print(F(" v3.x | Zone 1 ESN input")); break;
+		  case 0x47: stream->print(F(" v5.x | Zone 2 ESN input")); break;
+		  case 0x48: stream->print(F(" v3.x | Zone 2 ESN input")); break;
+		  case 0x4A: stream->print(F(" v5.x | Zone 3 ESN input")); break;
+		  case 0x4B: stream->print(F(" v3.x | Zone 3 ESN input")); break;
+		  case 0x4D: stream->print(F(" v5.x | Zone 4 ESN input")); break;
+		  case 0x4E: stream->print(F(" v3.x | Zone 4 ESN input")); break;
+		  case 0x50: stream->print(F(" v5.x | Zone 5 ESN input")); break;
+		  case 0x51: stream->print(F(" v3.x | Zone 5 ESN input")); break;
+		  case 0x53: stream->print(F(" v5.x | Zone 6 ESN input")); break;
+		  case 0x54: stream->print(F(" v3.x | Zone 6 ESN input")); break;
+		  case 0x56: stream->print(F(" v5.x | Zone 7 ESN input")); break;
+		  case 0x57: stream->print(F(" v3.x | Zone 7 ESN input")); break;
+		  case 0x59: stream->print(F(" v5.x | Zone 8 ESN input")); break;
+		  case 0x5A: stream->print(F(" v3.x | Zone 8 ESN input")); break;
+		  case 0x5C: stream->print(F(" v5.x | Zone 9 ESN input")); break;
+		  case 0x5D: stream->print(F(" v3.x | Zone 9 ESN input")); break;
+		  case 0x5F: stream->print(F(" v5.x | Zone 10 ESN input")); break;
+		  case 0x60: stream->print(F(" v3.x | Zone 10 ESN input")); break;
+		  case 0x62: stream->print(F(" v5.x | Zone 11 ESN input")); break;
+		  case 0x63: stream->print(F(" v3.x | Zone 11 ESN input")); break;
+		  case 0x65: stream->print(F(" v5.x | Zone 12 ESN input")); break;
+		  case 0x66: stream->print(F(" v3.x | Zone 12 ESN input")); break;
+		  case 0x68: stream->print(F(" v5.x | Zone 13 ESN input")); break;
+		  case 0x69: stream->print(F(" v3.x | Zone 13 ESN input")); break;
+		  case 0x6B: stream->print(F(" v5.x | Zone 14 ESN input")); break;
+		  case 0x6C: stream->print(F(" v3.x | Zone 14 ESN input")); break;
+		  case 0x6E: stream->print(F(" v5.x | Zone 15 ESN input")); break;
+		  case 0x6F: stream->print(F(" v3.x | Zone 15 ESN input")); break;
+		  case 0x71: stream->print(F(" v5.x | Zone 16 ESN input")); break;
+		  case 0x72: stream->print(F(" v3.x | Zone 16 ESN input")); break;
+		  case 0x74: stream->print(F(" v5.x | Zone 17 ESN input")); break;
+		  case 0x75: stream->print(F(" v3.x | Zone 17 ESN input")); break;
+		  case 0x77: stream->print(F(" v5.x | Zone 18 ESN input")); break;
+		  case 0x78: stream->print(F(" v3.x | Zone 18 ESN input")); break;
+		  case 0x7A: stream->print(F(" v5.x | Zone 19 ESN input")); break;
+		  case 0x7B: stream->print(F(" v3.x | Zone 19 ESN input")); break;
+		  case 0x7D: stream->print(F(" v5.x | Zone 20 ESN input")); break;
+		  case 0x7E: stream->print(F(" v3.x | Zone 20 ESN input")); break;
+		  case 0x80: stream->print(F(" v5.x | Zone 21 ESN input")); break;
+		  case 0x81: stream->print(F(" v3.x | Zone 21 ESN input")); break;
+		  case 0x83: stream->print(F(" v5.x | Zone 22 ESN input")); break;
+		  case 0x84: stream->print(F(" v3.x | Zone 22 ESN input")); break;
+		  case 0x86: stream->print(F(" v5.x | Zone 23 ESN input")); break;
+		  case 0x87: stream->print(F(" v3.x | Zone 23 ESN input")); break;
+		  case 0x89: stream->print(F(" v5.x | Zone 24 ESN input")); break;
+		  case 0x8A: stream->print(F(" v3.x | Zone 24 ESN input")); break;
+		  case 0x8C: stream->print(F(" v5.x | Zone 25 ESN input")); break;
+		  case 0x8D: stream->print(F(" v3.x | Zone 25 ESN input")); break;
+		  case 0x8F: stream->print(F(" v5.x | Zone 26 ESN input")); break;
+		  case 0x90: stream->print(F(" v3.x | Zone 26 ESN input")); break;
+		  case 0x92: stream->print(F(" v5.x | Zone 27 ESN input")); break;
+		  case 0x93: stream->print(F(" v3.x | Zone 27 ESN input")); break;
+		  case 0x95: stream->print(F(" v5.x | Zone 28 ESN input")); break;
+		  case 0x96: stream->print(F(" v3.x | Zone 28 ESN input")); break;
+		  case 0x98: stream->print(F(" v5.x | Zone 29 ESN input")); break;
+		  case 0x99: stream->print(F(" v3.x | Zone 29 ESN input")); break;
+		  case 0x9B: stream->print(F(" v5.x | Zone 30 ESN input")); break;
+		  case 0x9C: stream->print(F(" v3.x | Zone 30 ESN input")); break;
+		  case 0x9E: stream->print(F(" v5.x | Zone 31 ESN input")); break;
+		  case 0x9F: stream->print(F(" v3.x | Zone 31 ESN input")); break;
+		  case 0xA1: stream->print(F(" v5.x | Zone 32 ESN input")); break;
+		  case 0xA2: stream->print(F(" v3.x | Zone 32 ESN input")); break;
+		  case 0xB1: stream->print(F(" v3.x | Keyfob 1 ESN input")); break;
+		  case 0xB4: stream->print(F(" v3.x | Keyfob 2 ESN input")); break;
+		  case 0xB7: stream->print(F(" v3.x | Keyfob 3 ESN input")); break;
+		  case 0xBA: stream->print(F(" v3.x | Keyfob 4 ESN input")); break;
+		  case 0xBD: stream->print(F(" v3.x | Keyfob 5 ESN input")); break;
+		  case 0xC0: stream->print(F(" v3.x | Keyfob 6 ESN input")); break;
+		  case 0xC3: stream->print(F(" v3.x | Keyfob 7 ESN input")); break;
+		  case 0xC6: stream->print(F(" v3.x | Keyfob 8 ESN input")); break;
+		  case 0xC9: stream->print(F(" v3.x | Keyfob 9 ESN input")); break;
+		  case 0xCC: stream->print(F(" v3.x | Keyfob 10 ESN input")); break;
+		  case 0xCF: stream->print(F(" v3.x | Keyfob 11 ESN input")); break;
+		  case 0xD2: stream->print(F(" v3.x | Keyfob 12 ESN input")); break;
+		  case 0xD5: stream->print(F(" v3.x | Keyfob 13 ESN input")); break;
+		  case 0xD8: stream->print(F(" v3.x | Keyfob 14 ESN input")); break;
+		  case 0xDB: stream->print(F(" v3.x | Keyfob 15 ESN input")); break;
+		  case 0xDE: stream->print(F(" v3.x | Keyfob 16 ESN input")); break;
+		  default: stream->print(" Unknown data");
+		}
+	  }	else {
+	    switch (panelByte3) {
+	      case 0x44: stream->print(F(" v3.14 | Supervision hours")); break;
+		}
+	  }
+	} break; //section 804 verified on pc1832 and pc5020
+    case 0x14: stream->print(F("RF5400")); {
+	  if (panelByte4 == 0x82) {
+	    stream->print(F(": subsection "));
+		if (panelByte4 < 16) stream->print("0");
+		stream->print(panelByte3, HEX);
+	  }
+	} break; //section 801 not verified
     case 0x15: stream->print(F("RF5936")); break; //section 802 not verified
     case 0x16: stream->print(F("LINKS2X50")); break; //section 803 not verified
     case 0x17: stream->print(F("PC5108L")); break; //section 806 not verified
     case 0x19: stream->print(F("RF5100")); break; //section 805 not verified
-    case 0x31: stream->print(F("*5 user")); break; //*5 access codes verified on pc1832 and pc5020
-    default: stream->print("Unknown data");
+    case 0x31: { //*5 access codes verified on pc1832 and pc5020
+	  stream->print(F("*5 user code "));
+	  switch (panelByte3) {
+		case 0x01:
+		case 0x03: stream->print(F("17 ")); break;
+		case 0x04:
+		case 0x06: stream->print(F("18 ")); break;
+		case 0x07:
+		case 0x09: stream->print(F("19 ")); break;
+		case 0x0A:
+		case 0x0C: stream->print(F("20 ")); break;
+		case 0x0D:
+		case 0x0F: stream->print(F("21 ")); break;
+		case 0x10:
+		case 0x12: stream->print(F("22 ")); break;
+		case 0x13:
+		case 0x15: stream->print(F("23 ")); break;
+		case 0x16:
+		case 0x18: stream->print(F("24 ")); break;
+		case 0x19:
+		case 0x1B: stream->print(F("25 ")); break;
+		case 0x1C:
+		case 0x1E: stream->print(F("26 ")); break;	
+		case 0x1F:
+		case 0x21: stream->print(F("27 ")); break;
+		case 0x22:
+		case 0x24: stream->print(F("28 ")); break;
+		case 0x25:
+		case 0x27: stream->print(F("29 ")); break;
+		case 0x28:
+		case 0x2A: stream->print(F("30 ")); break;
+		case 0x2B:
+		case 0x2D: stream->print(F("31 ")); break;
+		case 0x2E:
+		case 0x30: stream->print(F("32 ")); break;
+		default: stream->print("Unknown data ");
+	  }
+	} break; //*5 access codes verified on pc1832 and pc5020
+    default: stream->print("Unknown data ");
   }
-  stream->print(" | ");
-  if (panelByte3 < 16) stream->print("0");
-  stream->print(panelByte3, HEX);
+  if (panelByte4 == 0x02) {
+	stream->print(F(" | "));
+    for (byte panelByte = 5; panelByte <= 7; panelByte ++) {
+      stream->print(panelData[panelByte] >> 4, HEX);
+      stream->print(panelData[panelByte] & 0x0F, HEX);
+	}
+  }
 }
 
 
