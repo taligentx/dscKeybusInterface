@@ -6,8 +6,8 @@ This enables existing DSC security system installations to retain the features a
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), E-mail
-* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
+* Remote control: Web interface, [Blynk](https://www.blynk.cc) mobile app, [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat)
+* Notifications: [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), [TinyGSM SMS](https://github.com/vshymanskyy/TinyGSM), E-mail
 * Keypad interface: Emulates a DSC panel to connect DSC keypads as physical input devices for any general purpose, without a DSC panel.
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
 
@@ -103,12 +103,13 @@ This library uses a combination of hardware and timer interrupts to accurately c
 
 ## Release notes
 * develop
-  - New: DSC Classic series panel support: PC1500, PC1550
+  - New: DSC Classic series panel support: PC1500, PC1550, PC2550
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
   - New: `HomeKit-HomeSpan` example sketch (esp32) - integrate directly with Apple HomeKit as a native standalone accessory using [HomeSpan](https://github.com/HomeSpan/HomeSpan)
   - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32
   - New: esp32-s2 microcontroller support
-  - Updated: `Homebridge-MQTT` support switching armed modes while armed
+  - New: Code restructured to support new features from sketches using #define flags - enables Classic series support and `KeypadInterface`.
+  - Updated: `Homebridge-MQTT` supports switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
   - Updated: removed deprecated `handlePanel()`
   - Bugfix: `VirtualKeypad-Web` updated notes to switch to [this fork of ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer) to resolve crashes with iOS and macOS clients.
