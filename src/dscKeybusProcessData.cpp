@@ -406,12 +406,6 @@ void dscKeybusInterface::processPanel_0x27() {
       }
 
       armed[partitionIndex] = true;
-      if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
-        previousArmed[partitionIndex] = armed[partitionIndex];
-        previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-        armedChanged[partitionIndex] = true;
-        if (!pauseStatus) statusChanged = true;
-      }
 
       processExitDelayStatus(partitionIndex, false);
       exitState[partitionIndex] = 0;
