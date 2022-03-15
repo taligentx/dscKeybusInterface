@@ -692,6 +692,13 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     processArmed(partitionIndex, false);
     processAlarmStatus(partitionIndex, false);
     processEntryDelayStatus(partitionIndex, false);
+
+    // Disarmed by access codes 1-34, 40-42
+    if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
+      byte dscCode = panelData[panelByte] - 0xBF;
+      processPanelAccessCode(partitionIndex, dscCode);
+    }
+
     return;
   }
 
@@ -728,13 +735,6 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
   // Armed by access codes 1-34, 40-42
   if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
     byte dscCode = panelData[panelByte] - 0x98;
-    processPanelAccessCode(partitionIndex, dscCode);
-    return;
-  }
-
-  // Disarmed by access codes 1-34, 40-42
-  if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
-    byte dscCode = panelData[panelByte] - 0xBF;
     processPanelAccessCode(partitionIndex, dscCode);
     return;
   }
