@@ -103,7 +103,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Unlock 6-digit installer codes
 
 ## Release notes
-* develop
+* 3.0
   - New: DSC Classic series panel support: PC1500, PC1550, PC2550
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
   - New: `HomeKit-HomeSpan` example sketch (esp32) - integrate directly with Apple HomeKit as a native standalone accessory using [HomeSpan](https://github.com/HomeSpan/HomeSpan)
@@ -117,6 +117,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
   - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165) preventing making a TLS connection more than once.
   - Bugfix: Fixed `Homebridge-MQTT` handling exit delay states while multiple partitions are arming
+  - Bugfix: Resolved access codes not updating on disarm, changed arming access codes to update before armed status changes
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT

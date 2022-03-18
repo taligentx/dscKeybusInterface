@@ -99,7 +99,7 @@ void setup() {
 
   // Accessory identification
   new SpanAccessory();  
-    new homeSpanIdentify("DSC Security System","DSC","000000","PC1864","2.5");  // Customizable name, manufacturer, serial number, model, firmware revision
+    new homeSpanIdentify("DSC Security System","DSC","000000","PC1864","3.0");  // Customizable name, manufacturer, serial number, model, firmware revision
     new Service::HAPProtocolInformation();
       new Characteristic::Version("1.1.0");  // HomeKit requires specifying HAP protocol version 1.1.0
 
@@ -110,52 +110,52 @@ void setup() {
   
   // Partition 1: Security System accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Partition 1","DSC","000000","Alarm","2.5");
+    new homeSpanIdentify("Partition 1","DSC","000000","Alarm","3.0");
     new dscPartition(1);  // Set the partition number
     
   // Partition 8: Security System accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Partition 8","DSC","000000","Alarm","2.5");
+    new homeSpanIdentify("Partition 8","DSC","000000","Alarm","3.0");
     new dscPartition(8);  // Set the partition number
 
   // Zone 1: Contact Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Zone 1","DSC","000000","Sensor","2.5");  // Set the zone name
+    new homeSpanIdentify("Zone 1","DSC","000000","Sensor","3.0");  // Set the zone name
     new dscZone(1);  // Set the zone number
 
   // Zone 64: Contact Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Zone 64","DSC","000000","Sensor","2.5");  // Set the zone name
+    new homeSpanIdentify("Zone 64","DSC","000000","Sensor","3.0");  // Set the zone name
     new dscZone(64);  // Set the zone number
     
   // Fire alarm partition 1: Smoke Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Fire 1","DSC","000000","Sensor","2.5");  // Set the fire sensor name
+    new homeSpanIdentify("Fire 1","DSC","000000","Sensor","3.0");  // Set the fire sensor name
     new dscFire(1);  // Set the partition number
     
   // Fire alarm partition 8: Smoke Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Fire 8","DSC","000000","Sensor","2.5");  // Set the fire sensor name
+    new homeSpanIdentify("Fire 8","DSC","000000","Sensor","3.0");  // Set the fire sensor name
     new dscFire(8);  // Set the partition number
     
   // PGM output 1: Contact Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("PGM 1","DSC","000000","Sensor","2.5");  // Set the PGM output name
+    new homeSpanIdentify("PGM 1","DSC","000000","Sensor","3.0");  // Set the PGM output name
     new dscPGM(1);  // Set the PGM output number
     
   // PGM output 14: Contact Sensor accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("PGM 14","DSC","000000","Sensor","2.5");  // Set the PGM output name
+    new homeSpanIdentify("PGM 14","DSC","000000","Sensor","3.0");  // Set the PGM output name
     new dscPGM(14);  // Set the PGM output number
     
   // Command output 1: Switch accessory - this allows HomeKit to activate the PGM outputs assigned to the command output
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Command 1","DSC","000000","Sensor","2.5");  // Set the command output name
+    new homeSpanIdentify("Command 1","DSC","000000","Sensor","3.0");  // Set the command output name
     new dscCommand(1, 1, 1);  // Set the command output number (1-4), one of the PGM outputs (1-14) assigned to the command output, and the assigned partition: dscCommand(cmd, pgm, partition);
     
   // Command output 4: Switch accessory - this allows HomeKit to activate the PGM outputs assigned to the command output
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Command 4","DSC","000000","Sensor","2.5");  // Set the command output name
+    new homeSpanIdentify("Command 4","DSC","000000","Sensor","3.0");  // Set the command output name
     new dscCommand(4, 4, 1);  // Set the command output number (1-4), one of the PGM outputs (1-14) assigned to the command output, and the assigned partition: dscCommand(cmd, pgm, partition);
     
   // Starts the Keybus interface and optionally specifies how to print data.

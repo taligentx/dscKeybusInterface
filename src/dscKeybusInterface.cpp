@@ -501,6 +501,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       else switch (isrPanelData[0]) {
         static byte previousCmd05[dscReadSize];
         static byte previousCmd1B[dscReadSize];
+
         case 0x05:  // Status: partitions 1-4
           if (redundantPanelData(previousCmd05, isrPanelData, isrPanelByteCount)) skipData = true;
           break;

@@ -83,17 +83,15 @@ const char* sendToPhoneNumbers[] = {
 
 #define phone_number_count (sizeof (sendToPhoneNumbers) / sizeof (const char *))
 
-// Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
-// virtual keypad.
+// Configures the Keybus interface with the specified pins.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
-#define dscWritePin 6  // Arduino Uno: 2-12
 #define SIM800RxPin 9  // Arduino Uno: 2-12
 #define SIM800TxPin 10  // Arduino Uno: 2-12
 
 // Settings
-//NOTE: I kept getting "Keybus buffer overflow" when sketch was sending multiple messages at once (example: AC power trouble and trouble status ON)
+// NOTE: I kept getting "Keybus buffer overflow" when sketch was sending multiple messages at once (example: AC power trouble and trouble status ON)
 bool notifyOnPartitionAlarm = true;
 bool notifyOnPowerTroubles = false;
 bool notifyOnKeypadAlarm = false;
