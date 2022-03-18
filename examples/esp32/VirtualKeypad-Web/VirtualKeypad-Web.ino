@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.0 (esp32)
+ *  VirtualKeypad-Web 1.5 (esp32)
  *
  *  Provides a virtual keypad web interface using the esp32 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
@@ -7,8 +7,10 @@
  *
  *  Usage:
  *    1. Install the following libraries directly from each Github repository:
- *         ESPAsyncWebServer: https://github.com/me-no-dev/ESPAsyncWebServer
  *         AsyncTCP: https://github.com/me-no-dev/AsyncTCP
+ *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
+ *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
+ *              when used with recent versions of Safari on macOS and iOS.
  *
  *    2. Install the Arduino ESP32 filesystem uploader to enable uploading web server files:
  *         https://github.com/me-no-dev/arduino-esp32fs-plugin
@@ -29,6 +31,9 @@
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Changed ESPAsyncWebServer to a newer fork to fix web server crashes with Safari
+ *    1.4 - Fix crash when pressing keys while Keybus is disconnected
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -36,17 +41,24 @@
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -62,6 +74,8 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -77,16 +91,22 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* dnsHostname = "dsc";  // Sets the domain name - if set to "dsc", access via: http://dsc.local
 const byte  dscPartition = 1;     // Set the partition for the keypad
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
-#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscWritePin 21  // 4,13,16-33
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Chrono ws_ping_pong(Chrono::SECONDS);
@@ -102,7 +122,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -155,10 +175,40 @@ void loop() {
     dsc.statusChanged = false;  // Resets the status flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
+    }
+
+    // Checks if the interface is connected to the Keybus
+    if (dsc.keybusChanged) {
+      dsc.keybusChanged = false;                 // Resets the Keybus data status flag
+      if (dsc.keybusConnected) {
+        Serial.println(F("Keybus connected"));
+        forceUpdate = true;
+        if (ws.count()) {
+          char outas[128];
+          StaticJsonDocument<200> doc;
+          JsonObject root = doc.to<JsonObject>();
+          root["lcd_upper"] = "Keybus";
+          root["lcd_lower"] = "connected";
+          serializeJson(root, outas);
+          ws.textAll(outas);
+        }
+      }
+      else {
+        Serial.println(F("Keybus disconnected"));
+        if (ws.count()) {
+          char outas[128];
+          StaticJsonDocument<200> doc;
+          JsonObject root = doc.to<JsonObject>();
+          root["lcd_upper"] = "Keybus";
+          root["lcd_lower"] = "disconnected";
+          serializeJson(root, outas);
+          ws.textAll(outas);
+        }
+      }
     }
 
     setLights(partition);
@@ -278,7 +328,7 @@ void setStatus(byte partition) {
       case 0x05: root["lcd_upper"] = "Armed:       ";
                  root["lcd_lower"] = "Away            ";
                  if (pausedZones) resetZones(); break;
-      case 0x06: root["lcd_upper"] = "Armed:       ";
+      case 0x06: root["lcd_upper"] = "Armed: Stay  ";
                  root["lcd_lower"] = "No entry delay  ";
                  if (pausedZones) resetZones(); break;
       case 0x07: root["lcd_upper"] = "Failed       ";
@@ -306,7 +356,7 @@ void setStatus(byte partition) {
                  root["lcd_lower"] = "in progress     "; break;
       case 0x15: root["lcd_upper"] = "Arming with  ";
                  root["lcd_lower"] = "bypass zones    "; break;
-      case 0x16: root["lcd_upper"] = "Armed:       ";
+      case 0x16: root["lcd_upper"] = "Armed: Away  ";
                  root["lcd_lower"] = "No entry delay  ";
                  if (pausedZones) resetZones(); break;
       case 0x17: root["lcd_upper"] = "Power saving ";
@@ -462,6 +512,7 @@ void setLights(byte partition) {
 
 // Processes status data not natively handled within the library
 void processStatus() {
+  #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
     case 0x05:
       if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xB8) && !pausedZones) {
@@ -495,6 +546,7 @@ void processStatus() {
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;
   }
+  #endif
 }
 
 
@@ -527,6 +579,7 @@ void processProgramZones(byte startByte) {
 
 
 void processEventBufferAA() {
+  #ifndef dscClassicSeries
   if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
 
   char eventInfo[45] = "Event: ";
@@ -588,10 +641,12 @@ void processEventBufferAA() {
     case 0x02: printPanelStatus2(6); break;
     case 0x03: printPanelStatus3(6); break;
   }
+  #endif
 }
 
 
 void processEventBufferEC() {
+  #ifndef dscClassicSeries
   if (!extendedBuffer) extendedBuffer = true;
 
   char eventInfo[45] = "Event: ";
@@ -670,6 +725,7 @@ void processEventBufferEC() {
     case 0x18: printPanelStatus18(8); break;
     case 0x1B: printPanelStatus1B(8); break;
   }
+  #endif
 }
 
 
@@ -1517,9 +1573,30 @@ void resetZones() {
 
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
+
   if (type == WS_EVT_CONNECT) {
     client->printf("{\"connected_id\": %u}", client->id());
-    forceUpdate = true;
+    if (dsc.keybusConnected && ws.count()) {
+      if (ws.count()) {
+        char outas[128];
+        StaticJsonDocument<200> doc;
+        JsonObject root = doc.to<JsonObject>();
+        root["lcd_upper"] = "Keybus";
+        root["lcd_lower"] = "connected";
+        serializeJson(root, outas);
+        ws.textAll(outas);
+      }
+      forceUpdate = true;
+    }
+    else if (!dsc.keybusConnected && ws.count()) {
+      char outas[128];
+      StaticJsonDocument<200> doc;
+      JsonObject root = doc.to<JsonObject>();
+      root["lcd_upper"] = "Keybus";
+      root["lcd_lower"] = "disconnected";
+      serializeJson(root, outas);
+      ws.textAll(outas);
+    }
     client->ping();
     ws_ping_pong.restart();
   }
@@ -1562,7 +1639,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
             char * const sep_at = strchr(tmp, '_');
             if (sep_at != NULL)            {
               *sep_at = '\0';
-              dsc.write(sep_at + 1);
+              if (dsc.keybusConnected) dsc.write(sep_at + 1);
             }
           }
         }

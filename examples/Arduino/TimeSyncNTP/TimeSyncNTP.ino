@@ -25,7 +25,7 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad:
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
@@ -60,12 +60,13 @@ byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address uniqu
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
-EthernetUDP ipClient;
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+EthernetUDP ipClient;
 byte ntpBuffer[48];
 unsigned int localPort = 8888;
 bool ntpSynced = true;
@@ -79,7 +80,7 @@ void setup() {
   Serial.println();
 
   // Initializes ethernet with DHCP
-  Serial.print(F("Ethernet..."));
+  Serial.print(F("Ethernet...."));
   while(!Ethernet.begin(mac)) {
       Serial.print(".");
       delay(1000);
@@ -88,7 +89,7 @@ void setup() {
   Serial.println(Ethernet.localIP());
   ipClient.begin(localPort);
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   setSyncProvider(getDstCorrectedTime);  // Initiates the NTP client, synced hourly
   setSyncInterval(3600);
   while (timeStatus() != timeSet) {
@@ -146,7 +147,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;

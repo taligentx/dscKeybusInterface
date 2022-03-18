@@ -69,7 +69,7 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad:
+ *      Virtual keypad:
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
  *            Ground --- NPN emitter --/
@@ -521,7 +521,7 @@ void setup() {
   // Starts the Keybus interface and optionally specifies how to print data.
   // begin() sets Serial by default and can accept a different stream: begin(Serial1), etc.
   dsc.begin();
-  Serial.print(F("DSC Keybus Interface..."));
+  Serial.print(F("DSC Keybus Interface...."));
 
   // Loops until partition 1 is ready for key presses in status "Partition ready" (0x01),
   // "Stay/away zones open" (0x02), or "Zones open" (0x03)

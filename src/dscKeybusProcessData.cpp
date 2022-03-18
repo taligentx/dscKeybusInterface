@@ -27,7 +27,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dscKeybusInterface.h"
+#include "dscKeybus.h"
 
 
 // Resets the state of all status components as changed for sketches to get the current status
@@ -236,7 +236,7 @@ void dscKeybusInterface::processPanelStatus() {
           armedAway[partitionIndex] = true;
         }
 
-        writeArm[partitionIndex] = false;
+        writeAccessCode[partitionIndex] = false;
 
         armed[partitionIndex] = true;
         if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
@@ -255,8 +255,7 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Exit delay in progress
       case 0x08: {
-        writeArm[partitionIndex] = false;
-        accessCodePrompt = false;
+        writeAccessCode[partitionIndex] = false;
 
         processExitDelayStatus(partitionIndex, true);
 
@@ -306,19 +305,18 @@ void dscKeybusInterface::processPanelStatus() {
       // Partition armed with no entry delay
       case 0x06:
       case 0x16: {
-        noEntryDelay[partitionIndex] = true;
+        armed[partitionIndex] = true;
 
         // Sets an armed mode if not already set, used if interface is initialized while the panel is armed
-        if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) armedStay[partitionIndex] = true;
-
-        armed[partitionIndex] = true;
-        if (armed[partitionIndex] != previousArmed[partitionIndex]) {
-          previousArmed[partitionIndex] = armed[partitionIndex];
-          previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-          armedChanged[partitionIndex] = true;
-          if (!pauseStatus) statusChanged = true;
+        if (!armedStay[partitionIndex] && !armedAway[partitionIndex]) {
+          if (panelData[messageByte] == 0x06) {
+            armedStay[partitionIndex] = true;
+            previousArmedStay[partitionIndex] = armedStay[partitionIndex];
+          }
+          else armedAway[partitionIndex] = true;
         }
 
+        processNoEntryDelayStatus(partitionIndex, true);
         processReadyStatus(partitionIndex, false);
         break;
       }
@@ -358,7 +356,8 @@ void dscKeybusInterface::processPanelStatus() {
 
       // Enter access code
       case 0x9F: {
-        if (writeArm[partitionIndex]) {  // Ensures access codes are only sent when an arm command is sent through this interface
+        if (writeAccessCode[partitionIndex]) {  // Ensures access codes are only sent when an arm or command output key is sent through this interface
+          writeAccessCode[partitionIndex] = false;
           accessCodePrompt = true;
           if (!pauseStatus) statusChanged = true;
         }
@@ -407,12 +406,6 @@ void dscKeybusInterface::processPanel_0x27() {
       }
 
       armed[partitionIndex] = true;
-      if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
-        previousArmed[partitionIndex] = armed[partitionIndex];
-        previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-        armedChanged[partitionIndex] = true;
-        if (!pauseStatus) statusChanged = true;
-      }
 
       processExitDelayStatus(partitionIndex, false);
       exitState[partitionIndex] = 0;
@@ -477,6 +470,11 @@ void dscKeybusInterface::processPanel_0x3E() {
 void dscKeybusInterface::processPanel_0x87() {
   if (!validCRC()) return;
 
+  // Resets flag to write access code if needed when writing command output keys
+  for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
+    writeAccessCode[partitionIndex] = false;
+  }
+
   pgmOutputs[0] = panelData[3] & 0x03;
   pgmOutputs[0] |= panelData[2] << 2;
   pgmOutputs[1] = panelData[2] >> 6;
@@ -513,6 +511,7 @@ void dscKeybusInterface::processPanel_0xA5() {
   byte partition = panelData[3] >> 6;
   switch (panelData[5] & 0x03) {
     case 0x00: processPanelStatus0(partition, 6); break;
+    case 0x01: processPanelStatus1(partition, 6); break;
     case 0x02: processPanelStatus2(partition, 6); break;
   }
 }
@@ -597,6 +596,7 @@ void dscKeybusInterface::processPanel_0xEB() {
 
   switch (panelData[7] & 0x07) {
     case 0x00: processPanelStatus0(partition, 8); break;
+    case 0x01: processPanelStatus1(partition, 8); break;
     case 0x02: processPanelStatus2(partition, 8); break;
     case 0x04: processPanelStatus4(partition, 8); break;
     case 0x05: processPanelStatus5(partition, 8); break;
@@ -686,6 +686,13 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     processArmed(partitionIndex, false);
     processAlarmStatus(partitionIndex, false);
     processEntryDelayStatus(partitionIndex, false);
+
+    // Disarmed by access codes 1-34, 40-42
+    if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
+      byte dscCode = panelData[panelByte] - 0xBF;
+      processPanelAccessCode(partitionIndex, dscCode);
+    }
+
     return;
   }
 
@@ -725,12 +732,20 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     processPanelAccessCode(partitionIndex, dscCode);
     return;
   }
+}
 
-  // Disarmed by access codes 1-34, 40-42
-  if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
-    byte dscCode = panelData[panelByte] - 0xBF;
-    processPanelAccessCode(partitionIndex, dscCode);
-    return;
+
+void dscKeybusInterface::processPanelStatus1(byte partition, byte panelByte) {
+  if (partition == 0 || partition > dscPartitions) return;
+  byte partitionIndex = partition - 1;
+
+  switch (panelData[panelByte]) {
+
+    // Armed with no entry delay
+    case 0xD2: {
+      processNoEntryDelayStatus(partitionIndex, false);
+      return;
+    }
   }
 }
 
@@ -764,7 +779,7 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
     return;
   }
 
-  if (panelData[panelByte] == 0xA5) {
+  if (panelData[0] == 0xA5) {
     switch (panelData[panelByte]) {
 
       // Activate stay/away zones
@@ -779,7 +794,7 @@ void dscKeybusInterface::processPanelStatus2(byte partition, byte panelByte) {
 
       // Armed with no entry delay
       case 0x9C: {
-        noEntryDelay[partitionIndex] = true;
+        processNoEntryDelayStatus(partitionIndex, true);
         processReadyStatus(partitionIndex, false);
         return;
       }
@@ -881,6 +896,16 @@ void dscKeybusInterface::processEntryDelayStatus(byte partitionIndex, bool statu
   if (entryDelay[partitionIndex] != previousEntryDelay[partitionIndex]) {
     previousEntryDelay[partitionIndex] = entryDelay[partitionIndex];
     entryDelayChanged[partitionIndex] = true;
+    if (!pauseStatus) statusChanged = true;
+  }
+}
+
+
+void dscKeybusInterface::processNoEntryDelayStatus(byte partitionIndex, bool status) {
+  noEntryDelay[partitionIndex] = status;
+  if (noEntryDelay[partitionIndex] != previousNoEntryDelay[partitionIndex]) {
+    previousNoEntryDelay[partitionIndex] = noEntryDelay[partitionIndex];
+    armedChanged[partitionIndex] = true;
     if (!pauseStatus) statusChanged = true;
   }
 }

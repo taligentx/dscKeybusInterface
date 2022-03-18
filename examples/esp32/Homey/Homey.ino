@@ -1,5 +1,5 @@
 /*
- *  Homey 1.0 (esp32)
+ *  Homey 1.1 (esp32)
  *
  *  Processes the security system status for partition 1 and allows for control using Athom Homey.
  *
@@ -12,6 +12,7 @@
  *  Zone states are published by Homey.trigger command including the zone number.
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -19,17 +20,24 @@
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -45,6 +53,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <WiFi.h>
 #include <Homey.h>
 #include <dscKeybusInterface.h>
@@ -56,12 +67,17 @@ const char* accessCode = "";  // An access code is required to disarm/night arm 
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
-#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscWritePin 21  // 4,13,16-33
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 bool wifiConnected = true;
 
 
@@ -71,7 +87,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -118,14 +134,13 @@ void loop() {
   // Run the Homey loop
   Homey.loop();
 
-
   dsc.loop();
 
   if (dsc.statusChanged) {      // Checks if the security system status has changed
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;

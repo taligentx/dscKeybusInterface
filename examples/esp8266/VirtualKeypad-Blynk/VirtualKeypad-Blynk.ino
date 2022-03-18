@@ -1,12 +1,21 @@
 /*
- *  VirtualKeypad-Blynk 1.3 (esp8266)
+ *  VirtualKeypad-Blynk 1.4 (esp8266)
  *
- *  Provides a virtual keypad interface for the free Blynk (https://www.blynk.cc) app on iOS and Android, similar
- *  to a physical DSC LED keypad.  Note that while the Blynk app has an LCD to display the partition status, the
- *  sketch currently does not emulate the menu navigation features of the DSC LCD keypads (PK5500, etc).
+ *  Provides a virtual keypad interface for the free Blynk legacy (https://www.blynk.cc) app on iOS and Android, similar
+ *  to a physical DSC LED keypad (the newer Blynk.Cloud app is not currently supported):
+ *
+ *    iOS: https://apps.apple.com/us/app/blynk-0-1-legacy/id808760481
+ *    Android: https://play.google.com/store/apps/details?id=cc.blynk&hl=en&gl=US
+ *
+ *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
+ *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
+ *  servers can setup users with any amount of Blynk Energy.
+ *
+ *  Note that while the Blynk legacy app has an LCD to display the partition status, the sketch currently does
+ *  not emulate the menu navigation features of the DSC LCD keypads (PK5500, etc).
  *
  *  Usage:
- *    1. Scan one of the following QR codes from within the Blynk app for an example keypad layout - as QR codes
+ *    1. Scan one of the following QR codes from within the Blynk legacy app for an example keypad layout - as QR codes
  *       can contain a limited amount of objects, only the 8 and 16-zone template includes PGM outputs 1-8.  Use
  *       cloning within the Blynk app to add up to 64 zones and up to 14 PGM outputs.  Some Android devices have
  *       issues reading these QR codes and may need to be used with a different monitor/device.
@@ -20,11 +29,6 @@
  *    4. Go back to Project Settings, copy the auth token, and paste it in an email or message to yourself.
  *    5. Add the auth token to the sketch below.
  *    6. Upload the sketch.
- *
- *  Installing Blynk as a local server (https://github.com/blynkkk/blynk-server) is recommended to keep control of the
- *  security system internal to your network.  This also lets you use as many widgets as needed for free - local
- *  servers can setup users with any amount of Blynk Energy.  Using the default Blynk cloud service with the above
- *  example layouts requires more of Blynk's Energy units than available on the free usage tier.
  *
  *  The Blynk layout can be customized with widgets using these virtual pin mappings:
       V0 - Keypad 0 ... V9 - Keypad 9
@@ -53,6 +57,7 @@
       V61 - Zone 1 ... V124 - Zone 64
  *
  *  Release notes:
+ *    1.4 - Added DSC Classic series support
  *    1.3 - Display alarm memory, programming zone lights, and event buffer
  *          Add PGM outputs 1-14 status
  *    1.2 - Updated esp8266 wiring diagram for 33k/10k resistors
@@ -63,17 +68,24 @@
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -87,6 +99,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 #include <dscKeybusInterface.h>
@@ -96,18 +111,24 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
+const char* accessCode = "";      // Classic series only, an access code is required to arm with the stay/away buttons.
 const char* blynkAuthToken = "";  // Token generated from within the Blynk app
 const char* blynkServer = "";     // Blynk local server address
 const int   blynkPort = 8080;     // Blynk local server port
 bool showLCDoutput = true;        // Control if LCD programming output is displayed on VirtualPin20
 
 // Configures the Keybus interface with the specified pins
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 bool wifiConnected = true;
 bool partitionChanged, pausedZones, extendedBuffer;
 bool decimalOutput, inputDigits;
@@ -210,13 +231,13 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   Blynk.begin(blynkAuthToken, wifiSSID, wifiPassword, blynkServer, blynkPort);
   while (WiFi.status() != WL_CONNECTED) yield();
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
-  Serial.print(F("Blynk..."));
+  Serial.print(F("Blynk...."));
   while (!Blynk.connected()) {
     Blynk.run();
     yield();
@@ -257,7 +278,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -401,10 +422,12 @@ void loop() {
       if (dsc.powerTrouble) {
         lcd.print(0, 0, "Power        ");
         lcd.print(0, 1, "trouble         ");
+        Blynk.notify("Power trouble");
       }
       else {
         lcd.print(0, 0, "Power        ");
         lcd.print(0, 1, "restored        ");
+        Blynk.notify("Power restored");
       }
     }
 
@@ -413,10 +436,32 @@ void loop() {
       if (dsc.batteryTrouble) {
         lcd.print(0, 0, "Battery     ");
         lcd.print(0, 1, "trouble         ");
+        Blynk.notify("Battery trouble");
       }
       else {
         lcd.print(0, 0, "Battery     ");
         lcd.print(0, 1, "restored        ");
+        Blynk.notify("Battery restored");
+      }
+    }
+
+    if (dsc.troubleChanged) {
+      dsc.troubleChanged = false;
+      if (dsc.trouble) Blynk.notify("Trouble status on");
+      else Blynk.notify("Trouble status restored");
+    }
+
+    for (byte partition = 0; partition < dscPartitions; partition++) {
+      if (dsc.disabled[partition]) continue;
+      if (dsc.alarmChanged[partition]) {
+        dsc.alarmChanged[partition] = false;
+        if (dsc.alarm[partition]) {
+          char alarmPartition[19] = "Alarm: Partition ";
+          char partitionNumber[2];
+          itoa(partition + 1, partitionNumber, 10);
+          strcat(alarmPartition, partitionNumber);
+          Blynk.notify(alarmPartition);
+        }
       }
     }
   }
@@ -444,7 +489,7 @@ void setStatus(byte partition, bool forceUpdate) {
     case 0x05: lcd.print(0, 0, "Armed:       ");
                lcd.print(0, 1, "Away            ");
                if (pausedZones) resetZones(); break;
-    case 0x06: lcd.print(0, 0, "Armed:       ");
+    case 0x06: lcd.print(0, 0, "Armed: Stay  ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
     case 0x07: lcd.print(0, 0, "Failed       ");
@@ -472,7 +517,7 @@ void setStatus(byte partition, bool forceUpdate) {
                lcd.print(0, 1, "in progress     "); break;
     case 0x15: lcd.print(0, 0, "Arming with  ");
                lcd.print(0, 1, "bypass zones    "); break;
-    case 0x16: lcd.print(0, 0, "Armed:       ");
+    case 0x16: lcd.print(0, 0, "Armed: Away  ");
                lcd.print(0, 1, "No entry delay  ");
                if (pausedZones) resetZones(); break;
     case 0x17: lcd.print(0, 0, "Power saving ");
@@ -853,19 +898,27 @@ void setLights(byte partition, bool forceUpdate) {
 
 // Processes status data not natively handled within the library
 void processStatus() {
+  #ifndef dscClassicSeries
   switch (dsc.panelData[0]) {
-    case 0x05:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
-        pauseZones();
-      }
+    case 0x05:  //Enter (*) function key, enter (*) function key while armed, enter installer code, enter master code status messages for partitions 1-4 calls pauseZones
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 1) pauseZones();
+      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones && dsc.writePartition == 2) pauseZones();
+      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones && dsc.writePartition == 3) pauseZones();
+      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones && dsc.writePartition == 4) pauseZones();
       break;
-    case 0x0A:
-      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones) {
-        pauseZones();
-      }
-      if (pausedZones) {
-        processProgramZones(4, ledProgramZonesColor);
-      }
+    case 0x0A:  //Call processProgramZones on partition 1
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 1) pauseZones();
+      if (pausedZones) processProgramZones(4, ledProgramZonesColor);
+      break;
+    case 0x0F:  //Call processProgramZones on partition 2
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 2) pauseZones();
+      if (pausedZones) processProgramZones(4, ledProgramZonesColor);
+      break;
+    case 0x1B:  //Enter (*) function key, enter (*) function key while armed, enter installer code, enter master code status messages for partitions 4-8 calls pauseZones
+      if ((dsc.panelData[3] == 0x9E || dsc.panelData[3] == 0xA5 || dsc.panelData[3] == 0xB7 || dsc.panelData[3] == 0xB8) && !pausedZones && dsc.writePartition == 5) pauseZones();
+      if ((dsc.panelData[5] == 0x9E || dsc.panelData[5] == 0xA5 || dsc.panelData[5] == 0xB7 || dsc.panelData[5] == 0xB8) && !pausedZones && dsc.writePartition == 6) pauseZones();
+      if ((dsc.panelData[7] == 0x9E || dsc.panelData[7] == 0xA5 || dsc.panelData[7] == 0xB7 || dsc.panelData[7] == 0xB8) && !pausedZones && dsc.writePartition == 7) pauseZones();
+      if ((dsc.panelData[9] == 0x9E || dsc.panelData[9] == 0xA5 || dsc.panelData[9] == 0xB7 || dsc.panelData[9] == 0xB8) && !pausedZones && dsc.writePartition == 8) pauseZones();
       break;
     case 0x5D:
       if ((dsc.panelData[2] & 0x04) == 0x04) {  // Alarm memory zones 1-32
@@ -890,6 +943,7 @@ void processStatus() {
       break;
     case 0xEC: if (pausedZones) processEventBufferEC(); break;
   }
+  #endif
 }
 
 
@@ -919,6 +973,7 @@ void processProgramZones(byte startByte, const char* ledColor) {
 
 
 void processLCDoutputData() {
+  #ifndef dscClassicSeries
   if (!showLCDoutput) return; // Do not display LCD output data if showLCDoutput is false
   char dataInfo[21] = "LCD Display: ";
   char dataBuffer[4];
@@ -937,10 +992,12 @@ void processLCDoutputData() {
     }
   }
   Blynk.virtualWrite(V20, dataInfo);
+  #endif
 }
 
 
 void processEventBufferAA() {
+  #ifndef dscClassicSeries
   if (extendedBuffer) return;  // Skips 0xAA data when 0xEC extended event buffer data is available
 
   char eventInfo[45] = "Event: ";
@@ -995,10 +1052,12 @@ void processEventBufferAA() {
     case 0x02: printPanelStatus2(6); break;
     case 0x03: printPanelStatus3(6); break;
   }
+  #endif
 }
 
 
 void processEventBufferEC() {
+  #ifndef dscClassicSeries
   if (!extendedBuffer) extendedBuffer = true;
 
   char eventInfo[45] = "Event: ";
@@ -1070,6 +1129,7 @@ void processEventBufferEC() {
     case 0x18: printPanelStatus18(8); break;
     case 0x1B: printPanelStatus1B(8); break;
   }
+  #endif
 }
 
 

@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.2 (Arduino with Ethernet)
+ *  OpenHAB-MQTT 1.3 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates using panel and partition states
@@ -81,6 +81,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *    Fire alarm restored: "0"
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Added PGM outputs 1-14 status
  *          Removed partition exit delay MQTT message, not used in this OpenHAB example
  *    1.0 - Initial release
@@ -98,9 +99,16 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin (Arduino Uno: 2-12)
+ *                 +-- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -114,6 +122,9 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <PubSubClient.h>
@@ -121,7 +132,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
 
 // Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -129,9 +140,9 @@ const char* mqttPassword = "";  // Optional, leave blank if not required
 
 // MQTT topics - match to the OpenHAB "things" configuration file
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
-const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
-const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition4
+const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone32
+const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire4
 const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttTroubleTopic = "dsc/Get/Trouble";      // Sends trouble status
 const char* mqttStatusTopic = "dsc/Status";            // Sends online/offline status
@@ -142,11 +153,16 @@ const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to w
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 EthernetClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;
@@ -187,7 +203,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -200,7 +216,7 @@ void loop() {
       else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);

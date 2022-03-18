@@ -1,5 +1,5 @@
 /*
- *  Telegram Bot 1.0 (esp8266)
+ *  Telegram Bot 1.1 (esp8266)
  *
  *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
  *
@@ -27,6 +27,7 @@
  *    - Disarm: /disarm
  *
  *  Release notes:
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -34,17 +35,24 @@
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -58,6 +66,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
@@ -67,18 +78,23 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
+const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* telegramBotToken = "";  // Set the Telegram bot access token
 const char* telegramUserID = "";    // Set the Telegram chat user ID
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 X509List telegramCert(TELEGRAM_CERTIFICATE_ROOT);
 WiFiClientSecure ipClient;
 UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
@@ -92,7 +108,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   ipClient.setTrustAnchors(&telegramCert);
@@ -103,7 +119,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time"));
+  Serial.print(F("NTP time...."));
   configTime(0, 0, "pool.ntp.org");
   time_t now = time(nullptr);
   while (now < 24 * 3600)
@@ -157,7 +173,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -170,7 +186,7 @@ void loop() {
       else sendMessage("Disconnected");
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
@@ -185,11 +201,11 @@ void loop() {
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          char messageContent[25];
+          char messageContent[30];
 
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night stay: Partition ");
           else if (dsc.armedStay[partition]) strcpy(messageContent, "Armed stay: Partition ");
 
           appendPartition(partition, messageContent);  // Appends the message with the partition number

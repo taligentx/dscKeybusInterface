@@ -14,17 +14,17 @@
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -52,9 +52,9 @@ const char* ntpServer = "pool.ntp.org";  // Set the NTP server
 const byte  timePartition = 1;           // Set the partition to use for setting the time
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
-#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscWritePin 21  // 4,13,16-33
 
 // Initialize components
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
@@ -71,7 +71,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -81,7 +81,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   configTime(timeZoneOffset, daylightOffset, ntpServer);  // Initiates the NTP client, synced hourly
   while (!getLocalTime(&ntpTime)) {
     Serial.print(".");
@@ -136,7 +136,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;

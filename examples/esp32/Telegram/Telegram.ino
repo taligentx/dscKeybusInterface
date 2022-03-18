@@ -1,5 +1,5 @@
 /*
- *  Telegram Bot 1.0 (esp32)
+ *  Telegram Bot 1.2 (esp32)
  *
  *  Processes the security system status and allows for control via a Telegram bot: https://www.telegram.org
  *
@@ -27,6 +27,8 @@
  *    - Disarm: /disarm
  *
  *  Release notes:
+ *    1.2 - Workaround for upstream esp32 TLS handshake issue https://github.com/espressif/arduino-esp32/issues/6165
+ *    1.1 - Added DSC Classic series support
  *    1.0 - Initial release
  *
  *  Wiring:
@@ -34,17 +36,24 @@
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -58,6 +67,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
@@ -67,18 +79,23 @@
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm (based on panel configuration)
+const char* accessCode = "";        // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* telegramBotToken = "";  // Set the Telegram bot access token
 const char* telegramUserID = "";    // Set the Telegram chat user ID
 const char* messagePrefix = "[Security system] ";  // Set a prefix for all messages
 
 // Configures the Keybus interface with the specified pins.
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
-#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscWritePin 21  // 4,13,16-33
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 WiFiClientSecure ipClient;
 UniversalTelegramBot telegramBot(telegramBotToken, ipClient);
 const int telegramCheckInterval = 1000;
@@ -90,7 +107,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   ipClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
@@ -101,7 +118,7 @@ void setup() {
   Serial.print(F("connected: "));
   Serial.println(WiFi.localIP());
 
-  Serial.print(F("NTP time..."));
+  Serial.print(F("NTP time...."));
   configTime(0, 0, "pool.ntp.org");
   time_t now = time(nullptr);
   while (now < 24 * 3600)
@@ -141,6 +158,8 @@ void loop() {
   // Checks for incoming Telegram messages
   static unsigned long telegramPreviousTime;
   if (millis() - telegramPreviousTime > telegramCheckInterval) {
+    ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
+
     byte telegramMessages = telegramBot.getUpdates(telegramBot.last_message_received + 1);
     while (telegramMessages) {
       handleTelegram(telegramMessages);
@@ -155,7 +174,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -168,7 +187,7 @@ void loop() {
       else sendMessage("Disconnected");
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
@@ -183,11 +202,11 @@ void loop() {
       // Checks armed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          char messageContent[25];
+          char messageContent[30];
 
-          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night away: Partition ");
           else if (dsc.armedAway[partition]) strcpy(messageContent, "Armed away: Partition ");
-          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night: Partition ");
+          else if (dsc.armedStay[partition] && dsc.noEntryDelay[partition]) strcpy(messageContent, "Armed night stay: Partition ");
           else if (dsc.armedStay[partition]) strcpy(messageContent, "Armed stay: Partition ");
 
           appendPartition(partition, messageContent);  // Appends the message with the partition number
@@ -372,6 +391,7 @@ void handleTelegram(byte telegramMessages) {
 
 
 bool sendMessage(const char* messageContent) {
+  ipClient.setHandshakeTimeout(30);  // Workaround for https://github.com/espressif/arduino-esp32/issues/6165
   byte messageLength = strlen(messagePrefix) + strlen(messageContent) + 1;
   char message[messageLength];
   strcpy(message, messagePrefix);

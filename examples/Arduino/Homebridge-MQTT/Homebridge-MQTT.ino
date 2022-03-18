@@ -1,5 +1,5 @@
 /*
- *  Homebridge-MQTT 1.4 (Arduino with Ethernet)
+ *  Homebridge-MQTT 1.7 (Arduino with Ethernet)
  *
  *  Processes the security system status and allows for control using Apple HomeKit, including the iOS Home app,
  *  Siri, and Google Home.  This uses MQTT to interface with Homebridge and the homebridge-mqttthing plugin for
@@ -146,6 +146,9 @@
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.7 - Fixed exit delay states while multiple partitions are arming
+ *    1.6 - Added DSC Classic series support
+ *    1.5 - Support switching armed modes while armed
  *    1.4 - Added PGM outputs 1-14 status
  *          Added notes on Google Home integration
  *    1.2 - Resolved handling HomeKit target states
@@ -168,7 +171,14 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin (Arduino Uno: 2-12)
+ *                 +-- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
  *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (Arduino Uno: 2-12)
  *            Ground --- NPN emitter --/
@@ -184,6 +194,9 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include <PubSubClient.h>
@@ -191,7 +204,7 @@
 
 // Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -199,24 +212,29 @@ const char* mqttPassword = "";  // Optional, leave blank if not required
 
 // MQTT topics - match to Homebridge's config.json
 const char* mqttClientName = "dscKeybusInterface";
-const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition8
-const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone64
-const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire8
+const char* mqttPartitionTopic = "dsc/Get/Partition";  // Sends armed and alarm status per partition: dsc/Get/Partition1 ... dsc/Get/Partition4
+const char* mqttZoneTopic = "dsc/Get/Zone";            // Sends zone status per zone: dsc/Get/Zone1 ... dsc/Get/Zone32
+const char* mqttFireTopic = "dsc/Get/Fire";            // Sends fire status per partition: dsc/Get/Fire1 ... dsc/Get/Fire4
 const char* mqttPgmTopic = "dsc/Get/PGM";              // Sends PGM status per PGM: dsc/Get/PGM1 ... dsc/Get/PGM14
 const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to write to the panel
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
+#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 EthernetClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;
-char exitState;
+char exitState[4];
 
 
 void setup() {
@@ -254,13 +272,13 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
@@ -275,7 +293,7 @@ void loop() {
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         if (dsc.armed[partition]) {
-          exitState = 0;
+          exitState[partition] = 0;
 
           // Night armed away
           if (dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
@@ -310,21 +328,21 @@ void loop() {
         if (dsc.exitDelay[partition]) {
 
           // Sets the arming target state if the panel is armed externally
-          if (exitState == 0 || dsc.exitStateChanged[partition]) {
+          if (exitState[partition] == 0 || dsc.exitStateChanged[partition]) {
             dsc.exitStateChanged[partition] = 0;
             switch (dsc.exitState[partition]) {
               case DSC_EXIT_STAY: {
-                exitState = 'S';
+                exitState[partition] = 'S';
                 publishState(mqttPartitionTopic, partition, "S", 0);
                 break;
               }
               case DSC_EXIT_AWAY: {
-                exitState = 'A';
+                exitState[partition] = 'A';
                 publishState(mqttPartitionTopic, partition, "A", 0);
                 break;
               }
               case DSC_EXIT_NO_ENTRY_DELAY: {
-                exitState = 'N';
+                exitState[partition] = 'N';
                 publishState(mqttPartitionTopic, partition, "N", 0);
                 break;
               }
@@ -334,7 +352,7 @@ void loop() {
 
         // Disarmed during exit delay
         else if (!dsc.armed[partition]) {
-          exitState = 0;
+          exitState[partition] = 0;
           publishState(mqttPartitionTopic, partition, "D", "D");
         }
       }
@@ -439,7 +457,52 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
-  // Resets the HomeKit target state if attempting to change the armed mode while armed or not ready
+  // Sets night arm (no entry delay) while armed
+  if (payload[payloadIndex] == 'N' && dsc.armed[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "N", 0);
+    exitState[partition] = 'N';
+    return;
+  }
+
+  // Disables night arm while armed stay
+  if (payload[payloadIndex] == 'S' && dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState[partition] = 'S';
+    return;
+  }
+
+  // Disables night arm while armed away
+  if (payload[payloadIndex] == 'A' && dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState[partition] = 'A';
+    return;
+  }
+
+  // Changes from arm away to arm stay after the exit delay
+  if (payload[payloadIndex] == 'S' && dsc.armedAway[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("s");
+    publishState(mqttPartitionTopic, partition, "S", 0);
+    exitState[partition] = 'S';
+    return;
+  }
+
+  // Changes from arm stay to arm away after the exit delay
+  if (payload[payloadIndex] == 'A' && dsc.armedStay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("w");
+    publishState(mqttPartitionTopic, partition, "A", 0);
+    exitState[partition] = 'A';
+    return;
+  }
+
+  // Resets the HomeKit target state if attempting to change the armed mode while not ready
   if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
     dsc.armedChanged[partition] = true;
     dsc.statusChanged = true;
@@ -447,10 +510,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 
   // Resets the HomeKit target state if attempting to change the arming mode during the exit delay
-  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState != 0) {
-    if (exitState == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
-    else if (exitState == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
-    else if (exitState == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
+  if (payload[payloadIndex] != 'D' && dsc.exitDelay[partition] && exitState[partition] != 0) {
+    if (exitState[partition] == 'S') publishState(mqttPartitionTopic, partition, "S", 0);
+    else if (exitState[partition] == 'A') publishState(mqttPartitionTopic, partition, "A", 0);
+    else if (exitState[partition] == 'N') publishState(mqttPartitionTopic, partition, "N", 0);
   }
 
 
@@ -459,7 +522,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('s');  // Keypad stay arm
     publishState(mqttPartitionTopic, partition, "S", 0);
-    exitState = 'S';
+    exitState[partition] = 'S';
     return;
   }
 
@@ -468,7 +531,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('w');  // Keypad away arm
     publishState(mqttPartitionTopic, partition, "A", 0);
-    exitState = 'A';
+    exitState[partition] = 'A';
     return;
   }
 
@@ -477,7 +540,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     dsc.writePartition = partition + 1;    // Sets writes to the partition number
     dsc.write('n');  // Keypad arm with no entry delay
     publishState(mqttPartitionTopic, partition, "N", 0);
-    exitState = 'N';
+    exitState[partition] = 'N';
     return;
   }
 

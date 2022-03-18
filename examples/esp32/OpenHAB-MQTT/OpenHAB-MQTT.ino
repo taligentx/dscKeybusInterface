@@ -1,5 +1,5 @@
 /*
- *  OpenHAB-MQTT 1.2 (esp32)
+ *  OpenHAB-MQTT 1.3 (esp32)
  *
  *  Processes the security system status and allows for control using OpenHAB.  This uses MQTT to
  *  interface with OpenHAB and the MQTT binding and demonstrates sending the panel status as a
@@ -89,6 +89,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.3 - Added DSC Classic series support
  *    1.2 - Added PGM outputs 1-14 status
  *    1.1 - Removed partition exit delay MQTT message, not used in this OpenHAB example
  *    1.0 - Initial release
@@ -98,17 +99,24 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *
  *      DSC Aux(-) --- esp32 Ground
  *
- *                                         +--- dscClockPin (esp32: 4,13,16-39)
+ *                                         +--- dscClockPin  // Default: 18
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp32: 4,13,16-39)
+ *                                         +--- dscReadPin   // Default: 19
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: 17
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp32: 4,13,16-33)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: 21
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -122,6 +130,9 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <dscKeybusInterface.h>
@@ -129,7 +140,7 @@ Contact zone3 "Zone 3" <motion> {channel="mqtt:topic:mymqtt:dsc:zone3"}
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -150,12 +161,17 @@ const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to w
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin 18  // esp32: 4,13,16-39
-#define dscReadPin  19  // esp32: 4,13,16-39
-#define dscWritePin 21  // esp32: 4,13,16-33
+#define dscClockPin 18  // 4,13,16-39
+#define dscReadPin  19  // 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscWritePin 21  // 4,13,16-33
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 WiFiClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;
@@ -167,7 +183,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi..."));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -197,7 +213,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -210,7 +226,7 @@ void loop() {
       else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
@@ -255,7 +271,7 @@ void loop() {
         dsc.exitDelayChanged[partition] = false;  // Resets the exit delay status flag
 
         // Disarmed during exit delay
-        else if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
+        if (!dsc.exitDelay[partition] && !dsc.armed[partition]) {
           publishState(mqttPartitionTopic, partition, "D");
         }
       }
@@ -460,6 +476,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
     case 0x04: mqtt.publish(publishTopic, "Armed stay", true); break;
     case 0x05: mqtt.publish(publishTopic, "Armed away", true); break;
+    case 0x06: mqtt.publish(publishTopic, "No entry delay", true); break;
     case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
     case 0x08: mqtt.publish(publishTopic, "Exit delay", true); break;
     case 0x09: mqtt.publish(publishTopic, "No entry delay", true); break;
@@ -469,7 +486,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x10: mqtt.publish(publishTopic, "Keypad lockout", true); break;
     case 0x11: mqtt.publish(publishTopic, "Alarm", true); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm", true); break;
-    case 0x15: mqtt.publish(publishTopic, "Arm with bypass"); break;
+    case 0x15: mqtt.publish(publishTopic, "Arm with bypass", true); break;
     case 0x16: mqtt.publish(publishTopic, "No entry delay", true); break;
     case 0x22: mqtt.publish(publishTopic, "Alarm memory", true); break;
     case 0x33: mqtt.publish(publishTopic, "Busy", true); break;
@@ -525,4 +542,3 @@ void publishMessage(const char* sourceTopic, byte partition) {
     default: return;
   }
 }
-

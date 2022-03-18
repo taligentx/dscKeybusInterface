@@ -1,13 +1,13 @@
 {
   "name": "dscKeybusInterface",
-  "keywords": "dsc, home-automation, home-security, homebridge, homekit, home-assistant, homeassistant, homey, openhab, google-home, blnynk, web, webserver, telegram, pushbullet, twilio, email, esp8266, esp32",
-  "description": "This library directly interfaces Arduino, esp8266, and esp32 microcontrollers to DSC PowerSeries security systems for integration with home automation (Home Assistant, Apple HomeKit, Homey), notifications on system events, and usage as a virtual keypad.",
+  "keywords": "dsc, home-automation, home-security, homebridge, homekit, home-assistant, homeassistant, homespan, homey, openhab, google-home, blynk, web, webserver, telegram, pushbullet, twilio, tinygsm, email, esp8266, esp32",
+  "description": "Directly interface Arduino, esp8266, and esp32 to DSC PowerSeries and Classic security systems for integration with home automation, remote control apps, notifications on alarm events, and emulating DSC panels to connect DSC keypads.",
   "repository":
   {
     "type": "git",
     "url": "https://github.com/taligentx/dscKeybusInterface.git"
   },
-  "version": "2.0",
+  "version": "3.0",
   "frameworks": "arduino",
   "platforms": "atmelavr, espressif8266, espressif32"
 }

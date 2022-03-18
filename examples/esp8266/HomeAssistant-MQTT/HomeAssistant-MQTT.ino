@@ -1,5 +1,5 @@
 /*
- *  HomeAssistant-MQTT 1.4 (esp8266)
+ *  HomeAssistant-MQTT 1.5 (esp8266)
  *
  *  Processes the security system status and allows for control using Home Assistant via MQTT.
  *
@@ -160,6 +160,8 @@ entity: alarm_control_panel.security_partition_1
  *    Closed: "0"
  *
  *  Release notes:
+ *    1.5 - Added DSC Classic series support
+ *          Fixed armed away with no entry delay status message
  *    1.4 - Added PGM outputs 1-14 status
  *    1.3 - Updated esp8266 wiring diagram for 33k/10k resistors
  *    1.2 - Added sensor component to display partition status messages
@@ -176,17 +178,24 @@ entity: alarm_control_panel.security_partition_1
  *
  *      DSC Aux(-) --- esp8266 Ground
  *
- *                                         +--- dscClockPin (esp8266: D1, D2, D8)
+ *                                         +--- dscClockPin  // Default: D1, GPIO 5
  *      DSC Yellow --- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *                                         +--- dscReadPin (esp8266: D1, D2, D8)
+ *                                         +--- dscReadPin  // Default: D2, GPIO 4
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *  Virtual keypad (optional):
+ *      Classic series only, PGM configured for PC-16 output:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
+ *                 +-- 33k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Virtual keypad (optional):
  *      DSC Green ---- NPN collector --\
- *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin (esp8266: D1, D2, D8)
+ *                                      |-- NPN base --- 1k ohm resistor --- dscWritePin  // Default: D8, GPIO 15
  *            Ground --- NPN emitter --/
  *
  *  Virtual keypad uses an NPN transistor to pull the data line low - most small signal NPN transistors should
@@ -200,6 +209,9 @@ entity: alarm_control_panel.security_partition_1
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+//#define dscClassicSeries
+
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <dscKeybusInterface.h>
@@ -207,7 +219,7 @@ entity: alarm_control_panel.security_partition_1
 // Settings
 const char* wifiSSID = "";
 const char* wifiPassword = "";
-const char* accessCode = "";  // An access code is required to disarm/night arm and may be required to arm based on panel configuration.
+const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
 const char* mqttServer = "";    // MQTT server domain name or IP address
 const int   mqttPort = 1883;    // MQTT server port
 const char* mqttUsername = "";  // Optional, leave blank if not required
@@ -228,12 +240,17 @@ const char* mqttSubscribeTopic = "dsc/Set";            // Receives messages to w
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
-#define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
-#define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscClockPin D1  // GPIO 5
+#define dscReadPin  D2  // GPIO 4
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscWritePin D8  // GPIO 15
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+#endif
 WiFiClient ipClient;
 PubSubClient mqtt(mqttServer, mqttPort, ipClient);
 unsigned long mqttPreviousTime;
@@ -245,7 +262,7 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  Serial.print(F("WiFi"));
+  Serial.print(F("WiFi...."));
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID, wifiPassword);
   while (WiFi.status() != WL_CONNECTED) {
@@ -275,7 +292,7 @@ void loop() {
     dsc.statusChanged = false;  // Reset the status tracking flag
 
     // If the Keybus data buffer is exceeded, the sketch is too busy to process all Keybus commands.  Call
-    // loop() more often, or increase dscBufferSize in the library: src/dscKeybusInterface.h
+    // loop() more often, or increase dscBufferSize in the library: src/dscKeybus.h or src/dscClassic.h
     if (dsc.bufferOverflow) {
       Serial.println(F("Keybus buffer overflow"));
       dsc.bufferOverflow = false;
@@ -288,7 +305,7 @@ void loop() {
       else mqtt.publish(mqttStatusTopic, mqttLwtMessage, true);
     }
 
-    // Sends the access code when needed by the panel for arming
+    // Sends the access code when needed by the panel for arming or command outputs
     if (dsc.accessCodePrompt) {
       dsc.accessCodePrompt = false;
       dsc.write(accessCode);
@@ -527,7 +544,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x03: mqtt.publish(publishTopic, "Zones open", true); break;
     case 0x04: mqtt.publish(publishTopic, "Armed: Stay", true); break;
     case 0x05: mqtt.publish(publishTopic, "Armed: Away", true); break;
-    case 0x06: mqtt.publish(publishTopic, "Armed: No entry delay", true); break;
+    case 0x06: mqtt.publish(publishTopic, "Armed: Stay with no entry delay", true); break;
     case 0x07: mqtt.publish(publishTopic, "Failed to arm", true); break;
     case 0x08: mqtt.publish(publishTopic, "Exit delay in progress", true); break;
     case 0x09: mqtt.publish(publishTopic, "Arming with no entry delay", true); break;
@@ -540,7 +557,7 @@ void publishMessage(const char* sourceTopic, byte partition) {
     case 0x12: mqtt.publish(publishTopic, "Battery check in progress"); break;
     case 0x14: mqtt.publish(publishTopic, "Auto-arm in progress", true); break;
     case 0x15: mqtt.publish(publishTopic, "Arming with bypassed zones", true); break;
-    case 0x16: mqtt.publish(publishTopic, "Armed: No entry delay", true); break;
+    case 0x16: mqtt.publish(publishTopic, "Armed: Away with no entry delay", true); break;
     case 0x17: mqtt.publish(publishTopic, "Power saving: Keypad blanked", true); break;
     case 0x19: mqtt.publish(publishTopic, "Disarmed: Alarm memory"); break;
     case 0x22: mqtt.publish(publishTopic, "Disarmed: Recent closing", true); break;
