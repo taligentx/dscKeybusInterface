@@ -24,10 +24,10 @@
 
 const byte dscPartitions = 1;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 1;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscReadSize = 2;     // Maximum bytes of a Keybus command
+const byte dscDataSize = 2;     // Maximum bytes of a Keybus command
 
 #if defined(__AVR__)
-const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
+const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscDataSize + 2 bytes of memory per command
 #elif defined(ESP8266)
 const byte dscBufferSize = 50;
 #elif defined(ESP32)
@@ -112,9 +112,9 @@ class dscClassicInterface {
      *    00000101 0 10000001 00000001 10010001 11000111 [0x05] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled
      *             ^ Byte 1 (stop bit)
      */
-    static byte panelData[dscReadSize];
-    static byte pc16Data[dscReadSize];
-    static volatile byte moduleData[dscReadSize];
+    static byte panelData[dscDataSize];
+    static byte pc16Data[dscDataSize];
+    static volatile byte moduleData[dscDataSize];
 
     // status[] and lights[] store the current status message and LED state.  These can be accessed directly in the
     // sketch to get data that is not already tracked in the library.  See printPanelMessages() and
@@ -158,7 +158,7 @@ class dscClassicInterface {
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();
-    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
+    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscDataSize);
 
     #if defined(ESP32)
     static hw_timer_t * timer1;
@@ -200,12 +200,12 @@ class dscClassicInterface {
     static volatile bool moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime, writeCompleteTime;
     static volatile byte panelBufferLength;
-    static volatile byte panelBuffer[dscBufferSize][dscReadSize], pc16Buffer[dscBufferSize][dscReadSize];
+    static volatile byte panelBuffer[dscBufferSize][dscDataSize], pc16Buffer[dscBufferSize][dscDataSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
     static volatile byte moduleCmd;
-    static volatile byte isrPanelData[dscReadSize], isrPC16Data[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
+    static volatile byte isrPanelData[dscDataSize], isrPC16Data[dscDataSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
+    static volatile byte isrModuleData[dscDataSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
 };
 
 #endif // dscClassic_h

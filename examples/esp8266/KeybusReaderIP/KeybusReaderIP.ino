@@ -59,6 +59,7 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#define dscKeybusReader
 #include <dscKeybusInterface.h>
 
 // Settings
@@ -76,7 +77,7 @@ const int   serverPort = 23;
 
 // Initialize components
 #ifndef dscClassicSeries
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+dscKeybusReaderInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 #else
 dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin);
 #endif
@@ -115,7 +116,6 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs (default: false)
-  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed (default: false)
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
 
   // Starts the Keybus interface and optionally specifies how to print data.

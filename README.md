@@ -103,8 +103,10 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Unlock 6-digit installer codes
 
 ## Release notes
+* develop
+  - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
 * 3.0
-  - New: DSC Classic series panel support: PC1500, PC1550, PC2550
+  - New: DSC Classic series panel support: PC1500, PC1550, PC2550 - thanks to [kricon](https://github.com/kricon) for extensively testing and contributing to this!
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
   - New: `HomeKit-HomeSpan` example sketch (esp32) - integrate directly with Apple HomeKit as a native standalone accessory using [HomeSpan](https://github.com/HomeSpan/HomeSpan)
   - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32

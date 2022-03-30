@@ -59,12 +59,7 @@ void dscKeybusInterface::resetStatus() {
 bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition) {
 
   // Loops if a previous write is in progress
-  while(writeKeyPending || writeKeysPending) {
-    loop();
-    #if defined(ESP8266)
-    yield();
-    #endif
-  }
+  while(writeKeyPending || writeKeysPending) loop();
 
   if (!ready[0]) return false;  // Skips if partition 1 is not ready
 
@@ -103,12 +98,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
     byte previousPartition = writePartition;
     writePartition = timePartition;
     write(timeEntry);
-    while(writeKeyPending || writeKeysPending) {
-      loop();
-      #if defined(ESP8266)
-      yield();
-      #endif
-    }
+    while (writeKeyPending || writeKeysPending) loop();
     writePartition = previousPartition;
   }
   else write(timeEntry);

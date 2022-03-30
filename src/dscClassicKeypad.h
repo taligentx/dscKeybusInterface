@@ -27,7 +27,7 @@ const byte dscBufferSize = 10;  // Number of keys to buffer if the sketch is bus
 #elif defined(ESP8266) || defined (ESP32)
 const byte dscBufferSize = 50;
 #endif
-const byte dscReadSize = 2;    // Maximum bytes of a Keybus command
+const byte dscDataSize = 2;    // Maximum bytes of a Keybus command
 
 enum Light {off, on, blink};    // Custom values for keypad lights status
 
@@ -58,7 +58,7 @@ class dscClassicKeypadInterface {
      * remaining data.  These can be accessed directly in the sketch to get data that is not already tracked
      * in the library.  See dscKeybusPrintData.cpp for the currently known DSC commands and data.
      */
-    static volatile byte moduleData[dscReadSize];
+    static volatile byte moduleData[dscDataSize];
 
     // Key data buffer overflow, true if dscBufferSize needs to be increased
     static volatile bool bufferOverflow;
@@ -94,9 +94,9 @@ class dscClassicKeypadInterface {
     static volatile bool commandReady, moduleDataDetected;
     static volatile bool alarmKeyDetected, alarmKeyResponsePending;
     static volatile byte clockCycleCount, clockCycleTotal;
-    static volatile byte panelCommand[dscReadSize], panelCommandByteCount, panelCommandByteTotal;
+    static volatile byte panelCommand[dscDataSize], panelCommandByteCount, panelCommandByteTotal;
     static volatile byte isrPanelBitTotal, isrPanelBitCount;
-    static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
+    static volatile byte isrModuleData[dscDataSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
     static volatile unsigned long intervalStart, beepInterval, repeatInterval, keyInterval, alarmKeyTime, alarmKeyInterval;
 };
 
