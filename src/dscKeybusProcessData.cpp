@@ -59,8 +59,7 @@ void dscKeybusInterface::resetStatus() {
 bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition) {
 
   // Loops if a previous write is in progress
-  while(writeKeyPending || writeKeysPending) loop();
-
+  
   if (!ready[0]) return false;  // Skips if partition 1 is not ready
 
   if (hour > 23 || minute > 59 || month > 12 || day > 31 || year > 2099 || (year > 99 && year < 1900)) return false;  // Skips if input date/time is invalid
@@ -98,7 +97,6 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
     byte previousPartition = writePartition;
     writePartition = timePartition;
     write(timeEntry);
-    while (writeKeyPending || writeKeysPending) loop();
     writePartition = previousPartition;
   }
   else write(timeEntry);
@@ -338,7 +336,7 @@ void dscKeybusInterface::processPanelStatus() {
         if (starKeyWait[partitionIndex]) {  // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
           starKeyWait[partitionIndex] = false;
           starKeyCheck = false;
-          writeKeyPending = false;
+          writeDataPending = false;
         }
         processReadyStatus(partitionIndex, false);
         break;
