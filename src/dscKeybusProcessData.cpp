@@ -450,6 +450,28 @@ void dscKeybusInterface::processPanel_0x3E() {
   processZoneStatus(3, 6);
 }
 
+#if defined(EXPANDER)
+void dscKeybusInterface::processPanel_0x6E() {
+
+      if (!pending6E) return;
+      pending6E=false;       
+      if (pgmBuffer.idx+4>pgmBuffer.len) return;
+      for(byte x=0;x<4;x++) {
+          pgmBuffer.data[pgmBuffer.idx+0]=panelData[2+x];
+      }
+     pgmBuffer.idx+=4;
+     stream->printf("buffer index=%d,%d\n",pgmBuffer.idx,pgmBuffer.len);
+     if (pgmBuffer.idx < pgmBuffer.len) {
+        pending6E=true;
+        byte key=0xA5; //more data available so set up also for next group send request
+        writeCharsToQueue(&key,9);        
+     } 
+
+
+}
+#endif
+
+
 
 /*
  *  PGM outputs 1-14 status is stored in pgmOutputs[]

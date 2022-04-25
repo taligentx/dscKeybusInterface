@@ -19,7 +19,7 @@
 
 #ifndef dscKeybus_h
 #define dscKeybus_h
-
+#define EXPANDER
 #include <Arduino.h>
 
 #if defined(__AVR__)
@@ -43,6 +43,48 @@ const DRAM_ATTR byte dscDataSize = 16;
 #define DSC_EXIT_STAY 1
 #define DSC_EXIT_AWAY 2
 #define DSC_EXIT_NO_ENTRY_DELAY 3
+
+
+#ifdef EXPANDER
+//start expander
+#if defined(__AVR__)
+const byte maxModules = 4;
+const byte writeQueueSize=5; //write pending queue size
+#elif defined(ESP8266) || defined(ESP32)
+const byte maxModules = 4;
+#endif
+    struct zoneMaskType {
+        byte idx;
+        byte mask;
+    };
+    
+    struct moduleType {
+        byte address;
+        byte fields[4];
+        byte faultBuffer[5];
+        byte zoneStatusMask;
+        byte zoneStatusByte;
+    };
+    
+struct pgmBufferType {
+    char data[32];
+    byte len;
+    byte idx;
+} ;
+//end expander
+#endif
+
+
+//start new command handling
+const byte writeQueueSize=10; //zone pending update queue
+struct writeQueueType {
+    char data[6];
+    byte len;
+    bool alarm;
+    bool star;
+    byte writeBit;
+};
+//end command handling
 
 
 class dscKeybusInterface {
@@ -134,6 +176,25 @@ class dscKeybusInterface {
     // Timer interrupt function to capture data - declared as public for use by AVR Timer1
     static void dscDataInterrupt();
 
+#ifdef EXPANDER    
+    //start expander
+    void setZoneFault(byte zone,bool fault) ;
+    void setLCDReceive(byte len);
+    void setLCDSend();    
+    void addEmulatedZone(byte address);
+    void removeEmulatedZone(byte address);
+    void addModule(byte address); //add zone expanders
+    void updateModules();
+    void addRelayModule(); 
+    void clearZoneRanges();
+    static byte maxZones;
+    static bool enableModuleSupervision;    
+    static bool debounce05;
+    static volatile pgmBufferType pgmBuffer;
+    //end expander
+#endif 
+ 
+
   private:
 
     void processPanelStatus();
@@ -147,6 +208,7 @@ class dscKeybusInterface {
     void processPanel_0x2D();
     void processPanel_0x34();
     void processPanel_0x3E();
+    void processPanel_0x6E();    
     void processPanel_0x87();
     void processPanel_0xA5();
     void processPanel_0xE6();
@@ -169,8 +231,6 @@ class dscKeybusInterface {
     void processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease = true);
 
     bool validCRC();
-    void writeKeys(const char * writeKeysArray);
-    void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();
     static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscDataSize);
 
@@ -215,6 +275,43 @@ class dscKeybusInterface {
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte statusCmd;
     static volatile byte isrPanelData[dscDataSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
+    
+    
+#ifdef EXPANDER    
+    //start expander
+    const byte zoneOpen=3; //fault 
+    const byte zoneClosed=2;// Normal 
+    static byte moduleIdx;    
+    static void prepareModuleResponse(byte cmd,int bit); 
+    void removeModule(byte address);
+    static void setPendingZoneUpdate();
+    void setSupervisorySlot(byte slot,bool set);
+    static void processCmd70(),processCmd6E();    
+    zoneMaskType getUpdateMask(byte address);    
+    static byte maxFields05; 
+    static byte maxFields11;
+    //volatile static byte pendingZoneStatus[6];
+    volatile static bool pending70,pending6E;   
+    static moduleType modules[maxModules];
+    static byte moduleSlots[6];
+     //end expander
+#endif    
+
+     //start new command handling 
+    volatile static byte writeBuffer[6];     
+    static byte outIdx,inIdx;     
+    static void processPendingResponses(byte cmd);
+    static void processPendingResponses_0xE6(byte cmd);  
+    static void processPendingQueue(byte cmd);    
+    static void updateWriteBuffer(byte* src,int len, int bit=9, bool alarm=false,bool star=false);     
+    static byte writeDataBit;
+    static volatile byte writeBufferLength,writeBufferIdx;
+    static volatile bool writeDataPending;
+    static writeQueueType writeQueue[writeQueueSize];
+    static void writeCharsToQueue(byte* keys,byte bit,byte len=1,bool alarm=false,bool star=false);  
+    //end new command handling    
+     
+    
 };
 
 #endif // dscKeybus_h

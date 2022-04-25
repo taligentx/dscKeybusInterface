@@ -34,6 +34,20 @@ dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte s
   writeReady = false;
   writePartition = 1;
   pauseStatus = false;
+  #ifdef EXPANDER
+  // start expander
+  maxFields05=4;
+  maxFields11=4;
+  enableModuleSupervision=false;
+  maxZones=32;
+  for (int x=0;x<6;x++) { //clear all statuses
+    // pendingZoneStatus[x]=0xff;
+     moduleSlots[x]=0xff;
+  }
+
+  //end expander
+#endif
+  
 }
 
 
@@ -68,6 +82,16 @@ void dscKeybusInterface::begin(Stream &_stream) {
 
   // Generates an interrupt when the Keybus clock rises or falls - requires a hardware interrupt pin on Arduino/AVR
   attachInterrupt(digitalPinToInterrupt(dscClockPin), dscClockInterrupt, CHANGE);
+  
+#ifdef EXPANDER
+    if (maxZones > 32) {
+     maxFields05=6;
+     maxFields11=6;
+  } else {
+     maxFields05=4;
+     maxFields11=4;
+  }
+#endif   
 }
 
 
@@ -129,8 +153,6 @@ bool dscKeybusInterface::loop() {
     if (!keybusConnected) return true;
   }
 
-  // Writes keys when multiple keys are sent as a char array
-  if (writeKeysPending) writeKeys(writeKeysArray);
 
   // Skips processing if the panel data buffer is empty
   if (panelBufferLength == 0) return false;
@@ -210,6 +232,7 @@ bool dscKeybusInterface::loop() {
     case 0x2D: processPanel_0x2D(); break;                         // Panel status and zones 9-16 status
     case 0x34: processPanel_0x34(); break;                         // Panel status and zones 17-24 status
     case 0x3E: processPanel_0x3E(); break;                         // Panel status and zones 25-32 status
+    case 0x6E: processPanel_0x6E(); break;                         // Program field output
     case 0x87: processPanel_0x87(); break;                         // PGM outputs
     case 0xA5: processPanel_0xA5(); break;                         // Date, time, system status messages - partitions 1-2
     case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;  // Extended status command split into multiple subcommands to handle up to 8 partitions/64 zones
@@ -219,59 +242,17 @@ bool dscKeybusInterface::loop() {
   return true;
 }
 
-// Sets up writes for a single key
-void dscKeybusInterface::write(const char receivedKey) {
-
-  // Blocks if a previous write is in progress
-  while (writeKeyPending || writeKeysPending) loop();
-
-  setWriteKey(receivedKey);
-}
-
-
 // Sets up writes for multiple keys sent as a char array
 void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
-
-  // Blocks if a previous write is in progress
-  while (writeKeyPending || writeKeysPending) loop();
-
-  writeKeysArray = receivedKeys;
-
-  if (writeKeysArray[0] != '\0') {
-    writeKeysPending = true;
-    writeReady = false;
-  }
-
-  // Optionally blocks until the write is complete, necessary if the received keys char array is ephemeral
-  if (blockingWrite) {
-    while (writeKeysPending) {
-      writeKeys(writeKeysArray);
-      loop();
-    }
-  }
-  else writeKeys(writeKeysArray);
-}
-
-
-// Writes multiple keys from a char array
-void dscKeybusInterface::writeKeys(const char *writeKeysArray) {
-  static byte writeCounter = 0;
-  if (!writeKeyPending && writeKeysPending && writeCounter < strlen(writeKeysArray)) {
-    if (writeKeysArray[writeCounter] != '\0') {
-      setWriteKey(writeKeysArray[writeCounter]);
-      writeCounter++;
-      if (writeKeysArray[writeCounter] == '\0') {
-        writeKeysPending = false;
-        writeCounter = 0;
-      }
-    }
-  }
+   for (uint8_t x=0;x<strlen(receivedKeys);x++) {
+       write(receivedKeys[x]);
+   }
 }
 
 
 // Specifies the key value to be written by dscClockInterrupt() and selects the write partition.  This includes a 500ms
 // delay after alarm keys to resolve errors when additional keys are sent immediately after alarm keys.
-void dscKeybusInterface::setWriteKey(const char receivedKey) {
+void dscKeybusInterface::write(const char receivedKey) {
   static unsigned long previousTime;
   static bool setPartition;
 
@@ -285,9 +266,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
   }
 
   // Sets the binary to write for virtual keypad keys
-  if (!writeKeyPending && (millis() - previousTime > 500 || millis() <= 500)) {
-    bool validKey = true;
 
+    bool validKey = true;
+    bool isAlarm=false;
+    bool isStar=false;
     // Skips writing to disabled partitions or partitions not specified in dscKeybusInterface.h
     if (disabled[writePartition - 1] || dscPartitions < writePartition) {
       switch (receivedKey) {
@@ -310,9 +292,9 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '7': writeKey = 0x1C; break;
         case '8': writeKey = 0x22; break;
         case '9': writeKey = 0x27; break;
-        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) starKeyCheck = true; break;
+        case '*': writeKey = 0x28; if (status[writePartition - 1] < 0x9E) isStar = true; break;
         case '#': writeKey = 0x2D; break;
-        case 'f': case 'F': writeKey = 0xBB; writeAlarm = true; break;                           // Keypad fire alarm
+        case 'f': case 'F': writeKey = 0xBB; isAlarm = true; break;                           // Keypad fire alarm
         case 'b': case 'B': writeKey = 0x82; break;                                              // Enter event buffer
         case '>': writeKey = 0x87; break;                                                        // Event buffer right arrow
         case '<': writeKey = 0x88; break;                                                        // Event buffer left arrow
@@ -320,10 +302,10 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case 's': case 'S': writeKey = 0xAF; writeAccessCode[writePartition - 1] = true; break;  // Arm stay
         case 'w': case 'W': writeKey = 0xB1; writeAccessCode[writePartition - 1] = true; break;  // Arm away
         case 'n': case 'N': writeKey = 0xB6; writeAccessCode[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
-        case 'a': case 'A': writeKey = 0xDD; writeAlarm = true; break;                           // Keypad auxiliary alarm
+        case 'a': case 'A': writeKey = 0xDD; isAlarm = true; break;                           // Keypad auxiliary alarm
         case 'c': case 'C': writeKey = 0xBB; break;                                              // Door chime
         case 'r': case 'R': writeKey = 0xDA; break;                                              // Reset
-        case 'p': case 'P': writeKey = 0xEE; writeAlarm = true; break;                           // Keypad panic alarm
+        case 'p': case 'P': writeKey = 0xEE; isAlarm = true; break;                           // Keypad panic alarm
         case 'x': case 'X': writeKey = 0xE1; break;                                              // Exit
         case '[': writeKey = 0xD5; writeAccessCode[writePartition - 1] = true; break;            // Command output 1
         case ']': writeKey = 0xDA; writeAccessCode[writePartition - 1] = true; break;            // Command output 2
@@ -340,41 +322,56 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
     switch (writePartition) {
       case 1:
       case 5: {
-        writeByte = 2;
         writeBit = 9;
         break;
       }
       case 2:
       case 6: {
-        writeByte = 3;
         writeBit = 17;
         break;
       }
       case 3:
       case 7: {
-        writeByte = 8;
         writeBit = 57;
         break;
       }
       case 4:
       case 8: {
-        writeByte = 9;
         writeBit = 65;
         break;
       }
       default: {
-        writeByte = 2;
         writeBit = 9;
         break;
       }
     }
 
-    if (writeAlarm) previousTime = millis();  // Sets a marker to time writes after keypad alarm keys
     if (validKey) {
-      writeKeyPending = true;                 // Sets a flag indicating that a write is pending, cleared by dscClockInterrupt()
-      writeReady = false;
+      if (isAlarm) 
+       writeCharsToQueue((byte*)&writeKey,0,1,isAlarm,isStar);
+      else
+        writeCharsToQueue((byte*)&writeKey,writeBit,1,isAlarm,isStar);
+     
     }
-  }
+}
+
+
+#if defined(__AVR__)
+void dscKeybusInterface::writeCharsToQueue(byte * keys,byte bit,byte len,bool alarm,bool star) {
+#elif defined(ESP8266)
+ void ICACHE_RAM_ATTR dscKeybusInterface::writeCharsToQueue(byte * keys,byte bit,byte len,bool alarm,bool star) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::writeCharsToQueue(byte * keys,byte bit,byte len,bool alarm,bool star) {
+#endif
+        writeQueueType req;  
+        req.len=len;
+        for (uint8_t x=0;x<len;x++) req.data[x]=keys[x];
+        req.alarm=alarm;
+        req.writeBit=bit;
+        req.star=false;
+        req.star=star;
+         writeQueue[inIdx]=req;
+        inIdx=(inIdx + 1) % writeQueueSize; //circular buffer - increment index
 }
 
 
@@ -490,68 +487,37 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       isrPanelByteCount = 0;
       skipData = false;
     }
-
-    // Virtual keypad
-    if (virtualKeypad) {
-
-      static bool writeStart = false;
-      static bool writeRepeat = false;
-      static bool writeCmd = false;
-
-      if (writePartition <= 4 && statusCmd == 0x05) writeCmd = true;
-      else if (writePartition >= 5 && statusCmd == 0x1B) writeCmd = true;
-      else writeCmd = false;
-
-      // Writes a F/A/P alarm key and repeats the key on the next immediate command from the panel (0x1C verification)
-      if ((writeAlarm && writeKeyPending) || writeRepeat) {
-
-        // Writes the first bit by shifting the alarm key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == 0) {
-          if (!((writeKey >> 7) & 0x01)) {
-            digitalWrite(dscWritePin, HIGH);
+    
+ // Virtual keypad
+    if (virtualKeypad && writeDataPending && writeBufferIdx < writeBufferLength) {
+        static bool writeStart = false;     
+        if (isrPanelBitTotal == writeDataBit || (writeStart && isrPanelBitTotal > writeDataBit && isrPanelBitTotal < (writeDataBit + (writeBufferLength * 8)))) {
+            
+          writeStart=true;
+          if (!((writeBuffer[writeBufferIdx] >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
+          
+          if ( isrPanelBitCount==7) {
+              writeBufferIdx++;
+              
+              if (writeBufferIdx==writeBufferLength) { //all bits written
+                 writeStart=false; 
+              
+                 if (starKeyCheck ) 
+                   starKeyWait[writePartition - 1] = true;  // Handles waiting until the panel is  ready            
+                 else
+                    writeDataPending=false;
+       
+               if (writeAlarm ) {
+                       writeAlarm=false;
+                       writeBufferIdx=0; //reset byte counter to resend
+                       writeDataPending=true;
+                } 
+              }                 
           }
-          writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
-        }
-
-        // Writes the remaining alarm key data
-        else if (writeStart && isrPanelBitTotal <= 7) {
-          if (!((writeKey >> (7 - isrPanelBitTotal)) & 0x01)) digitalWrite(dscWritePin, HIGH);
-
-          // Resets counters when the write is complete
-          if (isrPanelBitTotal == 7) {
-            writeKeyPending = false;
-            writeStart = false;
-            writeAlarm = false;
-
-            // Sets up a repeated write for alarm keys
-            if (!writeRepeat) writeRepeat = true;
-            else writeRepeat = false;
-          }
+          
         }
       }
-
-      // Writes a regular key unless waiting for a response to the '*' key or the panel is sending a query command
-      else if (writeKeyPending && !starKeyWait[writePartition - 1] && isrPanelByteCount == writeByte && writeCmd) {
-
-        // Writes the first bit by shifting the key data right 7 bits and checking bit 0
-        if (isrPanelBitTotal == writeBit) {
-          if (!((writeKey >> 7) & 0x01)) digitalWrite(dscWritePin, HIGH);
-          writeStart = true;  // Resolves a timing issue where some writes do not begin at the correct bit
-        }
-
-        // Writes the remaining key data
-        else if (writeStart && isrPanelBitTotal > writeBit && isrPanelBitTotal <= writeBit + 7) {
-          if (!((writeKey >> (7 - isrPanelBitCount)) & 0x01)) digitalWrite(dscWritePin, HIGH);
-
-          // Resets counters when the write is complete
-          if (isrPanelBitTotal == writeBit + 7) {
-            if (starKeyCheck) starKeyWait[writePartition - 1] = true;  // Handles waiting until the panel is ready after pressing '*'
-            else writeKeyPending = false;
-            writeStart = false;
-          }
-        }
-      }
-    }
+   
   }
   #if defined(ESP32)
   portEXIT_CRITICAL(&timer1Mux);
@@ -583,14 +549,13 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
         }
       }
 
-      // Tests for a status command, used in dscClockInterrupt() to ensure keys are only written during a status command
-      if (isrPanelBitTotal == 7) {
-        switch (isrPanelData[0]) {
-          case 0x05:
-          case 0x0A: statusCmd = 0x05; break;
-          case 0x1B: statusCmd = 0x1B; break;
-          default: statusCmd = 0; break;
-        }
+      if (isrPanelBitTotal == 7) { //check for pending write events and process
+        processPendingResponses(isrPanelData[0]);
+
+      }
+      
+      if (isrPanelBitTotal == 15 && isrPanelData[0]==0xE6) {
+                processPendingResponses_0xE6(isrPanelData[2]);//check subcommand
       }
 
       // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with panelData[] bytes
@@ -616,4 +581,88 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   #if defined(ESP32)
   portEXIT_CRITICAL(&timer1Mux);
   #endif
+}
+
+
+
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte *src,int len,int bit,bool alarm,bool star) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte *src,int len,int bit,bool alarm,bool star) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::updateWriteBuffer(byte *src,int len,int bit,bool alarm,bool star) {
+#endif
+
+  writeBufferLength=len;
+  writeDataBit=bit;
+  writeBufferIdx=0;  
+  writeAlarm=alarm;
+  starKeyCheck=star;
+  for(byte x=0;x<len;x++) writeBuffer[x]=src[x];
+  writeDataPending=true;   //set flag to send it  
+}
+
+
+#if defined(__AVR__)
+void dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
+#elif defined(ESP8266)
+void  ICACHE_RAM_ATTR dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::dscKeybusInterface::processPendingResponses(byte cmd) {
+#endif
+
+     if (writeDataPending) return;
+ 
+     switch (cmd) {
+       case 0x1B: 
+       case 0x0A:
+       case 0x05:   processPendingQueue(cmd);return;
+#ifdef EXPANDER
+  
+       case 0x11:   if (!enableModuleSupervision) return;
+                    updateWriteBuffer((byte*) moduleSlots,maxFields11,9);return; //setup supervisory slot response for devices
+       case 0x28:   prepareModuleResponse(9,9);return;  // the address will depend on the panel request command for the module
+       case 0x33:   prepareModuleResponse(10,9);return; 
+       case 0x39:   prepareModuleResponse(11,9);return; 
+       case 0x70:   processCmd70(); return;// installer program mode data write
+#endif                     
+       default:     return;            
+    }
+  
+
+}
+#if defined(__AVR__)
+void dscKeybusInterface::processPendingQueue(byte cmd) {
+#elif defined(ESP8266)
+void   ICACHE_RAM_ATTR dscKeybusInterface::processPendingQueue(byte cmd) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::processPendingQueue(byte cmd) {
+#endif
+    //process queued 05/0b/1b requests
+        if (inIdx==outIdx || (writePartition > 4 && (cmd==0x05 || cmd==0x0A)) || (cmd==0x1B && writePartition < 5)) return;
+        updateWriteBuffer((byte*) writeQueue[outIdx].data,writeQueue[outIdx].len,writeQueue[outIdx].writeBit,writeQueue[outIdx].alarm,writeQueue[outIdx].star); //populate write buffer and set ready to send flag
+        outIdx = (outIdx + 1) % writeQueueSize; // advance index to next record
+}
+
+
+#if defined(__AVR__)
+void dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
+#elif defined(ESP8266)
+void   ICACHE_RAM_ATTR dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
+#elif defined(ESP32)
+void IRAM_ATTR dscKeybusInterface::processPendingResponses_0xE6(byte subcmd) {
+#endif
+
+    if (writeDataPending) return;
+    byte address=0;
+    switch (subcmd) {
+#ifdef EXPANDER        
+       case 0x08:  prepareModuleResponse(12,17);break;
+       case 0x0A:  prepareModuleResponse(13,17);;break;
+       case 0x0C:  prepareModuleResponse(14,17);;break;
+       case 0x0E:  prepareModuleResponse(16,17);;break;
+#endif       
+       default:     return;            
+    }
+
 }
