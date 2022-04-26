@@ -155,29 +155,30 @@ void IRAM_ATTR dscKeybusInterface::processCmd70() {
                 writeBuffer[x]=pgmBuffer.data[pgmBuffer.idx+x];
                 dataSum+=writeBuffer[x];
       }
+      
       pgmBuffer.idx+=len;
       writeBuffer[4]=dataSum %256;
       writeDataPending=true; 
       
-     byte key=0x2D; //'#' // setup to send final # cmd to complete write update to panel
+     byte key=0; 
      if (pgmBuffer.idx < pgmBuffer.len) {
         pending70=true;
         key=0xAA; //more data available so set up also for next group send request
      } 
-     writeCharsToQueue(&key,9);
+     if (key) writeCharsToQueue(&key,9);
 
 }
 
-void dscKeybusInterface::setLCDReceive(byte len) {
+void dscKeybusInterface::setLCDReceive(byte digits) {
        pgmBuffer.idx=0;
-       pgmBuffer.len=len;
+       pgmBuffer.len=(digits/2)+(digits%2);
        pending6E=true;
        byte key=0xa5;     
        writeCharsToQueue(&key,9);
 }
 
 void dscKeybusInterface::setLCDSend() {
-    if (pgmBuffer.idx==pgmBuffer.len) return;
+     if (pgmBuffer.idx==pgmBuffer.len) return;
      pending70=true;
      byte key=0xAA;
      writeCharsToQueue(&key,9);
