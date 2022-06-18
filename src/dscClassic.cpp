@@ -229,6 +229,7 @@ byte dscClassicInterface::decodeModuleDigit(byte keyPressed) {
     case 0x5F: return 'A'; break;
     case 0x6F: return 'P'; break;
   }
+  return 0;
 }
 
 /***********************************************************************************************
@@ -742,6 +743,7 @@ void dscClassicInterface::processModuleDigit(byte keyPressed, bool accepted) {
             case kps_pin2: state = accepted ? kps_pin3 : kps_idle; break;
             case kps_pin3: state = accepted ? kps_pin4 : kps_idle; break;
             case kps_pin4: state = accepted ? kps_pin_accepted : kps_idle; break;
+            default: break;
           }
           break;
         case '*': state = accepted ? kps_star : kps_pin_rejected; break;
@@ -769,6 +771,7 @@ void dscClassicInterface::processModuleDigit(byte keyPressed, bool accepted) {
             case kps_prog_pin1: state = accepted ? kps_prog_pin2 : kps_idle; break;
             case kps_prog_pin2: state = accepted ? kps_prog_pin3 : kps_idle; break;
             case kps_prog_pin3: state = accepted ? kps_prog_pin_accepted : kps_prog_pin_rejected; break;
+            default: break;
           }
           break;
         case '*': state = accepted ? kps_star : kps_prog_pin_rejected; break;
@@ -915,6 +918,7 @@ void dscClassicInterface::processModuleDigit(byte keyPressed, bool accepted) {
             case kps_install_pin2: state = accepted ? kps_install_pin3 : kps_install_pin_rejected; break;
             case kps_install_pin3: state = accepted ? kps_install_pin4 : kps_install_pin_rejected; break;
             case kps_install_pin4: state = accepted ? kps_install_pin_accepted : kps_install_pin_rejected; break;
+            default: break;
           }
           break;
         case '*': state = accepted ? kps_star : kps_install_pin_rejected; break;
@@ -945,6 +949,7 @@ void dscClassicInterface::processModuleDigit(byte keyPressed, bool accepted) {
             case kps_master_pin2: state = accepted ? kps_master_pin3 : kps_master_pin_rejected; break;
             case kps_master_pin3: state = accepted ? kps_master_pin4 : kps_master_pin_rejected; break;
             case kps_master_pin4: state = accepted ? kps_master_pin_accepted : kps_master_pin_rejected; break;
+            default: break;
           }
           break;
         case '*': state = accepted ? kps_star : kps_master_pin_rejected; break;
