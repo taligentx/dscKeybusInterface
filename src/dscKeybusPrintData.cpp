@@ -807,6 +807,8 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     case 0x0A: stream->print(F("PC5204: Supervisory trouble")); return;
     case 0x17: stream->print(F("Zone expander restored: 7")); return;
     case 0x18: stream->print(F("Zone expander trouble: 7")); return;
+    // 0x1B - 0x1E: PC5200: Supervisory restored, slots 1-4
+    // 0x1F - 0x22: PC5200: Supervisory trouble, slots 1-4
     // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
     // 0x2D - 0x34: Keypad tamper, slots 1-8
     // 0x35 - 0x3A: Module tamper restored, slots 9-14
@@ -819,6 +821,8 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
     case 0x46: stream->print(F("PC5204: Tamper")); return;
     case 0x51: stream->print(F("Zone expander tamper restored: 7")); return;
     case 0x52: stream->print(F("Zone expander tamper: 7")); return;
+    // 0x53 - 0x56: PC5200 Tamper restore, slots 1-4
+    // 0x57 - 0x5A: PC5200 Tamper, slots 1-4
     case 0xB3: stream->print(F("PC5204: Battery restored")); return;
     case 0xB4: stream->print(F("PC5204: Battery trouble")); return;
     case 0xB5: stream->print(F("PC5204: Aux supply restored")); return;
@@ -834,6 +838,24 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
   if (panelData[panelByte] <= 0x04) {
     stream->print(F("Zone expander trouble: "));
     printNumberOffset(panelByte, 2);
+    return;
+  }
+
+  /*
+   *  PC5200 Supervisory restored: 1-4
+   */
+  if (panelData[panelByte] >= 0x1B && panelData[panelByte] <= 0x1E) {
+    stream->print(F("PC5200 Supervisory restored: "));
+    printNumberOffset(panelByte, -0x1A);
+    return;
+  }
+
+  /*
+   *  PC5200 Supervisory trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0x1F && panelData[panelByte] <= 0x22) {
+    stream->print(F("PC5200 Supervisory trouble: "));
+    printNumberOffset(panelByte, -0x1E);
     return;
   }
 
@@ -882,6 +904,24 @@ void dscKeybusInterface::printPanelStatus3(byte panelByte) {
   if (panelData[panelByte] >= 0x3B && panelData[panelByte] <= 0x40) {
     stream->print(F("Zone expander tamper: "));
     printNumberOffset(panelByte, -58);
+    return;
+  }
+
+  /*
+   *  PC5200 tamper restore: 1-4
+   */
+  if (panelData[panelByte] >= 0x53 && panelData[panelByte] <= 0x56) {
+    stream->print(F("PC5200: Tamper restore: "));
+    printNumberOffset(panelByte, -0x52);
+    return;
+  }
+
+  /*
+   *  PC5200 tamper: 1-4
+   */
+  if (panelData[panelByte] >= 0x57 && panelData[panelByte] <= 0x5A) {
+    stream->print(F("PC5200: Tamper: "));
+    printNumberOffset(panelByte, -0x56);
     return;
   }
 
@@ -987,11 +1027,52 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
 void dscKeybusInterface::printPanelStatus14(byte panelByte) {
   #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
   switch (panelData[panelByte]) {
+    // 0xA0 - 0xA3: PC5200 AC restore, slots 1-4
+    // 0xA4 - 0xA7: PC5200 AC trouble, slots 1-4
+    // 0xA8 - 0xAB: PC5200 Battery restore, slots 1-4
+    // 0xAC - 0xAF: PC5200 Battery trouble, slots 1-4
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
   }
+
+  /*
+   *  PC5200 AC restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xA0 && panelData[panelByte] <= 0xA3) {
+    stream->print(F("PC5200: AC restore: "));
+    printNumberOffset(panelByte, -0x9F);
+    return;
+  }
+
+  /*
+   *  PC5200 AC trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xA4 && panelData[panelByte] <= 0xA7) {
+    stream->print(F("PC5200: AC trouble: "));
+    printNumberOffset(panelByte, -0xA3);
+    return;
+  }
+
+  /*
+   *  PC5200 Battery restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xA8 && panelData[panelByte] <= 0xAB) {
+    stream->print(F("PC5200: Battery restore: "));
+    printNumberOffset(panelByte, -0xA7);
+    return;
+  }
+
+  /*
+   *  PC5200 Battery trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xAC && panelData[panelByte] <= 0xAF) {
+    stream->print(F("PC5200: Battery trouble: "));
+    printNumberOffset(panelByte, -0xAB);
+    return;
+  }
+
   #endif
 
   printUnknownData();
@@ -1012,6 +1093,7 @@ void dscKeybusInterface::printPanelStatus16(byte panelByte) {
     case 0x80: stream->print(F("Trouble acknowledged")); return;
     case 0x81: stream->print(F("RF delinquency trouble")); return;
     case 0x82: stream->print(F("RF delinquency restore")); return;
+    case 0x83: stream->print(F("Auto-Disarm")); return;
   }
 
   printUnknownData();
@@ -3076,7 +3158,9 @@ void dscKeybusInterface::printModule_Status() {
  *  Byte 6 bit 6-7: PC5204
  *  Byte 7 bit 0-1: Zone expander 7
  *  Byte 7 bit 2-7: Unknown
- *  Byte 8: Unknown
+ *  Byte 8 bit 4-5: PC5200 1
+ *  Byte 8 bit 2-3: PC5200 2
+ *  Byte 8 bit 0-1: PC5200 3
  *
  *  00010001 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x11] Module supervision query
  *
@@ -3085,6 +3169,9 @@ void dscKeybusInterface::printModule_Status() {
  *  11111111 1 00111111 11111111 00001111 11110011 11111111 11111111 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 1 2 | PC/RF5132
  *  11111111 1 00111111 11111111 11001111 11111111 11111111 11111100 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 2 7
  *  11111111 1 11111111 11111100 00111111 11111111 00111111 11111111 11111111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 | PC5204
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11001111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 1
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11110011 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 2
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11111100 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 3
  *  Byte 0   1    2        3        4        5        6        7        8
  */
 void dscKeybusInterface::printModule_0x11() {
@@ -3111,6 +3198,9 @@ void dscKeybusInterface::printModule_0x11() {
   if ((moduleData[5] & 0x0C) == 0) stream->print(F("| PC/RF5132 "));
   if ((moduleData[5] & 0x03) == 0) stream->print(F("| PC5208 "));
   if ((moduleData[6] & 0xC0) == 0) stream->print(F("| PC5204 "));
+  if ((moduleData[8] & 0x30) == 0) stream->print(F("| PC5200 1 "));
+  if ((moduleData[8] & 0x0C) == 0) stream->print(F("| PC5200 2 "));
+  if ((moduleData[8] & 0x03) == 0) stream->print(F("| PC5200 3 "));
 }
 
 
@@ -3177,10 +3267,14 @@ void dscKeybusInterface::printModule_0x41() {
  *  Byte 12: Unknown
  *
  *  Later generation panels:
- *  Byte 13 bit 0-3: Unknown
+ *  Byte 13 bit 0-1: PC5200 1 tamper restore
+ *  Byte 13 bit 2-3: PC5200 1 tamper
  *  Byte 13 bit 4-5: Module slot 16 tamper restore
  *  Byte 13 bit 6-7: Module slot 16 tamper
- *  Byte 14: Unknown
+ *  Byte 14 bit 0-1: PC5200 3 tamper restore
+ *  Byte 14 bit 2-3: PC5200 3 tamper
+ *  Byte 14 bit 4-5: PC5200 2 tamper restore
+ *  Byte 14 bit 6-7: PC5200 2 tamper
  *
  *  11111111 1 11111111 11111111 11111110 11111111 [Module/0x05] Module tamper notification
  *  01001100 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x4C] Module tamper query
@@ -3218,6 +3312,13 @@ void dscKeybusInterface::printModule_0x41() {
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper restored
  *  11111111 1 00001111 11111111 11111111 11111111 11111111 00001111 11111111 00110000 11111111 11111111 11111111 11111111 11111111 [Module/0x4C] Keypad tamper: Slot 1 | Module tamper: Slot 11 | RF5132: Tamper | PC5208: Tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper restore
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper restore
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper restore
+
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13       14
  */
 void dscKeybusInterface::printModule_0x4C() {
@@ -3287,6 +3388,42 @@ void dscKeybusInterface::printModule_0x4C() {
     stream->print(F("PC5204: Tamper restored "));
     printedMessage = true;
   }
+
+  if ((moduleData[13] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[13] & 0x0F) == 0x0C) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Tamper restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("RF5200 2: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0xF0) == 0xC0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("RF5200 2: Tamper restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0x0F) == 0x0C) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Tamper restored "));
+    printedMessage = true;
+  }
 }
 
 
@@ -3352,13 +3489,25 @@ void dscKeybusInterface::printModule_0x57() {
  *  Byte 5: Unknown
  *
  *  Later generation panels:
- *  Byte 6: Unknown
+ *  Byte 6 bit 0-1: PC5200 1 battery restore
+ *  Byte 6 bit 2-3: PC5200 1 battery trouble
+ *  Byte 6 bit 4-5: PC5200 1 AC power restore
+ *  Byte 6 bit 6-7: PC5200 1 AC power trouble
  *  Byte 7: Unknown
- *  Byte 8: Unknown
+ *  Byte 8 bit 0-1: PC5200 2 battery restore
+ *  Byte 8 bit 2-3: PC5200 2 battery trouble
+ *  Byte 8 bit 4-5: PC5200 2 AC power restore
+ *  Byte 8 bit 6-7: PC5200 2 AC power trouble
  *  Byte 9: Unknown
- *  Byte 10: Unknown
+ *  Byte 10 bit 0-1: PC5200 3 battery restore
+ *  Byte 10 bit 2-3: PC5200 3 battery trouble
+ *  Byte 10 bit 4-5: PC5200 3 AC power restore
+ *  Byte 10 bit 6-7: PC5200 3 AC power trouble
  *  Byte 11: Unknown
- *  Byte 12: Unknown
+ *  Byte 12 bit 0-1: PC5200 4 battery restore
+ *  Byte 12 bit 2-3: PC5200 4 battery trouble
+ *  Byte 12 bit 4-5: PC5200 4 AC power restore
+ *  Byte 12 bit 6-7: PC5200 4 AC power trouble
  *  Byte 13: Unknown
  *
  *  11111111 1 11111111 11111111 11111111 11011111 [Module/0x05] Module status notification
@@ -3374,6 +3523,24 @@ void dscKeybusInterface::printModule_0x57() {
  *
  *  Module     PC5204
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5204: AC power trouble
+ *  
+ *  Module     PC5200                              Slot 1            Slot 2            Slot 3            Slot 4        
+ *  11111111 1 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x58] Unknown data //PC5200 4 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x58] Unknown data //PC5200 4 Battery restore
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13
  */
 void dscKeybusInterface::printModule_0x58() {
@@ -3411,6 +3578,98 @@ void dscKeybusInterface::printModule_0x58() {
   if ((moduleData[3] & 0x0C) == 0) {
     if (printedMessage) stream->print("| ");
     stream->print(F("PC5204: Output 1 trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x03) == 0) {
+    stream->print(F("PC5200 1: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x03) == 0) {
+    stream->print(F("PC5200 2: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x03) == 0) {
+    stream->print(F("PC5200 3: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x03) == 0) {
+    stream->print(F("PC5200 4: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: AC power trouble "));
     printedMessage = true;
   }
 
@@ -3463,7 +3722,7 @@ void dscKeybusInterface::printModule_0x70() {
  */
 void dscKeybusInterface::printModule_0x94() {
   stream->print(F("Module pgm response: "));
-    
+
   for (byte moduleByte = 2; moduleByte <= 7; moduleByte ++) {
     stream->print(" | Byte");
     stream->print(moduleByte);
@@ -3782,7 +4041,7 @@ void dscKeybusInterface::printModuleProgramming(byte panelByte2, byte panelByte3
 		  case 0x29: stream->print(F(" v5.x | Keyfob 14 ESN input")); break;
 		  case 0x2C: stream->print(F(" v5.x | Keyfob 15 ESN input")); break;
 		  case 0x2F: stream->print(F(" v5.x | Keyfob 16 ESN input")); break;
-	      case 0x44: stream->print(F(" v5.x | Zone 1 ESN input")); break;
+		  case 0x44: stream->print(F(" v5.x | Zone 1 ESN input")); break;
 		  case 0x45: stream->print(F(" v3.x | Zone 1 ESN input")); break;
 		  case 0x47: stream->print(F(" v5.x | Zone 2 ESN input")); break;
 		  case 0x48: stream->print(F(" v3.x | Zone 2 ESN input")); break;
