@@ -1031,6 +1031,8 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
     // 0xA4 - 0xA7: PC5200 AC trouble, slots 1-4
     // 0xA8 - 0xAB: PC5200 Battery restore, slots 1-4
     // 0xAC - 0xAF: PC5200 Battery trouble, slots 1-4
+    // 0xB0 - 0xB3: PC5200 AUX PTC restore, slots 1-4
+    // 0xB4 - 0xB7: PC5200 AUX PTC trouble, slots 1-4
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
@@ -1070,6 +1072,24 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
   if (panelData[panelByte] >= 0xAC && panelData[panelByte] <= 0xAF) {
     stream->print(F("PC5200: Battery trouble: "));
     printNumberOffset(panelByte, -0xAB);
+    return;
+  }
+  
+  /*
+   *  PC5200 ATX output PTC protection restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xB0 && panelData[panelByte] <= 0xB3) {
+    stream->print(F("PC5200: AUX PTC restore: "));
+    printNumberOffset(panelByte, -0xAF);
+    return;
+  }
+  
+  /*
+   *  PC5200 AUX output PTC protection trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xB4 && panelData[panelByte] <= 0xB7) {
+    stream->print(F("PC5200: AUX PTC trouble: "));
+    printNumberOffset(panelByte, -0xB3);
     return;
   }
 
@@ -3493,22 +3513,30 @@ void dscKeybusInterface::printModule_0x57() {
  *  Byte 6 bit 2-3: PC5200 1 battery trouble
  *  Byte 6 bit 4-5: PC5200 1 AC power restore
  *  Byte 6 bit 6-7: PC5200 1 AC power trouble
- *  Byte 7: Unknown
+ *  Byte 7 bit 0-3: Unknown
+ *  Byte 7 bit 4-5: PC5200 1 AUX restore
+ *  Byte 7 bit 6-7: PC5200 1 AUX trouble
  *  Byte 8 bit 0-1: PC5200 2 battery restore
  *  Byte 8 bit 2-3: PC5200 2 battery trouble
  *  Byte 8 bit 4-5: PC5200 2 AC power restore
  *  Byte 8 bit 6-7: PC5200 2 AC power trouble
- *  Byte 9: Unknown
+ *  Byte 9 bit 0-3: Unknown
+ *  Byte 9 bit 4-5: PC5200 2 AUX restore
+ *  Byte 9 bit 6-7: PC5200 2 AUX trouble
  *  Byte 10 bit 0-1: PC5200 3 battery restore
  *  Byte 10 bit 2-3: PC5200 3 battery trouble
  *  Byte 10 bit 4-5: PC5200 3 AC power restore
  *  Byte 10 bit 6-7: PC5200 3 AC power trouble
- *  Byte 11: Unknown
+ *  Byte 11 bit 0-3: Unknown
+ *  Byte 11 bit 4-5: PC5200 3 AUX restore
+ *  Byte 11 bit 6-7: PC5200 3 AUX trouble
  *  Byte 12 bit 0-1: PC5200 4 battery restore
  *  Byte 12 bit 2-3: PC5200 4 battery trouble
  *  Byte 12 bit 4-5: PC5200 4 AC power restore
  *  Byte 12 bit 6-7: PC5200 4 AC power trouble
- *  Byte 13: Unknown
+ *  Byte 13 bit 0-3: Unknown
+ *  Byte 13 bit 4-5: PC5200 4 AUX restore
+ *  Byte 13 bit 6-7: PC5200 4 AUX trouble
  *
  *  11111111 1 11111111 11111111 11111111 11011111 [Module/0x05] Module status notification
  *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Module status query
@@ -3529,18 +3557,26 @@ void dscKeybusInterface::printModule_0x57() {
  *  11111111 1 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Restore
  *  11111111 1 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Restore
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x58] Unknown data //PC5200 4 Battery trouble
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x58] Unknown data //PC5200 4 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x58] Unknown data //PC5200 4 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x58] Unknown data //PC5200 4 AUX restore
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13
  */
 void dscKeybusInterface::printModule_0x58() {
