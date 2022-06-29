@@ -1027,6 +1027,9 @@ void dscKeybusInterface::printPanelStatus5(byte panelByte) {
 void dscKeybusInterface::printPanelStatus14(byte panelByte) {
   #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
   switch (panelData[panelByte]) {
+    // 0x40 - 0x5F: Zone fault restored, zones 33-64
+    // 0x60 - 0x7F: Zone fault, zones 33-64
+    // 0x80 - 0x9F: Zone bypassed, zones 33-64
     // 0xA0 - 0xA3: PC5200 AC restore, slots 1-4
     // 0xA4 - 0xA7: PC5200 AC trouble, slots 1-4
     // 0xA8 - 0xAB: PC5200 Battery restore, slots 1-4
@@ -1037,6 +1040,48 @@ void dscKeybusInterface::printPanelStatus14(byte panelByte) {
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
+  }
+
+  /*
+   *  Zone fault restored, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 11111111 10001000 [0xEB] 2021.05.22 00:13 | Zone fault restored: 64
+   *  11101100 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 00001001 10010011 [0xEC] Event: 009 | 2021.05.22 00:13 | Zone fault restored: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x40 && panelData[panelByte] <= 0x5F) {
+    stream->print(F("Zone fault restored: "));
+    printNumberOffset(panelByte, -31);
+    return;
+  }
+
+  /*
+   *  Zone fault, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 11111111 10011000 [0xEB] 2021.05.22 00:09 | Zone fault: 64
+   *  11101100 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 00001011 10100101 [0xEC] Event: 011 | 2021.05.22 00:09 | Zone fault: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x60 && panelData[panelByte] <= 0x7F) {
+    stream->print(F("Zone fault: "));
+    printNumberOffset(panelByte, -63);
+    return;
+  }
+
+  /*
+   *  Zones bypassed, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00000000 10101110 [0xEB] 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
+   *  11101100 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00010011 11000010 [0xEC] Event: 019 | 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x80 && panelData[panelByte] <= 0x9F) {
+    stream->print(F("Zone bypassed: "));
+    printNumberOffset(panelByte, -95);
+    return;
   }
 
   /*
