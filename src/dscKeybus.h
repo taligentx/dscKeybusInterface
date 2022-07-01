@@ -102,6 +102,7 @@ class dscKeybusInterface {
     bool accessCodeChanged[dscPartitions];
     bool accessCodePrompt;                // True if the panel is requesting an access code
     bool decimalInput;                    // True if the panel is requesting 3 digit input (for 0x6E readout)
+    bool optionInput;                    // True if the panel is requesting input option 1-8 (for 0x8D cmd)
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
@@ -286,7 +287,7 @@ class dscKeybusInterface {
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
-    void printModuleProgramming(byte panelByte2, byte panelByte3, byte panelByte4, byte panelByte5, byte panelByte6, byte panelByte7);
+    void printModuleSubsection();
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
