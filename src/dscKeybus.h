@@ -25,18 +25,18 @@
 #if defined(__AVR__)
 const byte dscPartitions = 4;   // Maximum number of partitions - requires 19 bytes of memory per partition
 const byte dscZones = 4;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
-const byte dscReadSize = 16;    // Maximum bytes of a Keybus command
+const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscDataSize + 2 bytes of memory per command
+const byte dscDataSize = 16;    // Maximum bytes of a Keybus command
 #elif defined(ESP8266)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const byte dscBufferSize = 50;
-const byte dscReadSize = 16;
+const byte dscDataSize = 16;
 #elif defined(ESP32)
 const byte dscPartitions = 8;
 const byte dscZones = 8;
 const DRAM_ATTR byte dscBufferSize = 50;
-const DRAM_ATTR byte dscReadSize = 16;
+const DRAM_ATTR byte dscDataSize = 16;
 #endif
 
 // Exit delay target states
@@ -74,18 +74,6 @@ class dscKeybusInterface {
     static byte writePartition;                       // Set to a partition number for virtual keypad
     bool writeReady;                                  // True if the library is ready to write a key
 
-    // Prints output to the stream interface set in begin()
-    void printPanelBinary(bool printSpaces = true);   // Includes spaces between bytes by default
-    void printPanelCommand();                         // Prints the panel command as hex
-    void printPanelMessage();                         // Prints the decoded panel message
-    void printModuleBinary(bool printSpaces = true);  // Includes spaces between bytes by default
-    void printModuleMessage();                        // Prints the decoded keypad or module message
-
-    // These can be configured in the sketch setup() before begin()
-    bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
-    static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)
-    bool displayTrailingBits;       // Controls if bits read as the clock is reset are displayed, appears to be spurious data (default: false)
-
     // Panel time
     bool timestampChanged;          // True after the panel sends a timestamped message
     byte hour, minute, day, month;
@@ -101,8 +89,6 @@ class dscKeybusInterface {
     byte accessCode[dscPartitions];
     bool accessCodeChanged[dscPartitions];
     bool accessCodePrompt;                // True if the panel is requesting an access code
-    bool decimalInput;                    // True if the panel is requesting 3 digit input (for 0x6E readout)
-    bool optionInput;                    // True if the panel is requesting input option 1-8 (for 0x8D cmd)
     bool trouble, troubleChanged;
     bool powerTrouble, powerChanged;
     bool batteryTrouble, batteryChanged;
@@ -133,8 +119,8 @@ class dscKeybusInterface {
      *   00000101 0 10000001 00000001 10010001 11000111 [0x05] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled
      *            ^ Byte 1 (stop bit)
      */
-    static byte panelData[dscReadSize];
-    static volatile byte moduleData[dscReadSize];
+    static byte panelData[dscDataSize];
+    static volatile byte moduleData[dscDataSize];
 
     // status[] and lights[] store the current status message and LED state for each partition.  These can be accessed
     // directly in the sketch to get data that is not already tracked in the library.  See printPanelMessages() and
@@ -142,17 +128,11 @@ class dscKeybusInterface {
     byte status[dscPartitions];
     byte lights[dscPartitions];
 
-    // Process keypad and module data, returns true if data is available
-    bool handleModule();
-
     // True if dscBufferSize needs to be increased
     static volatile bool bufferOverflow;
 
     // Timer interrupt function to capture data - declared as public for use by AVR Timer1
     static void dscDataInterrupt();
-
-    // Deprecated
-    bool processRedundantData;  // Controls if repeated periodic commands are processed and displayed (default: false)
 
   private:
 
@@ -188,112 +168,11 @@ class dscKeybusInterface {
     void processArmed(byte partitionIndex, bool armedStatus);
     void processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease = true);
 
-    void printPanelPartitionStatus(byte startPartition, byte startByte, byte endByte);
-    void printPanelStatus0(byte panelByte);
-    void printPanelStatus1(byte panelByte);
-    void printPanelStatus2(byte panelByte);
-    void printPanelStatus3(byte panelByte);
-    void printPanelStatus4(byte panelByte);
-    void printPanelStatus5(byte panelByte);
-    void printPanelStatus14(byte panelByte);
-    void printPanelStatus16(byte panelByte);
-    void printPanelStatus17(byte panelByte);
-    void printPanelStatus18(byte panelByte);
-    void printPanelStatus1B(byte panelByte);
-
-    void printPanelMessages(byte panelByte);
-    void printPanelLights(byte panelByte, bool printMessage = true);
-    void printPanelTime(byte panelByte);
-    void printPanelBeeps(byte panelByte);
-    void printPanelTone(byte panelByte);
-    void printPanelBuzzer(byte panelByte);
-    bool printPanelZones(byte inputByte, byte startZone);
-    void printPanelAccessCode(byte dscCode, bool accessCodeIncrease = true);
-    void printPanelBitNumbers(byte panelByte, byte startNumber, byte startBit = 0, byte stopBit = 7, bool printNone = true);
-    void printNumberSpace(byte number);
-    void printNumberOffset(byte panelByte, int numberOffset);
-    void printUnknownData();
-    void printPartition();
-    void printStatusLights();
-    void printStatusLightsFlashing();
-    void printZoneLights(bool lowerRange = true);
-    void printPanel_0x05();
-    void printPanel_0x0A_0F();
-    void printPanel_0x11();
-    void printPanel_0x16();
-    void printPanel_0x1B();
-    void printPanel_0x1C();
-    void printPanel_0x22_28_33_39();
-    void printPanel_0x27();
-    void printPanel_0x2D();
-    void printPanel_0x34();
-    void printPanel_0x3E();
-    void printPanel_0x41();
-    void printPanel_0x4C();
-    void printPanel_0x57();
-    void printPanel_0x58();
-    void printPanel_0x5D_63();
-    void printPanel_0x64();
-    void printPanel_0x69();
-    void printPanel_0x6E();
-    void printPanel_0x70();
-    void printPanel_0x75();
-    void printPanel_0x7A();
-    void printPanel_0x7F();
-    void printPanel_0x82();
-    void printPanel_0x87();
-    void printPanel_0x8D();
-    void printPanel_0x94();
-    void printPanel_0x9E();
-    void printPanel_0xA5();
-    void printPanel_0xAA();
-    void printPanel_0xB1();
-    void printPanel_0xBB();
-    void printPanel_0xC3();
-    void printPanel_0xCE();
-    void printPanel_0xD5();
-    void printPanel_0xE6();
-    void printPanel_0xE6_0x01_06_20_21();
-    void printPanel_0xE6_0x08_0A_0C_0E();
-    void printPanel_0xE6_0x09();
-    void printPanel_0xE6_0x0B();
-    void printPanel_0xE6_0x0D();
-    void printPanel_0xE6_0x0F();
-    void printPanel_0xE6_0x17();
-    void printPanel_0xE6_0x18();
-    void printPanel_0xE6_0x19();
-    void printPanel_0xE6_0x1A();
-    void printPanel_0xE6_0x1D();
-    void printPanel_0xE6_0x1F();
-    void printPanel_0xE6_0x2B();
-    void printPanel_0xE6_0x2C();
-    void printPanel_0xE6_0x41();
-    void printPanel_0xEB();
-    void printPanel_0xEC();
-
-    void printModule_0xBB();
-    void printModule_0xDD();
-    void printModule_0xEE();
-    void printModule_Status();
-    void printModule_0x11();
-    void printModule_0x41();
-    void printModule_0x4C();
-    void printModule_0x57();
-    void printModule_0x58();
-    void printModule_0x70();
-    void printModule_0x94();
-    void printModule_0xD5();
-    bool printModule_Keys();
-    void printModule_KeyCodes(byte keyByte);
-    void printModule_Expander();
-    bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
-    void printModuleSubsection();
-
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();
-    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
+    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscDataSize);
 
     #if defined(ESP32)
     static hw_timer_t * timer1;
@@ -330,15 +209,12 @@ class dscKeybusInterface {
     static byte panelBitCount, panelByteCount;
     static volatile bool writeKeyPending;
     static volatile bool writeAlarm, starKeyCheck, starKeyWait[dscPartitions];
-    static volatile bool moduleDataDetected, moduleDataCaptured;
     static volatile unsigned long clockHighTime, keybusTime;
     static volatile byte panelBufferLength;
-    static volatile byte panelBuffer[dscBufferSize][dscReadSize];
+    static volatile byte panelBuffer[dscBufferSize][dscDataSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
-    static volatile byte moduleBitCount, moduleByteCount;
-    static volatile byte currentCmd, statusCmd, moduleCmd, moduleSubCmd;
-    static volatile byte isrPanelData[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
-    static volatile byte isrModuleData[dscReadSize];
+    static volatile byte statusCmd;
+    static volatile byte isrPanelData[dscDataSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
 };
 
 #endif // dscKeybus_h

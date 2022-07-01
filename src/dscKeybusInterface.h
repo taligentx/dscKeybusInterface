@@ -35,13 +35,13 @@ byte dscClassicInterface::writeByte;
 byte dscClassicInterface::writeBit;
 bool dscClassicInterface::virtualKeypad;
 bool dscClassicInterface::processModuleData;
-byte dscClassicInterface::panelData[dscReadSize];
-byte dscClassicInterface::pc16Data[dscReadSize];
+byte dscClassicInterface::panelData[dscDataSize];
+byte dscClassicInterface::pc16Data[dscDataSize];
 byte dscClassicInterface::panelByteCount;
 byte dscClassicInterface::panelBitCount;
 volatile bool dscClassicInterface::writeKeyPending;
 volatile bool dscClassicInterface::writeKeyWait;
-volatile byte dscClassicInterface::moduleData[dscReadSize];
+volatile byte dscClassicInterface::moduleData[dscDataSize];
 volatile bool dscClassicInterface::moduleDataCaptured;
 volatile byte dscClassicInterface::moduleByteCount;
 volatile byte dscClassicInterface::moduleBitCount;
@@ -51,16 +51,16 @@ volatile bool dscClassicInterface::starKeyCheck;
 volatile bool dscClassicInterface::starKeyWait;
 volatile bool dscClassicInterface::bufferOverflow;
 volatile byte dscClassicInterface::panelBufferLength;
-volatile byte dscClassicInterface::panelBuffer[dscBufferSize][dscReadSize];
-volatile byte dscClassicInterface::pc16Buffer[dscBufferSize][dscReadSize];
+volatile byte dscClassicInterface::panelBuffer[dscBufferSize][dscDataSize];
+volatile byte dscClassicInterface::pc16Buffer[dscBufferSize][dscDataSize];
 volatile byte dscClassicInterface::panelBufferBitCount[dscBufferSize];
 volatile byte dscClassicInterface::panelBufferByteCount[dscBufferSize];
-volatile byte dscClassicInterface::isrPanelData[dscReadSize];
-volatile byte dscClassicInterface::isrPC16Data[dscReadSize];
+volatile byte dscClassicInterface::isrPanelData[dscDataSize];
+volatile byte dscClassicInterface::isrPC16Data[dscDataSize];
 volatile byte dscClassicInterface::isrPanelByteCount;
 volatile byte dscClassicInterface::isrPanelBitCount;
 volatile byte dscClassicInterface::isrPanelBitTotal;
-volatile byte dscClassicInterface::isrModuleData[dscReadSize];
+volatile byte dscClassicInterface::isrModuleData[dscDataSize];
 volatile byte dscClassicInterface::isrModuleByteCount;
 volatile byte dscClassicInterface::isrModuleBitCount;
 volatile byte dscClassicInterface::isrModuleBitTotal;
@@ -99,16 +99,16 @@ volatile bool dscKeypadInterface::alarmKeyDetected;
 volatile bool dscKeypadInterface::alarmKeyResponsePending;
 volatile byte dscKeypadInterface::clockCycleCount;
 volatile byte dscKeypadInterface::clockCycleTotal;
-volatile byte dscKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscKeypadInterface::panelCommand[dscDataSize];
 volatile byte dscKeypadInterface::isrPanelBitTotal;
 volatile byte dscKeypadInterface::isrPanelBitCount;
 volatile byte dscKeypadInterface::panelCommandByteCount;
-volatile byte dscKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscKeypadInterface::isrModuleData[dscDataSize];
 volatile byte dscKeypadInterface::isrModuleBitTotal;
 volatile byte dscKeypadInterface::isrModuleBitCount;
 volatile byte dscKeypadInterface::isrModuleByteCount;
 volatile byte dscKeypadInterface::panelCommandByteTotal;
-volatile byte dscKeypadInterface::moduleData[dscReadSize];
+volatile byte dscKeypadInterface::moduleData[dscDataSize];
 
 #if defined(__AVR__)
 ISR(TIMER1_OVF_vect) {
@@ -134,16 +134,16 @@ volatile bool dscClassicKeypadInterface::alarmKeyDetected;
 volatile bool dscClassicKeypadInterface::alarmKeyResponsePending;
 volatile byte dscClassicKeypadInterface::clockCycleCount;
 volatile byte dscClassicKeypadInterface::clockCycleTotal;
-volatile byte dscClassicKeypadInterface::panelCommand[dscReadSize];
+volatile byte dscClassicKeypadInterface::panelCommand[dscDataSize];
 volatile byte dscClassicKeypadInterface::isrPanelBitTotal;
 volatile byte dscClassicKeypadInterface::isrPanelBitCount;
 volatile byte dscClassicKeypadInterface::panelCommandByteCount;
-volatile byte dscClassicKeypadInterface::isrModuleData[dscReadSize];
+volatile byte dscClassicKeypadInterface::isrModuleData[dscDataSize];
 volatile byte dscClassicKeypadInterface::isrModuleBitTotal;
 volatile byte dscClassicKeypadInterface::isrModuleBitCount;
 volatile byte dscClassicKeypadInterface::isrModuleByteCount;
 volatile byte dscClassicKeypadInterface::panelCommandByteTotal;
-volatile byte dscClassicKeypadInterface::moduleData[dscReadSize];
+volatile byte dscClassicKeypadInterface::moduleData[dscDataSize];
 volatile unsigned long dscClassicKeypadInterface::intervalStart;
 volatile unsigned long dscClassicKeypadInterface::beepInterval;
 volatile unsigned long dscClassicKeypadInterface::repeatInterval;
@@ -154,6 +154,57 @@ volatile unsigned long dscClassicKeypadInterface::alarmKeyInterval;
 #if defined(__AVR__)
 ISR(TIMER1_OVF_vect) {
   dscClassicKeypadInterface::dscClockInterrupt();
+}
+#endif  // __AVR__
+
+
+// DSC PowerSeries Keybus Reader - includes capturing module data
+#elif defined dscKeybusReader
+#include "dscKeybusReader.h"
+
+byte dscKeybusReaderInterface::dscClockPin;
+byte dscKeybusReaderInterface::dscReadPin;
+byte dscKeybusReaderInterface::dscWritePin;
+char dscKeybusReaderInterface::writeKey;
+byte dscKeybusReaderInterface::writePartition;
+byte dscKeybusReaderInterface::writeByte;
+byte dscKeybusReaderInterface::writeBit;
+bool dscKeybusReaderInterface::virtualKeypad;
+byte dscKeybusReaderInterface::panelData[dscDataSize];
+byte dscKeybusReaderInterface::panelByteCount;
+byte dscKeybusReaderInterface::panelBitCount;
+volatile bool dscKeybusReaderInterface::writeKeyPending;
+volatile byte dscKeybusReaderInterface::moduleData[dscDataSize];
+volatile bool dscKeybusReaderInterface::moduleDataCaptured;
+volatile bool dscKeybusReaderInterface::moduleDataDetected;
+volatile byte dscKeybusReaderInterface::moduleByteCount;
+volatile byte dscKeybusReaderInterface::moduleBitCount;
+volatile bool dscKeybusReaderInterface::writeAlarm;
+volatile bool dscKeybusReaderInterface::starKeyCheck;
+volatile bool dscKeybusReaderInterface::starKeyWait[dscPartitions];
+volatile bool dscKeybusReaderInterface::bufferOverflow;
+volatile byte dscKeybusReaderInterface::panelBufferLength;
+volatile byte dscKeybusReaderInterface::panelBuffer[dscBufferSize][dscDataSize];
+volatile byte dscKeybusReaderInterface::panelBufferBitCount[dscBufferSize];
+volatile byte dscKeybusReaderInterface::panelBufferByteCount[dscBufferSize];
+volatile byte dscKeybusReaderInterface::isrPanelData[dscDataSize];
+volatile byte dscKeybusReaderInterface::isrPanelByteCount;
+volatile byte dscKeybusReaderInterface::isrPanelBitCount;
+volatile byte dscKeybusReaderInterface::isrPanelBitTotal;
+volatile byte dscKeybusReaderInterface::isrModuleData[dscDataSize];
+volatile byte dscKeybusReaderInterface::currentCmd;
+volatile byte dscKeybusReaderInterface::statusCmd;
+volatile byte dscKeybusReaderInterface::moduleCmd;
+volatile byte dscKeybusReaderInterface::moduleSubCmd;
+volatile unsigned long dscKeybusReaderInterface::clockHighTime;
+volatile unsigned long dscKeybusReaderInterface::keybusTime;
+
+// Interrupt function called after 250us by dscClockInterrupt() using AVR Timer1, disables the timer and calls
+// dscDataInterrupt() to read the data line
+#if defined(__AVR__)
+ISR(TIMER1_OVF_vect) {
+  TCCR1B = 0;  // Disables Timer1
+  dscKeybusReaderInterface::dscDataInterrupt();
 }
 #endif  // __AVR__
 
@@ -170,33 +221,23 @@ byte dscKeybusInterface::writePartition;
 byte dscKeybusInterface::writeByte;
 byte dscKeybusInterface::writeBit;
 bool dscKeybusInterface::virtualKeypad;
-bool dscKeybusInterface::processModuleData;
-byte dscKeybusInterface::panelData[dscReadSize];
+byte dscKeybusInterface::panelData[dscDataSize];
 byte dscKeybusInterface::panelByteCount;
 byte dscKeybusInterface::panelBitCount;
 volatile bool dscKeybusInterface::writeKeyPending;
-volatile byte dscKeybusInterface::moduleData[dscReadSize];
-volatile bool dscKeybusInterface::moduleDataCaptured;
-volatile bool dscKeybusInterface::moduleDataDetected;
-volatile byte dscKeybusInterface::moduleByteCount;
-volatile byte dscKeybusInterface::moduleBitCount;
 volatile bool dscKeybusInterface::writeAlarm;
 volatile bool dscKeybusInterface::starKeyCheck;
 volatile bool dscKeybusInterface::starKeyWait[dscPartitions];
 volatile bool dscKeybusInterface::bufferOverflow;
 volatile byte dscKeybusInterface::panelBufferLength;
-volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscReadSize];
+volatile byte dscKeybusInterface::panelBuffer[dscBufferSize][dscDataSize];
 volatile byte dscKeybusInterface::panelBufferBitCount[dscBufferSize];
 volatile byte dscKeybusInterface::panelBufferByteCount[dscBufferSize];
-volatile byte dscKeybusInterface::isrPanelData[dscReadSize];
+volatile byte dscKeybusInterface::isrPanelData[dscDataSize];
 volatile byte dscKeybusInterface::isrPanelByteCount;
 volatile byte dscKeybusInterface::isrPanelBitCount;
 volatile byte dscKeybusInterface::isrPanelBitTotal;
-volatile byte dscKeybusInterface::isrModuleData[dscReadSize];
-volatile byte dscKeybusInterface::currentCmd;
 volatile byte dscKeybusInterface::statusCmd;
-volatile byte dscKeybusInterface::moduleCmd;
-volatile byte dscKeybusInterface::moduleSubCmd;
 volatile unsigned long dscKeybusInterface::clockHighTime;
 volatile unsigned long dscKeybusInterface::keybusTime;
 

@@ -59,12 +59,7 @@ void dscKeybusInterface::resetStatus() {
 bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition) {
 
   // Loops if a previous write is in progress
-  while(writeKeyPending || writeKeysPending) {
-    loop();
-    #if defined(ESP8266)
-    yield();
-    #endif
-  }
+  while(writeKeyPending || writeKeysPending) loop();
 
   if (!ready[0]) return false;  // Skips if partition 1 is not ready
 
@@ -103,12 +98,7 @@ bool dscKeybusInterface::setTime(unsigned int year, byte month, byte day, byte h
     byte previousPartition = writePartition;
     writePartition = timePartition;
     write(timeEntry);
-    while(writeKeyPending || writeKeysPending) {
-      loop();
-      #if defined(ESP8266)
-      yield();
-      #endif
-    }
+    while (writeKeyPending || writeKeysPending) loop();
     writePartition = previousPartition;
   }
   else write(timeEntry);
@@ -406,12 +396,6 @@ void dscKeybusInterface::processPanel_0x27() {
       }
 
       armed[partitionIndex] = true;
-      if (armed[partitionIndex] != previousArmed[partitionIndex] || armedStay[partitionIndex] != previousArmedStay[partitionIndex]) {
-        previousArmed[partitionIndex] = armed[partitionIndex];
-        previousArmedStay[partitionIndex] = armedStay[partitionIndex];
-        armedChanged[partitionIndex] = true;
-        if (!pauseStatus) statusChanged = true;
-      }
 
       processExitDelayStatus(partitionIndex, false);
       exitState[partitionIndex] = 0;
@@ -692,6 +676,13 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
     processArmed(partitionIndex, false);
     processAlarmStatus(partitionIndex, false);
     processEntryDelayStatus(partitionIndex, false);
+
+    // Disarmed by access codes 1-34, 40-42
+    if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
+      byte dscCode = panelData[panelByte] - 0xBF;
+      processPanelAccessCode(partitionIndex, dscCode);
+    }
+
     return;
   }
 
@@ -728,13 +719,6 @@ void dscKeybusInterface::processPanelStatus0(byte partition, byte panelByte) {
   // Armed by access codes 1-34, 40-42
   if (panelData[panelByte] >= 0x99 && panelData[panelByte] <= 0xBD) {
     byte dscCode = panelData[panelByte] - 0x98;
-    processPanelAccessCode(partitionIndex, dscCode);
-    return;
-  }
-
-  // Disarmed by access codes 1-34, 40-42
-  if (panelData[panelByte] >= 0xC0 && panelData[panelByte] <= 0xE4) {
-    byte dscCode = panelData[panelByte] - 0xBF;
     processPanelAccessCode(partitionIndex, dscCode);
     return;
   }

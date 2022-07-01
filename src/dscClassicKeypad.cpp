@@ -267,7 +267,7 @@ void IRAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
     else {
       clockHigh = true;
       digitalWrite(dscClockPin, LOW);
-      if (isrModuleByteCount < dscReadSize) {
+      if (isrModuleByteCount < dscDataSize) {
 
         // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
         if (isrModuleBitCount < 8) {
@@ -323,7 +323,7 @@ void IRAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
     // Checks for module data
     if (moduleDataDetected) {
       moduleDataDetected = false;
-      for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+      for (byte i = 0; i < dscDataSize; i++) moduleData[i] = isrModuleData[i];
 
       if (isrModuleData[0] != 0xFF) {
 
@@ -371,7 +371,7 @@ void IRAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
     }
 
     // Resets counters
-    for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+    for (byte i = 0; i < dscDataSize; i++) isrModuleData[i] = 0;
     isrModuleBitTotal = 0;
     isrModuleBitCount = 0;
     isrModuleByteCount = 0;

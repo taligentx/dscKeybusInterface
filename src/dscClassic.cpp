@@ -98,7 +98,7 @@ void dscClassicInterface::stop() {
 
   // Resets the panel capture data and counters
   panelBufferLength = 0;
-  for (byte i = 0; i < dscReadSize; i++) {
+  for (byte i = 0; i < dscDataSize; i++) {
     isrPanelData[i] = 0;
     isrPC16Data[i] = 0;
     isrModuleData[i] = 0;
@@ -152,7 +152,7 @@ bool dscClassicInterface::loop() {
   // Copies data from the buffer to panelData[]
   static byte panelBufferIndex = 1;
   byte dataIndex = panelBufferIndex - 1;
-  for (byte i = 0; i < dscReadSize; i++) {
+  for (byte i = 0; i < dscDataSize; i++) {
     panelData[i] = panelBuffer[dataIndex][i];
     pc16Data[i] = pc16Buffer[dataIndex][i];
   }
@@ -1007,7 +1007,7 @@ bool IRAM_ATTR dscClassicInterface::redundantPanelData(byte previousCmd[], volat
   }
   if (redundantData) return true;
   else {
-    for (byte i = 0; i < dscReadSize; i++) previousCmd[i] = currentCmd[i];
+    for (byte i = 0; i < dscDataSize; i++) previousCmd[i] = currentCmd[i];
     return false;
   }
 }
@@ -1100,8 +1100,8 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
   // Panel sends data while the clock is high
   if (digitalRead(dscClockPin) == HIGH) {
 
-    // Stops processing Keybus data at the dscReadSize limit
-    if (isrPanelByteCount >= dscReadSize) skipData = true;
+    // Stops processing Keybus data at the dscDataSize limit
+    if (isrPanelByteCount >= dscDataSize) skipData = true;
 
     else {
       if (isrPanelBitCount < 8) {
@@ -1137,8 +1137,8 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
       // Skips incomplete data and redundant data
       if (isrPanelBitTotal < 8) skipData = true;
       else {
-        static byte previousPanelData[dscReadSize];
-        static byte previousPC16Data[dscReadSize];
+        static byte previousPanelData[dscDataSize];
+        static byte previousPC16Data[dscDataSize];
 
         if (lightBlink && readyLight) skipData = false;
         else if (redundantPanelData(previousPanelData, isrPanelData, isrPanelByteCount) &&
@@ -1150,7 +1150,7 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
       // Stores new panel data in the panel buffer
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
-        for (byte i = 0; i < dscReadSize; i++) {
+        for (byte i = 0; i < dscDataSize; i++) {
           panelBuffer[panelBufferLength][i] = isrPanelData[i];
           pc16Buffer[panelBufferLength][i] = isrPC16Data[i];
         }
@@ -1164,20 +1164,20 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
         if (moduleDataDetected) {
           moduleDataDetected = false;
           moduleDataCaptured = true;  // Sets a flag for handleModule()
-          for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+          for (byte i = 0; i < dscDataSize; i++) moduleData[i] = isrModuleData[i];
           moduleBitCount = isrModuleBitTotal;
           moduleByteCount = isrModuleByteCount;
         }
 
         // Resets the keypad and module capture data and counters
-        for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+        for (byte i = 0; i < dscDataSize; i++) isrModuleData[i] = 0;
         isrModuleBitTotal = 0;
         isrModuleBitCount = 0;
         isrModuleByteCount = 0;
       }
 
       // Resets the panel capture data and counters
-      for (byte i = 0; i < dscReadSize; i++) {
+      for (byte i = 0; i < dscDataSize; i++) {
         isrPanelData[i] = 0;
         isrPC16Data[i] = 0;
       }
@@ -1188,7 +1188,7 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
     }
 
     // Keypad and module data is not buffered and skipped if the panel data buffer is filling
-    if (processModuleData && isrModuleByteCount < dscReadSize && panelBufferLength <= 1) {
+    if (processModuleData && isrModuleByteCount < dscDataSize && panelBufferLength <= 1) {
 
       // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
       if (isrModuleBitCount < 8) {

@@ -17,27 +17,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dscKeybus.h"
+#include "dscKeybusReader.h"
 
 
 #if defined(ESP32)
-portMUX_TYPE dscKeybusInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
-hw_timer_t * dscKeybusInterface::timer1 = NULL;
+portMUX_TYPE dscKeybusReaderInterface::timer1Mux = portMUX_INITIALIZER_UNLOCKED;
+hw_timer_t * dscKeybusReaderInterface::timer1 = NULL;
 #endif  // ESP32
 
 
-dscKeybusInterface::dscKeybusInterface(byte setClockPin, byte setReadPin, byte setWritePin) {
+dscKeybusReaderInterface::dscKeybusReaderInterface(byte setClockPin, byte setReadPin, byte setWritePin) {
   dscClockPin = setClockPin;
   dscReadPin = setReadPin;
   dscWritePin = setWritePin;
   if (dscWritePin != 255) virtualKeypad = true;
   writeReady = false;
+  displayTrailingBits = false;
   writePartition = 1;
-  pauseStatus = false;
 }
 
 
-void dscKeybusInterface::begin(Stream &_stream) {
+void dscKeybusReaderInterface::begin(Stream &_stream) {
   pinMode(dscClockPin, INPUT);
   pinMode(dscReadPin, INPUT);
   if (virtualKeypad) pinMode(dscWritePin, OUTPUT);
@@ -71,7 +71,7 @@ void dscKeybusInterface::begin(Stream &_stream) {
 }
 
 
-void dscKeybusInterface::stop() {
+void dscKeybusReaderInterface::stop() {
 
   // Disables Arduino/AVR Timer1 interrupts
   #if defined(__AVR__)
@@ -97,10 +97,13 @@ void dscKeybusInterface::stop() {
   isrPanelBitTotal = 0;
   isrPanelBitCount = 0;
   isrPanelByteCount = 0;
+
+  // Resets the keypad and module capture data
+  for (byte i = 0; i < dscDataSize; i++) isrModuleData[i] = 0;
 }
 
 
-bool dscKeybusInterface::loop() {
+bool dscKeybusReaderInterface::loop() {
 
   #if defined(ESP8266) || defined(ESP32)
   yield();
@@ -125,7 +128,7 @@ bool dscKeybusInterface::loop() {
   if (previousKeybus != keybusConnected) {
     previousKeybus = keybusConnected;
     keybusChanged = true;
-    if (!pauseStatus) statusChanged = true;
+    statusChanged = true;
     if (!keybusConnected) return true;
   }
 
@@ -201,26 +204,77 @@ bool dscKeybusInterface::loop() {
     if (panelData[0] == 0xE6 && panelData[2] == 0x03 && redundantPanelData(previousCmdE6_03, panelData, 8)) return false;  // Status in alarm/programming, partitions 5-8
   }
 
-  // Processes valid panel data
-  switch (panelData[0]) {
-    case 0x05:                                                     // Panel status: partitions 1-4
-    case 0x1B: processPanelStatus(); break;                        // Panel status: partitions 5-8
-    case 0x16: processPanel_0x16(); break;                         // Panel configuration
-    case 0x27: processPanel_0x27(); break;                         // Panel status and zones 1-8 status
-    case 0x2D: processPanel_0x2D(); break;                         // Panel status and zones 9-16 status
-    case 0x34: processPanel_0x34(); break;                         // Panel status and zones 17-24 status
-    case 0x3E: processPanel_0x3E(); break;                         // Panel status and zones 25-32 status
-    case 0x87: processPanel_0x87(); break;                         // PGM outputs
-    case 0xA5: processPanel_0xA5(); break;                         // Date, time, system status messages - partitions 1-2
-    case 0xE6: if (dscPartitions > 2) processPanel_0xE6(); break;  // Extended status command split into multiple subcommands to handle up to 8 partitions/64 zones
-    case 0xEB: if (dscPartitions > 2) processPanel_0xEB(); break;  // Date, time, system status messages - partitions 1-8
+  // Processes partition status
+  if (panelData[0] == 0x05 || panelData[0] == 0x1B) {
+
+    // Sets partition counts based on the status command and generation of panel
+    byte partitionStart = 0;
+    byte partitionCount = 0;
+    if (panelData[0] == 0x05) {
+      partitionStart = 0;
+      if (keybusVersion1) partitionCount = 2;  // Handles earlier panels that support up to 2 partitions
+      else partitionCount = 4;
+      if (dscPartitions < partitionCount) partitionCount = dscPartitions;
+    }
+    else if (dscPartitions > 4 && panelData[0] == 0x1B) {
+      partitionStart = 4;
+      partitionCount = 8;
+      if (dscPartitions < partitionCount) partitionCount = dscPartitions;
+    }
+
+    // Sets status per partition
+    for (byte partitionIndex = partitionStart; partitionIndex < partitionCount; partitionIndex++) {
+      byte statusByte, messageByte;
+      if (partitionIndex < 4) {
+        statusByte = (partitionIndex * 2) + 2;
+        messageByte = (partitionIndex * 2) + 3;
+      }
+      else {
+        statusByte = ((partitionIndex - 4) * 2) + 2;
+        messageByte = ((partitionIndex - 4) * 2) + 3;
+      }
+
+      // Partition disabled status
+      if (panelData[messageByte] == 0xC7) {
+        disabled[partitionIndex] = true;
+      }
+      else disabled[partitionIndex] = false;
+
+      // Status messages
+      status[partitionIndex] = panelData[messageByte];
+
+       // Resets the flag that waits for panel status 0x9E, 0xB8 after '*' is pressed
+      if ((panelData[messageByte] == 0x9E || panelData[messageByte] == 0xB8) && starKeyWait[partitionIndex]) {
+        starKeyWait[partitionIndex] = false;
+        starKeyCheck = false;
+        writeKeyPending = false;
+      }
+    }
+  }
+
+  return true;
+}
+
+
+bool dscKeybusReaderInterface::handleModule() {
+  if (!moduleDataCaptured) return false;
+  moduleDataCaptured = false;
+
+  if (moduleBitCount < 8) return false;
+
+  // Determines if a keybus message is a response to a panel command
+  switch (moduleCmd) {
+    case 0x11:
+    case 0x28:
+    case 0xD5: queryResponse = true; break;
+    default: queryResponse = false; break;
   }
 
   return true;
 }
 
 // Sets up writes for a single key
-void dscKeybusInterface::write(const char receivedKey) {
+void dscKeybusReaderInterface::write(const char receivedKey) {
 
   // Blocks if a previous write is in progress
   while (writeKeyPending || writeKeysPending) loop();
@@ -230,7 +284,7 @@ void dscKeybusInterface::write(const char receivedKey) {
 
 
 // Sets up writes for multiple keys sent as a char array
-void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
+void dscKeybusReaderInterface::write(const char *receivedKeys, bool blockingWrite) {
 
   // Blocks if a previous write is in progress
   while (writeKeyPending || writeKeysPending) loop();
@@ -254,7 +308,7 @@ void dscKeybusInterface::write(const char *receivedKeys, bool blockingWrite) {
 
 
 // Writes multiple keys from a char array
-void dscKeybusInterface::writeKeys(const char *writeKeysArray) {
+void dscKeybusReaderInterface::writeKeys(const char *writeKeysArray) {
   static byte writeCounter = 0;
   if (!writeKeyPending && writeKeysPending && writeCounter < strlen(writeKeysArray)) {
     if (writeKeysArray[writeCounter] != '\0') {
@@ -271,7 +325,7 @@ void dscKeybusInterface::writeKeys(const char *writeKeysArray) {
 
 // Specifies the key value to be written by dscClockInterrupt() and selects the write partition.  This includes a 500ms
 // delay after alarm keys to resolve errors when additional keys are sent immediately after alarm keys.
-void dscKeybusInterface::setWriteKey(const char receivedKey) {
+void dscKeybusReaderInterface::setWriteKey(const char receivedKey) {
   static unsigned long previousTime;
   static bool setPartition;
 
@@ -288,7 +342,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
   if (!writeKeyPending && (millis() - previousTime > 500 || millis() <= 500)) {
     bool validKey = true;
 
-    // Skips writing to disabled partitions or partitions not specified in dscKeybusInterface.h
+    // Skips writing to disabled partitions or partitions not specified in dscKeybusReader.h
     if (disabled[writePartition - 1] || dscPartitions < writePartition) {
       switch (receivedKey) {
         case '/': setPartition = true; validKey = false; break;
@@ -317,18 +371,18 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
         case '>': writeKey = 0x87; break;                                                        // Event buffer right arrow
         case '<': writeKey = 0x88; break;                                                        // Event buffer left arrow
         case 'l': case 'L': writeKey = 0xA5; break;                                              // LCD keypad data request
-        case 's': case 'S': writeKey = 0xAF; writeAccessCode[writePartition - 1] = true; break;  // Arm stay
-        case 'w': case 'W': writeKey = 0xB1; writeAccessCode[writePartition - 1] = true; break;  // Arm away
-        case 'n': case 'N': writeKey = 0xB6; writeAccessCode[writePartition - 1] = true; break;  // Arm with no entry delay (night arm)
+        case 's': case 'S': writeKey = 0xAF; break;  // Arm stay
+        case 'w': case 'W': writeKey = 0xB1; break;  // Arm away
+        case 'n': case 'N': writeKey = 0xB6; break;  // Arm with no entry delay (night arm)
         case 'a': case 'A': writeKey = 0xDD; writeAlarm = true; break;                           // Keypad auxiliary alarm
         case 'c': case 'C': writeKey = 0xBB; break;                                              // Door chime
         case 'r': case 'R': writeKey = 0xDA; break;                                              // Reset
         case 'p': case 'P': writeKey = 0xEE; writeAlarm = true; break;                           // Keypad panic alarm
         case 'x': case 'X': writeKey = 0xE1; break;                                              // Exit
-        case '[': writeKey = 0xD5; writeAccessCode[writePartition - 1] = true; break;            // Command output 1
-        case ']': writeKey = 0xDA; writeAccessCode[writePartition - 1] = true; break;            // Command output 2
-        case '{': writeKey = 0x70; writeAccessCode[writePartition - 1] = true; break;            // Command output 3
-        case '}': writeKey = 0xEC; writeAccessCode[writePartition - 1] = true; break;            // Command output 4
+        case '[': writeKey = 0xD5; break;            // Command output 1
+        case ']': writeKey = 0xDA; break;            // Command output 2
+        case '{': writeKey = 0x70; break;            // Command output 3
+        case '}': writeKey = 0xEC; break;            // Command output 4
         default: {
           validKey = false;
           break;
@@ -379,11 +433,11 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
 
 
 #if defined(__AVR__)
-bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+bool dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #elif defined(ESP8266)
-bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+bool ICACHE_RAM_ATTR dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #elif defined(ESP32)
-bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
+bool IRAM_ATTR dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #endif
 
   bool redundantData = true;
@@ -401,7 +455,7 @@ bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volati
 }
 
 
-bool dscKeybusInterface::validCRC() {
+bool dscKeybusReaderInterface::validCRC() {
   byte byteCount = (panelBitCount - 1) / 8;
   int dataSum = 0;
   for (byte panelByte = 0; panelByte < byteCount; panelByte++) {
@@ -415,11 +469,11 @@ bool dscKeybusInterface::validCRC() {
 // Called as an interrupt when the DSC clock changes to write data for virtual keypad and setup timers to read
 // data after an interval.
 #if defined(__AVR__)
-void dscKeybusInterface::dscClockInterrupt() {
+void dscKeybusReaderInterface::dscClockInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
+void ICACHE_RAM_ATTR dscKeybusReaderInterface::dscClockInterrupt() {
 #elif defined(ESP32)
-void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
+void IRAM_ATTR dscKeybusReaderInterface::dscClockInterrupt() {
 #endif
 
   // Data sent from the panel and keypads/modules has latency after a clock change (observed up to 160us for
@@ -475,6 +529,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
       }
 
       // Stores new panel data in the panel buffer
+      currentCmd = isrPanelData[0];
       if (panelBufferLength == dscBufferSize) bufferOverflow = true;
       else if (!skipData && panelBufferLength < dscBufferSize) {
         for (byte i = 0; i < dscDataSize; i++) panelBuffer[panelBufferLength][i] = isrPanelData[i];
@@ -482,6 +537,20 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
         panelBufferByteCount[panelBufferLength] = isrPanelByteCount;
         panelBufferLength++;
       }
+
+      // Stores new keypad and module data - this data is not buffered
+      if (moduleDataDetected) {
+        moduleCmd = isrPanelData[0];
+        moduleSubCmd = isrPanelData[2];
+        moduleDataDetected = false;
+        moduleDataCaptured = true;  // Sets a flag for handleModule()
+        for (byte i = 0; i < dscDataSize; i++) moduleData[i] = isrModuleData[i];
+        moduleBitCount = isrPanelBitTotal;
+        moduleByteCount = isrPanelByteCount;
+      }
+
+      // Resets the keypad and module capture data
+      for (byte i = 0; i < dscDataSize; i++) isrModuleData[i] = 0;
 
       // Resets the panel capture data and counters
       for (byte i = 0; i < dscDataSize; i++) isrPanelData[i] = 0;
@@ -561,11 +630,11 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 
 // Interrupt function called by AVR Timer1, esp8266 timer1, and esp32 timer1 after 250us to read the data line
 #if defined(__AVR__)
-void dscKeybusInterface::dscDataInterrupt() {
+void dscKeybusReaderInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+void ICACHE_RAM_ATTR dscKeybusReaderInterface::dscDataInterrupt() {
 #elif defined(ESP32)
-void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+void IRAM_ATTR dscKeybusReaderInterface::dscDataInterrupt() {
   timerStop(timer1);
   portENTER_CRITICAL(&timer1Mux);
 #endif
@@ -611,6 +680,30 @@ void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
       }
 
       isrPanelBitTotal++;
+    }
+  }
+
+  // Keypads and modules send data while the clock is low
+  else {
+
+    // Keypad and module data is not buffered and skipped if the panel data buffer is filling
+    if (isrPanelByteCount < dscDataSize && panelBufferLength <= 1) {
+
+      // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
+      if (isrPanelBitCount < 8) {
+        isrModuleData[isrPanelByteCount] <<= 1;
+        if (digitalRead(dscReadPin) == HIGH) {
+          isrModuleData[isrPanelByteCount] |= 1;
+        }
+        else {
+          moduleDataDetected = true;  // Keypads and modules send data by pulling the data line low
+        }
+      }
+
+      // Stores the stop bit by itself in byte 1 - this aligns the Keybus bytes with moduleData[] bytes
+      if (isrPanelBitTotal == 8) {
+        isrModuleData[1] = 1;  // Sets the stop bit manually to 1 in byte 1
+      }
     }
   }
   #if defined(ESP32)

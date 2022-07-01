@@ -416,7 +416,7 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     else {
       clockHigh = true;
       digitalWrite(dscClockPin, LOW);
-      if (isrModuleByteCount < dscReadSize) {
+      if (isrModuleByteCount < dscDataSize) {
 
         // Data is captured in each byte by shifting left by 1 bit and writing to bit 0
         if (isrModuleBitCount < 8) {
@@ -506,7 +506,7 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     // Checks for module data
     if (moduleDataDetected) {
       moduleDataDetected = false;
-      for (byte i = 0; i < dscReadSize; i++) moduleData[i] = isrModuleData[i];
+      for (byte i = 0; i < dscDataSize; i++) moduleData[i] = isrModuleData[i];
 
       // Checks for an alarm key press and sets a flag to send panel command 0x1C alarm key verification
       if (isrModuleData[0] != 0xFF && panelCommand[0] != 0x1C) {
@@ -524,7 +524,7 @@ void IRAM_ATTR dscKeypadInterface::dscClockInterrupt() {
     }
 
     // Resets counters
-    for (byte i = 0; i < dscReadSize; i++) isrModuleData[i] = 0;
+    for (byte i = 0; i < dscDataSize; i++) isrModuleData[i] = 0;
     isrModuleBitTotal = 0;
     isrModuleBitCount = 0;
     isrModuleByteCount = 0;

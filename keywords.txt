@@ -3,6 +3,7 @@ dscClassicInterface	KEYWORD1
 dscKeypadInterface	KEYWORD1
 dscClassicKeypadInterface	KEYWORD1
 dsc	KEYWORD1
+dscKeybusReaderInterface	KEYWORD1
 
 dscClockPin	LITERAL1
 dscReadPin	LITERAL1
@@ -13,6 +14,7 @@ dscZones	LITERAL1
 dscPartitions	LITERAL1
 dscClassicSeries	LITERAL1
 dscKeypad	LITERAL1
+dscKeybusReader	LITERAL1
 
 hideKeypadDigits	KEYWORD2
 displayTrailingBits	KEYWORD2

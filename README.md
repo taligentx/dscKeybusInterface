@@ -1,13 +1,13 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, notifications on alarm events, control of the system as a virtual keypad, unlocking installer codes, and emulating DSC panels to connect DSC keypads as general purpose input devices.
+This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, remote control as a virtual keypad, notifications on alarm events, unlocking installer codes, and emulating DSC panels to use DSC keypads as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Notifications: [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat), [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), E-mail
-* Virtual keypad: Web interface, [Blynk](https://www.blynk.cc) mobile app
+* Remote control: Web interface, [Blynk](https://www.blynk.cc) mobile app, [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat)
+* Notifications: [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), [TinyGSM SMS](https://github.com/vshymanskyy/TinyGSM), E-mail
 * Keypad interface: Emulates a DSC panel to connect DSC keypads as physical input devices for any general purpose, without a DSC panel.
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
 
@@ -66,6 +66,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - Emulates a DSC panel to use DSC PowerSeries and Classic series keypads as physical input devices for any general purpose, without needing a DSC panel.
 * Panel time - retrieve current panel date/time and set a new date/time (including an example with NTP sync)
 * Panel installer code unlocking - determine the 4-digit panel installer code
+* Virtual zone expander - the [expander branch](https://github.com/taligentx/dscKeybusInterface/tree/expander) can emulate a DSC zone expander module to add zones to the security system that are handled by the microcontroller - thanks to [Dilbert66](https://github.com/Dilbert66) for this contribution!
 * Direct Keybus interface:
   - Does not require the [DSC IT-100 serial interface](https://www.dsc.com/alarm-security-products/IT-100%20-%20PowerSeries%20Integration%20Module/22).
 * Designed for reliable data decoding and performance:
@@ -103,18 +104,22 @@ This library uses a combination of hardware and timer interrupts to accurately c
 
 ## Release notes
 * develop
-  - New: DSC Classic series panel support: PC1500, PC1550
+  - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
+* 3.0
+  - New: DSC Classic series panel support: PC1500, PC1550, PC2550 - thanks to [kricon](https://github.com/kricon) for extensively testing and contributing to this!
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
   - New: `HomeKit-HomeSpan` example sketch (esp32) - integrate directly with Apple HomeKit as a native standalone accessory using [HomeSpan](https://github.com/HomeSpan/HomeSpan)
   - New: [Pushover](https://www.pushover.net) and [Pushsafer](https://www.pushsafer.com) push notification example sketches for esp8266/esp32
   - New: esp32-s2 microcontroller support
-  - Updated: `Homebridge-MQTT` support switching armed modes while armed
+  - New: Code restructured to support new features from sketches using #define flags - enables Classic series support and `KeypadInterface`.
+  - Updated: `Homebridge-MQTT` supports switching armed modes while armed
   - Updated: Added TLS root certificate to `Twilio-SMS`
   - Updated: removed deprecated `handlePanel()`
   - Bugfix: `VirtualKeypad-Web` updated notes to switch to [this fork of ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer) to resolve crashes with iOS and macOS clients.
   - Bugfix: `Pushbullet` example sketch updated TLS security certificate fingerprint
   - Bugfix: Workaround for [upstream esp32 TLS handshake issue](https://github.com/espressif/arduino-esp32/issues/6165) preventing making a TLS connection more than once.
   - Bugfix: Fixed `Homebridge-MQTT` handling exit delay states while multiple partitions are arming
+  - Bugfix: Resolved access codes not updating on disarm, changed arming access codes to update before armed status changes
 * 2.0
   - New: [Telegram](https://www.telegram.org) bot example sketch
   - New: [OpenHAB](https://www.openhab.org) integration example sketch using MQTT

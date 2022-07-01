@@ -50,6 +50,7 @@
 // DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
 //#define dscClassicSeries
 
+#define dscKeybusReader
 #include <dscKeybusInterface.h>
 
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
@@ -61,7 +62,7 @@
 
 // Initialize components
 #ifndef dscClassicSeries
-dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+dscKeybusReaderInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 #else
 dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin);
 #endif
@@ -75,7 +76,6 @@ void setup() {
 
   // Optional configuration
   dsc.hideKeypadDigits = false;      // Controls if keypad digits are hidden for publicly posted logs
-  dsc.processModuleData = true;      // Controls if keypad and module data is processed and displayed
   dsc.displayTrailingBits = false;   // Controls if bits read as the clock is reset are displayed, appears to be spurious data
 
   // Starts the Keybus interface and optionally specifies how to print data.
