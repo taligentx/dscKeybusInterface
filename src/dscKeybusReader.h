@@ -83,6 +83,7 @@ class dscKeybusReaderInterface {
     bool statusChanged;                   // True after any status change
     bool keybusConnected, keybusChanged;  // True if data is detected on the Keybus
     bool decimalInput;                    // True if the panel is requesting 3 digit input (for 0x6E readout)
+    bool optionInput;                     // True if the panel is requesting option input 1-8 (for 0x8D cmd)
     bool disabled[dscPartitions];
 
     /* panelData[] and moduleData[] store panel and keypad/module data in an array: command [0], stop bit by itself [1],
@@ -212,7 +213,7 @@ class dscKeybusReaderInterface {
     void printModule_KeyCodes(byte keyByte);
     void printModule_Expander();
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
-    void printModuleProgramming(byte panelByte2, byte panelByte3);
+    void printModuleSubsection();
 
     bool validCRC();
     void writeKeys(const char * writeKeysArray);
