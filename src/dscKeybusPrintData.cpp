@@ -2046,8 +2046,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
   #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
   switch (panelData[2]) {
     case 0x11: {
-      stream->print(F("RF5132"));
-      stream->print(" | ");
+      stream->print(F("RF5132 | "));
       if (panelData[4] != 0x02 && panelData[6] == 0xFF && panelData[7] == 0xFF) { // Doesn't contain HEX data
         switch (panelData[3]) {
           case 0x01: stream->print(F("Zone 1-8 device supervision options")); optionInput = true; break; // v3
@@ -2371,8 +2370,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
   }
 
   if (panelData[4] == 0x02) {
-    stream->print(" | ");
-    stream->print(F("HEX data: "));
+    stream->print(F(" | HEX data: "));
 
     for (byte panelByte = 5; panelByte <= 7; panelByte ++) {
       stream->print(panelData[panelByte] >> 4, HEX);
@@ -2389,13 +2387,11 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
   if (panelData[2] != 0x31 && panelData[3] != 0x41 && panelData[3] != 0x43 && panelData[6] == 0xFF && panelData[7] == 0xFF) {
     if (optionInput) {
       optionInput = false;
-      stream->print(" | ");
-      stream->print(F("Enabled: "));
+      stream->print(F(" | Enabled: "));
       printPanelBitNumbers(5, 1);
     }
     else {
-      stream->print(" | ");
-      stream->print(F("Data entered: "));
+      stream->print(F(" | Data entered: "));
       stream->print(panelData[5] >> 4, HEX);
       stream->print(panelData[5] & 0x0F, HEX);
     }
@@ -3808,13 +3804,13 @@ void dscKeybusReaderInterface::printModule_0x4C() {
 
   if ((moduleData[14] & 0xC0) == 0) {
     if (printedMessage) stream->print("| ");
-    stream->print(F("RF5200 2: Tamper "));
+    stream->print(F("PC5200 2: Tamper "));
     printedMessage = true;
   }
 
   if ((moduleData[14] & 0xF0) == 0xC0) {
     if (printedMessage) stream->print("| ");
-    stream->print(F("RF5200 2: Tamper restored "));
+    stream->print(F("PC5200 2: Tamper restored "));
     printedMessage = true;
   }
 
@@ -4426,8 +4422,7 @@ bool dscKeybusReaderInterface::printModuleSlots(byte outputNumber, byte startByt
  */
 void dscKeybusReaderInterface::printModuleSubsection() {
   if (panelData[4] == 0x82) {
-    stream->print(" | ");
-    stream->print(F("Subsection: "));
+    stream->print(F(" | Subsection: "));
     if (panelData[3] < 16) stream->print("0");
     stream->print(panelData[3], HEX);
   }
