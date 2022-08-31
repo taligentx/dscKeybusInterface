@@ -1,5 +1,4 @@
 /*
-/*
     DSC Keybus Interface
 
     Functions used by the KeybusReader sketch to decode and print Keybus data, with
