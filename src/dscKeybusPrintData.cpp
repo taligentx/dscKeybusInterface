@@ -1,4 +1,5 @@
 /*
+/*
     DSC Keybus Interface
 
     Functions used by the KeybusReader sketch to decode and print Keybus data, with
@@ -1854,7 +1855,7 @@ void dscKeybusReaderInterface::printPanel_0x6E() {
     if (panelData[2] <= 0x09) stream->print("0");
     stream->print(panelData[2], DEC);
   }
-  else  {
+  else {
     for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
       stream->print(panelData[panelByte] >> 4, HEX);
       stream->print(panelData[panelByte] & 0x0F, HEX);
@@ -2011,19 +2012,23 @@ void dscKeybusReaderInterface::printPanel_0x87() {
 
 
 /*
- *  0x8D: Module programming entry, User code programming key response, codes 17-32
+ *  0x8D: After module programming entry and after user code 17-32 programming
  *  Note: Wireless keys 1-16 are assigned to user codes 17-32
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Byte 2: Unknown
- *  Byte 3: Unknown
- *  Byte 4: Unknown
- *  Byte 5: Unknown
- *  Byte 6: Unknown
- *  Byte 7: Unknown
- *  Byte 8: Unknown
+ *  Byte 2: Module which entered data
+ *  Byte 3: Module section from which data is requested
+ *  Byte 4: 0x01 when device placement test, 0x02 when HEX data is contained on bytes 5-7
+ *  Byte 5 bits 0-7: Options 1-8
+ *  Byte 5 bits 0-3: HEX Digit 2
+ *  Byte 5 bits 4-7: HEX Digit 1
+ *  Byte 6 bits 0-3: HEX Digit 4
+ *  Byte 6 bits 4-7: HEX Digit 3
+ *  Byte 7 bits 0-3: HEX Digit 6
+ *  Byte 7 bits 4-7: HEX Digit 5
+ *  Byte 8: Unknown, always 0xFF
  *  Byte 9: CRC
  *
  *  Command                                                                     CRC
@@ -2035,42 +2040,16 @@ void dscKeybusReaderInterface::printPanel_0x87() {
  *  10001101 0 00110001 00100101 00000000 00001001 11111111 11111111 11111111 11101001 [0x8D] User code programming key response  // Code 29 Key 0
  *  10001101 0 00110001 00100101 00000000 00000001 11111111 11111111 11111111 11100001 [0x8D] User code programming key response  // Code 29 Key 1
  *  10001101 0 00110001 00110000 00000000 00000000 11111111 11111111 11111111 11101011 [0x8D] User code programming key response  // Message after 4th key entered
- *  10001101 0 00010001 01000001 00000001 00000111 01010101 11111111 11111111 00111010 [0x8D] Wls programming key response	  // Before WLS zone 4 placement test
- *  10001101 0 00010001 01000001 00000001 00001001 01010101 11111111 11111111 00111100 [0x8D] Wls programming key response	  // Before WLS zone 5 placement test
- *  10001101 0 00010001 01000001 00000001 00001011 01010101 11111111 11111111 00111110 [0x8D] Wls programming key response	  // Before WLS zone 6 placement test
- *  10001101 0 00010001 01000001 00000001 00001101 01010101 11111111 11111111 01000000 [0x8D] Wls programming key response   	  // Before WLS zone 7 placement test
- *  10001101 0 00010001 01000001 00000001 00100001 01010101 11111111 11111111 01010100 [0x8D] Wls programming key response	  // Before WLS zone 17 placement test
- *  10001101 0 00010001 01000001 00000001 00111111 01010101 11111111 11111111 01110010 [0x8D] Wls programming key response	  // Before WLS zone 32 placement test
- *  10001101 0 00010001 01000001 00000001 01111111 01010101 11111111 11111111 10110010 [0x8D] Wls programming key response	  // Before WLS zone 64 placement test
- *  10001101 0 00010001 01000011 00000000 00000001 11111111 11111111 11111111 11011111 [0x8D] Wls programming key response	  // Location is good, same for all zones
- *  10001101 0 00010001 01000001 00000001 11111111 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Wireless zone is not-assigned
- *  10001101 0 00010001 10100100 00000000 00000011 11111111 11111111 11111111 01000010 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 1
- *  10001101 0 00010001 10100101 00000000 00000100 11111111 11111111 11111111 01000100 [0x8D] Wls programming key response	  // Enter 04 for [804][61] function 2
- *  10001101 0 00010001 10100101 00000000 00000011 11111111 11111111 11111111 01000011 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 2
- *  10001101 0 00010001 10101000 00000000 00000011 11111111 11111111 11111111 01000110 [0x8D] Wls programming key response	  // Enter 03 for [804][62] function 1
- *  10001101 0 00010001 10101001 00000000 00000100 11111111 11111111 11111111 01001000 [0x8D] Wls programming key response	  // Enter 04 for [804][62] function 2
- *  10001101 0 00010001 11000000 00000000 00000011 11111111 11111111 11111111 01011110 [0x8D] Wls programming key response	  // Enter 03 for [804][68] function 1
- *  10001101 0 00010001 11000011 00000000 00110000 11111111 11111111 11111111 10001110 [0x8D] Wls programming key response	  // Enter 30 for [804][68] function 4
- *  10001101 0 00010001 00111000 00000000 00010000 11111111 11111111 11111111 11100011 [0x8D] Wls programming key response	  // Enter 10 for [804][81] Wls supervisory window
- *  10001101 0 00010001 00111000 00000000 10010110 11111111 11111111 11111111 01101001 [0x8D] Wls programming key response	  // Enter 96 for [804][81] Wls supervisory window
- *  10001101 0 00010001 11000100 00000000 00000001 11111111 11111111 11111111 01100000 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 1 partition assigment
- *  10001101 0 00010001 11000101 00000000 00000001 11111111 11111111 11111111 01100001 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 2 partition assigment
- *  10001101 0 00010001 11000110 00000000 00000010 11111111 11111111 11111111 01100011 [0x8D] Wls programming key response	  // Enter 02 for [804][69] Keyfob 3 partition assigment
- *  10001101 0 00010001 11010100 00000000 11111111 11111111 11111111 11111111 01101110 [0x8D] Wls programming key response	  // All 1-8 enabled in [804][82] supervision options
- *  10001101 0 00010001 11010100 00000000 11110000 11111111 11111111 11111111 01011111 [0x8D] Wls programming key response	  // 5-8 zones enabled in [804][82] supervisiory options
- *  10001101 0 00010001 11010101 00000000 00001111 11111111 11111111 11111111 01111111 [0x8D] Wls programming key response	  // 1-4 zones enabled in [804][83] supervisiory options
- *  10001101 0 00010001 11010111 00000000 01111111 11111111 11111111 11111111 11110001 [0x8D] Wls programming key response	  // 1-7 zones enabled in [804][85] supervisiory options
- *  10001101 0 00010001 00111010 00000000 01000000 11111111 11111111 11111111 00010101 [0x8D] Wls programming key response	  // Only option 7 enabled in [804][90] options
- *  10001101 0 00010001 00111001 00000000 00001000 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Set RF jamming zone 08 in [804][93] subsection
- *  10001101 0 00010001 00111001 00000000 00000111 11111111 11111111 11111111 11011011 [0x8D] Wls programming key response	  // Set RF jamming zone 07 in [804][93] subsection
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
 void dscKeybusReaderInterface::printPanel_0x8D() {
   stream->print(F("Module programming entry: "));
   #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
   switch (panelData[2]) {
-    case 0x11: stream->print(F("RF5132 ")); {
-      if (panelData[6] == 0xFF && panelData[7] == 0xFF) {
+    case 0x11: {
+      stream->print(F("RF5132"));
+      stream->print(" | ");
+      if (panelData[4] != 0x02 && panelData[6] == 0xFF && panelData[7] == 0xFF) { // Doesn't contain HEX data
         switch (panelData[3]) {
           case 0x01: stream->print(F("Zone 1-8 device supervision options")); optionInput = true; break; // v3
           case 0x02: stream->print(F("Zone 9-16 device supervision options")); optionInput = true; break;
@@ -2092,7 +2071,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           case 0x3A: stream->print(F("General options")); optionInput = true; break;
           // case 0x40: PC5132 v3.14 section [804][80], default data is 30, nothing in manual about it
           case 0x41: stream->print(F("Zone placement test over")); break;
-          case 0x43: stream->print(F("Location signal strenght is ")); break;
+          case 0x43: stream->print(F("Location signal strenght ")); break;
           case 0x44: stream->print(F("Wireless supervisory window")); break; //v3.x
           case 0xA4: stream->print(F("Partition 1/Keyfob 1 function key 1")); break; //v5.0 Partition function key, v5.1 Keyfob function key
           case 0xA5: stream->print(F("Partition 1/Keyfob 1 function key 2")); break;
@@ -2142,14 +2121,22 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           case 0xD1: stream->print(F("Partition assignment keyfob 14/Keyfob 12 function key 2")); break;
           case 0xD2: stream->print(F("Partition assignment keyfob 15/Keyfob 12 function key 3")); break;
           case 0xD3: stream->print(F("Partition assignment keyfob 16/Keyfob 12 function key 4")); break;
-          case 0xD4: if (optionInput) stream->print(F("Zone 1-8 supervision")); //v5.0
-                     else stream->print(F("Wireless key 13 function key 1")); break; //v5.1
-          case 0xD5: if (optionInput) stream->print(F("Zone 9-16 supervision"));
-                     else stream->print(F("Wireless key 13 function key 2")); break;
-          case 0xD6: if (optionInput) stream->print(F("Zone 17-24 supervision"));
-                     else stream->print(F("Wireless key 13 function key 3")); break;
-          case 0xD7: if (optionInput) stream->print(F("Zone 25-32 supervision"));
-                     else stream->print(F("Wireless key 13 function key 4")); break;
+          case 0xD4:
+                     if (optionInput) stream->print(F("Zone 1-8 supervision")); //v5.0
+                     else stream->print(F("Wireless key 13 function key 1"));   //v5.1
+                     break;
+          case 0xD5:
+                     if (optionInput) stream->print(F("Zone 9-16 supervision"));
+                     else stream->print(F("Wireless key 13 function key 2"));
+                     break;
+          case 0xD6:
+                     if (optionInput) stream->print(F("Zone 17-24 supervision"));
+                     else stream->print(F("Wireless key 13 function key 3"));
+                     break;
+          case 0xD7:
+                     if (optionInput) stream->print(F("Zone 25-32 supervision"));
+                     else stream->print(F("Wireless key 13 function key 4"));
+                     break;
           case 0xD8: stream->print(F("Wireless key 14 function key 1")); break;
           case 0xD9: stream->print(F("Wireless key 14 function key 2")); break;
           case 0xDA: stream->print(F("Wireless key 14 function key 3")); break;
@@ -2184,7 +2171,8 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           case 0xF7: stream->print(F("Zone 25-32 device supervision options")); optionInput = true; break;
           default: stream->print("Unknown data");
         }
-      } else {
+      }
+      else { // Bytes 5-7 contains HEX data
         switch (panelData[3]) {
           case 0x02: stream->print(F("Keyfob 1 ESN")); break; //v5
           case 0x05: stream->print(F("Keyfob 2 ESN")); break;
@@ -2286,7 +2274,8 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           default: stream->print("Unknown data");
         }
       }
-    } break;
+      break;
+    }
     case 0x14: stream->print(F("PC5400")); break;
     case 0x15: stream->print(F("PC59XX")); break;
     case 0x16: stream->print(F("LINKS2X50")); break;
@@ -2329,51 +2318,52 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
         case 0x30: stream->print(F("32")); break;
         default: stream->print("Unknown data");
       }
-    } break;
+      break;
+    }
     default: stream->print("Unknown data");
   }
 
-  if (panelData[3] == 0x41) {
-    if (panelData[6] == 0x55) {
-      stream->print(F(", activate device on zone: "));
-      switch (panelData[5]) {
-        case 0x01: stream->print(F("1")); break;
-        case 0x03: stream->print(F("2")); break;
-        case 0x05: stream->print(F("3")); break;
-        case 0x07: stream->print(F("4")); break;
-        case 0x09: stream->print(F("5")); break;
-        case 0x0B: stream->print(F("6")); break;
-        case 0x0D: stream->print(F("7")); break;
-        case 0x0F: stream->print(F("8")); break;
-        case 0x11: stream->print(F("9")); break;
-        case 0x13: stream->print(F("10")); break;
-        case 0x15: stream->print(F("11")); break;
-        case 0x17: stream->print(F("12")); break;
-        case 0x19: stream->print(F("13")); break;
-        case 0x1B: stream->print(F("14")); break;
-        case 0x1D: stream->print(F("15")); break;
-        case 0x1F: stream->print(F("16")); break;
-        case 0x21: stream->print(F("17")); break;
-        case 0x23: stream->print(F("18")); break;
-        case 0x25: stream->print(F("19")); break;
-        case 0x27: stream->print(F("20")); break;
-        case 0x29: stream->print(F("21")); break;
-        case 0x2B: stream->print(F("22")); break;
-        case 0x2D: stream->print(F("23")); break;
-        case 0x2F: stream->print(F("24")); break;
-        case 0x31: stream->print(F("25")); break;
-        case 0x33: stream->print(F("26")); break;
-        case 0x35: stream->print(F("27")); break;
-        case 0x37: stream->print(F("28")); break;
-        case 0x39: stream->print(F("29")); break;
-        case 0x3B: stream->print(F("30")); break;
-        case 0x3D: stream->print(F("31")); break;
-        case 0x3F: stream->print(F("32")); break;
-        default: stream->print("Unknown data");
-      }
-	}
+  // Wireless device placement test
+  if (panelData[3] == 0x41 && panelData[4] == 0x01 && panelData[6] == 0x55) {
+    stream->print(F(", activate device on zone: "));
+    switch (panelData[5]) {
+      case 0x01: stream->print(F("1")); break;
+      case 0x03: stream->print(F("2")); break;
+      case 0x05: stream->print(F("3")); break;
+      case 0x07: stream->print(F("4")); break;
+      case 0x09: stream->print(F("5")); break;
+      case 0x0B: stream->print(F("6")); break;
+      case 0x0D: stream->print(F("7")); break;
+      case 0x0F: stream->print(F("8")); break;
+      case 0x11: stream->print(F("9")); break;
+      case 0x13: stream->print(F("10")); break;
+      case 0x15: stream->print(F("11")); break;
+      case 0x17: stream->print(F("12")); break;
+      case 0x19: stream->print(F("13")); break;
+      case 0x1B: stream->print(F("14")); break;
+      case 0x1D: stream->print(F("15")); break;
+      case 0x1F: stream->print(F("16")); break;
+      case 0x21: stream->print(F("17")); break;
+      case 0x23: stream->print(F("18")); break;
+      case 0x25: stream->print(F("19")); break;
+      case 0x27: stream->print(F("20")); break;
+      case 0x29: stream->print(F("21")); break;
+      case 0x2B: stream->print(F("22")); break;
+      case 0x2D: stream->print(F("23")); break;
+      case 0x2F: stream->print(F("24")); break;
+      case 0x31: stream->print(F("25")); break;
+      case 0x33: stream->print(F("26")); break;
+      case 0x35: stream->print(F("27")); break;
+      case 0x37: stream->print(F("28")); break;
+      case 0x39: stream->print(F("29")); break;
+      case 0x3B: stream->print(F("30")); break;
+      case 0x3D: stream->print(F("31")); break;
+      case 0x3F: stream->print(F("32")); break;
+      default: stream->print("Unknown data");
+    }
   }
 
+  // Wireless device signal strenght
   if (panelData[3] == 0x43) {
     if (panelData[5] == 0x01) stream->print(F("good"));
     else if (panelData[5] == 0x02) stream->print(F("fair"));
@@ -2382,26 +2372,31 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
   }
 
   if (panelData[4] == 0x02) {
-    stream->print(F(" HEX data: "));
+    stream->print(" | ");
+    stream->print(F("HEX data: "));
+
     for (byte panelByte = 5; panelByte <= 7; panelByte ++) {
       stream->print(panelData[panelByte] >> 4, HEX);
       stream->print(panelData[panelByte] & 0x0F, HEX);
     }
   }
 
+  // After exiting user access code 17-32 programming
   if (panelData[2] == 0x31 && panelData[4] == 0x00 && panelData[6] == 0xFF && panelData[7] == 0xFF) {
     if (panelData[5] == 0xAA) stream->print(F(" removed"));
-    if (panelData[5] == 0x00) stream->print(F(" confirm"));
+    if (panelData[5] == 0x00) stream->print(F(" submit"));
   }  
 
   if (panelData[2] != 0x31 && panelData[3] != 0x41 && panelData[3] != 0x43 && panelData[6] == 0xFF && panelData[7] == 0xFF) {
     if (optionInput) {
       optionInput = false;
-      stream->print(F(" Enabled: "));
+      stream->print(" | ");
+      stream->print(F("Enabled: "));
       printPanelBitNumbers(5, 1);
     }
     else {
-      stream->print(F(" Data entered: "));
+      stream->print(" | ");
+      stream->print(F("Data entered: "));
       stream->print(panelData[5] >> 4, HEX);
       stream->print(panelData[5] & 0x0F, HEX);
     }
@@ -2417,15 +2412,20 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Byte 2: Unknown
- *  Byte 3: Unknown
- *  Byte 4: Unknown
- *  Byte 5: Unknown
+ *  Byte 2: Always 0x11 when panel send, 0xFF when module send data
+ *  Byte 3: Module subsection from which data is requested
+ *  Byte 4: Always 0x82 when Byte3 contains requested module subsection to be accesed
+ *  Byte 5: Always 0xA5 when entering *5 access code programming
  *  Byte 6: Unknown
- *  Byte 7: Unknown
- *  Byte 8: Unknown
- *  Byte 9: Unknown
- *  Byte 10: CRC
+ *  Byte 7 bit 0-6: Option 2-8
+ *  Byte 7 bit 3-6: Digit 1
+ *  Byte 7 bit 0-2 and Byte 8 bit 7: Digit 2
+ *  Byte 8 bit 7: Option 1
+ *  Byte 8 bit 3-6: Digit 3
+ *  Byte 8 bit 0-2 and Byte 9 bit 7: Digit 4
+ *  Byte 9 bit 3-6: Digit 5
+ *  Byte 9 bit 0-2 and Byte 10 bit 7: Digit 6
+ *  Byte 10 bits 0-6: CRC (?)
  *
  *  Command                                                                              CRC
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 00010111 10100000 [0x94] Unknown data
@@ -2435,7 +2435,12 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
 void dscKeybusReaderInterface::printPanel_0x94() {
   stream->print(F("Module programming request: "));
   switch (panelData[2]) {
-    case 0x11: stream->print(F("RF5132")); printModuleSubsection(); break;
+    case 0x11: {
+      if (panelData[5] == 0xA5) stream->print(F("*5 access codes"));
+      else stream->print(F("RF5132"));
+      printModuleSubsection();
+      break;
+    }
     case 0x14: stream->print(F("RF5400")); printModuleSubsection(); break;
     case 0x15: stream->print(F("PC59XX")); printModuleSubsection(); break;
     case 0x16: stream->print(F("LINKS2X50")); printModuleSubsection(); break;
@@ -4422,9 +4427,10 @@ bool dscKeybusReaderInterface::printModuleSlots(byte outputNumber, byte startByt
  */
 void dscKeybusReaderInterface::printModuleSubsection() {
   if (panelData[4] == 0x82) {
-    stream->print(F(": subsection "));
+    stream->print(" | ");
+    stream->print(F("Subsection: "));
     if (panelData[3] < 16) stream->print("0");
-	stream->print(panelData[3], HEX);
+    stream->print(panelData[3], HEX);
   }
 }
 
