@@ -25,6 +25,8 @@
  *
  *  Release notes:
  *    1.0 - Initial release
+ *    1.1 - Changed how zone changes are sent back to HomeKit.
+ *        - Added better accessories (dscDoor, dscMotion, dscLeak)
  *
  *  Wiring:
  *      DSC Aux(+) --- 5v voltage regulator --- esp32 development board 5v pin
@@ -85,7 +87,7 @@ dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 #else
 dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
 #endif
-bool updatePartitions, updateZones, updatePGMs, updateSmokeSensors;
+bool updatePartitions, updatePGMs, updateSmokeSensors;
      
 #include "dscHomeSpanAccessories.h"  // Processes security system components as HomeKit accessories
 
@@ -106,43 +108,82 @@ void setup() {
   /* 
    *  HomeKit accessories - define partitions, zones, fire alarms, PGM outputs, and command outputs each as a
    *  separate SpanAccessory() using the definitions below as a template
+   * 
+   *  Instantiated Services (dscPartition, dscDoor, etc) are added to the HomeSpan HAP Database and 
+   *  associated with the last Accessory (SpanAccessory) instantiated.
    */ 
   
   // Partition 1: Security System accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Partition 1","DSC","000000","Alarm","3.0");
+    new homeSpanIdentify("Partition 1 - House","DSC","000000","Alarm","3.0");
     new dscPartition(1);  // Set the partition number
     
-  // Partition 8: Security System accessory
+  // Partition 2: Security System accessory
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Partition 8","DSC","000000","Alarm","3.0");
-    new dscPartition(8);  // Set the partition number
+    new homeSpanIdentify("Partition 2 - Outdoor shed","DSC","000000","Alarm","3.0");
+    new dscPartition(2);  // Set the partition number
 
-  // Zone 1: Contact Sensor accessory
+  // Zone 1 - Motion detector in garage
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Zone 1","DSC","000000","Sensor","3.0");  // Set the zone name
-    new dscZone(1);  // Set the zone number
+    new homeSpanIdentify("Garage","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscMotion(1);  // Zone 1
 
-  // Zone 64: Contact Sensor accessory
+  // Zone 2 - Fire alarm in partition 1
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Zone 64","DSC","000000","Sensor","3.0");  // Set the zone name
-    new dscZone(64);  // Set the zone number
-    
-  // Fire alarm partition 1: Smoke Sensor accessory
+    new homeSpanIdentify("House","DSC","000000", "", "");  // Set the fire sensor name
+    new dscFire(1);  // In partition 1, which is the house
+
+  // Zone 3: Big garage door
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Fire 1","DSC","000000","Sensor","3.0");  // Set the fire sensor name
-    new dscFire(1);  // Set the partition number
-    
-  // Fire alarm partition 8: Smoke Sensor accessory
+    new homeSpanIdentify("Big garage door","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscDoor(3);  // Zone 3
+
+  // Zone 4 - Motion detector on main floor
   new SpanAccessory();                                                          
-    new homeSpanIdentify("Fire 8","DSC","000000","Sensor","3.0");  // Set the fire sensor name
-    new dscFire(8);  // Set the partition number
+    new homeSpanIdentify("Motion Main Floor","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscMotion(4);  // Zone 4
+
+  // Zone 5 - Motion Basement
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Motion Basement","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscMotion(5);  // Zone 5
+
+  // Zone 6 - Water leak
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Water leak","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscLeak(6);  // Zone 6
+
+  // Zone 7 - Entry door in backyard
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Door backyard","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscDoor(7);  // Zone 7
+
+  // Zone 8 - Door 2nd garage
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Door second garage","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscDoor(8);  // Zone 8
+
+  // Zone 9 - Pedestrian garage door
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Pedestrian garage door","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscDoor(9);  // Zone 9
+
+  // Zone 10 - Main entry door of the house
+  new SpanAccessory();
+    new homeSpanIdentify("Main entry door","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscDoor(10);  // Zone 10
+  
+  // Zone 11 - Motion detector of outside shed
+  new SpanAccessory();                                                          
+    new homeSpanIdentify("Motion detector outside shed","DSC","000000","Unknown", "1.0");  // Set the zone name
+    new dscMotion(11);  // Zone 11
     
   // PGM output 1: Contact Sensor accessory
+  /*
   new SpanAccessory();                                                          
     new homeSpanIdentify("PGM 1","DSC","000000","Sensor","3.0");  // Set the PGM output name
     new dscPGM(1);  // Set the PGM output number
-    
+  */  
   // PGM output 14: Contact Sensor accessory
   new SpanAccessory();                                                          
     new homeSpanIdentify("PGM 14","DSC","000000","Sensor","3.0");  // Set the PGM output name
@@ -201,13 +242,7 @@ void loop() {
         updateSmokeSensors = true;
       }
     }
-
-    // Checks zone status and sets a flag to update zone accessories
-    if (dsc.openZonesStatusChanged) {
-      dsc.openZonesStatusChanged = false;  // Resets the open zones status flag
-      updateZones = true;                  // Updates zone accessories
-    }
-
+    
     // Checks PGM outputs status and sets a flag to update PGM accessories
     if (dsc.pgmOutputsStatusChanged) {
       dsc.pgmOutputsStatusChanged = false;  // Resets the PGM outputs status flag

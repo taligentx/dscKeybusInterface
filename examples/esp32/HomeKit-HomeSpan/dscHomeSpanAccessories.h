@@ -230,36 +230,122 @@ struct dscPartition : Service::SecuritySystem {
 
 // Zones are defined as Contact Sensor accessories
 struct dscZone : Service::ContactSensor {
-  byte zoneGroup, zoneBit;
+  byte zone, zoneGroup, zoneBit;
   SpanCharacteristic *zoneState;
-  dscZone(byte zone) : Service::ContactSensor() {
+  dscZone(byte zoneNumber) : Service::ContactSensor() {
+    zone = zoneNumber;
     zoneGroup = (zone - 1) / 8;
     zoneBit = (zone - 1) - (zoneGroup * 8);
     bitWrite(configuredZones[zoneGroup], zoneBit, 1);  // Sets a zone as being configured
     zoneState = new Characteristic::ContactSensorState(0);
   }
 
-  // Checks for zone status changes to send to HomeKit
+  // This method is called by HomeKit everytime homeSpan.poll() is called, normally in your program's main loop();
   void loop() {
-    if (updateZones) {
-      updateZones = false;
-      
-      if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {   // Checks an individual open zone status flag
-        bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);   // Resets the individual open zone status flag
-        
-        if (bitRead(dsc.openZones[zoneGroup], zoneBit)) zoneState->setVal(1);  // Set zone status open
-        else zoneState->setVal(0);  // Set zone status closed
-      }
+    if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
+      bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
 
-      // Checks if additional configured zones have changed
-      for (byte checkZoneGroup = 0; checkZoneGroup < dscZones; checkZoneGroup++) {
-        for (byte checkZoneBit = 0; checkZoneBit < 8; checkZoneBit++) {
-          if (bitRead(configuredZones[checkZoneGroup], checkZoneBit) && bitRead(dsc.openZonesChanged[checkZoneGroup], checkZoneBit)) {   // Checks if additional zones have changed
-            updateZones = true;  // Sets a flag to continue processing remaining changed zones that are configured
-          }
-        }
-      }
-    } 
+      // Sets the new zone value.
+      // DSC set the zone to closed (0) which maps to HMCharacteristicValueContactState.detected (0)
+      // and opens the zone (1) which maps to HMCharacteristicValueContactState.none (1)
+      zoneState->setVal(bitRead(dsc.openZones[zoneGroup], zoneBit));
+      
+      // And printing the info, for now.
+      Serial.print("Zone ");
+      Serial.print(zone);
+      Serial.println(zoneState->getVal() ? " open. (No contact)" : " closed. (Contact detected)");
+    }
+  }
+};
+
+// Motion are defined as Motion Sensor accessories
+struct dscMotion : Service::MotionSensor {
+  byte zone, zoneGroup, zoneBit;
+  SpanCharacteristic *motionState;
+  
+  dscMotion(byte zoneNumber) : Service::MotionSensor() {
+    zone = zoneNumber;
+    zoneGroup = (zone - 1) / 8;
+    zoneBit = (zone - 1) - (zoneGroup * 8);
+    bitWrite(configuredZones[zoneGroup], zoneBit, 1);  // Sets a zone as being configured
+    motionState = new Characteristic::MotionDetected(false);
+  }
+
+  // This method is called by HomeKit everytime homeSpan.poll() is called, normally in your program's main loop();
+  void loop() {
+
+    if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {   // Checks an individual open zone status flag
+      bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);   // Resets the individual open zone status flag
+      
+      motionState->setVal(bitRead(dsc.openZones[zoneGroup], zoneBit));
+
+      Serial.print("Zone ");
+      Serial.print(zone);
+      Serial.println(motionState->getVal() ? " open. (Motion detected)" : " closed. (No motion)");
+    }
+
+  }
+
+};
+
+// Door are defined as Contact Sensor accessories
+struct dscDoor : Service::ContactSensor {
+  byte zone, zoneGroup, zoneBit;
+  SpanCharacteristic *doorState;
+  dscDoor(byte zoneNumber) : Service::ContactSensor() {
+    zone = zoneNumber;
+    zoneGroup = (zone - 1) / 8;
+    zoneBit = (zone - 1) - (zoneGroup * 8);
+    bitWrite(configuredZones[zoneGroup], zoneBit, 1);  // Sets a zone as being configured
+    doorState = new Characteristic::ContactSensorState(0); // maps to HMCharacteristicValueContactState.detected = 0
+    
+  }
+
+  // This method is called by HomeKit everytime homeSpan.poll() is called, normally in your program's main loop();
+  void loop() {
+    if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
+      bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
+
+      // Sets the new door state value based on the zone value.
+      // DSC opens (1) the zone when there is no contact, which maps to HMCharacteristicValueContactState.none (0)
+      //  and closes (0) the zone when there is a contact, which maps to HMCharacteristicValueContactState.detected (1)
+      doorState->setVal(bitRead(dsc.openZones[zoneGroup], zoneBit));
+      
+      // And printing the info, for now.
+      Serial.print("Zone ");
+      Serial.print(zone);
+      Serial.println(doorState->getVal() ? " open. (Door open)" : " closed. (Door closed)");
+    }
+  }
+};
+
+// Water sensors are defined as LeakSensors
+struct dscLeak : Service::LeakSensor {
+  byte zone, zoneGroup, zoneBit;
+  SpanCharacteristic *leakState;
+  dscLeak(byte zoneNumber) : Service::LeakSensor() {
+    zoneNumber = zone;
+    zoneGroup = (zone - 1) / 8;
+    zoneBit = (zone - 1) - (zoneGroup * 8);
+    bitWrite(configuredZones[zoneGroup], zoneBit, 1);  // Sets a zone as being configured
+    leakState = new Characteristic::LeakDetected(0); // maps to HMCharacteristicValueLeakStatus.none (0)
+    
+  }
+
+  // This method is called by HomeKit everytime homeSpan.poll() is called, normally in your program's main loop();
+  void loop() {
+    if (bitRead(dsc.openZonesChanged[zoneGroup], zoneBit)) {  // Checks an individual open zone status flag
+      bitWrite(dsc.openZonesChanged[zoneGroup], zoneBit, 0);  // Resets the individual open zone status flag
+      
+      // DSC opens (1) the zone on a leak, which maps to HMCharacteristicValueLeakStatus.detected (1)
+      //  and closes (0) the zone by default, which maps to HMCharacteristicValueLeakStatus.none (0)
+      leakState->setVal(bitRead(dsc.openZones[zoneGroup], zoneBit));
+      
+      // And printing the info, for now.
+      Serial.print("Zone ");
+      Serial.print(zone);
+      Serial.println(leakState->getVal() ? " open. (Leak detected)" : " closed. (No leak)");
+    }
   }
 };
 
@@ -277,7 +363,7 @@ struct dscFire : Service::SmokeSensor {
   void loop() {
     if (updateSmokeSensors) {
       updateSmokeSensors = false;
-      
+
       dsc.fireChanged[partition] = false;  // Resets the fire status flag
 
       if (dsc.fire[partition]) fireState->setVal(1);  // Fire alarm tripped
