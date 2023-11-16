@@ -109,11 +109,11 @@ class dscKeybusInterface {
     bool ready[dscPartitions], readyChanged[dscPartitions];
     bool disabled[dscPartitions], disabledChanged[dscPartitions];
     bool armed[dscPartitions], armedAway[dscPartitions], armedStay[dscPartitions];
-    bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];
-    bool alarm[dscPartitions], alarmChanged[dscPartitions];
-    bool exitDelay[dscPartitions], exitDelayChanged[dscPartitions];
-    byte exitState[dscPartitions], exitStateChanged[dscPartitions];
-    bool entryDelay[dscPartitions], entryDelayChanged[dscPartitions];
+    bool noEntryDelay[dscPartitions], armedChanged[dscPartitions];    // noEntryDelay = armed Night
+    bool alarm[dscPartitions], alarmChanged[dscPartitions];           // Is alarm triggered for partition?
+    bool exitDelay[dscPartitions], exitDelayChanged[dscPartitions];   // Is Exit Delay in progress?
+    byte exitState[dscPartitions], exitStateChanged[dscPartitions];   // Exit Delay Target State
+    bool entryDelay[dscPartitions], entryDelayChanged[dscPartitions]; // Is Entry Delay in progress?
     bool fire[dscPartitions], fireChanged[dscPartitions];
     bool openZonesStatusChanged;
     byte openZones[dscZones], openZonesChanged[dscZones];    // Zone status is stored in an array using 1 bit per zone, up to 64 zones

@@ -39,10 +39,15 @@ void dscKeybusInterface::resetStatus() {
   batteryChanged = true;
   for (byte partition = 0; partition < dscPartitions; partition++) {
     readyChanged[partition] = true;
+    disabledChanged[partition] = true;
     armedChanged[partition] = true;
     alarmChanged[partition] = true;
+    exitDelayChanged[partition] = true;
+    exitStateChanged[partition] = true;
+    entryDelayChanged[partition] = true;
     fireChanged[partition] = true;
     disabled[partition] = true;
+    noEntryDelay[partition] = false;
   }
   openZonesStatusChanged = true;
   alarmZonesStatusChanged = true;
@@ -50,6 +55,7 @@ void dscKeybusInterface::resetStatus() {
     openZonesChanged[zoneGroup] = 0xFF;
     alarmZonesChanged[zoneGroup] = 0xFF;
   }
+  pgmOutputsStatusChanged = true;
   pgmOutputsChanged[0] = 0xFF;
   pgmOutputsChanged[1] = 0x3F;
 }
