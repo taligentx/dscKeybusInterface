@@ -12,9 +12,8 @@
  *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
  *              when used with recent versions of Safari on macOS and iOS.
  *
- *    2. Install ESP8266FS to enable uploading web server files to the esp8266:
- *         https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#uploading-files-to-file-system
- *
+ *    2. Install LittleFS_esp32 to enable uploading web server files to the esp8266:
+ *        https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#littlefs-file-system-limitations
  *    3. Install the following libraries, available in the Arduino IDE Library Manager and
  *       the Platform.io Library Registry:
  *         ArduinoJson: https://github.com/bblanchon/ArduinoJson
@@ -26,7 +25,7 @@
  *    6. Set the esp8266 flash size to use at least 1MB for the filesystem.
  *         Arduino IDE: Tools > Flash Size > 4MB (FS:1MB ...)
  *    7. Upload the sketch.
- *    8. Upload the SPIFFS data containing the web server files:
+ *    8. Upload the Files in data trough 'ESP8266 LittleFS Data Upload' containing the web server files:
  *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
  *    9. Access the virtual keypad web interface by the IP address displayed through
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
@@ -92,8 +91,14 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
 #include <FS.h>
+#include "LittleFS.h"
 #include <ArduinoJson.h>
 #include <Chrono.h>
+
+
+// Enable http auth
+//#define HTTP_USER "user"
+//#define HTTP_PASS "pass"
 
 // Settings
 const char* wifiSSID = "";
@@ -146,10 +151,14 @@ void setup() {
     }
   }
 
-  SPIFFS.begin();
+  LittleFS.begin();
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
-  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+#if defined(HTTP_USER) && defined(HTTP_PASS)
+  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html").setAuthentication(HTTP_USER, HTTP_PASS);
+#else
+  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+#endif
   server.begin();
   MDNS.addService("http", "tcp", 80);
   Serial.print(F("Web server started: http://"));
