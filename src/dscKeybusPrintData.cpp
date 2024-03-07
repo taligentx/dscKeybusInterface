@@ -288,11 +288,11 @@ void dscKeybusReaderInterface::printPanelMessages(byte panelByte) {
     case 0xE7: stream->print(F("Input: 3 digits")); decimalInput = true; break;
     case 0xE8: stream->print(F("Input: 4 digits")); break;
     case 0xE9: stream->print(F("Input: 5 digits")); break;
-    case 0xEA: stream->print(F("Input HEX: 2 digits")); break;
+    case 0xEA: stream->print(F("Input HEX: 2 digits")); optionInput = false; break;
     case 0xEB: stream->print(F("Input HEX: 4 digits")); break;
     case 0xEC: stream->print(F("Input HEX: 6 digits")); break;
     case 0xED: stream->print(F("Input HEX: 32 digits")); break;
-    case 0xEE: stream->print(F("Input: 1 option per zone")); break;
+    case 0xEE: stream->print(F("Input: 1 option per zone")); optionInput = true; break;
     case 0xEF: stream->print(F("Module supervision field")); break;
     case 0xF0: stream->print(F("Function key 1")); break;
     case 0xF1: stream->print(F("Function key 2")); break;
@@ -807,6 +807,8 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
     case 0x0A: stream->print(F("PC5204: Supervisory trouble")); return;
     case 0x17: stream->print(F("Zone expander restored: 7")); return;
     case 0x18: stream->print(F("Zone expander trouble: 7")); return;
+    // 0x1B - 0x1E: PC5200: Supervisory restored, slots 1-4
+    // 0x1F - 0x22: PC5200: Supervisory trouble, slots 1-4
     // 0x25 - 0x2C: Keypad tamper restored, slots 1-8
     // 0x2D - 0x34: Keypad tamper, slots 1-8
     // 0x35 - 0x3A: Module tamper restored, slots 9-14
@@ -819,6 +821,8 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
     case 0x46: stream->print(F("PC5204: Tamper")); return;
     case 0x51: stream->print(F("Zone expander tamper restored: 7")); return;
     case 0x52: stream->print(F("Zone expander tamper: 7")); return;
+    // 0x53 - 0x56: PC5200 Tamper restore, slots 1-4
+    // 0x57 - 0x5A: PC5200 Tamper, slots 1-4
     case 0xB3: stream->print(F("PC5204: Battery restored")); return;
     case 0xB4: stream->print(F("PC5204: Battery trouble")); return;
     case 0xB5: stream->print(F("PC5204: Aux supply restored")); return;
@@ -834,6 +838,24 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
   if (panelData[panelByte] <= 0x04) {
     stream->print(F("Zone expander trouble: "));
     printNumberOffset(panelByte, 2);
+    return;
+  }
+
+  /*
+   *  PC5200 Supervisory restored: 1-4
+   */
+  if (panelData[panelByte] >= 0x1B && panelData[panelByte] <= 0x1E) {
+    stream->print(F("PC5200 Supervisory restored: "));
+    printNumberOffset(panelByte, -0x1A);
+    return;
+  }
+
+  /*
+   *  PC5200 Supervisory trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0x1F && panelData[panelByte] <= 0x22) {
+    stream->print(F("PC5200 Supervisory trouble: "));
+    printNumberOffset(panelByte, -0x1E);
     return;
   }
 
@@ -882,6 +904,24 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
   if (panelData[panelByte] >= 0x3B && panelData[panelByte] <= 0x40) {
     stream->print(F("Zone expander tamper: "));
     printNumberOffset(panelByte, -58);
+    return;
+  }
+
+  /*
+   *  PC5200 tamper restore: 1-4
+   */
+  if (panelData[panelByte] >= 0x53 && panelData[panelByte] <= 0x56) {
+    stream->print(F("PC5200: Tamper restore: "));
+    printNumberOffset(panelByte, -0x52);
+    return;
+  }
+
+  /*
+   *  PC5200 tamper: 1-4
+   */
+  if (panelData[panelByte] >= 0x57 && panelData[panelByte] <= 0x5A) {
+    stream->print(F("PC5200: Tamper: "));
+    printNumberOffset(panelByte, -0x56);
     return;
   }
 
@@ -986,10 +1026,115 @@ void dscKeybusReaderInterface::printPanelStatus5(byte panelByte) {
  */
 void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   switch (panelData[panelByte]) {
+    // 0x40 - 0x5F: Zone fault restored, zones 33-64
+    // 0x60 - 0x7F: Zone fault, zones 33-64
+    // 0x80 - 0x9F: Zone bypassed, zones 33-64
+    // 0xA0 - 0xA3: PC5200 AC restore, slots 1-4
+    // 0xA4 - 0xA7: PC5200 AC trouble, slots 1-4
+    // 0xA8 - 0xAB: PC5200 Battery restore, slots 1-4
+    // 0xAC - 0xAF: PC5200 Battery trouble, slots 1-4
+    // 0xB0 - 0xB3: PC5200 AUX PTC restore, slots 1-4
+    // 0xB4 - 0xB7: PC5200 AUX PTC trouble, slots 1-4
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
     case 0xC4: stream->print(F("TLink receiver trouble")); return;
     case 0xC5: stream->print(F("TLink receiver restored")); return;
+  }
+
+  /*
+   *  Zone fault restored, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 11111111 10001000 [0xEB] 2021.05.22 00:13 | Zone fault restored: 64
+   *  11101100 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 00001001 10010011 [0xEC] Event: 009 | 2021.05.22 00:13 | Zone fault restored: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x40 && panelData[panelByte] <= 0x5F) {
+    stream->print(F("Zone fault restored: "));
+    printNumberOffset(panelByte, -31);
+    return;
+  }
+
+  /*
+   *  Zone fault, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 11111111 10011000 [0xEB] 2021.05.22 00:09 | Zone fault: 64
+   *  11101100 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 00001011 10100101 [0xEC] Event: 011 | 2021.05.22 00:09 | Zone fault: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x60 && panelData[panelByte] <= 0x7F) {
+    stream->print(F("Zone fault: "));
+    printNumberOffset(panelByte, -63);
+    return;
+  }
+
+  /*
+   *  Zones bypassed, zones 33-64
+   *
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  11101011 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00000000 10101110 [0xEB] 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
+   *  11101100 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00010011 11000010 [0xEC] Event: 019 | 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
+   *  Byte 0   1    2        3        4        5        6        7        8        9        10
+   */
+  if (panelData[panelByte] >= 0x80 && panelData[panelByte] <= 0x9F) {
+    stream->print(F("Zone bypassed: "));
+    printNumberOffset(panelByte, -95);
+    return;
+  }
+
+  /*
+   *  PC5200 AC restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xA0 && panelData[panelByte] <= 0xA3) {
+    stream->print(F("PC5200: AC restore: "));
+    printNumberOffset(panelByte, -0x9F);
+    return;
+  }
+
+  /*
+   *  PC5200 AC trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xA4 && panelData[panelByte] <= 0xA7) {
+    stream->print(F("PC5200: AC trouble: "));
+    printNumberOffset(panelByte, -0xA3);
+    return;
+  }
+
+  /*
+   *  PC5200 Battery restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xA8 && panelData[panelByte] <= 0xAB) {
+    stream->print(F("PC5200: Battery restore: "));
+    printNumberOffset(panelByte, -0xA7);
+    return;
+  }
+
+  /*
+   *  PC5200 Battery trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xAC && panelData[panelByte] <= 0xAF) {
+    stream->print(F("PC5200: Battery trouble: "));
+    printNumberOffset(panelByte, -0xAB);
+    return;
+  }
+  
+  /*
+   *  PC5200 ATX output PTC protection restore: 1-4
+   */
+  if (panelData[panelByte] >= 0xB0 && panelData[panelByte] <= 0xB3) {
+    stream->print(F("PC5200: AUX PTC restore: "));
+    printNumberOffset(panelByte, -0xAF);
+    return;
+  }
+  
+  /*
+   *  PC5200 AUX output PTC protection trouble: 1-4
+   */
+  if (panelData[panelByte] >= 0xB4 && panelData[panelByte] <= 0xB7) {
+    stream->print(F("PC5200: AUX PTC trouble: "));
+    printNumberOffset(panelByte, -0xB3);
+    return;
   }
 
   printUnknownData();
@@ -1010,6 +1155,7 @@ void dscKeybusReaderInterface::printPanelStatus16(byte panelByte) {
     case 0x80: stream->print(F("Trouble acknowledged")); return;
     case 0x81: stream->print(F("RF delinquency trouble")); return;
     case 0x82: stream->print(F("RF delinquency restore")); return;
+    case 0x83: stream->print(F("Auto-Disarm")); return;
   }
 
   printUnknownData();
@@ -1708,7 +1854,7 @@ void dscKeybusReaderInterface::printPanel_0x6E() {
     if (panelData[2] <= 0x09) stream->print("0");
     stream->print(panelData[2], DEC);
   }
-  else  {
+  else {
     for (byte panelByte = 2; panelByte <= 5; panelByte ++) {
       stream->print(panelData[panelByte] >> 4, HEX);
       stream->print(panelData[panelByte] & 0x0F, HEX);
@@ -1865,19 +2011,23 @@ void dscKeybusReaderInterface::printPanel_0x87() {
 
 
 /*
- *  0x8D: Module programming entry, User code programming key response, codes 17-32
+ *  0x8D: After module programming entry and after user code 17-32 programming
  *  Note: Wireless keys 1-16 are assigned to user codes 17-32
  *  CRC: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Byte 2: Unknown
- *  Byte 3: Unknown
- *  Byte 4: Unknown
- *  Byte 5: Unknown
- *  Byte 6: Unknown
- *  Byte 7: Unknown
- *  Byte 8: Unknown
+ *  Byte 2: Module which entered data
+ *  Byte 3: Module section from which data is requested
+ *  Byte 4: 0x01 when device placement test, 0x02 when HEX data is contained on bytes 5-7
+ *  Byte 5 bits 0-7: Options 1-8
+ *  Byte 5 bits 0-3: HEX Digit 2
+ *  Byte 5 bits 4-7: HEX Digit 1
+ *  Byte 6 bits 0-3: HEX Digit 4
+ *  Byte 6 bits 4-7: HEX Digit 3
+ *  Byte 7 bits 0-3: HEX Digit 6
+ *  Byte 7 bits 4-7: HEX Digit 5
+ *  Byte 8: Unknown, always 0xFF
  *  Byte 9: CRC
  *
  *  Command                                                                     CRC
@@ -1889,39 +2039,364 @@ void dscKeybusReaderInterface::printPanel_0x87() {
  *  10001101 0 00110001 00100101 00000000 00001001 11111111 11111111 11111111 11101001 [0x8D] User code programming key response  // Code 29 Key 0
  *  10001101 0 00110001 00100101 00000000 00000001 11111111 11111111 11111111 11100001 [0x8D] User code programming key response  // Code 29 Key 1
  *  10001101 0 00110001 00110000 00000000 00000000 11111111 11111111 11111111 11101011 [0x8D] User code programming key response  // Message after 4th key entered
- *  10001101 0 00010001 01000001 00000001 00000111 01010101 11111111 11111111 00111010 [0x8D] Wls programming key response	  // Before WLS zone 4 placement test
- *  10001101 0 00010001 01000001 00000001 00001001 01010101 11111111 11111111 00111100 [0x8D] Wls programming key response	  // Before WLS zone 5 placement test
- *  10001101 0 00010001 01000001 00000001 00001011 01010101 11111111 11111111 00111110 [0x8D] Wls programming key response	  // Before WLS zone 6 placement test
- *  10001101 0 00010001 01000001 00000001 00001101 01010101 11111111 11111111 01000000 [0x8D] Wls programming key response   	  // Before WLS zone 7 placement test
- *  10001101 0 00010001 01000001 00000001 00100001 01010101 11111111 11111111 01010100 [0x8D] Wls programming key response	  // Before WLS zone 17 placement test
- *  10001101 0 00010001 01000001 00000001 00111111 01010101 11111111 11111111 01110010 [0x8D] Wls programming key response	  // Before WLS zone 32 placement test
- *  10001101 0 00010001 01000001 00000001 01111111 01010101 11111111 11111111 10110010 [0x8D] Wls programming key response	  // Before WLS zone 64 placement test
- *  10001101 0 00010001 01000011 00000000 00000001 11111111 11111111 11111111 11011111 [0x8D] Wls programming key response	  // Location is good, same for all zones
- *  10001101 0 00010001 01000001 00000001 11111111 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Wireless zone is not-assigned
- *  10001101 0 00010001 10100100 00000000 00000011 11111111 11111111 11111111 01000010 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 1
- *  10001101 0 00010001 10100101 00000000 00000100 11111111 11111111 11111111 01000100 [0x8D] Wls programming key response	  // Enter 04 for [804][61] function 2
- *  10001101 0 00010001 10100101 00000000 00000011 11111111 11111111 11111111 01000011 [0x8D] Wls programming key response	  // Enter 03 for [804][61] function 2
- *  10001101 0 00010001 10101000 00000000 00000011 11111111 11111111 11111111 01000110 [0x8D] Wls programming key response	  // Enter 03 for [804][62] function 1
- *  10001101 0 00010001 10101001 00000000 00000100 11111111 11111111 11111111 01001000 [0x8D] Wls programming key response	  // Enter 04 for [804][62] function 2
- *  10001101 0 00010001 11000000 00000000 00000011 11111111 11111111 11111111 01011110 [0x8D] Wls programming key response	  // Enter 03 for [804][68] function 1
- *  10001101 0 00010001 11000011 00000000 00110000 11111111 11111111 11111111 10001110 [0x8D] Wls programming key response	  // Enter 30 for [804][68] function 4
- *  10001101 0 00010001 00111000 00000000 00010000 11111111 11111111 11111111 11100011 [0x8D] Wls programming key response	  // Enter 10 for [804][81] Wls supervisory window
- *  10001101 0 00010001 00111000 00000000 10010110 11111111 11111111 11111111 01101001 [0x8D] Wls programming key response	  // Enter 96 for [804][81] Wls supervisory window
- *  10001101 0 00010001 11000100 00000000 00000001 11111111 11111111 11111111 01100000 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 1 partition assigment
- *  10001101 0 00010001 11000101 00000000 00000001 11111111 11111111 11111111 01100001 [0x8D] Wls programming key response	  // Enter 01 for [804][69] Keyfob 2 partition assigment
- *  10001101 0 00010001 11000110 00000000 00000010 11111111 11111111 11111111 01100011 [0x8D] Wls programming key response	  // Enter 02 for [804][69] Keyfob 3 partition assigment
- *  10001101 0 00010001 11010100 00000000 11111111 11111111 11111111 11111111 01101110 [0x8D] Wls programming key response	  // All 1-8 enabled in [804][82] supervision options
- *  10001101 0 00010001 11010100 00000000 11110000 11111111 11111111 11111111 01011111 [0x8D] Wls programming key response	  // 5-8 zones enabled in [804][82] supervisiory options
- *  10001101 0 00010001 11010101 00000000 00001111 11111111 11111111 11111111 01111111 [0x8D] Wls programming key response	  // 1-4 zones enabled in [804][83] supervisiory options
- *  10001101 0 00010001 11010111 00000000 01111111 11111111 11111111 11111111 11110001 [0x8D] Wls programming key response	  // 1-7 zones enabled in [804][85] supervisiory options
- *  10001101 0 00010001 00111010 00000000 01000000 11111111 11111111 11111111 00010101 [0x8D] Wls programming key response	  // Only option 7 enabled in [804][90] options
- *  10001101 0 00010001 00111001 00000000 00001000 11111111 11111111 11111111 11011100 [0x8D] Wls programming key response	  // Set RF jamming zone 08 in [804][93] subsection
- *  10001101 0 00010001 00111001 00000000 00000111 11111111 11111111 11111111 11011011 [0x8D] Wls programming key response	  // Set RF jamming zone 07 in [804][93] subsection
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
 void dscKeybusReaderInterface::printPanel_0x8D() {
   stream->print(F("Module programming entry: "));
-  printModuleProgramming(panelData[2], panelData[3]);
+  #if !defined(__AVR__)  // Excludes Arduino/AVR to conserve storage space
+  switch (panelData[2]) {
+    case 0x11: {
+      stream->print(F("RF5132 | "));
+      if (panelData[4] != 0x02 && panelData[6] == 0xFF && panelData[7] == 0xFF) { // Doesn't contain HEX data
+        switch (panelData[3]) {
+          case 0x01: stream->print(F("Zone 1-8 device supervision options")); optionInput = true; break; // v3
+          case 0x02: stream->print(F("Zone 9-16 device supervision options")); optionInput = true; break;
+          case 0x03: stream->print(F("Zone 17-24 device supervision options")); optionInput = true; break;
+          case 0x04: stream->print(F("Zone 25-32 device supervision options")); optionInput = true; break;
+          case 0x05: stream->print(F("Wireless keys 1-8 partition assignment")); optionInput = true; break;
+          case 0x06: stream->print(F("Wireless keys 9-16 partition assignment")); optionInput = true; break;
+          case 0x07: stream->print(F("General options")); optionInput = true; break;
+          case 0x10: stream->print(F("Partition 1 Wireless key function 1")); break;
+          case 0x11: stream->print(F("Partition 1 Wireless key function 2")); break;
+          case 0x12: stream->print(F("Partition 1 Wireless key function 3")); break;
+          case 0x13: stream->print(F("Partition 1 Wireless key function 4")); break;
+          case 0x14: stream->print(F("Partition 2 Wireless key function 1")); break;
+          case 0x15: stream->print(F("Partition 2 Wireless key function 2")); break;
+          case 0x16: stream->print(F("Partition 2 Wireless key function 3")); break;
+          case 0x17: stream->print(F("Partition 2 Wireless key function 4")); break;
+          case 0x38: stream->print(F("Wireless supervisory window")); break; //v5
+          case 0x39: stream->print(F("RF jamming zone")); break;
+          case 0x3A: stream->print(F("General options")); optionInput = true; break;
+          // case 0x40: PC5132 v3.14 section [804][80], default data is 30, nothing in manual about it
+          case 0x41: stream->print(F("Zone placement test over")); break;
+          case 0x43: stream->print(F("Location signal strenght ")); break;
+          case 0x44: stream->print(F("Wireless supervisory window")); break; //v3.x
+          case 0xA4: stream->print(F("Partition 1/Keyfob 1 function key 1")); break; //v5.0 Partition function key, v5.1 Keyfob function key
+          case 0xA5: stream->print(F("Partition 1/Keyfob 1 function key 2")); break;
+          case 0xA6: stream->print(F("Partition 1/Keyfob 1 function key 3")); break;
+          case 0xA7: stream->print(F("Partition 1/Keyfob 1 function key 4")); break;
+          case 0xA8: stream->print(F("Partition 2/Keyfob 2 function key 1")); break;
+          case 0xA9: stream->print(F("Partition 2/Keyfob 2 function key 2")); break;
+          case 0xAA: stream->print(F("Partition 2/Keyfob 2 function key 3")); break;
+          case 0xAB: stream->print(F("Partition 2/Keyfob 2 function key 4")); break;
+          case 0xAC: stream->print(F("Partition 3/Keyfob 3 function key 1")); break;
+          case 0xAD: stream->print(F("Partition 3/Keyfob 3 function key 2")); break;
+          case 0xAE: stream->print(F("Partition 3/Keyfob 3 function key 3")); break;
+          case 0xAF: stream->print(F("Partition 3/Keyfob 3 function key 4")); break;
+          case 0xB0: stream->print(F("Partition 4/Keyfob 4 function key 1")); break;
+          case 0xB1: stream->print(F("Partition 4/Keyfob 4 function key 2")); break;
+          case 0xB2: stream->print(F("Partition 4/Keyfob 4 function key 3")); break;
+          case 0xB3: stream->print(F("Partition 4/Keyfob 4 function key 4")); break;
+          case 0xB4: stream->print(F("Partition 5/Keyfob 5 function key 1")); break;
+          case 0xB5: stream->print(F("Partition 5/Keyfob 5 function key 2")); break;
+          case 0xB6: stream->print(F("Partition 5/Keyfob 5 function key 3")); break;
+          case 0xB7: stream->print(F("Partition 5/Keyfob 5 function key 4")); break;
+          case 0xB8: stream->print(F("Partition 6/Keyfob 6 function key 1")); break;
+          case 0xB9: stream->print(F("Partition 6/Keyfob 6 function key 2")); break;
+          case 0xBA: stream->print(F("Partition 6/Keyfob 6 function key 3")); break;
+          case 0xBB: stream->print(F("Partition 6/Keyfob 6 function key 4")); break;
+          case 0xBC: stream->print(F("Partition 7/Keyfob 7 function key 1")); break;
+          case 0xBD: stream->print(F("Partition 7/Keyfob 7 function key 2")); break;
+          case 0xBE: stream->print(F("Partition 7/Keyfob 7 function key 3")); break;
+          case 0xBF: stream->print(F("Partition 7/Keyfob 7 function key 4")); break;
+          case 0xC0: stream->print(F("Partition 8/Keyfob 8 function key 1")); break;
+          case 0xC1: stream->print(F("Partition 8/Keyfob 8 function key 2")); break;
+          case 0xC2: stream->print(F("Partition 8/Keyfob 8 function key 3")); break;
+          case 0xC3: stream->print(F("Partition 8/Keyfob 8 function key 4")); break;
+          case 0xC4: stream->print(F("Partition assignment keyfob 1/Keyfob 9 function key 1")); break; //v5.0 partition assignment, v5.1 Keyfob function key
+          case 0xC5: stream->print(F("Partition assignment keyfob 2/Keyfob 9 function key 2")); break;
+          case 0xC6: stream->print(F("Partition assignment keyfob 3/Keyfob 9 function key 3")); break;
+          case 0xC7: stream->print(F("Partition assignment keyfob 4/Keyfob 9 function key 4")); break;
+          case 0xC8: stream->print(F("Partition assignment keyfob 5/Keyfob 10 function key 1")); break;
+          case 0xC9: stream->print(F("Partition assignment keyfob 6/Keyfob 10 function key 2")); break;
+          case 0xCA: stream->print(F("Partition assignment keyfob 7/Keyfob 10 function key 3")); break;
+          case 0xCB: stream->print(F("Partition assignment keyfob 8/Keyfob 10 function key 4")); break;
+          case 0xCC: stream->print(F("Partition assignment keyfob 9/Keyfob 11 function key 1")); break;
+          case 0xCD: stream->print(F("Partition assignment keyfob 10/Keyfob 11 function key 2")); break;
+          case 0xCE: stream->print(F("Partition assignment keyfob 11/Keyfob 11 function key 3")); break;
+          case 0xCF: stream->print(F("Partition assignment keyfob 12/Keyfob 11 function key 4")); break;
+          case 0xD0: stream->print(F("Partition assignment keyfob 13/Keyfob 12 function key 1")); break;
+          case 0xD1: stream->print(F("Partition assignment keyfob 14/Keyfob 12 function key 2")); break;
+          case 0xD2: stream->print(F("Partition assignment keyfob 15/Keyfob 12 function key 3")); break;
+          case 0xD3: stream->print(F("Partition assignment keyfob 16/Keyfob 12 function key 4")); break;
+          case 0xD4:
+                     if (optionInput) stream->print(F("Zone 1-8 supervision")); //v5.0
+                     else stream->print(F("Wireless key 13 function key 1"));   //v5.1
+                     break;
+          case 0xD5:
+                     if (optionInput) stream->print(F("Zone 9-16 supervision"));
+                     else stream->print(F("Wireless key 13 function key 2"));
+                     break;
+          case 0xD6:
+                     if (optionInput) stream->print(F("Zone 17-24 supervision"));
+                     else stream->print(F("Wireless key 13 function key 3"));
+                     break;
+          case 0xD7:
+                     if (optionInput) stream->print(F("Zone 25-32 supervision"));
+                     else stream->print(F("Wireless key 13 function key 4"));
+                     break;
+          case 0xD8: stream->print(F("Wireless key 14 function key 1")); break;
+          case 0xD9: stream->print(F("Wireless key 14 function key 2")); break;
+          case 0xDA: stream->print(F("Wireless key 14 function key 3")); break;
+          case 0xDB: stream->print(F("Wireless key 14 function key 4")); break;
+          case 0xDC: stream->print(F("Wireless key 15 function key 1")); break;
+          case 0xDD: stream->print(F("Wireless key 15 function key 2")); break;
+          case 0xDE: stream->print(F("Wireless key 15 function key 3")); break;
+          case 0xDF: stream->print(F("Wireless key 15 function key 4")); break;
+          case 0xE0: stream->print(F("Wireless key 16 function key 1")); break;
+          case 0xE1: stream->print(F("Wireless key 16 function key 2")); break;
+          case 0xE2: stream->print(F("Wireless key 16 function key 3")); break;
+          case 0xE3: stream->print(F("Wireless key 16 function key 4")); break;
+          case 0xE4: stream->print(F("Wireless key 1 partition assignment")); break;
+          case 0xE5: stream->print(F("Wireless key 2 partition assignment")); break;
+          case 0xE6: stream->print(F("Wireless key 3 partition assignment")); break;
+          case 0xE7: stream->print(F("Wireless key 4 partition assignment")); break;
+          case 0xE8: stream->print(F("Wireless key 5 partition assignment")); break;
+          case 0xE9: stream->print(F("Wireless key 6 partition assignment")); break;
+          case 0xEA: stream->print(F("Wireless key 7 partition assignment")); break;
+          case 0xEB: stream->print(F("Wireless key 8 partition assignment")); break;
+          case 0xEC: stream->print(F("Wireless key 9 partition assignment")); break;
+          case 0xED: stream->print(F("Wireless key 10 partition assignment")); break;
+          case 0xEE: stream->print(F("Wireless key 11 partition assignment")); break;
+          case 0xEF: stream->print(F("Wireless key 12 partition assignment")); break;
+          case 0xF0: stream->print(F("Wireless key 13 partition assignment")); break;
+          case 0xF1: stream->print(F("Wireless key 14 partition assignment")); break;
+          case 0xF2: stream->print(F("Wireless key 15 partition assignment")); break;
+          case 0xF3: stream->print(F("Wireless key 16 partition assignment")); break;
+          case 0xF4: stream->print(F("Zone 1-8 device supervision options")); optionInput = true; break;
+          case 0xF5: stream->print(F("Zone 9-16 device supervision options")); optionInput = true; break;
+          case 0xF6: stream->print(F("Zone 17-24 device supervision options")); optionInput = true; break;
+          case 0xF7: stream->print(F("Zone 25-32 device supervision options")); optionInput = true; break;
+          default: stream->print("Unknown data");
+        }
+      }
+      else { // Bytes 5-7 contains HEX data
+        switch (panelData[3]) {
+          case 0x02: stream->print(F("Keyfob 1 ESN")); break; //v5
+          case 0x05: stream->print(F("Keyfob 2 ESN")); break;
+          case 0x08: stream->print(F("Keyfob 3 ESN")); break;
+          case 0x0B: stream->print(F("Keyfob 4 ESN")); break;
+          case 0x0E: stream->print(F("Keyfob 5 ESN")); break;
+          case 0x11: stream->print(F("Keyfob 6 ESN")); break;
+          case 0x14: stream->print(F("Keyfob 7 ESN")); break;
+          case 0x17: stream->print(F("Keyfob 8 ESN")); break;
+          case 0x1A: stream->print(F("Keyfob 9 ESN")); break;
+          case 0x1D: stream->print(F("Keyfob 10 ESN")); break;
+          case 0x20: stream->print(F("Keyfob 11 ESN")); break;
+          case 0x23: stream->print(F("Keyfob 12 ESN")); break;
+          case 0x26: stream->print(F("Keyfob 13 ESN")); break;
+          case 0x29: stream->print(F("Keyfob 14 ESN")); break;
+          case 0x2C: stream->print(F("Keyfob 15 ESN")); break;
+          case 0x2F: stream->print(F("Keyfob 16 ESN")); break;
+          case 0x41: stream->print(F("Zone placement test")); break;
+          case 0x44: stream->print(F("Zone 1 ESN")); break; //v5
+          case 0x45: stream->print(F("Zone 1 ESN")); break; //v3
+          case 0x47: stream->print(F("Zone 2 ESN")); break;
+          case 0x48: stream->print(F("Zone 2 ESN")); break;
+          case 0x4A: stream->print(F("Zone 3 ESN")); break;
+          case 0x4B: stream->print(F("Zone 3 ESN")); break;
+          case 0x4D: stream->print(F("Zone 4 ESN")); break;
+          case 0x4E: stream->print(F("Zone 4 ESN")); break;
+          case 0x50: stream->print(F("Zone 5 ESN")); break;
+          case 0x51: stream->print(F("Zone 5 ESN")); break;
+          case 0x53: stream->print(F("Zone 6 ESN")); break;
+          case 0x54: stream->print(F("Zone 6 ESN")); break;
+          case 0x56: stream->print(F("Zone 7 ESN")); break;
+          case 0x57: stream->print(F("Zone 7 ESN")); break;
+          case 0x59: stream->print(F("Zone 8 ESN")); break;
+          case 0x5A: stream->print(F("Zone 8 ESN")); break;
+          case 0x5C: stream->print(F("Zone 9 ESN")); break;
+          case 0x5D: stream->print(F("Zone 9 ESN")); break;
+          case 0x5F: stream->print(F("Zone 10 ESN")); break;
+          case 0x60: stream->print(F("Zone 10 ESN")); break;
+          case 0x62: stream->print(F("Zone 11 ESN")); break;
+          case 0x63: stream->print(F("Zone 11 ESN")); break;
+          case 0x65: stream->print(F("Zone 12 ESN")); break;
+          case 0x66: stream->print(F("Zone 12 ESN")); break;
+          case 0x68: stream->print(F("Zone 13 ESN")); break;
+          case 0x69: stream->print(F("Zone 13 ESN")); break;
+          case 0x6B: stream->print(F("Zone 14 ESN")); break;
+          case 0x6C: stream->print(F("Zone 14 ESN")); break;
+          case 0x6E: stream->print(F("Zone 15 ESN")); break;
+          case 0x6F: stream->print(F("Zone 15 ESN")); break;
+          case 0x71: stream->print(F("Zone 16 ESN")); break;
+          case 0x72: stream->print(F("Zone 16 ESN")); break;
+          case 0x74: stream->print(F("Zone 17 ESN")); break;
+          case 0x75: stream->print(F("Zone 17 ESN")); break;
+          case 0x77: stream->print(F("Zone 18 ESN")); break;
+          case 0x78: stream->print(F("Zone 18 ESN")); break;
+          case 0x7A: stream->print(F("Zone 19 ESN")); break;
+          case 0x7B: stream->print(F("Zone 19 ESN")); break;
+          case 0x7D: stream->print(F("Zone 20 ESN")); break;
+          case 0x7E: stream->print(F("Zone 20 ESN")); break;
+          case 0x80: stream->print(F("Zone 21 ESN")); break;
+          case 0x81: stream->print(F("Zone 21 ESN")); break;
+          case 0x83: stream->print(F("Zone 22 ESN")); break;
+          case 0x84: stream->print(F("Zone 22 ESN")); break;
+          case 0x86: stream->print(F("Zone 23 ESN")); break;
+          case 0x87: stream->print(F("Zone 23 ESN")); break;
+          case 0x89: stream->print(F("Zone 24 ESN")); break;
+          case 0x8A: stream->print(F("Zone 24 ESN")); break;
+          case 0x8C: stream->print(F("Zone 25 ESN")); break;
+          case 0x8D: stream->print(F("Zone 25 ESN")); break;
+          case 0x8F: stream->print(F("Zone 26 ESN")); break;
+          case 0x90: stream->print(F("Zone 26 ESN")); break;
+          case 0x92: stream->print(F("Zone 27 ESN")); break;
+          case 0x93: stream->print(F("Zone 27 ESN")); break;
+          case 0x95: stream->print(F("Zone 28 ESN")); break;
+          case 0x96: stream->print(F("Zone 28 ESN")); break;
+          case 0x98: stream->print(F("Zone 29 ESN")); break;
+          case 0x99: stream->print(F("Zone 29 ESN")); break;
+          case 0x9B: stream->print(F("Zone 30 ESN")); break;
+          case 0x9C: stream->print(F("Zone 30 ESN")); break;
+          case 0x9E: stream->print(F("Zone 31 ESN")); break;
+          case 0x9F: stream->print(F("Zone 31 ESN")); break;
+          case 0xA1: stream->print(F("Zone 32 ESN")); break;
+          case 0xA2: stream->print(F("Zone 32 ESN")); break; //v3
+          case 0xB1: stream->print(F("Keyfob 1 ESN")); break;
+          case 0xB4: stream->print(F("Keyfob 2 ESN")); break;
+          case 0xB7: stream->print(F("Keyfob 3 ESN")); break;
+          case 0xBA: stream->print(F("Keyfob 4 ESN")); break;
+          case 0xBD: stream->print(F("Keyfob 5 ESN")); break;
+          case 0xC0: stream->print(F("Keyfob 6 ESN")); break;
+          case 0xC3: stream->print(F("Keyfob 7 ESN")); break;
+          case 0xC6: stream->print(F("Keyfob 8 ESN")); break;
+          case 0xC9: stream->print(F("Keyfob 9 ESN")); break;
+          case 0xCC: stream->print(F("Keyfob 10 ESN")); break;
+          case 0xCF: stream->print(F("Keyfob 11 ESN")); break;
+          case 0xD2: stream->print(F("Keyfob 12 ESN")); break;
+          case 0xD5: stream->print(F("Keyfob 13 ESN")); break;
+          case 0xD8: stream->print(F("Keyfob 14 ESN")); break;
+          case 0xDB: stream->print(F("Keyfob 15 ESN")); break;
+          case 0xDE: stream->print(F("Keyfob 16 ESN")); break;
+          default: stream->print("Unknown data");
+        }
+      }
+      break;
+    }
+    case 0x14: stream->print(F("PC5400")); break;
+    case 0x15: stream->print(F("PC59XX")); break;
+    case 0x16: stream->print(F("LINKS2X50")); break;
+    case 0x17: stream->print(F("PC5108L")); break;
+    case 0x19: stream->print(F("PC5100")); break;
+    case 0x31: {
+      stream->print(F("*5 user code "));
+      switch (panelData[3]) {
+        case 0x01:
+        case 0x03: stream->print(F("17")); break;
+        case 0x04:
+        case 0x06: stream->print(F("18")); break;
+        case 0x07:
+        case 0x09: stream->print(F("19")); break;
+        case 0x0A:
+        case 0x0C: stream->print(F("20")); break;
+        case 0x0D:
+        case 0x0F: stream->print(F("21")); break;
+        case 0x10:
+        case 0x12: stream->print(F("22")); break;
+        case 0x13:
+        case 0x15: stream->print(F("23")); break;
+        case 0x16:
+        case 0x18: stream->print(F("24")); break;
+        case 0x19:
+        case 0x1B: stream->print(F("25")); break;
+        case 0x1C:
+        case 0x1E: stream->print(F("26")); break;
+        case 0x1F:
+        case 0x21: stream->print(F("27")); break;
+        case 0x22:
+        case 0x24: stream->print(F("28")); break;
+        case 0x25:
+        case 0x27: stream->print(F("29")); break;
+        case 0x28:
+        case 0x2A: stream->print(F("30")); break;
+        case 0x2B:
+        case 0x2D: stream->print(F("31")); break;
+        case 0x2E:
+        case 0x30: stream->print(F("32")); break;
+        default: stream->print("Unknown data");
+      }
+      break;
+    }
+    default: stream->print("Unknown data");
+  }
+
+  // Wireless device placement test
+  if (panelData[3] == 0x41 && panelData[4] == 0x01 && panelData[6] == 0x55) {
+    stream->print(F(", activate device on zone: "));
+    switch (panelData[5]) {
+      case 0x01: stream->print(F("1")); break;
+      case 0x03: stream->print(F("2")); break;
+      case 0x05: stream->print(F("3")); break;
+      case 0x07: stream->print(F("4")); break;
+      case 0x09: stream->print(F("5")); break;
+      case 0x0B: stream->print(F("6")); break;
+      case 0x0D: stream->print(F("7")); break;
+      case 0x0F: stream->print(F("8")); break;
+      case 0x11: stream->print(F("9")); break;
+      case 0x13: stream->print(F("10")); break;
+      case 0x15: stream->print(F("11")); break;
+      case 0x17: stream->print(F("12")); break;
+      case 0x19: stream->print(F("13")); break;
+      case 0x1B: stream->print(F("14")); break;
+      case 0x1D: stream->print(F("15")); break;
+      case 0x1F: stream->print(F("16")); break;
+      case 0x21: stream->print(F("17")); break;
+      case 0x23: stream->print(F("18")); break;
+      case 0x25: stream->print(F("19")); break;
+      case 0x27: stream->print(F("20")); break;
+      case 0x29: stream->print(F("21")); break;
+      case 0x2B: stream->print(F("22")); break;
+      case 0x2D: stream->print(F("23")); break;
+      case 0x2F: stream->print(F("24")); break;
+      case 0x31: stream->print(F("25")); break;
+      case 0x33: stream->print(F("26")); break;
+      case 0x35: stream->print(F("27")); break;
+      case 0x37: stream->print(F("28")); break;
+      case 0x39: stream->print(F("29")); break;
+      case 0x3B: stream->print(F("30")); break;
+      case 0x3D: stream->print(F("31")); break;
+      case 0x3F: stream->print(F("32")); break;
+      default: stream->print("Unknown data");
+    }
+  }
+
+  // Wireless device signal strenght
+  if (panelData[3] == 0x43) {
+    if (panelData[5] == 0x01) stream->print(F("good"));
+    else if (panelData[5] == 0x02) stream->print(F("fair"));
+    else if (panelData[5] == 0x04) stream->print(F("bad"));
+    else stream->print("Unknown data");
+  }
+
+  if (panelData[4] == 0x02) {
+    stream->print(F(" | HEX data: "));
+
+    for (byte panelByte = 5; panelByte <= 7; panelByte ++) {
+      stream->print(panelData[panelByte] >> 4, HEX);
+      stream->print(panelData[panelByte] & 0x0F, HEX);
+    }
+  }
+
+  // After exiting user access code 17-32 programming
+  if (panelData[2] == 0x31 && panelData[4] == 0x00 && panelData[6] == 0xFF && panelData[7] == 0xFF) {
+    if (panelData[5] == 0xAA) stream->print(F(" removed"));
+    if (panelData[5] == 0x00) stream->print(F(" submit"));
+  }  
+
+  if (panelData[2] != 0x31 && panelData[3] != 0x41 && panelData[3] != 0x43 && panelData[6] == 0xFF && panelData[7] == 0xFF) {
+    if (optionInput) {
+      optionInput = false;
+      stream->print(F(" | Enabled: "));
+      printPanelBitNumbers(5, 1);
+    }
+    else {
+      stream->print(F(" | Data entered: "));
+      stream->print(panelData[5] >> 4, HEX);
+      stream->print(panelData[5] & 0x0F, HEX);
+    }
+  }
+  #endif
 }
 
 
@@ -1932,15 +2407,20 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Byte 2: Unknown
- *  Byte 3: Unknown
- *  Byte 4: Unknown
- *  Byte 5: Unknown
+ *  Byte 2: Always 0x11 when panel send, 0xFF when module send data
+ *  Byte 3: Module subsection from which data is requested
+ *  Byte 4: Always 0x82 when Byte3 contains requested module subsection to be accesed
+ *  Byte 5: Always 0xA5 when entering *5 access code programming
  *  Byte 6: Unknown
- *  Byte 7: Unknown
- *  Byte 8: Unknown
- *  Byte 9: Unknown
- *  Byte 10: CRC
+ *  Byte 7 bit 0-6: Option 2-8
+ *  Byte 7 bit 3-6: Digit 1
+ *  Byte 7 bit 0-2 and Byte 8 bit 7: Digit 2
+ *  Byte 8 bit 7: Option 1
+ *  Byte 8 bit 3-6: Digit 3
+ *  Byte 8 bit 0-2 and Byte 9 bit 7: Digit 4
+ *  Byte 9 bit 3-6: Digit 5
+ *  Byte 9 bit 0-2 and Byte 10 bit 7: Digit 6
+ *  Byte 10 bits 0-6: CRC (?)
  *
  *  Command                                                                              CRC
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 00010111 10100000 [0x94] Unknown data
@@ -1949,7 +2429,20 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
  */
 void dscKeybusReaderInterface::printPanel_0x94() {
   stream->print(F("Module programming request: "));
-  printModuleProgramming(panelData[2], panelData[3]);
+  switch (panelData[2]) {
+    case 0x11: {
+      if (panelData[5] == 0xA5) stream->print(F("*5 access codes"));
+      else stream->print(F("RF5132"));
+      printModuleSubsection();
+      break;
+    }
+    case 0x14: stream->print(F("RF5400")); printModuleSubsection(); break;
+    case 0x15: stream->print(F("PC59XX")); printModuleSubsection(); break;
+    case 0x16: stream->print(F("LINKS2X50")); printModuleSubsection(); break;
+    case 0x17: stream->print(F("PC5108L")); printModuleSubsection(); break;
+    case 0x19: stream->print(F("RF5100")); printModuleSubsection(); break;
+    default: stream->print("Unknown data");
+  }
 }
 
 
@@ -3066,7 +3559,9 @@ void dscKeybusReaderInterface::printModule_Status() {
  *  Byte 6 bit 6-7: PC5204
  *  Byte 7 bit 0-1: Zone expander 7
  *  Byte 7 bit 2-7: Unknown
- *  Byte 8: Unknown
+ *  Byte 8 bit 0-1: PC5200 3
+ *  Byte 8 bit 2-3: PC5200 2
+ *  Byte 8 bit 4-5: PC5200 1
  *
  *  00010001 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x11] Module supervision query
  *
@@ -3075,6 +3570,9 @@ void dscKeybusReaderInterface::printModule_Status() {
  *  11111111 1 00111111 11111111 00001111 11110011 11111111 11111111 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 1 2 | PC/RF5132
  *  11111111 1 00111111 11111111 11001111 11111111 11111111 11111100 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 2 7
  *  11111111 1 11111111 11111100 00111111 11111111 00111111 11111111 11111111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 | PC5204
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11001111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 1
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11110011 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 2
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11111100 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 3
  *  Byte 0   1    2        3        4        5        6        7        8
  */
 void dscKeybusReaderInterface::printModule_0x11() {
@@ -3101,6 +3599,9 @@ void dscKeybusReaderInterface::printModule_0x11() {
   if ((moduleData[5] & 0x0C) == 0) stream->print(F("| PC/RF5132 "));
   if ((moduleData[5] & 0x03) == 0) stream->print(F("| PC5208 "));
   if ((moduleData[6] & 0xC0) == 0) stream->print(F("| PC5204 "));
+  if ((moduleData[8] & 0x30) == 0) stream->print(F("| PC5200 1 "));
+  if ((moduleData[8] & 0x0C) == 0) stream->print(F("| PC5200 2 "));
+  if ((moduleData[8] & 0x03) == 0) stream->print(F("| PC5200 3 "));
 }
 
 
@@ -3167,10 +3668,14 @@ void dscKeybusReaderInterface::printModule_0x41() {
  *  Byte 12: Unknown
  *
  *  Later generation panels:
- *  Byte 13 bit 0-3: Unknown
+ *  Byte 13 bit 0-1: PC5200 1 tamper restore
+ *  Byte 13 bit 2-3: PC5200 1 tamper
  *  Byte 13 bit 4-5: Module slot 16 tamper restore
  *  Byte 13 bit 6-7: Module slot 16 tamper
- *  Byte 14: Unknown
+ *  Byte 14 bit 0-1: PC5200 3 tamper restore
+ *  Byte 14 bit 2-3: PC5200 3 tamper
+ *  Byte 14 bit 4-5: PC5200 2 tamper restore
+ *  Byte 14 bit 6-7: PC5200 2 tamper
  *
  *  11111111 1 11111111 11111111 11111110 11111111 [Module/0x05] Module tamper notification
  *  01001100 0 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 10101010 [0x4C] Module tamper query
@@ -3208,6 +3713,13 @@ void dscKeybusReaderInterface::printModule_0x41() {
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper restored
  *  11111111 1 00001111 11111111 11111111 11111111 11111111 00001111 11111111 00110000 11111111 11111111 11111111 11111111 11111111 [Module/0x4C] Keypad tamper: Slot 1 | Module tamper: Slot 11 | RF5132: Tamper | PC5208: Tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper restore
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper restore
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper restore
+
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13       14
  */
 void dscKeybusReaderInterface::printModule_0x4C() {
@@ -3277,6 +3789,42 @@ void dscKeybusReaderInterface::printModule_0x4C() {
     stream->print(F("PC5204: Tamper restored "));
     printedMessage = true;
   }
+
+  if ((moduleData[13] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[13] & 0x0F) == 0x0C) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Tamper restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0xF0) == 0xC0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: Tamper restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Tamper "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[14] & 0x0F) == 0x0C) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Tamper restored "));
+    printedMessage = true;
+  }
 }
 
 
@@ -3342,14 +3890,34 @@ void dscKeybusReaderInterface::printModule_0x57() {
  *  Byte 5: Unknown
  *
  *  Later generation panels:
- *  Byte 6: Unknown
- *  Byte 7: Unknown
- *  Byte 8: Unknown
- *  Byte 9: Unknown
- *  Byte 10: Unknown
- *  Byte 11: Unknown
- *  Byte 12: Unknown
- *  Byte 13: Unknown
+ *  Byte 6 bit 0-1: PC5200 1 battery restore
+ *  Byte 6 bit 2-3: PC5200 1 battery trouble
+ *  Byte 6 bit 4-5: PC5200 1 AC power restore
+ *  Byte 6 bit 6-7: PC5200 1 AC power trouble
+ *  Byte 7 bit 0-3: Unknown
+ *  Byte 7 bit 4-5: PC5200 1 AUX restore
+ *  Byte 7 bit 6-7: PC5200 1 AUX trouble
+ *  Byte 8 bit 0-1: PC5200 2 battery restore
+ *  Byte 8 bit 2-3: PC5200 2 battery trouble
+ *  Byte 8 bit 4-5: PC5200 2 AC power restore
+ *  Byte 8 bit 6-7: PC5200 2 AC power trouble
+ *  Byte 9 bit 0-3: Unknown
+ *  Byte 9 bit 4-5: PC5200 2 AUX restore
+ *  Byte 9 bit 6-7: PC5200 2 AUX trouble
+ *  Byte 10 bit 0-1: PC5200 3 battery restore
+ *  Byte 10 bit 2-3: PC5200 3 battery trouble
+ *  Byte 10 bit 4-5: PC5200 3 AC power restore
+ *  Byte 10 bit 6-7: PC5200 3 AC power trouble
+ *  Byte 11 bit 0-3: Unknown
+ *  Byte 11 bit 4-5: PC5200 3 AUX restore
+ *  Byte 11 bit 6-7: PC5200 3 AUX trouble
+ *  Byte 12 bit 0-1: PC5200 4 battery restore
+ *  Byte 12 bit 2-3: PC5200 4 battery trouble
+ *  Byte 12 bit 4-5: PC5200 4 AC power restore
+ *  Byte 12 bit 6-7: PC5200 4 AC power trouble
+ *  Byte 13 bit 0-3: Unknown
+ *  Byte 13 bit 4-5: PC5200 4 AUX restore
+ *  Byte 13 bit 6-7: PC5200 4 AUX trouble
  *
  *  11111111 1 11111111 11111111 11111111 11011111 [Module/0x05] Module status notification
  *  01011000 0 10101010 10101010 10101010 10101010 [0x58] Module status query
@@ -3364,6 +3932,32 @@ void dscKeybusReaderInterface::printModule_0x57() {
  *
  *  Module     PC5204
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5204: AC power trouble
+ *  
+ *  Module     PC5200                              Slot 1            Slot 2            Slot 3            Slot 4        
+ *  11111111 1 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x58] Unknown data //PC5200 4 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x58] Unknown data //PC5200 4 Battery restore
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x58] Unknown data //PC5200 4 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x58] Unknown data //PC5200 4 AUX restore
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13
  */
 void dscKeybusReaderInterface::printModule_0x58() {
@@ -3401,6 +3995,98 @@ void dscKeybusReaderInterface::printModule_0x58() {
   if ((moduleData[3] & 0x0C) == 0) {
     if (printedMessage) stream->print("| ");
     stream->print(F("PC5204: Output 1 trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x03) == 0) {
+    stream->print(F("PC5200 1: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[6] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 1: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x03) == 0) {
+    stream->print(F("PC5200 2: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[8] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 2: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x03) == 0) {
+    stream->print(F("PC5200 3: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[10] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 3: AC power trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x03) == 0) {
+    stream->print(F("PC5200 4: Battery restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x0C) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: Battery trouble "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0x30) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: AC power restored "));
+    printedMessage = true;
+  }
+
+  if ((moduleData[12] & 0xC0) == 0) {
+    if (printedMessage) stream->print("| ");
+    stream->print(F("PC5200 4: AC power trouble "));
     printedMessage = true;
   }
 
@@ -3731,21 +4417,15 @@ bool dscKeybusReaderInterface::printModuleSlots(byte outputNumber, byte startByt
 }
 
 
-// Print 0x8D and 0x94 section and command subsection data used for programming modules
-void dscKeybusReaderInterface::printModuleProgramming(byte panelByte2, byte panelByte3) {
-  switch (panelByte2) {
-    case 0x11: stream->print(F("RF5132")); break; //section 804 verified on pc1832 and pc5020
-    case 0x14: stream->print(F("RF5400")); break; //section 801 not verified
-    case 0x15: stream->print(F("RF5936")); break; //section 802 not verified
-    case 0x16: stream->print(F("LINKS2X50")); break; //section 803 not verified
-    case 0x17: stream->print(F("PC5108L")); break; //section 806 not verified
-    case 0x19: stream->print(F("RF5100")); break; //section 805 not verified
-    case 0x31: stream->print(F("*5 user")); break; //*5 access codes verified on pc1832 and pc5020
-    default: stream->print("Unknown data");
+/*
+ *  Prints requested module subsection for programming on panel command 0x94
+ */
+void dscKeybusReaderInterface::printModuleSubsection() {
+  if (panelData[4] == 0x82) {
+    stream->print(F(" | Subsection: "));
+    if (panelData[3] < 16) stream->print("0");
+    stream->print(panelData[3], HEX);
   }
-  stream->print(" | ");
-  if (panelByte3 < 16) stream->print("0");
-  stream->print(panelByte3, HEX);
 }
 
 
