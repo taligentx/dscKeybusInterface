@@ -164,7 +164,7 @@ bool dscKeybusReaderInterface::loop() {
   interrupts();
   #endif
 
-  // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
+  // Waits at startup for the 0x05 status command or a command with valid checksum data to eliminate spurious data.
   static bool startupCycle = true;
   if (startupCycle) {
     if (panelData[0] == 0) return false;
@@ -173,7 +173,7 @@ bool dscKeybusReaderInterface::loop() {
       startupCycle = false;
       writeReady = true;
     }
-    else if (!validCRC()) return false;
+    else if (!validChecksum()) return false;
   }
 
   // Sets writeReady status
@@ -455,7 +455,7 @@ bool IRAM_ATTR dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], 
 }
 
 
-bool dscKeybusReaderInterface::validCRC() {
+bool dscKeybusReaderInterface::validChecksum() {
   byte byteCount = (panelBitCount - 1) / 8;
   int dataSum = 0;
   for (byte panelByte = 0; panelByte < byteCount; panelByte++) {

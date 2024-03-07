@@ -215,7 +215,7 @@ class dscKeybusReaderInterface {
     bool printModuleSlots(byte startCount, byte startByte, byte endByte, byte startMask, byte endMask, byte bitShift, byte matchValue, bool reverse = false);
     void printModuleSubsection();
 
-    bool validCRC();
+    bool validChecksum();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();

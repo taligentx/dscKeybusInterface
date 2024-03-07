@@ -161,7 +161,7 @@ bool dscKeybusInterface::loop() {
   interrupts();
   #endif
 
-  // Waits at startup for the 0x05 status command or a command with valid CRC data to eliminate spurious data.
+  // Waits at startup for the 0x05 status command or a command with valid checksum data to eliminate spurious data.
   static bool startupCycle = true;
   if (startupCycle) {
     if (panelData[0] == 0) return false;
@@ -170,7 +170,7 @@ bool dscKeybusInterface::loop() {
       startupCycle = false;
       writeReady = true;
     }
-    else if (!validCRC()) return false;
+    else if (!validChecksum()) return false;
   }
 
   // Sets writeReady status
@@ -401,7 +401,7 @@ bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volati
 }
 
 
-bool dscKeybusInterface::validCRC() {
+bool dscKeybusInterface::validChecksum() {
   byte byteCount = (panelBitCount - 1) / 8;
   int dataSum = 0;
   for (byte panelByte = 0; panelByte < byteCount; panelByte++) {

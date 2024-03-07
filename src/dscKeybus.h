@@ -168,7 +168,7 @@ class dscKeybusInterface {
     void processArmed(byte partitionIndex, bool armedStatus);
     void processPanelAccessCode(byte partitionIndex, byte dscCode, bool accessCodeIncrease = true);
 
-    bool validCRC();
+    bool validChecksum();
     void writeKeys(const char * writeKeysArray);
     void setWriteKey(const char receivedKey);
     static void dscClockInterrupt();

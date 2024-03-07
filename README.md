@@ -104,6 +104,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 
 ## Release notes
 * develop
+  - New: Keybus decoding for module programming, PC5200, and zones 33-64 extended status - thanks to [kricon](https://github.com/kricon) for this contribution!
   - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
 * 3.0
   - New: DSC Classic series panel support: PC1500, PC1550, PC2550 - thanks to [kricon](https://github.com/kricon) for extensively testing and contributing to this!
@@ -391,7 +392,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 
 ## Troubleshooting
 If you are running into issues:
-1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting CRC errors.
+1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting checksum errors.
     * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.  Breadboards can cause issues, connections should be soldered instead.
 2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
     * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.

@@ -43,9 +43,9 @@
  */
 void dscKeybusReaderInterface::printPanelMessage() {
 
-  // Checks for errors on panel commands with CRC data
+  // Checks for errors on panel commands with checksum data
   switch (panelData[0]) {
-    case 0x05:         // Skips panel commands without CRC data
+    case 0x05:         // Skips panel commands without checksum data
     case 0x11:
     case 0x1B:
     case 0x1C:
@@ -61,10 +61,10 @@ void dscKeybusReaderInterface::printPanelMessage() {
     case 0x94:
     case 0x9E:
     case 0xD5:
-    case 0xE6: break;  // 0xE6 is checked separately as only some of its subcommands use CRC
+    case 0xE6: break;  // 0xE6 is checked separately as only some of its subcommands use checksum
     default: {         // Checks remaining panel commands
-      if (!validCRC()) {
-        stream->print(F("[CRC Error]"));
+      if (!validChecksum()) {
+        stream->print(F("[Checksum error]"));
         return;
       }
     }
@@ -326,7 +326,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   bool decoded = true;
   switch (panelData[panelByte]) {
     /*
-     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
      *  10100101 0 00011000 01001111 10110000 11101100 01001001 11111111 11110000 [0xA5] 2018.03.29 16:59 | Partition 1 | Duress alarm
      *  10100101 0 00011000 01001111 11001110 10111100 01001010 11111111 11011111 [0xA5] 2018.03.30 14:47 | Partition 1 | Disarmed after alarm in memory
      *  10100101 0 00011000 01001111 11001010 01000100 01001011 11111111 01100100 [0xA5] 2018.03.30 10:17 | Partition 1 | Partition in alarm
@@ -406,7 +406,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Zone alarm, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00011000 01001111 01001001 11011000 00001001 11111111 00110101 [0xA5] 2018.03.26 09:54 | Partition 1 | Zone alarm: 1
    *  10100101 0 00011000 01001111 01001010 00100000 00001110 11111111 10000011 [0xA5] 2018.03.26 10:08 | Partition 1 | Zone alarm: 6
    *  10100101 0 00011000 01001111 10010100 11001000 00010000 11111111 01110111 [0xA5] 2018.03.28 20:50 | Partition 1 | Zone alarm: 8
@@ -421,7 +421,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Zone alarm restored, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00011000 01001111 10010100 11001100 00101001 11111111 10010100 [0xA5] 2018.03.28 20:51 | Partition 1 | Zone alarm restored: 1
    *  10100101 0 00011000 01001111 10010100 11010100 00101110 11111111 10100001 [0xA5] 2018.03.28 20:53 | Partition 1 | Zone alarm restored: 6
    *  10100101 0 00011000 01001111 10010100 11010000 00110000 11111111 10011111 [0xA5] 2018.03.28 20:52 | Partition 1 | Zone alarm restored: 8
@@ -436,7 +436,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Zone tamper, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00000001 01000100 00100010 01011100 01010110 11111111 10111101 [0xA5] 2001.01.01 02:23 | Partition 1 | Zone tamper: 1
    *  10100101 0 00010001 01101101 01101011 10010000 01011011 11111111 01111000 [0xA5] 2011.11.11 11:36 | Partition 1 | Zone tamper: 6
    *  11101011 0 10000000 00100000 00101010 00010111 11010000 00000000 01010111 11111111 11110010 [0xEB] 2020.10.16 23:52 | Partition 8 | Zone tamper: 2
@@ -451,7 +451,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Zone tamper restored, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00000001 01000100 00100010 01011100 01110110 11111111 11011101 [0xA5] 2001.01.01 02:23 | Partition 1 | Zone tamper restored: 1
    *  10100101 0 00010001 01101101 01101011 10010000 01111011 11111111 10011000 [0xA5] 2011.11.11 11:36 | Partition 1 | Zone tamper restored: 6
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -465,7 +465,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Armed by access codes 1-34, 40-42
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00011000 01001101 00001000 10010000 10011001 11111111 00111010 [0xA5] 2018.03.08 08:36 | Partition 1 | Armed: User code 1
    *  10100101 0 00011000 01001101 00001000 10111100 10111011 11111111 10001000 [0xA5] 2018.03.08 08:47 | Partition 1 | Armed: Master code 40
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -480,7 +480,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
   /*
    *  Disarmed by access codes 1-34, 40-42
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00011000 01001101 00001000 11101100 11000000 11111111 10111101 [0xA5] 2018.03.08 08:59 | Partition 1 | Disarmed: User code 1
    *  10100101 0 00011000 01001101 00001000 10110100 11100010 11111111 10100111 [0xA5] 2018.03.08 08:45 | Partition 1 | Disarmed: Master code 40
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -508,7 +508,7 @@ void dscKeybusReaderInterface::printPanelStatus0(byte panelByte) {
 void dscKeybusReaderInterface::printPanelStatus1(byte panelByte) {
   switch (panelData[panelByte]) {
     /*
-     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
      *  10100101 0 00011000 01001111 11001010 10001001 00000011 11111111 01100001 [0xA5] 2018.03.30 10:34 | Partition 1 | Cross zone alarm
      *  10100101 0 00010001 01101101 01101010 00000001 00000100 11111111 10010001 [0xA5] 2011.11.11 10:00 | Partition 1 | Delinquency alarm
      *  10100101 0 00010001 01101101 01100000 10101001 00100100 00000000 01010000 [0xA5] 2011.11.11 00:42 | Partition 1 | Duress code 33
@@ -547,7 +547,7 @@ void dscKeybusReaderInterface::printPanelStatus1(byte panelByte) {
   /*
    *  Access codes 33-34, 40-42
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01100000 10101001 00100100 00000000 01010000 [0xA5] 2011.11.11 00:42 | Partition 1 | Duress code 33
    *  10100101 0 00010001 01101101 01100000 10110101 00100101 00000000 01011101 [0xA5] 2011.11.11 00:45 | Partition 1 | Duress code 34
    *  10100101 0 00010001 01101101 01100000 00101001 00100110 00000000 11010010 [0xA5] 2011.11.11 00:10 | Partition 1 | Master code 40
@@ -582,7 +582,7 @@ void dscKeybusReaderInterface::printPanelStatus1(byte panelByte) {
   /*
    *  Zone fault restored, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01101011 01000001 01101100 11111111 00111010 [0xA5] 2011.11.11 11:16 | Partition 1 | Zone fault restored: 1
    *  10100101 0 00010001 01101101 01101011 01010101 01101101 11111111 01001111 [0xA5] 2011.11.11 11:21 | Partition 1 | Zone fault restored: 2
    *  10100101 0 00010001 01101101 01101011 10000101 01101111 11111111 10000001 [0xA5] 2011.11.11 11:33 | Partition 1 | Zone fault restored: 4
@@ -598,7 +598,7 @@ void dscKeybusReaderInterface::printPanelStatus1(byte panelByte) {
   /*
    *  Zone fault, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01101011 00111101 10001100 11111111 01010110 [0xA5] 2011.11.11 11:15 | Partition 1 | Zone fault: 1
    *  10100101 0 00010001 01101101 01101011 01010101 10001101 11111111 01101111 [0xA5] 2011.11.11 11:21 | Partition 1 | Zone fault: 2
    *  10100101 0 00010001 01101101 01101011 10000001 10001111 11111111 10011101 [0xA5] 2011.11.11 11:32 | Partition 1 | Zone fault: 4
@@ -614,7 +614,7 @@ void dscKeybusReaderInterface::printPanelStatus1(byte panelByte) {
   /*
    *  Zones bypassed, zones 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00011000 01001111 10110001 10101001 10110001 00000000 00010111 [0xA5] 2018.03.29 17:42 | Partition 1 | Zone bypassed: 2
    *  10100101 0 00011000 01001111 10110001 11000001 10110101 00000000 00110011 [0xA5] 2018.03.29 17:48 | Partition 1 | Zone bypassed: 6
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -642,7 +642,7 @@ void dscKeybusReaderInterface::printPanelStatus2(byte panelByte) {
   switch (panelData[panelByte]) {
 
     /*
-     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+     *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
      *  10100101 0 00011000 01001111 10101111 10000110 00101010 00000000 01101011 [0xA5] 2018.03.29 15:33 | Partition 1 | Quick exit
      *  10100101 0 00010001 01101101 01110101 00111010 01100011 00000000 00110101 [0xA5] 2011.11.11 21:14 | Partition 1 | Keybus fault restored
      *  10100101 0 00011000 01001111 11110111 01110110 01100110 00000000 11011111 [0xA5] 2018.03.31 23:29 | Partition 1 | Enter *1 zone bypass programming
@@ -720,7 +720,7 @@ void dscKeybusReaderInterface::printPanelStatus2(byte panelByte) {
   /*
    *  Access codes 1-32
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01100000 00111110 11000110 00000000 10000111 [0xA5] 2011.11.11 00:15 | Partition 1 | User code 1
    *  10100101 0 00010001 01101101 01100000 01111010 11100101 00000000 11100010 [0xA5] 2011.11.11 00:30 | Partition 1 | User code 32
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -744,7 +744,7 @@ void dscKeybusReaderInterface::printPanelStatus2(byte panelByte) {
   /*
    *  Keypad restored: Slots 1-8
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01110100 10001110 11101001 11111111 00001101 [0xA5] 2011.11.11 20:35 | Partition 1 | Keypad restored: Slot 1
    *  10100101 0 00010001 01101101 01110100 00110010 11110000 11111111 10111000 [0xA5] 2011.11.11 20:12 | Partition 1 | Keypad restored: Slot 8
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -758,7 +758,7 @@ void dscKeybusReaderInterface::printPanelStatus2(byte panelByte) {
   /*
    *  Keypad trouble: Slots 1-8
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00010001 01101101 01110100 10000110 11110001 11111111 00001101 [0xA5] 2011.11.11 20:33 | Partition 1 | Keypad trouble: Slot 1
    *  10100101 0 00010001 01101101 01110100 00101110 11111000 11111111 10111100 [0xA5] 2011.11.11 20:11 | Partition 1 | Keypad trouble: Slot 8
    *  Byte 0   1    2        3        4        5        6        7        8
@@ -791,7 +791,7 @@ void dscKeybusReaderInterface::printPanelStatus2(byte panelByte) {
  *  These commands use 1 byte for the status message, and appear to use bits 0,1 of the preceding byte to
  *  select from multiple sets of status messages, split into printPanelStatus0...printPanelStatus3.
  *
- *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+ *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
  *  10100101 0 00100000 00101010 01100000 10111111 01000010 11111111 01001111 [0xA5] 2020.10.19 00:47 | PC/RF5132: Tamper
  *  10100101 0 00100000 00101010 01100000 10111111 01000001 11111111 01001110 [0xA5] 2020.10.19 00:47 | PC/RF5132: Tamper restored
  *  10100101 0 00100000 00001001 10000000 11010011 01000100 11111111 01100100 [0xA5] 2020.02.12 00:52 | PC5208: Tamper
@@ -821,7 +821,7 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
     case 0x46: stream->print(F("PC5204: Tamper")); return;
     case 0x51: stream->print(F("Zone expander tamper restored: 7")); return;
     case 0x52: stream->print(F("Zone expander tamper: 7")); return;
-    // 0x53 - 0x56: PC5200 Tamper restore, slots 1-4
+    // 0x53 - 0x56: PC5200 Tamper restored, slots 1-4
     // 0x57 - 0x5A: PC5200 Tamper, slots 1-4
     case 0xB3: stream->print(F("PC5204: Battery restored")); return;
     case 0xB4: stream->print(F("PC5204: Battery trouble")); return;
@@ -880,7 +880,7 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
   /*
    *  Zone expander tamper restored: 1-6
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00100000 00101010 11000110 00101011 00110101 11111111 00010100 [0xA5] 2020.10.22 06:10 | Zone expander tamper restored: 1
    *  10100101 0 00100000 00101010 11000000 00101111 00111010 11111111 00010111 [0xA5] 2020.10.22 00:11 | Zone expander tamper restored: 6
    *  11101011 0 00000000 00100000 00101010 11000110 00101000 00000011 00110101 11111111 01011010 [0xEB] 2020.10.22 06:10 | Zone expander tamper restored: 1
@@ -895,7 +895,7 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
   /*
    *  Zone expander tamper: 1-6
    *
-   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+   *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
    *  10100101 0 00100000 00101010 11000110 00101011 00111011 11111111 00011010 [0xA5] 2020.10.22 06:10 | Zone expander tamper: 1
    *  10100101 0 00100000 00101010 11000000 00101111 01000000 11111111 00011101 [0xA5] 2020.10.22 00:11 | Zone expander tamper: 6
    *  11101011 0 00000000 00100000 00101010 11000110 00101000 00000011 00111011 11111111 01100000 [0xEB] 2020.10.22 06:10 | Zone expander tamper: 1
@@ -908,10 +908,10 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
   }
 
   /*
-   *  PC5200 tamper restore: 1-4
+   *  PC5200 tamper restored: 1-4
    */
   if (panelData[panelByte] >= 0x53 && panelData[panelByte] <= 0x56) {
-    stream->print(F("PC5200: Tamper restore: "));
+    stream->print(F("PC5200: Tamper restored: "));
     printNumberOffset(panelByte, -0x52);
     return;
   }
@@ -938,7 +938,7 @@ void dscKeybusReaderInterface::printPanelStatus3(byte panelByte) {
  *  These commands use 1 byte for the status message, and appear to use the preceding byte to select
  *  from multiple sets of status messages, split into printPanelStatus4...printPanelStatus1B.
  *
- *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+ *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status           Checksum
  *  11101011 0 00000001 00011000 00011000 10001111 00101000 00000100 00000000 10010001 01101000 [0xEB] 2018.06.04 15:10 | Partition 1 | Zone alarm: 33
  *  11101011 0 00000001 00000001 00000100 01100000 00010100 00000100 01000000 10000001 00101010 [0xEB] 2001.01.03 00:05 | Partition 1 | Zone tamper: 33
  *  11101011 0 00000001 00000001 00000100 01100000 00001000 00000100 01011111 10000001 00111101 [0xEB] 2001.01.03 00:02 | Partition 1 | Zone tamper: 64
@@ -1029,11 +1029,11 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
     // 0x40 - 0x5F: Zone fault restored, zones 33-64
     // 0x60 - 0x7F: Zone fault, zones 33-64
     // 0x80 - 0x9F: Zone bypassed, zones 33-64
-    // 0xA0 - 0xA3: PC5200 AC restore, slots 1-4
+    // 0xA0 - 0xA3: PC5200 AC restored, slots 1-4
     // 0xA4 - 0xA7: PC5200 AC trouble, slots 1-4
-    // 0xA8 - 0xAB: PC5200 Battery restore, slots 1-4
+    // 0xA8 - 0xAB: PC5200 Battery restored, slots 1-4
     // 0xAC - 0xAF: PC5200 Battery trouble, slots 1-4
-    // 0xB0 - 0xB3: PC5200 AUX PTC restore, slots 1-4
+    // 0xB0 - 0xB3: PC5200 AUX PTC restored, slots 1-4
     // 0xB4 - 0xB7: PC5200 AUX PTC trouble, slots 1-4
     case 0xC0: stream->print(F("TLink com fault")); return;
     case 0xC2: stream->print(F("Tlink network fault")); return;
@@ -1044,7 +1044,7 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   /*
    *  Zone fault restored, zones 33-64
    *
-   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status           Checksum
    *  11101011 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 11111111 10001000 [0xEB] 2021.05.22 00:13 | Zone fault restored: 64
    *  11101100 0 00000000 00100001 00010110 11000000 00110100 00010100 01011111 00001001 10010011 [0xEC] Event: 009 | 2021.05.22 00:13 | Zone fault restored: 64
    *  Byte 0   1    2        3        4        5        6        7        8        9        10
@@ -1058,7 +1058,7 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   /*
    *  Zone fault, zones 33-64
    *
-   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status           Checksum
    *  11101011 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 11111111 10011000 [0xEB] 2021.05.22 00:09 | Zone fault: 64
    *  11101100 0 00000000 00100001 00010110 11000000 00100100 00010100 01111111 00001011 10100101 [0xEC] Event: 011 | 2021.05.22 00:09 | Zone fault: 64
    *  Byte 0   1    2        3        4        5        6        7        8        9        10
@@ -1072,7 +1072,7 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   /*
    *  Zones bypassed, zones 33-64
    *
-   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+   *  Command   Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status           Checksum
    *  11101011 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00000000 10101110 [0xEB] 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
    *  11101100 0 00000001 00100001 00010110 11000000 00011000 00010100 10011111 00010011 11000010 [0xEC] Event: 019 | 2021.05.22 00:06 | Partition 1 | Zone bypassed: 64
    *  Byte 0   1    2        3        4        5        6        7        8        9        10
@@ -1084,10 +1084,10 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   }
 
   /*
-   *  PC5200 AC restore: 1-4
+   *  PC5200 AC restored: 1-4
    */
   if (panelData[panelByte] >= 0xA0 && panelData[panelByte] <= 0xA3) {
-    stream->print(F("PC5200: AC restore: "));
+    stream->print(F("PC5200: AC restored: "));
     printNumberOffset(panelByte, -0x9F);
     return;
   }
@@ -1102,10 +1102,10 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   }
 
   /*
-   *  PC5200 Battery restore: 1-4
+   *  PC5200 Battery restored: 1-4
    */
   if (panelData[panelByte] >= 0xA8 && panelData[panelByte] <= 0xAB) {
-    stream->print(F("PC5200: Battery restore: "));
+    stream->print(F("PC5200: Battery restored: "));
     printNumberOffset(panelByte, -0xA7);
     return;
   }
@@ -1120,10 +1120,10 @@ void dscKeybusReaderInterface::printPanelStatus14(byte panelByte) {
   }
   
   /*
-   *  PC5200 ATX output PTC protection restore: 1-4
+   *  PC5200 ATX output PTC protection restored: 1-4
    */
   if (panelData[panelByte] >= 0xB0 && panelData[panelByte] <= 0xB3) {
-    stream->print(F("PC5200: AUX PTC restore: "));
+    stream->print(F("PC5200: AUX PTC restored: "));
     printNumberOffset(panelByte, -0xAF);
     return;
   }
@@ -1154,7 +1154,7 @@ void dscKeybusReaderInterface::printPanelStatus16(byte panelByte) {
   switch (panelData[panelByte]) {
     case 0x80: stream->print(F("Trouble acknowledged")); return;
     case 0x81: stream->print(F("RF delinquency trouble")); return;
-    case 0x82: stream->print(F("RF delinquency restore")); return;
+    case 0x82: stream->print(F("RF delinquency restored")); return;
     case 0x83: stream->print(F("Auto-Disarm")); return;
   }
 
@@ -1300,7 +1300,7 @@ void dscKeybusReaderInterface::printPanelStatus1B(byte panelByte) {
 /*
  *  0x05: Status - partitions 1-4
  *  Interval: constant
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1342,7 +1342,7 @@ void dscKeybusReaderInterface::printPanel_0x05() {
 /*
  *  0x0A_0F: Status in programming, partitions 1-2
  *  Interval: constant in *8 programming
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1353,9 +1353,9 @@ void dscKeybusReaderInterface::printPanel_0x05() {
  *  Byte 6: Zone lights 17-24
  *  Byte 7: Zone lights 25-32
  *  Byte 8: Zone lights for *5 access codes 33,34,41,42
- *  Byte 9: CRC
+ *  Byte 9: Checksum
  *
- *  Command    1:Lights 1:Status Zones1+  Zones9+  Zones17+ Zones25+            CRC
+ *  Command    1:Lights 1:Status Zones1+  Zones9+  Zones17+ Zones25+          Checksum
  *  00001010 0 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01110000 [0x0A] Armed Backlight - *8: Main menu | Zone lights: none
  *  00001010 0 10000001 11101110 01100101 00000000 00000000 00000000 00000000 11011110 [0x0A] Ready Backlight - *8: Input required: 1 option per zone | Zone lights: 1 3 6 7
  *  Byte 0   1    2        3        4        5        6        7        8        9
@@ -1387,7 +1387,7 @@ void dscKeybusReaderInterface::printPanel_0x0A_0F() {
 /*
  *  0x11: Module supervision query
  *  Interval: 30s
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1415,7 +1415,7 @@ void dscKeybusReaderInterface::printPanel_0x11() {
 /*
  *  0x16: Panel configuration
  *  Interval: 4min
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -1426,9 +1426,9 @@ void dscKeybusReaderInterface::printPanel_0x11() {
  *  Byte 4 bit 3: Code length flag
  *  Byte 4 bit 4: *8 programming mode flag
  *  Byte 4 bits 5-7: Unknown data
- *  Byte 5: CRC
+ *  Byte 5: Checksum
  *
- *  Command             Version             CRC
+ *  Command             Version           Checksum
  *  00010110 0 00001110 00100011 11010010 00011001 [0x16] Panel version: v2.3 | Zone wiring: EOL | Code length: 4 digits | *8 programming: no
  *  00010110 0 00001110 00100011 11100001 00101000 [0x16] Panel version: v2.3 | Zone wiring: NC | Code length: 4 digits | *8 programming: yes
  *  00010110 0 00001110 00100011 11100110 00101101 [0x16] Panel version: v2.3 | Zone wiring: EOL | Code length: 4 digits | *8 programming: yes
@@ -1476,7 +1476,7 @@ void dscKeybusReaderInterface::printPanel_0x16() {
 /*
  *  0x1B: Status - partitions 5-8
  *  Interval: constant
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1501,7 +1501,7 @@ void dscKeybusReaderInterface::printPanel_0x1B() {
 /*
  *  0x1C: Verify keypad Fire/Auxiliary/Panic
  *  Interval: immediate after keypad button press
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1517,7 +1517,7 @@ void dscKeybusReaderInterface::printPanel_0x1C() {
 /*
  *  0x22: Zone expander 0 (PC/RF5132) query
  *  Interval: after zone expander status notification
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1548,7 +1548,7 @@ void dscKeybusReaderInterface::printPanel_0x22_28_33_39() {
 /*
  *  0x27: Status with zones 1-8
  *  Interval: 4m
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1557,9 +1557,9 @@ void dscKeybusReaderInterface::printPanel_0x22_28_33_39() {
  *  Byte 4: Partition 2 lights
  *  Byte 5: Partition 2 status
  *  Byte 6: Zones 1-8
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  *
- *  Command    1:Lights 1:Status 2:Lights 3:Status Zones1+    CRC
+ *  Command    1:Lights 1:Status 2:Lights 3:Status Zones1+  Checksum
  *  00100111 0 10000001 00000001 10010001 11000111 00000000 00000001 [0x27] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled | Zones 1-8 open: none
  *  00100111 0 10000001 00000001 10010001 11000111 00000010 00000011 [0x27] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled | Zones 1-8 open: 2
  *  00100111 0 10001010 00000100 10010001 11000111 00000000 00001101 [0x27] Partition 1: Armed Bypass Backlight - Armed stay | Partition 2: disabled | Zones 1-8 open: none
@@ -1589,7 +1589,7 @@ void dscKeybusReaderInterface::printPanel_0x27() {
 /*
  *  0x2D: Status with zones 9-16
  *  Interval: 4m
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1598,9 +1598,9 @@ void dscKeybusReaderInterface::printPanel_0x27() {
  *  Byte 4: Partition 2 lights
  *  Byte 5: Partition 2 status
  *  Byte 6: Zones 9-16
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  *
- *  Command    1:Lights 1:Status 2:Lights 3:Status Zones9+    CRC
+ *  Command    1:Lights 1:Status 2:Lights 3:Status Zones9+  Checksum
  *  00101101 0 10000000 00000011 10000001 11000111 00000001 11111001 [0x2D] Partition 1: Backlight - Zones open | Partition 2: disabled | Zones 9-16 open: 9
  *  00101101 0 10000000 00000011 10000010 00000101 00000000 00110111 [0x2D] Partition 1: Backlight - Zones open | Partition 2: Armed Backlight - Armed away | Zones 9-16 open: none
  *  Byte 0   1    2        3        4        5        6        7
@@ -1616,7 +1616,7 @@ void dscKeybusReaderInterface::printPanel_0x2D() {
 /*
  *  0x34: Status with zones 17-24
  *  Interval: 4m
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1625,7 +1625,7 @@ void dscKeybusReaderInterface::printPanel_0x2D() {
  *  Byte 4: Partition 2 lights
  *  Byte 5: Partition 2 status
  *  Byte 6: Zones 17-24
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  */
 void dscKeybusReaderInterface::printPanel_0x34() {
   printPanelPartitionStatus(1, 3, 5);
@@ -1638,7 +1638,7 @@ void dscKeybusReaderInterface::printPanel_0x34() {
 /*
  *  0x3E: Status with zones 25-32
  *  Interval: 4m
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1647,7 +1647,7 @@ void dscKeybusReaderInterface::printPanel_0x34() {
  *  Byte 4: Partition 2 lights
  *  Byte 5: Partition 2 status
  *  Byte 6: Zones 25-32
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  */
 void dscKeybusReaderInterface::printPanel_0x3E() {
   printPanelPartitionStatus(1, 3, 5);
@@ -1660,7 +1660,7 @@ void dscKeybusReaderInterface::printPanel_0x3E() {
 /*
  *  0x41: Wireless module query
  *  Interval: immediate on wireless module notification
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1679,7 +1679,7 @@ void dscKeybusReaderInterface::printPanel_0x41() {
 /*
  *  0x4C: Module tamper query
  *  Interval: immediate on module tamper notification & after exiting *8 programming
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1706,7 +1706,7 @@ void dscKeybusReaderInterface::printPanel_0x4C() {
 /*
  *  0x57: Wireless key query
  *  Interval: immediate on wireless key notification
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1724,7 +1724,7 @@ void dscKeybusReaderInterface::printPanel_0x57() {
 /*
  *  0x58: Module status query - valid response produces 0xA5 command, byte 6 0xB1-0xC0
  *  Interval: immediate on module status notification and at power on after panel reset
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -1743,7 +1743,7 @@ void dscKeybusReaderInterface::printPanel_0x58() {
 /*
  *  0x5D_63: Flash panel lights: status and zones 1-32, partitions 1-2
  *  Interval: 30s
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1752,9 +1752,9 @@ void dscKeybusReaderInterface::printPanel_0x58() {
  *  Byte 4: Zones 9-16
  *  Byte 5: Zones 17-24
  *  Byte 6: Zones 25-32
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  *
- *  Command    1:Lights Zones1+  Zones9+  Zones17+ Zones25+   CRC
+ *  Command    1:Lights Zones1+  Zones9+  Zones17+ Zones25+ Checksum
  *  01011101 0 00000000 00000000 00000000 00000000 00000000 01011101 [0x5D] Partition 1 | Status lights flashing: none | Zones 1-32 flashing: none
  *  01011101 0 00100000 00000000 00000000 00000000 00000000 01111101 [0x5D] Partition 1 | Status lights flashing: Program | Zones 1-32 flashing: none
  *  01011101 0 00000000 00100000 00000000 00000000 00000000 01111101 [0x5D] Partition 1 | Status lights flashing: none | Zones 1-32 flashing: 6
@@ -1784,14 +1784,14 @@ void dscKeybusReaderInterface::printPanel_0x5D_63() {
 
 /*
  *  0x64: Beep, partition 1
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Beeps number
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command     Beeps     CRC
+ *  Command     Beeps   Checksum
  *  01100100 0 00000100 01101000 [0x64] Partition 1 | Beep: 2 beeps
  *  01100100 0 00000110 01101010 [0x64] Partition 1 | Beep: 3 beeps
  *  01100100 0 00001000 01101100 [0x64] Partition 1 | Beep: 4 beeps
@@ -1808,14 +1808,14 @@ void dscKeybusReaderInterface::printPanel_0x64() {
 
 /*
  *  0x69: Beep, partition 2
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Beeps number
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command     Beeps     CRC
+ *  Command     Beeps   Checksum
  *  01101001 0 00001100 01110101 [0x69] Partition 2 | Beep: 6 beeps
  *  Byte 0   1    2        3
  */
@@ -1828,7 +1828,7 @@ void dscKeybusReaderInterface::printPanel_0x69() {
 
 /*
  *  0x6E: LCD keypad display
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1840,9 +1840,9 @@ void dscKeybusReaderInterface::printPanel_0x69() {
  *  Byte 4 bits 4-7: Digit 6
  *  Byte 5 bits 0-3: Digit 7
  *  Byte 5 bits 4-7: Digit 8
- *  Byte 6: CRC
+ *  Byte 6: Checksum
  *
- *  Command     Digits   Digits                      CRC
+ *  Command     Digits   Digits                    Checksum
  *  01101110 0 00000001 00000001 00000000 00000000 01110000 [0x6E] Access code: 010100
  *  01101110 0 10101010 10101010 00000000 00000000 11000010 [0x6E] Access code: AAAA00
  *  Byte 0   1    2        3        4        5        6
@@ -1865,13 +1865,13 @@ void dscKeybusReaderInterface::printPanel_0x6E() {
 
 /*
  *  0x70: LCD keypad data query
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2-6: 11111111
  *
- *  Command      Tone     CRC
+ *  Command      Tone   Checksum
  *  01110000 0 11111111 11111111 11111111 11111111 11111111 [0x70] LCD keypad data query
  *  Byte 0   1    2        3        4        5        6
  */
@@ -1882,14 +1882,14 @@ void dscKeybusReaderInterface::printPanel_0x70() {
 
 /*
  *  0x75: Tone, partition 1
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Tone pattern
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command      Tone     CRC
+ *  Command      Tone   Checksum
  *  01110101 0 10000000 11110101 [0x75] Partition 1 | Tone: constant tone
  *  01110101 0 00000000 01110101 [0x75] Partition 1 | Tone: none
  *  Byte 0   1    2        3
@@ -1903,14 +1903,14 @@ void dscKeybusReaderInterface::printPanel_0x75() {
 
 /*
  *  0x7A: Tone, partition 2
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Tone pattern
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command      Tone     CRC
+ *  Command      Tone   Checksum
  *  01111010 0 00000000 01111010 [0x7A] Partition 2 | Tone: none
  *  Byte 0   1    2        3
  */
@@ -1923,14 +1923,14 @@ void dscKeybusReaderInterface::printPanel_0x7A() {
 
 /*
  *  0x7F: Buzzer, partition 1
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Buzzer pattern
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command     Buzzer    CRC
+ *  Command     Buzzer  Checksum
  *  01111111 0 00000001 10000000 [0x7F] Partition 1 | Buzzer: 1s
  *  Byte 0   1    2        3
  */
@@ -1943,14 +1943,14 @@ void dscKeybusReaderInterface::printPanel_0x7F() {
 
 /*
  *  0x82: Buzzer, partition 2
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 2: Buzzer pattern
- *  Byte 3: CRC
+ *  Byte 3: Checksum
  *
- *  Command     Buzzer    CRC
+ *  Command     Buzzer  Checksum
  *  10000010 0 00000010 10000100 [0x82] Partition 2 | Buzzer: 2s
  *  Byte 0   1    2        3
  */
@@ -1963,7 +1963,7 @@ void dscKeybusReaderInterface::printPanel_0x82() {
 
 /*
  *  0x87: PGM outputs
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -1983,9 +1983,9 @@ void dscKeybusReaderInterface::printPanel_0x82() {
  *  Byte 3 bit 5: PGM 12
  *  Byte 3 bit 6: PGM 13
  *  Byte 3 bit 7: PGM 14
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command      PGM      PGM      CRC
+ *  Command      PGM      PGM    Checksum
  *  10000111 0 00000000 00000000 10000111 [0x87] PGM outputs enabled: none
  *  10000111 0 00000000 00000001 10001000 [0x87] PGM outputs enabled: 1
  *  10000111 0 00000001 00000011 10001011 [0x87] PGM outputs enabled: 1 2 3
@@ -2013,7 +2013,7 @@ void dscKeybusReaderInterface::printPanel_0x87() {
 /*
  *  0x8D: After module programming entry and after user code 17-32 programming
  *  Note: Wireless keys 1-16 are assigned to user codes 17-32
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2028,9 +2028,9 @@ void dscKeybusReaderInterface::printPanel_0x87() {
  *  Byte 7 bits 0-3: HEX Digit 6
  *  Byte 7 bits 4-7: HEX Digit 5
  *  Byte 8: Unknown, always 0xFF
- *  Byte 9: CRC
+ *  Byte 9: Checksum
  *
- *  Command                                                                     CRC
+ *  Command                                                                   Checksum
  *  10001101 0 00110001 00000001 00000000 00010111 11111111 11111111 11111111 11010011 [0x8D] User code programming key response  // Code 17 Key 1
  *  10001101 0 00110001 00000100 00000000 00011000 11111111 11111111 11111111 11010111 [0x8D] User code programming key response  // Code 18 Key 1
  *  10001101 0 00110001 00000100 00000000 00010010 11111111 11111111 11111111 11010001 [0x8D] User code programming key response  // Code 18 Key 2
@@ -2069,7 +2069,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           case 0x3A: stream->print(F("General options")); optionInput = true; break;
           // case 0x40: PC5132 v3.14 section [804][80], default data is 30, nothing in manual about it
           case 0x41: stream->print(F("Zone placement test over")); break;
-          case 0x43: stream->print(F("Location signal strenght ")); break;
+          case 0x43: stream->print(F("Location signal strength ")); break;
           case 0x44: stream->print(F("Wireless supervisory window")); break; //v3.x
           case 0xA4: stream->print(F("Partition 1/Keyfob 1 function key 1")); break; //v5.0 Partition function key, v5.1 Keyfob function key
           case 0xA5: stream->print(F("Partition 1/Keyfob 1 function key 2")); break;
@@ -2189,69 +2189,69 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
           case 0x2C: stream->print(F("Keyfob 15 ESN")); break;
           case 0x2F: stream->print(F("Keyfob 16 ESN")); break;
           case 0x41: stream->print(F("Zone placement test")); break;
-          case 0x44: stream->print(F("Zone 1 ESN")); break; //v5
+          case 0x44:                                        //v5
           case 0x45: stream->print(F("Zone 1 ESN")); break; //v3
-          case 0x47: stream->print(F("Zone 2 ESN")); break;
+          case 0x47:
           case 0x48: stream->print(F("Zone 2 ESN")); break;
-          case 0x4A: stream->print(F("Zone 3 ESN")); break;
+          case 0x4A:
           case 0x4B: stream->print(F("Zone 3 ESN")); break;
-          case 0x4D: stream->print(F("Zone 4 ESN")); break;
+          case 0x4D:
           case 0x4E: stream->print(F("Zone 4 ESN")); break;
-          case 0x50: stream->print(F("Zone 5 ESN")); break;
+          case 0x50:
           case 0x51: stream->print(F("Zone 5 ESN")); break;
-          case 0x53: stream->print(F("Zone 6 ESN")); break;
+          case 0x53:
           case 0x54: stream->print(F("Zone 6 ESN")); break;
-          case 0x56: stream->print(F("Zone 7 ESN")); break;
+          case 0x56:
           case 0x57: stream->print(F("Zone 7 ESN")); break;
-          case 0x59: stream->print(F("Zone 8 ESN")); break;
+          case 0x59:
           case 0x5A: stream->print(F("Zone 8 ESN")); break;
-          case 0x5C: stream->print(F("Zone 9 ESN")); break;
+          case 0x5C:
           case 0x5D: stream->print(F("Zone 9 ESN")); break;
-          case 0x5F: stream->print(F("Zone 10 ESN")); break;
+          case 0x5F:
           case 0x60: stream->print(F("Zone 10 ESN")); break;
-          case 0x62: stream->print(F("Zone 11 ESN")); break;
+          case 0x62:
           case 0x63: stream->print(F("Zone 11 ESN")); break;
-          case 0x65: stream->print(F("Zone 12 ESN")); break;
+          case 0x65:
           case 0x66: stream->print(F("Zone 12 ESN")); break;
-          case 0x68: stream->print(F("Zone 13 ESN")); break;
+          case 0x68:
           case 0x69: stream->print(F("Zone 13 ESN")); break;
-          case 0x6B: stream->print(F("Zone 14 ESN")); break;
+          case 0x6B:
           case 0x6C: stream->print(F("Zone 14 ESN")); break;
-          case 0x6E: stream->print(F("Zone 15 ESN")); break;
+          case 0x6E:
           case 0x6F: stream->print(F("Zone 15 ESN")); break;
-          case 0x71: stream->print(F("Zone 16 ESN")); break;
+          case 0x71:
           case 0x72: stream->print(F("Zone 16 ESN")); break;
-          case 0x74: stream->print(F("Zone 17 ESN")); break;
+          case 0x74:
           case 0x75: stream->print(F("Zone 17 ESN")); break;
-          case 0x77: stream->print(F("Zone 18 ESN")); break;
+          case 0x77:
           case 0x78: stream->print(F("Zone 18 ESN")); break;
-          case 0x7A: stream->print(F("Zone 19 ESN")); break;
+          case 0x7A:
           case 0x7B: stream->print(F("Zone 19 ESN")); break;
-          case 0x7D: stream->print(F("Zone 20 ESN")); break;
+          case 0x7D:
           case 0x7E: stream->print(F("Zone 20 ESN")); break;
-          case 0x80: stream->print(F("Zone 21 ESN")); break;
+          case 0x80:
           case 0x81: stream->print(F("Zone 21 ESN")); break;
-          case 0x83: stream->print(F("Zone 22 ESN")); break;
+          case 0x83:
           case 0x84: stream->print(F("Zone 22 ESN")); break;
-          case 0x86: stream->print(F("Zone 23 ESN")); break;
+          case 0x86:
           case 0x87: stream->print(F("Zone 23 ESN")); break;
-          case 0x89: stream->print(F("Zone 24 ESN")); break;
+          case 0x89:
           case 0x8A: stream->print(F("Zone 24 ESN")); break;
-          case 0x8C: stream->print(F("Zone 25 ESN")); break;
+          case 0x8C:
           case 0x8D: stream->print(F("Zone 25 ESN")); break;
-          case 0x8F: stream->print(F("Zone 26 ESN")); break;
+          case 0x8F:
           case 0x90: stream->print(F("Zone 26 ESN")); break;
-          case 0x92: stream->print(F("Zone 27 ESN")); break;
+          case 0x92:
           case 0x93: stream->print(F("Zone 27 ESN")); break;
-          case 0x95: stream->print(F("Zone 28 ESN")); break;
+          case 0x95:
           case 0x96: stream->print(F("Zone 28 ESN")); break;
-          case 0x98: stream->print(F("Zone 29 ESN")); break;
+          case 0x98:
           case 0x99: stream->print(F("Zone 29 ESN")); break;
-          case 0x9B: stream->print(F("Zone 30 ESN")); break;
+          case 0x9B:
           case 0x9C: stream->print(F("Zone 30 ESN")); break;
-          case 0x9E: stream->print(F("Zone 31 ESN")); break;
+          case 0x9E:
           case 0x9F: stream->print(F("Zone 31 ESN")); break;
-          case 0xA1: stream->print(F("Zone 32 ESN")); break;
+          case 0xA1:
           case 0xA2: stream->print(F("Zone 32 ESN")); break; //v3
           case 0xB1: stream->print(F("Keyfob 1 ESN")); break;
           case 0xB4: stream->print(F("Keyfob 2 ESN")); break;
@@ -2361,7 +2361,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
     }
   }
 
-  // Wireless device signal strenght
+  // Wireless device signal strength
   if (panelData[3] == 0x43) {
     if (panelData[5] == 0x01) stream->print(F("good"));
     else if (panelData[5] == 0x02) stream->print(F("fair"));
@@ -2372,7 +2372,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
   if (panelData[4] == 0x02) {
     stream->print(F(" | HEX data: "));
 
-    for (byte panelByte = 5; panelByte <= 7; panelByte ++) {
+    for (byte panelByte = 5; panelByte <= 7; panelByte++) {
       stream->print(panelData[panelByte] >> 4, HEX);
       stream->print(panelData[panelByte] & 0x0F, HEX);
     }
@@ -2403,7 +2403,7 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
 /*
  *  0x94: Used to request programming data from modules
  *  Interval: immediate after entering *5 access code programming, after entering section 801-809 subsection number
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2420,9 +2420,9 @@ void dscKeybusReaderInterface::printPanel_0x8D() {
  *  Byte 8 bit 0-2 and Byte 9 bit 7: Digit 4
  *  Byte 9 bit 3-6: Digit 5
  *  Byte 9 bit 0-2 and Byte 10 bit 7: Digit 6
- *  Byte 10 bits 0-6: CRC (?)
+ *  Byte 10 bits 0-6: Checksum (?)
  *
- *  Command                                                                              CRC
+ *  Command                                                                            Checksum
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 00010111 10100000 [0x94] Unknown data
  *  10010100 0 00010001 00000000 00000000 10100101 00000000 00000000 00000000 01001100 11111100 [0x94] Unknown data
  *  Byte 0   1    2        3        4        5        6        7        8        9        10
@@ -2450,7 +2450,7 @@ void dscKeybusReaderInterface::printPanel_0x94() {
  *  0x9E: DLS query
  *  Structure decoding: complete
  *  Content decoding: complete
- *  CRC: no
+ *  Checksum: no
  *
  *  Bytes 2-6: 11111111
  *
@@ -2464,7 +2464,7 @@ void dscKeybusReaderInterface::printPanel_0x9E() {
 
 /*
  *  0xA5: Date, time, system status messages - partitions 1-2
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2479,9 +2479,9 @@ void dscKeybusReaderInterface::printPanel_0x9E() {
  *  Byte 5 bit 2-7: Minute
  *  Byte 6: Status, printPanelStatus0...printPanelStatus3
  *  Byte 7: Unknown
- *  Byte 8: CRC
+ *  Byte 8: Checksum
  *
- *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status             CRC
+ *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status           Checksum
  *  10100101 0 00011000 00001110 11101101 10000000 00000000 00000000 00111000 [0xA5] 2018.03.23 13:32 | Timestamp
  *  10100101 0 00011000 01001111 11001010 01000100 01001011 11111111 01100100 [0xA5] 2018.03.30 10:17 | Partition 1 | Partition in alarm
  *  10100101 0 00011000 01010000 01001001 10111000 01001100 11111111 01011001 [0xA5] 2018.04.02 09:46 | Partition 1 | Zone expander supervisory alarm
@@ -2514,7 +2514,7 @@ void dscKeybusReaderInterface::printPanel_0xA5() {
 
 /*
  *  0xAA: Event buffer
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: *incomplete
  *
@@ -2529,9 +2529,9 @@ void dscKeybusReaderInterface::printPanel_0xA5() {
  *  Byte 5 bit 2-7: Minute
  *  Byte 6: Status, printPanelStatus0...printPanelStatus3
  *  Byte 7: Event number
- *  Byte 8: CRC
+ *  Byte 8: Checksum
  *
- *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status   Event#    CRC
+ *  Command    YYY1YYY2   MMMMDD DDDHHHHH MMMMMM    Status   Event#  Checksum
  *  10101010 0 00100001 01000110 00001000 00100100 00011100 11111111 01011000 [0xAA] Event: 255 | 2021.01.16 08:09 | Zone alarm: 20
  *  10101010 0 00100000 01100110 10001101 00111000 10011001 00001000 10010110 [0xAA] Event: 008 | 2020.09.20 13:14 | Armed by user code 1
  *  10101010 0 00100000 01100110 10001100 11010000 10111111 00000110 01010001 [0xAA] Event: 006 | 2020.09.20 12:52 | Armed special: quick-arm/auto-arm/keyswitch/wireless key/DLS
@@ -2574,7 +2574,7 @@ void dscKeybusReaderInterface::printPanel_0xAA() {
 /*
  *  0xB1: Enabled zones 1-32, partitions 1,2
  *  Interval: 4m
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -2586,9 +2586,9 @@ void dscKeybusReaderInterface::printPanel_0xAA() {
  *  Byte 7: Partition 2 enabled zones 9-16
  *  Byte 8: Partition 2 enabled zones 17-24
  *  Byte 9: Partition 2 enabled zones 25-32
- *  Byte 10: CRC
+ *  Byte 10: Checksum
  *
- *  Command    1:Zone1+ Zones9+  Zones17+ Zones25+ 2:Zone1+ Zones9+  Zones17+ Zones25+   CRC
+ *  Command    1:Zone1+ Zones9+  Zones17+ Zones25+ 2:Zone1+ Zones9+  Zones17+ Zones25+ Checksum
  *  10110001 0 11111111 00000000 00000000 00000000 00000000 00000000 00000000 00000000 10110000 [0xB1] Enabled zones 1-32 | Partition 1: 1 2 3 4 5 6 7 8 | Partition 2: none
  *  10110001 0 10010001 10001010 01000001 10100100 00000000 00000000 00000000 00000000 10110001 [0xB1] Enabled zones 1-32 | Partition 1: 1 5 8 10 12 16 17 23 27 30 32 | Partition 2: none
  *  10110001 0 11111111 00000000 00000000 11111111 00000000 00000000 00000000 00000000 10101111 [0xB1] Enabled zones 1-32 | Partition 1: 1 2 3 4 5 6 7 8 25 26 27 28 29 30 31 32 | Partition 2: none
@@ -2607,7 +2607,7 @@ void dscKeybusReaderInterface::printPanel_0xB1() {
 /*
  *  0xBB: Bell
  *  Interval: immediate after alarm tripped except silent zones
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2615,9 +2615,9 @@ void dscKeybusReaderInterface::printPanel_0xB1() {
  *  Byte 2 bit 5: Bell status
  *  Byte 2 bit 6-7: Unknown
  *  Byte 3: Unknown
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command                        CRC
+ *  Command                      Checksum
  *  10111011 0 00100000 00000000 11011011 [0xBB] Bell: on
  *  10111011 0 00100000 00000101 11100000 [0xBB] Bell: on  // PC5015
  *  10111011 0 00000000 00000000 10111011 [0xBB] Bell: off
@@ -2633,7 +2633,7 @@ void dscKeybusReaderInterface::printPanel_0xBB() {
 /*
  *  0xC3: Keypad and dialer status
  *  Interval: 30s (PC1616/PC1832/PC1864)
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2643,9 +2643,9 @@ void dscKeybusReaderInterface::printPanel_0xBB() {
  *  Byte 2: bit 5 keypad lockout active
  *  Byte 2: bit 6-7 unknown
  *  Byte 3: Unknown, always observed as 11111111
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command                        CRC
+ *  Command                      Checksum
  *  11000011 0 00001000 11111111 11001010 [0xC3] Unknown data
  *  11000011 0 00010000 11111111 11010010 [0xC3] Unknown data
  *  11000011 0 00110000 11111111 11110010 [0xC3] Keypad lockout
@@ -2667,7 +2667,7 @@ void dscKeybusReaderInterface::printPanel_0xC3() {
 
 /*
  *  0xCE: Panel status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -2677,15 +2677,15 @@ void dscKeybusReaderInterface::printPanel_0xC3() {
  *  Byte 4: Status, printPanelStatus0...printPanelStatus2
  *  Byte 5: Unknown
  *  Byte 6: Unknown
- *  Byte 7: CRC
+ *  Byte 7: Checksum
  *
- * Command                       Status                      CRC
+ * Command                       Status                    Checksum
  * 11001110 0 00100000 00000000 11101001 00000000 00000000 11010111 [0xCE] Bell trouble
  * 11001110 0 00100000 00011101 10001100 00000000 00000000 10010111 [0xCE] Zone fault: 1
  * 11001110 0 00100000 10001100 01010000 00000000 00000000 11001010 [0xCE] Keypad Panic alarm
  *  Byte 0   1    2        3        4        5        6        7
  *
- * Command                      Unknown                      CRC
+ * Command                      Unknown                    Checksum
  * 11001110 0 00000001 10100000 00000000 00000000 00000000 01101111 [0xCE] Unknown data [Byte 2/0x01]  // Partition 1 exit delay
  * 11001110 0 00000001 10110001 00000000 00000000 00000000 10000000 [0xCE] Unknown data [Byte 2/0x01]  // Partition 1 armed stay
  * 11001110 0 00000001 10110011 00000000 00000000 00000000 10000010 [0xCE] Unknown data [Byte 2/0x01]  // Partition 1 armed away
@@ -2715,7 +2715,7 @@ void dscKeybusReaderInterface::printPanel_0xCE() {
 
 /*
  *  0xD5: Keypad zone query
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -2744,10 +2744,10 @@ void dscKeybusReaderInterface::printPanel_0xE6() {
     case 0x08:
     case 0x0A:
     case 0x0C:
-    case 0x0E: break;  // Skips panel commands without CRC data
+    case 0x0E: break;  // Skips panel commands without checksum data
     default: {         // Checks remaining panel commands
-      if (!validCRC()) {
-        stream->print(F("[CRC Error]"));
+      if (!validChecksum()) {
+        stream->print(F("[Checksum error]"));
         return;
       }
     }
@@ -2786,11 +2786,11 @@ void dscKeybusReaderInterface::printPanel_0xE6() {
 
 /*
  *  0xE6.01 - 0xE6.06: Status in alarm/programming, partitions 1-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
- *  Command  Subcommand  Lights   Status  Zones33+ Zones41+ Zones49+ Zones57+            CRC
+ *  Command  Subcommand  Lights   Status  Zones33+ Zones41+ Zones49+ Zones57+          Checksum
  *  11100110 0 00000001 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001101 [0xE6.01] Partition 3: Armed Backlight - *8: Installer programming
  *  11100110 0 00000010 10000010 11100100 00000000 00000000 00000000 00000000 00000000 01001110 [0xE6.02] Partition 4: Armed Backlight - *8: Installer programming
  *  11100110 0 00000011 10000001 11111000 00000000 00000000 00000000 00000000 00000000 01100010 [0xE6.03] Partition 5: Ready Backlight - Keypad programming
@@ -2832,7 +2832,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x01_06_20_21() {
 /*
  *  0xE6.08,0A,0C,0E: Zone expander 4-7 query
  *  Interval: immediate after zone expander status notification
- *  CRC: no
+ *  Checksum: no
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -2870,14 +2870,14 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x08_0A_0C_0E() {
 
 /*
  *  0xE6.09: Zones 33-40 status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3 bit 0-7: Zone 33-40
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command  Subcommand Zones33+   CRC
+ *  Command  Subcommand Zones33+ Checksum
  *  11100110 0 00001001 00000000 11101111 [0xE6.09] Zones 33-40 open: none
  *  Byte 0   1    2        3        4
  */
@@ -2889,14 +2889,14 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x09() {
 
 /*
  *  0xE6.0B: Zones 41-48 status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3 bit 0-7: Zone 41-48
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command  Subcommand Zones41+   CRC
+ *  Command  Subcommand Zones41+ Checksum
  *  11100110 0 00001011 00000000 11110001 [0xE6.0B] Zones 41-48 open: none
  *  Byte 0   1    2        3        4
  */
@@ -2908,14 +2908,14 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x0B() {
 
 /*
  *  0xE6.0D: Zones 49-56 status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3 bit 0-7: Zone 49-56
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command  Subcommand Zones49+   CRC
+ *  Command  Subcommand Zones49+ Checksum
  *  11100110 0 00001101 00000000 11110011 [0xE6.0D] Zones 49-56 open: none
  *  Byte 0   1    2        3        4
  */
@@ -2927,14 +2927,14 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x0D() {
 
 /*
  *  0xE6.0F: Zones 57-64 status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3 bit 0-7: Zone 57-64
- *  Byte 4: CRC
+ *  Byte 4: Checksum
  *
- *  Command  Subcommand Zones57+   CRC
+ *  Command  Subcommand Zones57+ Checksum
  *  11100110 0 00001111 00000000 11110101 [0xE6.0F] Zones 57-64 open: none
  *  Byte 0   1    2        3        4
  */
@@ -2947,7 +2947,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x0F() {
 /*
  *  0xE6.17: Flash panel lights: status and zones 1-32, partitions 1-8
  *  Interval: intermittent
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -2957,9 +2957,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x0F() {
  *  Byte 6: Zones 9-16
  *  Byte 7: Zones 17-24
  *  Byte 8: Zones 25-32
- *  Byte 9: CRC
+ *  Byte 9: Checksum
  *
- *  Command    Subcmd  Partition  Lights  Zones1+  Zones9+  Zones17+ Zones25+   CRC
+ *  Command    Subcmd  Partition  Lights  Zones1+  Zones9+  Zones17+ Zones25+ Checksum
  *  11100110 0 00010111 00000100 00000000 00000100 00000000 00000000 00000000 00000101 [0xE6.17] Partition 3 | Status lights flashing: none | Zones 1-32 flashing: 3
  *  Byte 0   1    2        3        4        5        6        7        8        9
  */
@@ -2978,7 +2978,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x17() {
 /*
  *  0xE6.18: Flash panel lights: status and zones 33-64, partitions 1-8
  *  Interval: intermittent
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -2988,9 +2988,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x17() {
  *  Byte 6: Zones 41-48
  *  Byte 7: Zones 49-56
  *  Byte 8: Zones 57-64
- *  Byte 9: CRC
+ *  Byte 9: Checksum
  *
- *  Command    Subcmd  Partition  Lights  Zones33+ Zones41+ Zones49+ Zones57+   CRC
+ *  Command    Subcmd  Partition  Lights  Zones33+ Zones41+ Zones49+ Zones57+ Checksum
  *  11100110 0 00011000 00000001 00000000 00000000 00000000 00000000 00000000 11111111 [0xE6.18] Partition 1 | Status lights flashing: none | Zones 33-64 flashing: none
  *  11100110 0 00011000 00000001 00000000 00000001 00000000 00000000 00000000 00000000 [0xE6.18] Partition 1 | Status lights flashing: none | Zones 33-64 flashing: 33
  *  11100110 0 00011000 00000001 00000100 00000000 00000000 00000000 10000000 10000011 [0xE6.18] Partition 1 | Status lights flashing: Memory | Zones 33-64 flashing: 64
@@ -3010,15 +3010,15 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x18() {
 
 /*
  *  0xE6.19: Beep, partitions 3-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3: Partition number
  *  Byte 4: Beeps number
- *  Byte 5: CRC
+ *  Byte 5: Checksum
  *
- *  Command    Subcmd  Partition  Beeps     CRC
+ *  Command    Subcmd  Partition  Beeps   Checksum
  *  11100110 0 00011001 00000100 00000110 00001001 [0xE6.19] Partition 3 | Beep: 3 beeps
  *  11100110 0 00011001 00001000 00001100 00010011 [0xE6.19] Partition 4 | Beep: 6 beeps
  *  Byte 0   1    2        3        4        5
@@ -3032,7 +3032,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x19() {
 
 /*
  *  0xE6.1A: Panel status
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -3048,9 +3048,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x19() {
  *  Byte 7: Unknown
  *  Byte 8: Unknown
  *  Byte 9: Unknown
- *  Byte 10: CRC
+ *  Byte 10: Checksum
  *
- *  Command    Subcmd             Alarm                                                  CRC
+ *  Command    Subcmd             Alarm                                                Checksum
  *  11100110 0 00011010 01000000 00000001 00000000 00010001 00000000 00000000 00000000 01010010 [0xE6.1A] Partitions in alarm: 1 | AC power trouble
  *  11100110 0 00011010 01000000 00000000 00000000 00011001 00000000 00000000 00000000 01011001 [0xE6.1A] Partitions in alarm: none | Loss of system time | AC power trouble
  *  11100110 0 00011010 01000000 00000000 00000000 00001001 00000000 00000000 00000000 01001001 [0xE6.1A] Partitions in alarm: none | Loss of system time  // All partitions exit delay in progress, disarmed
@@ -3074,15 +3074,15 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x1A() {
 
 /*
  *  0xE6.1D: Tone, partitions 3-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3: Partition number
  *  Byte 4: Tone
- *  Byte 5: CRC
+ *  Byte 5: Checksum
  *
- *  Command    Subcmd  Partition   Tone     CRC
+ *  Command    Subcmd  Partition   Tone   Checksum
  *  11100110 0 00011101 00000100 00000000 00000111 [0xE6.1D] Partition 3 | Tone: off
  *  11100110 0 00011101 00001000 10000000 10001011 [0xE6.1D] Partition 4 | Tone: constant tone
  *  Byte 0   1    2        3        4        5
@@ -3096,15 +3096,15 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x1D() {
 
 /*
  *  0xE6.1F: Buzzer, partitions 3-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
  *  Byte 3: Partition number
  *  Byte 4: Buzzer pattern
- *  Byte 5: CRC
+ *  Byte 5: Checksum
  *
- *  Command    Subcmd  Partition  Buzzer    CRC
+ *  Command    Subcmd  Partition  Buzzer  Checksum
  *  11100110 0 00011111 00001000 00000001 00001110 [0xE6.1F] Partition 4 | Buzzer: 1s
  *  Byte 0   1    2        3        4        5
  */
@@ -3118,7 +3118,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x1F() {
 /*
  *  0xE6.2B: Enabled zones 1-32, partitions 3-8
  *  Interval: 60s
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -3127,9 +3127,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x1F() {
  *  Byte 5: Zones enabled 9-16
  *  Byte 6: Zones enabled 17-24
  *  Byte 7: Zones enabled 25-32
- *  Byte 8: CRC
+ *  Byte 8: Checksum
  *
- *  Command    Subcmd  Partition Zones1+  Zones9+  Zones17+ Zones25+   CRC
+ *  Command    Subcmd  Partition Zones1+  Zones9+  Zones17+ Zones25+ Checksum
  *  11100110 0 00101011 00000100 00000100 00000000 00000000 00000000 00011001 [0xE6.2B] Partition 3 | Enabled zones 1-32: 3
  *  11100110 0 00101011 00001000 00001000 00000000 00000000 00000000 00100001 [0xE6.2B] Partition 4 | Enabled zones 1-32: 4
  *  Byte 0   1    2        3        4        5        6        7        8
@@ -3146,7 +3146,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x2B() {
 /*
  *  0xE6.2C: Enabled zones 33-64, partitions 1-8
  *  Interval: 60s
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: complete
  *  Content decoding: complete
  *
@@ -3155,9 +3155,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x2B() {
  *  Byte 5: Zones enabled 41-48
  *  Byte 6: Zones enabled 49-56
  *  Byte 7: Zones enabled 57-64
- *  Byte 8: CRC
+ *  Byte 8: Checksum
  *
- *  Command    Subcmd  Partition Zones33+ Zones41+ Zones49+ Zones57+   CRC
+ *  Command    Subcmd  Partition Zones33+ Zones41+ Zones49+ Zones57+ Checksum
  *  11100110 0 00101100 00000001 00000000 00000000 00000000 00000000 00010011 [0xE6.2C] Partition 1 | Enabled zones 33-64: none
  *  11100110 0 00101100 00000010 00000000 00000000 00000000 00000000 00010100 [0xE6.2C] Partition 2 | Enabled zones 33-64: none
  *  Byte 0   1    2        3        4        5        6        7        8
@@ -3173,7 +3173,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x2C() {
 
 /*
  *  0xE6.41: Status in programming, zone lights 65-95
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -3190,7 +3190,7 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x41() {
 
 /*
  *  0xEB: Date, time, system status messages - partitions 1-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -3207,9 +3207,9 @@ void dscKeybusReaderInterface::printPanel_0xE6_0x41() {
  *  Byte 7: Selects set of status commands
  *  Byte 8: Status, printPanelStatus0...printPanelStatus1X
  *  Byte 9: Unknown
- *  Byte 10: CRC
+ *  Byte 10: Checksum
  *
- *            Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status             CRC
+ *            Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status           Checksum
  *  11101011 0 00000001 00011000 00011000 10001010 00101100 00000000 10111011 00000000 10001101 [0xEB] 2018.06.04 10:11 | Partition 1 | Armed by master code 40
  *  11101011 0 00000001 00011000 00011000 10001010 00111000 00000000 10111011 00000000 10011001 [0xEB] 2018.06.04 10:14 | Partition 1 | Armed by master code 40
  *  11101011 0 00000001 00011000 00011000 10001010 00111000 00000010 10011011 00000000 01111011 [0xEB] 2018.06.04 10:14 | Partition 1 | Armed: away
@@ -3254,7 +3254,7 @@ void dscKeybusReaderInterface::printPanel_0xEB() {
 
 /*
  *  0xEC: Event buffer - partitions 1-8
- *  CRC: yes
+ *  Checksum: yes
  *  Structure decoding: *incomplete
  *  Content decoding: *incomplete
  *
@@ -3271,9 +3271,9 @@ void dscKeybusReaderInterface::printPanel_0xEB() {
  *  Byte 7: Selects set of status commands
  *  Byte 8: Status, printPanelStatus0...printPanelStatus1X
  *  Byte 9: Event number
- *  Byte 10: CRC
+ *  Byte 10: Checksum
  *
- *            Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status   Event#    CRC
+ *            Partition YYY1YYY2   MMMMDD DDDHHHHH MMMMMM             Status   Event#  Checksum
  *  11101100 0 00000000 00100000 00101101 01100011 10111100 00000001 10101100 00001011 00010000 [0xEC] Event: 011 | 2020.11.11 03:47 | Exit *8 programming
  *  11101100 0 00000000 00100000 00110000 00100000 00000000 00000011 00001010 00001001 01110010 [0xEC] Event: 009 | 2020.12.01 00:00 | PC5204: Supervisory trouble
  *  11101100 0 00000000 00010110 00011000 10100001 01000000 00000010 10010001 11111100 10001010 [0xEC] Event: 252 | 2016.06.05 01:16 | Swinger shutdown
@@ -3570,9 +3570,9 @@ void dscKeybusReaderInterface::printModule_Status() {
  *  11111111 1 00111111 11111111 00001111 11110011 11111111 11111111 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 1 2 | PC/RF5132
  *  11111111 1 00111111 11111111 11001111 11111111 11111111 11111100 11111111 [Module/0x11] Keypad slots: 1 | Zone expander: 2 7
  *  11111111 1 11111111 11111100 00111111 11111111 00111111 11111111 11111111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 | PC5204
- *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11001111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 1
- *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11110011 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 2
- *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11111100 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 //PC5200 3
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11001111 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 | PC5200 1
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11110011 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 | PC5200 2
+ *  11111111 1 11111111 11111100 00000000 00001111 11111111 11111111 11111100 [Module/0x11] Keypad slots: 8 | Zone expander: 1 2 3 4 5 6 | PC5200 3
  *  Byte 0   1    2        3        4        5        6        7        8
  */
 void dscKeybusReaderInterface::printModule_0x11() {
@@ -3649,32 +3649,32 @@ void dscKeybusReaderInterface::printModule_0x41() {
  *
  *  Bits 0-3 or 4-7 "0000" indicates a module is still tampered since a previous notification
  *
- *  Byte 2-5 bit 0-1: Keypad slot 2,4,6,8 tamper restore
+ *  Byte 2-5 bit 0-1: Keypad slot 2,4,6,8 tamper restored
  *  Byte 2-5 bit 2-3: Keypad slot 2,4,6,8 tamper
- *  Byte 2-5 bit 4-5: Keypad slot 1,3,5,7 tamper restore
+ *  Byte 2-5 bit 4-5: Keypad slot 1,3,5,7 tamper restored
  *  Byte 2-5 bit 6-7: Keypad slot 1,3,5,7 tamper
- *  Byte 6-8 bit 0-1: Module slot 10,12,14 tamper restore
+ *  Byte 6-8 bit 0-1: Module slot 10,12,14 tamper restored
  *  Byte 6-8 bit 2-3: Module slot 10,12,14 tamper
- *  Byte 6-8 bit 4-5: Module slot 9,11,13 tamper restore
+ *  Byte 6-8 bit 4-5: Module slot 9,11,13 tamper restored
  *  Byte 6-8 bit 6-7: Module slot 9,11,13 tamper
- *  Byte 9 bit 0-1: PC5208 tamper restore
+ *  Byte 9 bit 0-1: PC5208 tamper restored
  *  Byte 9 bit 2-3: PC5208 tamper
- *  Byte 9 bit 4-5: RF5132 tamper restore
+ *  Byte 9 bit 4-5: RF5132 tamper restored
  *  Byte 9 bit 6-7: RF5132 tamper
  *  Byte 10 bit 0-3: Unknown
- *  Byte 10 bit 4-5: PC5204 tamper restore
+ *  Byte 10 bit 4-5: PC5204 tamper restored
  *  Byte 10 bit 6-7: PC5204 tamper
  *  Byte 11: Unknown
  *  Byte 12: Unknown
  *
  *  Later generation panels:
- *  Byte 13 bit 0-1: PC5200 1 tamper restore
+ *  Byte 13 bit 0-1: PC5200 1 tamper restored
  *  Byte 13 bit 2-3: PC5200 1 tamper
- *  Byte 13 bit 4-5: Module slot 16 tamper restore
+ *  Byte 13 bit 4-5: Module slot 16 tamper restored
  *  Byte 13 bit 6-7: Module slot 16 tamper
- *  Byte 14 bit 0-1: PC5200 3 tamper restore
+ *  Byte 14 bit 0-1: PC5200 3 tamper restored
  *  Byte 14 bit 2-3: PC5200 3 tamper
- *  Byte 14 bit 4-5: PC5200 2 tamper restore
+ *  Byte 14 bit 4-5: PC5200 2 tamper restored
  *  Byte 14 bit 6-7: PC5200 2 tamper
  *
  *  11111111 1 11111111 11111111 11111110 11111111 [Module/0x05] Module tamper notification
@@ -3713,13 +3713,12 @@ void dscKeybusReaderInterface::printModule_0x41() {
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper
  *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x4C] PC5204: Tamper restored
  *  11111111 1 00001111 11111111 11111111 11111111 11111111 00001111 11111111 00110000 11111111 11111111 11111111 11111111 11111111 [Module/0x4C] Keypad tamper: Slot 1 | Module tamper: Slot 11 | RF5132: Tamper | PC5208: Tamper
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 1 tamper restore
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 2 tamper restore
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper
- *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 [Module/0x4C] Keypad tamper: Slot 8 //PC5200 3 tamper restore
-
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 1 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 1 tamper restored
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 2 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 2 tamper restored
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 3 tamper
+ *  11111111 1 11111111 11111111 11111111 11110000 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 [Module/0x4C] Keypad tamper: Slot 8 | PC5200 3 tamper restored
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13       14
  */
 void dscKeybusReaderInterface::printModule_0x4C() {
@@ -3890,33 +3889,33 @@ void dscKeybusReaderInterface::printModule_0x57() {
  *  Byte 5: Unknown
  *
  *  Later generation panels:
- *  Byte 6 bit 0-1: PC5200 1 battery restore
+ *  Byte 6 bit 0-1: PC5200 1 battery restored
  *  Byte 6 bit 2-3: PC5200 1 battery trouble
- *  Byte 6 bit 4-5: PC5200 1 AC power restore
+ *  Byte 6 bit 4-5: PC5200 1 AC power restored
  *  Byte 6 bit 6-7: PC5200 1 AC power trouble
  *  Byte 7 bit 0-3: Unknown
- *  Byte 7 bit 4-5: PC5200 1 AUX restore
+ *  Byte 7 bit 4-5: PC5200 1 AUX restored
  *  Byte 7 bit 6-7: PC5200 1 AUX trouble
- *  Byte 8 bit 0-1: PC5200 2 battery restore
+ *  Byte 8 bit 0-1: PC5200 2 battery restored
  *  Byte 8 bit 2-3: PC5200 2 battery trouble
- *  Byte 8 bit 4-5: PC5200 2 AC power restore
+ *  Byte 8 bit 4-5: PC5200 2 AC power restored
  *  Byte 8 bit 6-7: PC5200 2 AC power trouble
  *  Byte 9 bit 0-3: Unknown
- *  Byte 9 bit 4-5: PC5200 2 AUX restore
+ *  Byte 9 bit 4-5: PC5200 2 AUX restored
  *  Byte 9 bit 6-7: PC5200 2 AUX trouble
- *  Byte 10 bit 0-1: PC5200 3 battery restore
+ *  Byte 10 bit 0-1: PC5200 3 battery restored
  *  Byte 10 bit 2-3: PC5200 3 battery trouble
- *  Byte 10 bit 4-5: PC5200 3 AC power restore
+ *  Byte 10 bit 4-5: PC5200 3 AC power restored
  *  Byte 10 bit 6-7: PC5200 3 AC power trouble
  *  Byte 11 bit 0-3: Unknown
- *  Byte 11 bit 4-5: PC5200 3 AUX restore
+ *  Byte 11 bit 4-5: PC5200 3 AUX restored
  *  Byte 11 bit 6-7: PC5200 3 AUX trouble
- *  Byte 12 bit 0-1: PC5200 4 battery restore
+ *  Byte 12 bit 0-1: PC5200 4 battery restored
  *  Byte 12 bit 2-3: PC5200 4 battery trouble
- *  Byte 12 bit 4-5: PC5200 4 AC power restore
+ *  Byte 12 bit 4-5: PC5200 4 AC power restored
  *  Byte 12 bit 6-7: PC5200 4 AC power trouble
  *  Byte 13 bit 0-3: Unknown
- *  Byte 13 bit 4-5: PC5200 4 AUX restore
+ *  Byte 13 bit 4-5: PC5200 4 AUX restored
  *  Byte 13 bit 6-7: PC5200 4 AUX trouble
  *
  *  11111111 1 11111111 11111111 11111111 11011111 [Module/0x05] Module status notification
@@ -3934,30 +3933,30 @@ void dscKeybusReaderInterface::printModule_0x57() {
  *  11111111 1 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5204: AC power trouble
  *  
  *  Module     PC5200                              Slot 1            Slot 2            Slot 3            Slot 4        
- *  11111111 1 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AC Restore
- *  11111111 1 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 Battery restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 1 AUX restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AC Restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 Battery restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 2 AUX restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AC Restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 Battery restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 [Module/0x58] Unknown data //PC5200 3 AUX restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 [Module/0x58] Unknown data //PC5200 4 AC Restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x58] Unknown data //PC5200 4 Battery trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x58] Unknown data //PC5200 4 Battery restore
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x58] Unknown data //PC5200 4 AUX trouble
- *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x58] Unknown data //PC5200 4 AUX restore
+ *  11111111 1 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 AC Restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 Battery restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 1 AUX restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 AC Restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 Battery restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 11111111 [Module/0x58] PC5200 2 AUX restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 11111111 [Module/0x58] PC5200 3 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 11111111 [Module/0x58] PC5200 3 AC Restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 11111111 11111111 [Module/0x58] PC5200 3 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 11111111 11111111 [Module/0x58] PC5200 3 Battery restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 11111111 [Module/0x58] PC5200 3 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 11111111 [Module/0x58] PC5200 3 AUX restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 11111111 [Module/0x58] PC5200 4 AC Trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 11111111 [Module/0x58] PC5200 4 AC Restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11110011 11111111 [Module/0x58] PC5200 4 Battery trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111100 11111111 [Module/0x58] PC5200 4 Battery restored
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 00111111 [Module/0x58] PC5200 4 AUX trouble
+ *  11111111 1 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111 11001111 [Module/0x58] PC5200 4 AUX restored
  *  Byte 0   1    2        3        4        5        6        7        8        9        10       11       12       13
  */
 void dscKeybusReaderInterface::printModule_0x58() {

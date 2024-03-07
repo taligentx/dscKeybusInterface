@@ -366,7 +366,7 @@ void dscKeybusInterface::processPanelStatus() {
 
 
 void dscKeybusInterface::processPanel_0x16() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
 
   // Panel version
   panelVersion = ((panelData[3] >> 4) * 10) + (panelData[3] & 0x0F);
@@ -375,7 +375,7 @@ void dscKeybusInterface::processPanel_0x16() {
 
 // Panel status and zones 1-8 status
 void dscKeybusInterface::processPanel_0x27() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
 
   // Messages
   for (byte partitionIndex = 0; partitionIndex < 2; partitionIndex++) {
@@ -429,7 +429,7 @@ void dscKeybusInterface::processPanel_0x27() {
 
 // Zones 9-16 status is stored in openZones[1] and openZonesChanged[1]: Bit 0 = Zone 9 ... Bit 7 = Zone 16
 void dscKeybusInterface::processPanel_0x2D() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
   if (dscZones < 2) return;
   processZoneStatus(1, 6);
 }
@@ -437,7 +437,7 @@ void dscKeybusInterface::processPanel_0x2D() {
 
 // Zones 17-24 status is stored in openZones[2] and openZonesChanged[2]: Bit 0 = Zone 17 ... Bit 7 = Zone 24
 void dscKeybusInterface::processPanel_0x34() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
   if (dscZones < 3) return;
   processZoneStatus(2, 6);
 }
@@ -445,7 +445,7 @@ void dscKeybusInterface::processPanel_0x34() {
 
 // Zones 25-32 status is stored in openZones[3] and openZonesChanged[3]: Bit 0 = Zone 25 ... Bit 7 = Zone 32
 void dscKeybusInterface::processPanel_0x3E() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
   if (dscZones < 4) return;
   processZoneStatus(3, 6);
 }
@@ -458,7 +458,7 @@ void dscKeybusInterface::processPanel_0x3E() {
  *  pgmOutputs[1], Bit 0 = PGM 9 ... Bit 5 = PGM 14
  */
 void dscKeybusInterface::processPanel_0x87() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
 
   // Resets flag to write access code if needed when writing command output keys
   for (byte partitionIndex = 0; partitionIndex < dscPartitions; partitionIndex++) {
@@ -487,7 +487,7 @@ void dscKeybusInterface::processPanel_0x87() {
 
 
 void dscKeybusInterface::processPanel_0xA5() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
 
   processTime(2);
 
@@ -514,7 +514,7 @@ void dscKeybusInterface::processPanel_0xA5() {
  *  0xE6 commands are split into multiple subcommands to handle up to 8 partitions/64 zones.
  */
 void dscKeybusInterface::processPanel_0xE6() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
 
   switch (panelData[2]) {
     case 0x09: processPanel_0xE6_0x09(); return;  // Zones 33-40 status
@@ -566,7 +566,7 @@ void dscKeybusInterface::processPanel_0xE6_0x1A() {
 
 
 void dscKeybusInterface::processPanel_0xEB() {
-  if (!validCRC()) return;
+  if (!validChecksum()) return;
   if (dscPartitions < 3) return;
 
   processTime(3);
