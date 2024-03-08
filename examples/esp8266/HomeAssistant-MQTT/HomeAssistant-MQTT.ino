@@ -22,90 +22,78 @@ mqtt:
   client_id: homeAssistant
 
 # https://www.home-assistant.io/components/alarm_control_panel.mqtt/
-alarm_control_panel:
-  - platform: mqtt
-    name: "Security Partition 1"
-    state_topic: "dsc/Get/Partition1"
-    availability_topic: "dsc/Status"
-    command_topic: "dsc/Set"
-    payload_disarm: "1D"
-    payload_arm_home: "1S"
-    payload_arm_away: "1A"
-    payload_arm_night: "1N"
-  - platform: mqtt
-    name: "Security Partition 2"
-    state_topic: "dsc/Get/Partition2"
-    availability_topic: "dsc/Status"
-    command_topic: "dsc/Set"
-    payload_disarm: "2D"
-    payload_arm_home: "2S"
-    payload_arm_away: "2A"
-    payload_arm_night: "2N"
+  alarm_control_panel:
+    - name: "Security Partition 1"
+      state_topic: "dsc/Get/Partition1"
+      availability_topic: "dsc/Status"
+      command_topic: "dsc/Set"
+      payload_disarm: "1D"
+      payload_arm_home: "1S"
+      payload_arm_away: "1A"
+      payload_arm_night: "1N"
+    - name: "Security Partition 2"
+      state_topic: "dsc/Get/Partition2"
+      availability_topic: "dsc/Status"
+      command_topic: "dsc/Set"
+      payload_disarm: "2D"
+      payload_arm_home: "2S"
+      payload_arm_away: "2A"
+      payload_arm_night: "2N"
 
 # The sensor component displays the partition status message - edit the Home
 # view ("Configure UI"), click "+", select the "Sensor" card, select "Entity",
 # and select the security system partition.
 # https://www.home-assistant.io/components/sensor.mqtt/
-sensor:
-  - platform: mqtt
-    name: "Security Partition 1"
-    state_topic: "dsc/Get/Partition1/Message"
-    availability_topic: "dsc/Status"
-    icon: "mdi:shield"
-  - platform: mqtt
-    name: "Security Partition 2"
-    state_topic: "dsc/Get/Partition2/Message"
-    availability_topic: "dsc/Status"
-    icon: "mdi:shield"
+  sensor:
+    - name: "Security Partition 1"
+      state_topic: "dsc/Get/Partition1/Message"
+      availability_topic: "dsc/Status"
+      icon: "mdi:shield"
+    - name: "Security Partition 2"
+      state_topic: "dsc/Get/Partition2/Message"
+      availability_topic: "dsc/Status"
+      icon: "mdi:shield"
 
 # https://www.home-assistant.io/components/binary_sensor.mqtt/
-binary_sensor:
-  - platform: mqtt
-    name: "Security Trouble"
-    state_topic: "dsc/Get/Trouble"
-    device_class: "problem"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "Smoke Alarm 1"
-    state_topic: "dsc/Get/Fire1"
-    device_class: "smoke"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "Smoke Alarm 2"
-    state_topic: "dsc/Get/Fire2"
-    device_class: "smoke"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "Zone 1"
-    state_topic: "dsc/Get/Zone1"
-    device_class: "door"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "Zone 2"
-    state_topic: "dsc/Get/Zone2"
-    device_class: "window"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "Zone 3"
-    state_topic: "dsc/Get/Zone3"
-    device_class: "motion"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "PGM 1"
-    state_topic: "dsc/Get/PGM1"
-    payload_on: "1"
-    payload_off: "0"
-  - platform: mqtt
-    name: "PGM 8"
-    state_topic: "dsc/Get/PGM8"
-    payload_on: "1"
-    payload_off: "0"
+  binary_sensor:
+    - name: "Security Trouble"
+      state_topic: "dsc/Get/Trouble"
+      device_class: "problem"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "Smoke Alarm 1"
+      state_topic: "dsc/Get/Fire1"
+      device_class: "smoke"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "Smoke Alarm 2"
+      state_topic: "dsc/Get/Fire2"
+      device_class: "smoke"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "Zone 1"
+      state_topic: "dsc/Get/Zone1"
+      device_class: "door"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "Zone 2"
+      state_topic: "dsc/Get/Zone2"
+      device_class: "window"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "Zone 3"
+      state_topic: "dsc/Get/Zone3"
+      device_class: "motion"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "PGM 1"
+      state_topic: "dsc/Get/PGM1"
+      payload_on: "1"
+      payload_off: "0"
+    - name: "PGM 8"
+      state_topic: "dsc/Get/PGM8"
+      payload_on: "1"
+      payload_off: "0"
 
  *  Example button card configuration to add a panic button: https://www.home-assistant.io/lovelace/button/
 
