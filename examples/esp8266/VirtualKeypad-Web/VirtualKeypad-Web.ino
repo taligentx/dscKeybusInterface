@@ -1,5 +1,5 @@
 /*
- *  VirtualKeypad-Web 1.5 (esp8266)
+ *  VirtualKeypad-Web 1.6 (esp8266)
  *
  *  Provides a virtual keypad web interface using the esp8266 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
@@ -11,26 +11,30 @@
  *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
  *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
  *              when used with recent versions of Safari on macOS and iOS.
- *
- *    2. Install LittleFS_esp32 to enable uploading web server files to the esp8266:
- *        https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html#littlefs-file-system-limitations
+ *            * The Arduino IDE may prompt to update ESPAsyncWebServer, keep this version instead
+ *              as other versions can result in crashes with the current code.  PRs welcome!
+ *    2. Install a LittleFS upload tool to enable uploading web server files to the esp8266:
+ *         Arduino IDE 1.x: https://github.com/earlephilhower/arduino-esp8266littlefs-plugin
+ *         Arduino IDE 2.x: https://github.com/earlephilhower/arduino-littlefs-upload
  *    3. Install the following libraries, available in the Arduino IDE Library Manager and
  *       the Platform.io Library Registry:
  *         ArduinoJson: https://github.com/bblanchon/ArduinoJson
  *         Chrono: https://github.com/SofaPirate/Chrono
- *
  *    4. Set the WiFi SSID and password in the sketch.
  *    5. If desired, update the DNS hostname in the sketch.  By default, this is set to
  *       "dsc" and the web interface will be accessible at: http://dsc.local
- *    6. Set the esp8266 flash size to use at least 1MB for the filesystem.
+ *    6. Set the esp8266 flash size to use at least 1MB for the filesystem (the default 2MB is OK).
  *         Arduino IDE: Tools > Flash Size > 4MB (FS:1MB ...)
  *    7. Upload the sketch.
- *    8. Upload the Files in data trough 'ESP8266 LittleFS Data Upload' containing the web server files:
- *         Arduino IDE: Tools > ESP8266 Sketch Data Upload
+ *    8. Upload the data containing the web server files:
+ *         Arduino IDE 1.x: Tools > ESP8266 LittleFS Data Upload
+ *         Arduino IDE 2.x: Ctrl/Command + Shift + P, then "Upload LittleFS to Pico/ESP8266"
  *    9. Access the virtual keypad web interface by the IP address displayed through
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.6 - Update filesystem from SPIFFS to LittleFS
+ *          Update for ArduinoJSON 7.x
  *    1.5 - Added DSC Classic series support
  *          Changed ESPAsyncWebServer to a newer fork to fix web server crashes with Safari
  *    1.4 - Fix crash when pressing keys while Keybus is disconnected
@@ -90,15 +94,10 @@
 #include <dscKeybusInterface.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
-#include <FS.h>
 #include "LittleFS.h"
 #include <ArduinoJson.h>
 #include <Chrono.h>
 
-
-// Enable http auth
-//#define HTTP_USER "user"
-//#define HTTP_PASS "pass"
 
 // Settings
 const char* wifiSSID = "";
@@ -154,11 +153,7 @@ void setup() {
   LittleFS.begin();
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
-#if defined(HTTP_USER) && defined(HTTP_PASS)
-  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html").setAuthentication(HTTP_USER, HTTP_PASS);
-#else
   server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-#endif
   server.begin();
   MDNS.addService("http", "tcp", 80);
   Serial.print(F("Web server started: http://"));
@@ -1653,7 +1648,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
         if (!err) {
           JsonObject root = doc.as<JsonObject>();
           if (root.containsKey("btn_single_click")) {
-            char *tmp = (char *)root["btn_single_click"].as<char*>();
+            char *tmp = (char *)root["btn_single_click"].as<const char*>();
             char * const sep_at = strchr(tmp, '_');
             if (sep_at != NULL)            {
               *sep_at = '\0';

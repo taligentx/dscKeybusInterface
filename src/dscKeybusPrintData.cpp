@@ -275,7 +275,7 @@ void dscKeybusReaderInterface::printPanelMessages(byte panelByte) {
     case 0xBC: stream->print(F("*5: Enter 6-digit code")); break;
     case 0xBF: stream->print(F("*6: Auto-arm select day")); break;
     case 0xC6: stream->print(F("*2: Zone fault menu")); break;
-    //case 0xC7: stream->print(F("Partition not available")); break;
+    //case 0xC7: Partition disabled
     case 0xC8: stream->print(F("*2: Service required menu")); break;
     case 0xCD: stream->print(F("Downloading in progress")); break;
     case 0xCE: stream->print(F("Active camera monitor selection")); break;

@@ -1,9 +1,12 @@
 /*
- *  VirtualKeypad-Web 1.5 (esp32)
+ *  VirtualKeypad-Web 1.6 (esp32)
  *
  *  Provides a virtual keypad web interface using the esp32 as a standalone web server, including
  *  alarm memory, programming zone lights, and viewing the event buffer.  To access the event buffer,
  *  enter *6, enter an access code, then press the keypad "Enter" button.
+ *
+ *  The following steps are for Arduino IDE 1.x.  As of early 2024, Arduino IDE 2.x requires
+ *  manual workarounds to upload the web server data files.
  *
  *  Usage:
  *    1. Install the following libraries directly from each Github repository:
@@ -11,26 +14,25 @@
  *         ESPAsyncWebServer: https://github.com/arjenhiemstra/ESPAsyncWebServer
  *            * This is a fork of the original ESPAsyncWebServer that fixes the web server crashing
  *              when used with recent versions of Safari on macOS and iOS.
- *
+ *            * The Arduino IDE may prompt to update ESPAsyncWebServer, keep this version instead
+ *              as other versions can result in crashes with the current code.  PRs welcome!
  *    2. Install the Arduino ESP32 filesystem uploader to enable uploading web server files:
  *         https://github.com/me-no-dev/arduino-esp32fs-plugin
- *
  *    3. Install the following libraries, available in the Arduino IDE Library Manager and
  *       the Platform.io Library Registry:
  *         ArduinoJson: https://github.com/bblanchon/ArduinoJson
  *         Chrono: https://github.com/SofaPirate/Chrono
- *
  *    4. Set the WiFi SSID and password in the sketch.
  *    5. If desired, update the DNS hostname in the sketch.  By default, this is set to
  *       "dsc" and the web interface will be accessible at: http://dsc.local
  *    6. Upload the sketch.
  *    7. Upload the SPIFFS data containing the web server files:
  *         Arduino IDE: Tools > ESP32 Sketch Data Upload
- *
  *    8. Access the virtual keypad web interface by the IP address displayed through
  *       the serial output or http://dsc.local (for clients and networks that support mDNS).
  *
  *  Release notes:
+ *    1.6 - Update for ArduinoJSON 7.x
  *    1.5 - Added DSC Classic series support
  *          Changed ESPAsyncWebServer to a newer fork to fix web server crashes with Safari
  *    1.4 - Fix crash when pressing keys while Keybus is disconnected
@@ -82,7 +84,6 @@
 #include <dscKeybusInterface.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
-#include <FS.h>
 #include <SPIFFS.h>
 #include <SPIFFSEditor.h>
 #include <ArduinoJson.h>
@@ -1635,7 +1636,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
         if (!err) {
           JsonObject root = doc.as<JsonObject>();
           if (root.containsKey("btn_single_click")) {
-            char *tmp = (char *)root["btn_single_click"].as<char*>();
+            char *tmp = (char *)root["btn_single_click"].as<const char*>();
             char * const sep_at = strchr(tmp, '_');
             if (sep_at != NULL)            {
               *sep_at = '\0';

@@ -1,152 +1,192 @@
 /*
- *  HomeAssistant-MQTT 1.5 (Arduino with Ethernet)
+ *  HomeAssistant-MQTT 1.6 (Arduino with Ethernet)
  *
- *  Processes the security system status and allows for control using Home Assistant via MQTT.
+ *  Processes the security system status and allows for control using Home Assistant via MQTT. This
+ *  sketch works with the original Arduino Ethernet shield as well as the ENC28J60 ethernet module
+ *  (via the UIPEthernet library).
  *
  *  Home Assistant: https://www.home-assistant.io
  *  Mosquitto MQTT broker: https://mosquitto.org
  *
  *  Usage:
- *    1. Set the security system access code to permit disarming through Home Assistant.
- *    2. Set the MQTT server address in the sketch.
- *    3. Copy the example configuration to Home Assistant's configuration.yaml and customize.
- *    4. Upload the sketch.
- *    5. Restart Home Assistant.
+ *    1. Set a static IP address in the sketch.
+ *    2. Set the security system access code in the sketch to permit disarming through Home Assistant.
+ *    3. Set the MQTT server address in the sketch.
+ *    4. Add the MQTT integration to Home Assistant via the UI:
+ *         Settings > Devices & Services > + Add Integration > MQTT
+ *    5. Copy the example configuration to Home Assistant's configuration.yaml and customize.
+ *    6. Upload the sketch.
+ *    7. Restart Home Assistant.
  *
- *  Example Home Assistant configuration.yaml for 2 partitions, 3 zones:
+ *  Example Home Assistant configuration.yaml for 2 partitions, 3 zones, and 2 PGM outputs:
 
-# https://www.home-assistant.io/components/mqtt/
+# https://www.home-assistant.io/integrations/mqtt/
 mqtt:
-  broker: URL or IP address
-  client_id: homeAssistant
 
-# https://www.home-assistant.io/components/alarm_control_panel.mqtt/
+  # https://www.home-assistant.io/integrations/alarm_control_panel.mqtt/
   alarm_control_panel:
     - name: "Security Partition 1"
+      unique_id: dscPartition1
       state_topic: "dsc/Get/Partition1"
-      availability_topic: "dsc/Status"
-      command_topic: "dsc/Set"
       payload_disarm: "1D"
       payload_arm_home: "1S"
       payload_arm_away: "1A"
       payload_arm_night: "1N"
-    - name: "Security Partition 2"
-      state_topic: "dsc/Get/Partition2"
       availability_topic: "dsc/Status"
       command_topic: "dsc/Set"
+      supported_features:
+        - arm_home
+        - arm_away
+        - arm_night
+
+    - name: "Security Partition 2"
+      unique_id: dscPartition2
+      state_topic: "dsc/Get/Partition2"
       payload_disarm: "2D"
       payload_arm_home: "2S"
       payload_arm_away: "2A"
       payload_arm_night: "2N"
-
-# The sensor component displays the partition status message - edit the Home
-# view ("Configure UI"), click "+", select the "Sensor" card, select "Entity",
-# and select the security system partition.
-# https://www.home-assistant.io/components/sensor.mqtt/
-  sensor:
-    - name: "Security Partition 1"
-      state_topic: "dsc/Get/Partition1/Message"
       availability_topic: "dsc/Status"
-      icon: "mdi:shield"
-    - name: "Security Partition 2"
-      state_topic: "dsc/Get/Partition2/Message"
-      availability_topic: "dsc/Status"
-      icon: "mdi:shield"
+      command_topic: "dsc/Set"
+      supported_features:
+        - arm_home
+        - arm_away
+        - arm_night
 
-# https://www.home-assistant.io/components/binary_sensor.mqtt/
+  # https://www.home-assistant.io/integrations/binary_sensor.mqtt/
   binary_sensor:
     - name: "Security Trouble"
+      unique_id: dscTrouble
       state_topic: "dsc/Get/Trouble"
       device_class: "problem"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "Smoke Alarm 1"
+      unique_id: dscFire1
       state_topic: "dsc/Get/Fire1"
       device_class: "smoke"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "Smoke Alarm 2"
+      unique_id: dscFire2
       state_topic: "dsc/Get/Fire2"
       device_class: "smoke"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "Zone 1"
+      unique_id: dscZone1
       state_topic: "dsc/Get/Zone1"
       device_class: "door"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "Zone 2"
+      unique_id: dscZone2
       state_topic: "dsc/Get/Zone2"
       device_class: "window"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "Zone 3"
+      unique_id: dscZone3
       state_topic: "dsc/Get/Zone3"
       device_class: "motion"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "PGM 1"
+      unique_id: dscPGM1
       state_topic: "dsc/Get/PGM1"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
+
     - name: "PGM 8"
+      unique_id: dscPGM8
       state_topic: "dsc/Get/PGM8"
       payload_on: "1"
       payload_off: "0"
+      availability_topic: "dsc/Status"
 
- *  Example button card configuration to add a panic button: https://www.home-assistant.io/lovelace/button/
+  # https://www.home-assistant.io/integrations/button.mqtt/
+  button:
+    - name: "Fire Alarm"
+      unique_id: dscFire
+      command_topic: "dsc/Set"
+      payload_press: "f"
+      icon: "mdi:fire"
+      availability_topic: "dsc/Status"
 
-type: entity-button
-name: Panic alarm
-tap_action:
-  action: call-service
-  service: mqtt.publish
-  service_data:
-    payload: P
-    topic: dsc/Set
-hold_action:
-  action: none
-show_icon: true
-show_name: true
-entity: alarm_control_panel.security_partition_1
+    - name: "Aux Alarm"
+      unique_id: dscAux
+      command_topic: "dsc/Set"
+      payload_press: "a"
+      icon: "mdi:hospital-box"
+      availability_topic: "dsc/Status"
 
- *  The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a
- *  prefix to the command, except to trigger the panic alarm:
- *    Partition 1 disarm: "1D"
- *    Partition 2 arm stay: "2S"
- *    Partition 2 arm away: "2A"
- *    Partition 1 arm night: "1N"
- *    Panic alarm: "P"
+    - name: "Panic Alarm"
+      unique_id: dscPanic
+      command_topic: "dsc/Set"
+      payload_press: "p"
+      icon: "mdi:police-badge"
+      availability_topic: "dsc/Status"
+
+ *  The above configuration.yaml and the sketch use the following data to communicate over MQTT - note that
+ *  this is for explanation only and does not need to be changed for normal usage:
  *
- *  The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
- *  separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
- *    Disarmed: "disarmed"
- *    Arm stay: "armed_home"
- *    Arm away: "armed_away"
- *    Arm night: "armed_night"
- *    Exit delay in progress: "pending"
- *    Alarm tripped: "triggered"
+ *    The commands to set the alarm state are setup in Home Assistant with the partition number (1-8) as a
+ *    prefix to the command, except to trigger the fire/aux/panic alarms:
+ *      Partition 1 disarm: "1D"
+ *      Partition 2 arm stay: "2S"
+ *      Partition 2 arm away: "2A"
+ *      Partition 1 arm night: "1N"
+ *      Fire alarm: "f"
+ *      Aux alarm: "a"
+ *      Panic alarm: "p"
  *
- *  The trouble state is published as an integer in the configured mqttTroubleTopic:
- *    Trouble: "1"
- *    Trouble restored: "0"
+ *    The interface listens for commands in the configured mqttSubscribeTopic, and publishes partition status in a
+ *    separate topic per partition with the configured mqttPartitionTopic appended with the partition number:
+ *      Disarmed: "disarmed"
+ *      Arm stay: "armed_home"
+ *      Arm away: "armed_away"
+ *      Arm night: "armed_night"
+ *      Exit delay in progress: "pending"
+ *      Alarm tripped: "triggered"
  *
- *  Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
- *  with the zone number:
- *    Open: "1"
- *    Closed: "0"
+ *    The trouble state is published as an integer in the configured mqttTroubleTopic:
+ *      Trouble: "1"
+ *      Trouble restored: "0"
  *
- *  Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
- *  appended with the partition number:
- *    Fire alarm: "1"
- *    Fire alarm restored: "0"
+ *    Zone states are published as an integer in a separate topic per zone with the configured mqttZoneTopic appended
+ *    with the zone number:
+ *      Open: "1"
+ *      Closed: "0"
  *
- *  PGM outputs states are published as an integer in a separate topic per PGM with the configured mqttPgmTopic
- *  appended with the PGM output number:
- *    Open: "1"
- *    Closed: "0"
+ *    Fire states are published as an integer in a separate topic per partition with the configured mqttFireTopic
+ *    appended with the partition number:
+ *      Fire alarm: "1"
+ *      Fire alarm restored: "0"
  *
- *  Release notes
+ *    PGM outputs states are published as an integer in a separate topic per PGM with the configured mqttPgmTopic
+ *    appended with the PGM output number:
+ *      Open: "1"
+ *      Closed: "0"
+ *
+ *  Release notes:
+ *    1.6 - Update example Home Assistant configuration.yaml for Home Assistant Core 2022.6
+ *          Add support for changing armed between armed states while armed
+ *          Add buttons for fire/aux/panic alarms
+ *          Update ethernet configuration to use a static IP address to conserve flash memory
+ *          Set MQTT to retain partition fire status
  *    1.5 - Added DSC Classic series support
  *    1.4 - Added PGM outputs 1-14 status
  *    1.2 - Added night arm (arming with no entry delay)
@@ -202,11 +242,12 @@ entity: alarm_control_panel.security_partition_1
 
 // Settings
 byte mac[] = { 0xAA, 0x61, 0x0A, 0x00, 0x00, 0x01 };  // Set a MAC address unique to the local network
-const char* accessCode = "";    // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
-const char* mqttServer = "";    // MQTT server domain name or IP address
-const int   mqttPort = 1883;    // MQTT server port
-const char* mqttUsername = "";  // Optional, leave blank if not required
-const char* mqttPassword = "";  // Optional, leave blank if not required
+IPAddress ip[] = {192, 168, X, X};   // Set a static IP address unique to the local network
+const char* accessCode = "";         // An access code is required to disarm/night arm and may be required to arm or enable command outputs based on panel configuration.
+const char* mqttServer = "";         // MQTT server domain name or IP address
+const int   mqttPort = 1883;         // MQTT server port
+const char* mqttUsername = "";       // Optional, leave blank if not required
+const char* mqttPassword = "";       // Optional, leave blank if not required
 
 // MQTT topics - match to Home Assistant's configuration.yaml
 const char* mqttClientName = "dscKeybusInterface";
@@ -244,12 +285,9 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  // Initializes ethernet with DHCP
+  // Initializes ethernet
   Serial.print(F("Ethernet...."));
-  while(!Ethernet.begin(mac)) {
-      Serial.println(F("DHCP failed.  Retrying..."));
-      delay(5000);
-  }
+  Ethernet.begin(mac, ip);
   Serial.print(F("connected: "));
   Serial.println(Ethernet.localIP());
 
@@ -301,9 +339,6 @@ void loop() {
     // Publishes status per partition
     for (byte partition = 0; partition < dscPartitions; partition++) {
 
-      // Skips processing if the partition is disabled or in installer programming
-      if (dsc.disabled[partition]) continue;
-
       // Publishes armed/disarmed status
       if (dsc.armedChanged[partition]) {
         char publishTopic[strlen(mqttPartitionTopic) + 2];
@@ -345,8 +380,8 @@ void loop() {
         char publishTopic[strlen(mqttFireTopic) + 2];
         appendPartition(mqttFireTopic, partition, publishTopic);  // Appends the mqttFireTopic with the partition number
 
-        if (dsc.fire[partition]) mqtt.publish(publishTopic, "1");  // Fire alarm tripped
-        else mqtt.publish(publishTopic, "0");                      // Fire alarm restored
+        if (dsc.fire[partition]) mqtt.publish(publishTopic, "1", true);  // Fire alarm tripped
+        else mqtt.publish(publishTopic, "0", true);                      // Fire alarm restored
       }
     }
 
@@ -427,12 +462,49 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     payloadIndex = 1;
   }
 
-  // Panic alarm
-  if (payload[payloadIndex] == 'P') {
-    dsc.write('p');
+  // Fire/aux/panic alarms
+  switch (payload[payloadIndex]) {
+    case 'f': dsc.write('f'); return;
+    case 'a': dsc.write('a'); return;
+    case 'p': dsc.write('p'); return;
   }
 
-  // Resets status if attempting to change the armed mode while armed or not ready
+  // Sets night arm (no entry delay) while armed
+  if (payload[payloadIndex] == 'N' && dsc.armed[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    return;
+  }
+
+  // Disables night arm while armed stay
+  if (payload[payloadIndex] == 'S' && dsc.armedStay[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    return;
+  }
+
+  // Disables night arm while armed away
+  if (payload[payloadIndex] == 'A' && dsc.armedAway[partition] && dsc.noEntryDelay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write('n');  // Keypad no entry delay
+    return;
+  }
+
+  // Changes from arm away to arm stay after the exit delay
+  if (payload[payloadIndex] == 'S' && dsc.armedAway[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("s");
+    return;
+  }
+
+  // Changes from arm stay to arm away after the exit delay
+  if (payload[payloadIndex] == 'A' && dsc.armedStay[partition]) {
+    dsc.writePartition = partition + 1;    // Sets writes to the partition number
+    dsc.write("w");
+    return;
+  }
+
+  // Resets status if attempting to change the armed mode while not ready
   if (payload[payloadIndex] != 'D' && !dsc.ready[partition]) {
     dsc.armedChanged[partition] = true;
     dsc.statusChanged = true;
@@ -471,8 +543,10 @@ void mqttHandle() {
     if (mqttCurrentTime - mqttPreviousTime > 5000) {
       mqttPreviousTime = mqttCurrentTime;
       if (mqttConnect()) {
-        Serial.println(F("MQTT disconnected, successfully reconnected."));
+        if (dsc.keybusConnected) mqtt.publish(mqttStatusTopic, mqttBirthMessage, true);
         mqttPreviousTime = 0;
+        dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
+        Serial.println(F("MQTT disconnected, successfully reconnected."));
       }
       else Serial.println(F("MQTT disconnected, failed to reconnect."));
     }
@@ -484,9 +558,9 @@ void mqttHandle() {
 bool mqttConnect() {
   Serial.print(F("MQTT...."));
   if (mqtt.connect(mqttClientName, mqttUsername, mqttPassword, mqttStatusTopic, 0, true, mqttLwtMessage)) {
+    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
     Serial.print(F("connected: "));
     Serial.println(mqttServer);
-    dsc.resetStatus();  // Resets the state of all status components as changed to get the current status
   }
   else {
     Serial.print(F("connection error: "));

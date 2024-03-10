@@ -1,6 +1,6 @@
 # DSC Keybus Interface
 ![dscKeybusInterface](https://user-images.githubusercontent.com/12835671/105620980-5b356380-5dc8-11eb-93c2-e813751dda8a.png)
-This library directly interfaces Arduino, esp8266, esp32, and esp32-s2 microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, remote control as a virtual keypad, notifications on alarm events, unlocking installer codes, and emulating DSC panels to use DSC keypads as general purpose input devices.
+This library directly interfaces Arduino, esp8266, and esp32 series microcontrollers to [DSC PowerSeries](http://www.dsc.com/dsc-security-products/g/PowerSeries/4) and [Classic series](https://www.dsc.com/manual/29000203) security systems for integration with home automation, remote control as a virtual keypad, notifications on alarm events, unlocking installer codes, and emulating DSC panels to use DSC keypads as general purpose input devices.
 
 This enables existing DSC security system installations to retain the features and reliability of a hardwired system while integrating with modern devices and software for under $5USD in components.
 
@@ -93,11 +93,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
     - esp8266:
       * Development boards: NodeMCU v2 or v3, Wemos D1 Mini, etc.
       * Includes [Arduino framework support](https://github.com/esp8266/Arduino) and WiFi for ~$3USD shipped.
-    - esp32:
-      * Development boards: NodeMCU ESP-32S, Doit ESP32 Devkit v1, Wemos Lolin D32, etc.
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required), dual cores, WiFi, and Bluetooth for ~$5USD shipped.
-    - esp32-s2:
-      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required) and WiFi.
+    - esp32, esp32-s2, esp32-s3, esp32-c3:
+      * Includes [Arduino framework support](https://github.com/espressif/arduino-esp32) (v2.0.2 or newer required) for $3-5USD shipped.
 * Possible features (PRs welcome!):
   - [DSC IT-100](https://cms.dsc.com/download.php?t=1&id=16238) emulation
   - Unlock 6-digit installer codes
@@ -106,6 +103,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * develop
   - New: Keybus decoding for module programming, PC5200, and zones 33-64 extended status - thanks to [kricon](https://github.com/kricon) for this contribution!
   - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
+  - Updated: `HomeAssistant-MQTT` example configuration for Home Assistant core 2022.06, support changing armed modes while armed, add fire/aux/panic buttons
+  - Updated: `VirtualKeypad-Web` to support ArduinoJSON 7.x, use LittleFS for esp8266
 * 3.0
   - New: DSC Classic series panel support: PC1500, PC1550, PC2550 - thanks to [kricon](https://github.com/kricon) for extensively testing and contributing to this!
   - New: `KeypadInterface` and `KeypadInterface-MQTT` example sketches - emulate a DSC panel to connect DSC PowerSeries and Classic keypads as physical input devices for any general purpose, without needing a DSC panel.
