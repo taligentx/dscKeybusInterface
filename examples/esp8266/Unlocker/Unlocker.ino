@@ -93,6 +93,11 @@
  *  This example code is in the public domain.
  */
 
+/*
+ * uncomment below to enable the classic series, *** NOTE *** GND the PGM data pin D7 on the esp8266, to allow the programm to start
+ */
+//#define dscClassicSeries
+
 #include <dscKeybusInterface.h>
 
 // Settings
@@ -103,6 +108,7 @@ const int   startPosition = 0;  // Starting test position, set if the process is
 #define dscClockPin D1  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscReadPin  D2  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
 #define dscWritePin D8  // esp8266: D1, D2, D8 (GPIO 5, 4, 15)
+#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
 #define dscRelayPin D6  // esp8266: D5, D6, D7 (GPIO 14, 12, 13) - Optional, leave this pin disconnected if not using a relay
 
 // Commonly known DSC codes are tested first
@@ -496,7 +502,12 @@ const int codeList[] = {
 };
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin);
+#endif
+
 int testCode = 0;
 char testCodeChar[5];
 int codeListCount = sizeof(codeList) / sizeof(codeList[0]);
@@ -548,14 +559,14 @@ void loop() {
       if (pauseTest) {
         pauseTest = false;
         printTimestamp();
-        Serial.println("Resuming code search");
+        Serial.println(F("Resuming code search"));
         while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03) dsc.loop();
       }
       else {
         pauseTest = true;
         printTimestamp();
         dsc.write('#');
-        Serial.println("Paused code search");
+        Serial.println(F("Paused code search"));
       }
     }
   }
@@ -647,13 +658,18 @@ void loop() {
 
     // Invalid access code - loops until "Enter installer code" (0xB7)
     else if (dsc.status[0] == 0x8F) {
+#ifndef dscClassicSeries
       while (dsc.status[0] != 0xB7) dsc.loop();
+#else
+      dsc.write('#');
+      while (dsc.status[0] != 0x01)dsc.loop();
+#endif
       testCount++;
     }
 
     // *8 Main Menu
     else if (dsc.status[0] == 0xE4) {
-
+#ifndef dscClassicSeries
       // Attempts to enter keypad programming to check if code is valid for programming
       dsc.write('0');
       dsc.write('0');
@@ -673,6 +689,7 @@ void loop() {
 
       // Entered keypad programming, code is valid - exits the installer menu and outputs the code via serial and LED blinking
       else if (dsc.status[0] == 0xF8) {
+#endif
         printTimestamp();
         Serial.print("Installer code: ");
         Serial.println(testCode);
@@ -721,7 +738,9 @@ void loop() {
           }
           delay(3000);
         }
+#ifndef dscClassicSeries
       }
+#endif
     }
   }
 }

@@ -55,6 +55,8 @@ volatile byte dscClassicInterface::panelBuffer[dscBufferSize][dscReadSize];
 volatile byte dscClassicInterface::pc16Buffer[dscBufferSize][dscReadSize];
 volatile byte dscClassicInterface::panelBufferBitCount[dscBufferSize];
 volatile byte dscClassicInterface::panelBufferByteCount[dscBufferSize];
+volatile byte dscClassicInterface::bufferHead;
+volatile byte dscClassicInterface::bufferTail;
 volatile byte dscClassicInterface::isrPanelData[dscReadSize];
 volatile byte dscClassicInterface::isrPC16Data[dscReadSize];
 volatile byte dscClassicInterface::isrPanelByteCount;

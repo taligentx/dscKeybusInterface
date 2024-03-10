@@ -23,8 +23,11 @@
 #include <Arduino.h>
 
 const byte dscPartitions = 1;   // Maximum number of partitions - requires 19 bytes of memory per partition
-const byte dscZones = 1;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscReadSize = 2;     // Maximum bytes of a Keybus command
+
+// PC 3000 Panel has 16 Zones and 3 bytes in panel status, ordered [zones 9-16][zones 1-8][status] -- reversing the order makes the data easier to process
+const byte dscZones = 2;               // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
+const byte dscReadSize = dscZones + 1; // Maximum bytes of a Keybus command ( # of zones, 8 bits per zone + 1 lights status byte)
+
 
 #if defined(__AVR__)
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscReadSize + 2 bytes of memory per command
@@ -78,7 +81,7 @@ class dscClassicInterface {
 
     // These can be configured in the sketch setup() before begin()
     bool hideKeypadDigits;          // Controls if keypad digits are hidden for publicly posted logs (default: false)
-    static bool processModuleData;  // Controls if keypad and module data is processed and displayed (default: false)
+    static bool processModuleData;  // Controls if keypad and module data is processed and displayed (required: true)
 
     // Status tracking
     bool statusChanged;                   // True after any status change
@@ -101,7 +104,7 @@ class dscClassicInterface {
     byte pgmOutputs[1], pgmOutputsChanged[1];
     bool armedLight, memoryLight, bypassLight, troubleLight, programLight, fireLight, beep;
     static volatile bool readyLight, lightBlink;
-    bool readyBlink, armedBlink, memoryBlink, bypassBlink, troubleBlink;
+    bool readyBlink, armedBlink, memoryBlink, bypassBlink, troubleBlink, beepLong;
 
     /*  panelData[], pc16Data[], and moduleData[] store panel and keypad/module data in an array. These can
      *  be accessed directly in the sketch to get data that is not already tracked in the library.  See
@@ -148,17 +151,36 @@ class dscClassicInterface {
     bool setTime(unsigned int year, byte month, byte day, byte hour, byte minute, const char* accessCode, byte timePartition = 1);
 
   private:
+    inline void printBits(byte data);
+    void printModuleDigit(byte keyPressed, bool accepted);
+    void printTroubleStatus();
+    void printLightStatus();
+    void printPC16Status();
+    void printAlarmZones();
+    void printOpenZones();
+    void printPanelState();
 
-    void processPanelStatus();
-    void processReadyStatus(bool status);
-    void processArmed(bool status);
-    void processArmedStatus(bool status);
-    void processAlarmStatus(bool status);
-    void processExitDelayStatus(bool status);
-    void writeKeys(const char * writeKeysArray);
-    void setWriteKey(const char receivedKey);
+    inline byte decodeModuleDigit(byte keyPressed);
+    void processModuleDigit(byte keyPressed, bool accepted);
+    inline bool processPanelOpenZones();
+    inline bool processPanelStatus();
+    inline bool processModuleState();
+    inline bool processPanelLightsData();
+    inline bool processPanelPGMData();
+    inline void processPanelLightsZones(byte dataOffset);
+    inline void processPanelPGMZones(byte dataOffset);
+    static void isLightBlinking(bool &light, bool &blinking, unsigned long &timeOn, unsigned long &timeOff, unsigned long now, unsigned int onTrig, unsigned int offTrig);
+    inline void processKeyHold(bool status, bool &state, unsigned long &timeLast, unsigned long now);
+    inline void processAStatus(bool status, bool &state, bool &previousState, bool &stateChanged);
+    inline void processReadyStatus(bool status);
+    inline void processArmed(bool status);
+    inline void processArmedStatus(bool status);
+    inline void processAlarmStatus(bool status);
+    inline void processExitDelayStatus(bool status);
+
+    void writeKeys(const char *writeKeysStr, byte len);
+    bool setWriteKey(const char receivedKey);
     static void dscClockInterrupt();
-    static bool redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes = dscReadSize);
 
     #if defined(ESP32)
     static hw_timer_t * timer1;
@@ -166,7 +188,6 @@ class dscClassicInterface {
     #endif
 
     Stream* stream;
-    const char * writeKeysArray;
     const char * accessCodeStay;
     char accessCodeAway[7];
     char accessCodeNight[7];
@@ -181,11 +202,12 @@ class dscClassicInterface {
     bool previousArmed, previousArmedStay, previousArmedAway;
     bool previousAlarm;
     bool alarmTriggered, previousAlarmTriggered;
-    byte zonesTriggered;
+    byte zonesTriggered[dscZones];
     bool previousFire;
-    byte previousOpenZones, previousAlarmZones;
+    byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
     byte previousPgmOutput;
-    bool troubleBit, armedBypassBit, armedBit, alarmBit;
+    bool troubleBit, armedBypassBit, armedBit, armed2Bit, alarmBit, fireBit, kpFireBit, kpAuxBit, kpPanicBit;
+    bool armedLightSteady, beepOld;
 
     static byte dscClockPin;
     static byte dscReadPin;
@@ -203,6 +225,7 @@ class dscClassicInterface {
     static volatile byte panelBuffer[dscBufferSize][dscReadSize], pc16Buffer[dscBufferSize][dscReadSize];
     static volatile byte panelBufferBitCount[dscBufferSize], panelBufferByteCount[dscBufferSize];
     static volatile byte moduleBitCount, moduleByteCount;
+    static volatile byte bufferHead, bufferTail;
     static volatile byte moduleCmd;
     static volatile byte isrPanelData[dscReadSize], isrPC16Data[dscReadSize], isrPanelBitTotal, isrPanelBitCount, isrPanelByteCount;
     static volatile byte isrModuleData[dscReadSize], isrModuleBitTotal, isrModuleBitCount, isrModuleByteCount;
