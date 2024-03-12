@@ -6,7 +6,7 @@ This enables existing DSC security system installations to retain the features a
 
 The built-in examples can be used as-is or as a base to adapt to other uses:
 * Home automation integration: [Home Assistant](https://www.home-assistant.io), [Apple HomeKit & Siri](https://www.apple.com/ios/home/), [Google Home](https://assistant.google.com), [OpenHAB](https://www.openhab.org), [Athom Homey](https://www.athom.com/en/)
-* Remote control: Web interface, [Blynk](https://www.blynk.cc) mobile app, [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat)
+* Remote control: Web interface, [Blynk](https://www.blynk.io) mobile app, [Telegram](https://www.telegram.org) bot (with remote arming/disarming via chat)
 * Notifications: [Pushover](https://www.pushover.net), [PushBullet](https://www.pushbullet.com), [Pushsafer](https://www.pushsafer.com), [Twilio SMS](https://www.twilio.com), [TinyGSM SMS](https://github.com/vshymanskyy/TinyGSM), E-mail
 * Keypad interface: Emulates a DSC panel to connect DSC keypads as physical input devices for any general purpose, without a DSC panel.
 * Installer code unlocking: Automatic code search to unlock panels with unknown installer codes
@@ -18,7 +18,7 @@ Example integrations:
   ![HomeAssistant](https://user-images.githubusercontent.com/12835671/61985900-38f33780-afd1-11e9-9d43-ab0b681b7b03.png)
 * [OpenHAB](https://www.openhab.org) MQTT:  
   ![OpenHAB](https://user-images.githubusercontent.com/12835671/61560425-daa6e180-aa31-11e9-9efe-0fcb44d2106a.png)
-* [Blynk](https://www.blynk.cc) app virtual keypad:  
+* [Blynk](https://www.blynk.io) app virtual keypad:
   ![VirtualKeypad-Blynk](https://user-images.githubusercontent.com/12835671/61568638-9fb0a800-aa49-11e9-94d0-e598431ea2ed.png)
 * Web virtual keypad:  
   ![VirtualKeypad-Web](https://user-images.githubusercontent.com/12835671/61570049-e43f4200-aa4f-11e9-96bc-3448b6630990.png)
@@ -43,7 +43,7 @@ Example integrations:
 
 I was interested in finding a solution that directly accessed the pair of data lines that DSC uses for their proprietary Keybus protocol to send data between the panel, keypads, and other modules (instead of using the DSC IT-100 serial module).  Tapping into the data lines is an ideal task for a microcontroller and also presented an opportunity to work with the [Arduino](https://www.arduino.cc) and [FreeRTOS](https://www.freertos.org) (via [esp-open-rtos](https://github.com/SuperHouse/esp-open-rtos)) platforms.
 
-While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol) and several existing projects, there were a few issues that remained unsolved:
+While there has been excellent [discussion about the DSC Keybus protocol](https://www.avrfreaks.net/s/topic/a5C3l000000ULgIEAW/t097136) and several existing projects, there were a few issues that remained unsolved:
 * Error-prone Keybus data capture.
 * Limited data decoding - there was good progress for armed/disarmed states and partial zone status for a single partition, but otherwise most of the data was undecoded (notably missing the alarm triggered state).
 * Read-only - unable to control the Keybus to act as a virtual keypad.
@@ -77,8 +77,8 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * Supported security systems:
   - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify) - all panels are supported, tested with: PC585, PC1555MX, PC1565, PC1565-2P, PC5005, PC5010, PC5015, PC5020, PC1616, PC1808, PC1832, PC1864
   - [DSC Classic series](https://www.dsc.com/?n=enduser&o=identify): PC1500, PC1550, PC2550
-    * Requires configuring the panel through *8 programming to enable PC16-OUT: section 19, option 4.
-    * PC2500 and PC3000 are untested, [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you're able to test these panels.
+    * Requires configuring the panel through *8 programming to enable PC16-OUT - see [DSC Configuration](https://github.com/taligentx/dscKeybusInterface/tree/master?tab=readme-ov-file#dsc-configuration)
+    * PC2500 and PC3000 require testing, [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you're able to test these panels.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Unsupported security systems:
   - DSC Alexor (PC9155) is all wireless and does not have an accessible Keybus interface.
@@ -102,6 +102,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: Keybus decoding for module programming, PC5200, and zones 33-64 extended status - thanks to [kricon](https://github.com/kricon) for this contribution!
+  - New: Classic series PC3000 support (experimental)
   - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
   - Updated: `HomeAssistant-MQTT` example configuration for Home Assistant core 2022.06, support changing armed modes while armed, add fire/aux/panic buttons
   - Updated: `VirtualKeypad-Web` to support ArduinoJSON 7.x, use LittleFS for esp8266
@@ -165,7 +166,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
   - New: Push notification example using [Twilio](https://www.twilio.com), thanks to [ColingNG](https://github.com/ColinNg) for this contribution!
   - Bugfix: Zones 17-32 status incorrectly stored
 * 1.0
-  - New: [Blynk](https://www.blynk.cc) virtual keypad example sketch and app layout examples
+  - New: [Blynk](https://www.blynk.io) virtual keypad example sketch and app layout examples
   - New: Virtual keypad support for PGM terminals 1-4 command output
   - New: Status `keybusConnected` to check if data is being received from the DSC panel
   - New: Auxiliary input alarm decoding
@@ -245,18 +246,18 @@ The included examples demonstrate how to use the library and can be used as-is o
   * Verizon: 5558675309@vtext.com
   * AT&T: 5558675309@txt.att.net
 
-* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk legacy](https://www.blynk.cc) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  The newer generation Blynk app is not currently supported.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
+* **VirtualKeypad-Blynk** (esp8266/esp32): Provides a virtual keypad interface for the free [Blynk legacy](https://www.blynk.io) app on iOS and Android, including viewing alarm memory, programming zone lights, and the event buffer.  The newer generation Blynk app is not currently supported.  Scan one of the following QR codes from within the Blynk app for an example keypad layout:
   - [Virtual keypad with 16 zones](https://user-images.githubusercontent.com/12835671/103719316-5f6f1d80-4f8e-11eb-8a7c-4bd7bfe3cd8a.png)
   - [Virtual keypad with 32 zones](https://user-images.githubusercontent.com/12835671/103719459-af4de480-4f8e-11eb-8e4a-7172961e2d29.png)
   - [Virtual keypad with 8 zones and event log](https://user-images.githubusercontent.com/12835671/103719518-cc82b300-4f8e-11eb-8b2a-97299e7be3a2.png)
 
-  Note: Installing [Blynk as a local server](https://github.com/blynkkk/blynk-server) is recommended to keep control of the security system internal to your network.
+  Note: Installing [Blynk as a local server](https://github.com/Peterkn2001/blynk-server) is recommended to keep control of the security system internal to your network.
 
 * **VirtualKeypad-Web** (esp8266/esp32): Provides a virtual keypad web interface, using the esp8266/esp32 itself as a standalone web server, including viewing alarm memory, programming zone lights, and the event buffer.  Thanks to [Elektrik1](https://github.com/Elektrik1) for contributing this example!
 
 * **TimeSyncNTP**:  Synchronizes and maintains time on PowerSeries panels via an NTP server, including DST adjustments.
 
-* **Unlocker**: Finds the 4-digit installer code for PowerSeries panels by checking all possible codes, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.  Arduino checks each code sequentially but esp8266/esp32 may find the code more quickly as they check in order of the [most commonly used general 4-digit codes](https://www.datagenetics.com/blog/september32012).
+* **Unlocker**: Finds the 4-digit installer code for PowerSeries panels by checking all possible codes, including handling keypad lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the built-in LED.  Arduino checks each code sequentially but esp8266/esp32 may find the code more quickly as they check in order of the [most commonly used general 4-digit codes](http://www.datagenetics.com/blog/september32012).
 
 * **KeypadInterface**:  Interfaces directly to DSC PowerSeries and Classic series (tested with PC1500RK) keypads (without a DSC panel) to enable using these as physical inputs for any general purpose.  Examples included for interfacing via serial and MQTT.  Note that this uses a different wiring setup from the standard Keybus interface, refer to the wiring diagram in the example sketch.
 
@@ -387,7 +388,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 * Resource utilization:
   * Arduino: 1 hardware interrupt digital pin, 2 digital pins (+1 for Classic series), Timer1 interrupt
   * esp8266: 3 digital pins (+1 for Classic series), timer1 interrupt
-  * esp32/esp32-s2: 3 digital pins (+1 for Classic series), timer0 interrupt
+  * esp32 series: 3 digital pins (+1 for Classic series), timer0 interrupt
 
 ## Troubleshooting
 If you are running into issues:
@@ -400,7 +401,7 @@ If you are running into issues:
 For general discussions, feature requests, or how-to issues, you can [post in Discussions](https://github.com/taligentx/dscKeybusInterface/discussions), or [post an Issue](https://github.com/taligentx/dscKeybusInterface/issues) if it looks like an issue with the library code itself.
 
 ## References
-[AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/forum/dsc-keybus-protocol): An excellent discussion on how data is sent on the Keybus.
+[AVR Freaks - DSC Keybus Protocol](https://www.avrfreaks.net/s/topic/a5C3l000000ULgIEAW/t097136): An excellent discussion on how data is sent on the Keybus.
 
 [stagf15/DSC_Panel](https://github.com/stagf15/DSC_Panel): A library that nearly works for the PC1555MX but had timing and data errors.  Writing this library from scratch was primarily a programming exercise, otherwise it should be possible to patch the DSC_Panel library.
 

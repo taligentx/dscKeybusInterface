@@ -23,8 +23,8 @@
 #include <Arduino.h>
 
 const byte dscPartitions = 1;   // Maximum number of partitions - requires 19 bytes of memory per partition
-const byte dscZones = 1;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
-const byte dscDataSize = 2;     // Maximum bytes of a Keybus command
+const byte dscZones = 2;        // Maximum number of zone groups, 8 zones per group - requires 6 bytes of memory per zone group
+const byte dscDataSize = 3;     // Maximum bytes of a Keybus command
 
 #if defined(__AVR__)
 const byte dscBufferSize = 10;  // Number of commands to buffer if the sketch is busy - requires dscDataSize + 2 bytes of memory per command
@@ -103,14 +103,22 @@ class dscClassicInterface {
     static volatile bool readyLight, lightBlink;
     bool readyBlink, armedBlink, memoryBlink, bypassBlink, troubleBlink;
 
-    /*  panelData[], pc16Data[], and moduleData[] store panel and keypad/module data in an array. These can
-     *  be accessed directly in the sketch to get data that is not already tracked in the library.  See
-     *  dscClassic.cpp for the currently known DSC commands and data.
+    /*
+     * panelData[], pc16Data[], and moduleData[] store panel and keypad/module data in an array. These can
+     * be accessed directly in the sketch to get data that is not already tracked in the library.  See
+     * dscClassic.cpp for the currently known DSC commands and data.
      *
-     *  panelData[] example:
-     *    Byte 0     Byte 2   Byte 3   Byte 4   Byte 5
-     *    00000101 0 10000001 00000001 10010001 11000111 [0x05] Partition 1: Ready Backlight - Partition ready | Partition 2: disabled
-     *             ^ Byte 1 (stop bit)
+     *   PC1500/PC1550             PC3000
+     *
+     *   panelData[]:
+     *   Byte 0    Byte 1          Byte 0    Byte 1    Byte 2
+     *   00000000  00000000        00000000  00000000  00000000
+     *   Zones1-6  Lights          Zones9-16 Zones1-6  Lights
+     *
+     *   pc16Data[]:
+     *   Byte 0   Byte 1           Byte 0    Byte 1    Byte 2
+     *   00000000 00000000         00000000  00000000  00000000
+     *   Zones    Status                     Zones     Status
      */
     static byte panelData[dscDataSize];
     static byte pc16Data[dscDataSize];
@@ -181,11 +189,12 @@ class dscClassicInterface {
     bool previousArmed, previousArmedStay, previousArmedAway;
     bool previousAlarm;
     bool alarmTriggered, previousAlarmTriggered;
-    byte zonesTriggered;
+    byte zonesTriggered[dscZones];
     bool previousFire;
-    byte previousOpenZones, previousAlarmZones;
+    byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
     byte previousPgmOutput;
     bool troubleBit, armedBypassBit, armedBit, alarmBit;
+    byte statusByte;
 
     static byte dscClockPin;
     static byte dscReadPin;

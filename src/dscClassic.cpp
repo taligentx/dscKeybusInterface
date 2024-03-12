@@ -33,6 +33,7 @@ dscClassicInterface::dscClassicInterface(byte setClockPin, byte setReadPin, byte
   writeReady = false;
   writePartition = 1;
   pauseStatus = false;
+  statusByte = 1;  // Sets default data structure for PC1500/PC1550
   accessCodeStay = setAccessCode;
   strcpy(accessCodeAway, accessCodeStay);
   strcat(accessCodeAway, "*1");
@@ -181,10 +182,11 @@ bool dscClassicInterface::loop() {
   // Waits at startup for valid data
   static bool startupCycle = true;
   if (startupCycle) {
-    if (panelByteCount != 2 || pc16Data[0] == 0xFF) return false;
+    if (panelByteCount < 2 || pc16Data[0] == 0xFF) return false;
     else {
       startupCycle = false;
       writeReady = true;
+      if (panelByteCount == 3) statusByte = 2; // Sets data structure for PC3000
     }
   }
 
@@ -218,7 +220,7 @@ void dscClassicInterface::resetStatus() {
 void dscClassicInterface::processPanelStatus() {
 
   // Keypad lights - maps Classic series keypad lights to PowerSeries keypad light order for sketch compatibility
-  if (bitRead(panelData[1], 7)) {
+  if (bitRead(panelData[statusByte], 7)) {
     readyLight = true;
     bitWrite(lights[0], 0, 1);
   }
@@ -226,7 +228,8 @@ void dscClassicInterface::processPanelStatus() {
     readyLight = false;
     bitWrite(lights[0], 0, 0);
   }
-  if (bitRead(panelData[1], 6)) {
+
+  if (bitRead(panelData[statusByte], 6)) {
     armedLight = true;
     bitWrite(lights[0], 1, 1);
   }
@@ -234,7 +237,8 @@ void dscClassicInterface::processPanelStatus() {
     armedLight = false;
     bitWrite(lights[0], 1, 0);
   }
-  if (bitRead(panelData[1], 5)) {
+
+  if (bitRead(panelData[statusByte], 5)) {
     memoryLight = true;
     bitWrite(lights[0], 2, 1);
   }
@@ -242,7 +246,8 @@ void dscClassicInterface::processPanelStatus() {
     memoryLight = false;
     bitWrite(lights[0], 2, 0);
   }
-  if (bitRead(panelData[1], 4)) {
+
+  if (bitRead(panelData[statusByte], 4)) {
     bypassLight = true;
     bitWrite(lights[0], 3, 1);
   }
@@ -250,7 +255,8 @@ void dscClassicInterface::processPanelStatus() {
     bypassLight = false;
     bitWrite(lights[0], 3, 0);
   }
-  if (bitRead(panelData[1], 3)) {
+
+  if (bitRead(panelData[statusByte], 3)) {
     troubleLight = true;
     bitWrite(lights[0], 4, 1);
   }
@@ -258,7 +264,8 @@ void dscClassicInterface::processPanelStatus() {
     troubleLight = false;
     bitWrite(lights[0], 4, 0);
   }
-  if (bitRead(panelData[1], 2)) {
+
+  if (bitRead(panelData[statusByte], 2)) {
     programLight = true;
     bitWrite(lights[0], 5, 1);
   }
@@ -266,7 +273,8 @@ void dscClassicInterface::processPanelStatus() {
     programLight = false;
     bitWrite(lights[0], 5, 0);
   }
-  if (bitRead(panelData[1], 1)) {
+
+  if (bitRead(panelData[statusByte], 1)) {
     fireLight = true;
     bitWrite(lights[0], 6, 1);
   }
@@ -274,7 +282,8 @@ void dscClassicInterface::processPanelStatus() {
     fireLight = false;
     bitWrite(lights[0], 6, 0);
   }
-  if (bitRead(panelData[1], 0)) beep = true;
+
+  if (bitRead(panelData[statusByte], 0)) beep = true;
   else beep = false;
 
   if (lights[0] != previousLights) {
@@ -283,13 +292,13 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // PC-16 status
-  if (bitRead(pc16Data[1], 7)) troubleBit = true;
+  if (bitRead(pc16Data[statusByte], 7)) troubleBit = true;
   else troubleBit = false;
-  if (bitRead(pc16Data[1], 6)) armedBypassBit = true;
+  if (bitRead(pc16Data[statusByte], 6)) armedBypassBit = true;
   else armedBypassBit = false;
-  if (bitRead(pc16Data[1], 5)) armedBit = true;
+  if (bitRead(pc16Data[statusByte], 5)) armedBit = true;
   else armedBit = false;
-  if (bitRead(pc16Data[1], 0)) alarmBit = true;
+  if (bitRead(pc16Data[statusByte], 0)) alarmBit = true;
   else alarmBit = false;
 
 
@@ -467,7 +476,8 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   else {
-    if (panelData[0]) processReadyStatus(false);
+    // Sets ready status if zones lights are on
+    if (panelData[statusByte - 1] || (statusByte == 3 && (panelData[statusByte - 1] || panelData[statusByte - 2]))) processReadyStatus(false);
 
     if (exitDelayArmed && !armedBit) {
       processReadyStatus(false);
@@ -481,23 +491,28 @@ void dscClassicInterface::processPanelStatus() {
   // Zones status
   byte zonesChanged;
   if (!previousAlarmTriggered && !memoryBlink && !bypassBlink && !troubleBlink && !starKeyDetected) {
-    for (byte bit = 7; bit <= 7; bit--) {
-      if ((!bitRead(zonesTriggered, bit) && !alarmBit) || exitDelay[0]) {
-        if (bitRead(panelData[0], bit)) {
-          bitWrite(openZones[0], 7 - bit, 1);
-        }
-        else bitWrite(openZones[0], 7 - bit, 0);
-      }
-    }
-    zonesChanged = openZones[0] ^ previousOpenZones;
-    if (zonesChanged != 0) {
-      previousOpenZones = openZones[0];
-      openZonesStatusChanged = true;
-      if (!pauseStatus) statusChanged = true;
 
-      for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
-        if (bitRead(zonesChanged, zoneBit)) {
-          bitWrite(openZonesChanged[0], zoneBit, 1);
+    for (byte i = 1; i <= statusByte; i++) {
+      for (byte bit = 7; bit <= 7; bit--) {
+        if ((!bitRead(zonesTriggered[statusByte - 1], bit) && !alarmBit) || exitDelay[0]) {
+          if (bitRead(panelData[statusByte - i], bit)) {
+            bitWrite(openZones[i - 1], 7 - bit, 1);
+          }
+          else bitWrite(openZones[i - 1], 7 - bit, 0);
+        }
+      }
+
+      zonesChanged = openZones[i - 1] ^ previousOpenZones[i - 1];
+
+      if (zonesChanged) {
+        previousOpenZones[i - 1] = openZones[i - 1];
+        openZonesStatusChanged = true;
+        if (!pauseStatus) statusChanged = true;
+
+        for (byte zoneBit = 0; zoneBit < 8; zoneBit++) {
+          if (bitRead(zonesChanged, zoneBit)) {
+            bitWrite(openZonesChanged[i - 1], zoneBit, 1);
+          }
         }
       }
     }
@@ -505,15 +520,15 @@ void dscClassicInterface::processPanelStatus() {
 
   // Alarm zones status
   for (byte bit = 7; bit > 1; bit--) {
-    if (bitRead(pc16Data[0], bit)) {
+    if (bitRead(pc16Data[statusByte - 1], bit)) {
       bitWrite(alarmZones[0], 7 - bit, 1);
-      bitWrite(zonesTriggered, 7 - bit, 1);
+      bitWrite(zonesTriggered[0], 7 - bit, 1);
     }
     else bitWrite(alarmZones[0], 7 - bit, 0);
   }
-  zonesChanged = alarmZones[0] ^ previousAlarmZones;
+  zonesChanged = alarmZones[0] ^ previousAlarmZones[0];
   if (zonesChanged != 0) {
-    previousAlarmZones = alarmZones[0];
+    previousAlarmZones[0] = alarmZones[0];
     alarmZonesStatusChanged = true;
     if (!pauseStatus) statusChanged = true;
 
@@ -533,14 +548,14 @@ void dscClassicInterface::processPanelStatus() {
             bitWrite(openZonesChanged[0], zoneBit, 1);
             openZonesStatusChanged = true;
           }
-          previousOpenZones = openZones[0];
+          previousOpenZones[0] = openZones[0];
         }
       }
     }
   }
 
   // Alarm status - requires PGM output section 24 configured to option 08: Strobe Output
-  if ((panelData[1] & 0xFE) != 0) {
+  if ((panelData[statusByte] & 0xFE) != 0) {
     if (alarmBit && !memoryBlink) {
       processReadyStatus(false);
       processAlarmStatus(true);
@@ -565,7 +580,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Fire status
-  if (bitRead(pc16Data[0], 0)) fire[0] = true;
+  if (bitRead(pc16Data[statusByte - 1], 0)) fire[0] = true;
   else fire[0] = false;
   if (fire[0] != previousFire) {
     previousFire = fire[0];
@@ -574,7 +589,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Keypad Fire alarm
-  if (bitRead(pc16Data[1], 1)) {
+  if (bitRead(pc16Data[statusByte], 1)) {
     static unsigned long previousFireAlarm = 0;
     if (millis() - previousFireAlarm > 1000) {
       keypadFireAlarm = true;
@@ -584,7 +599,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Keypad Aux alarm
-  if (bitRead(pc16Data[1], 2)) {
+  if (bitRead(pc16Data[statusByte], 2)) {
     static unsigned long previousAuxAlarm = 0;
     if (millis() - previousAuxAlarm > 1000) {
       keypadAuxAlarm = true;
@@ -594,7 +609,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Keypad Panic alarm
-  if (bitRead(pc16Data[1], 3)) {
+  if (bitRead(pc16Data[statusByte], 3)) {
     static unsigned long previousPanicAlarm = 0;
     if (millis() - previousPanicAlarm > 1000) {
       keypadPanicAlarm = true;
@@ -832,53 +847,57 @@ void dscClassicInterface::setWriteKey(const char receivedKey) {
 void dscClassicInterface::printPanelMessage() {
 
   stream->print(F("Lights: "));
-  if (panelData[1]) {
-    if (bitRead(panelData[1], 7)) stream->print(F("Ready "));
-    if (bitRead(panelData[1], 6)) stream->print(F("Armed "));
-    if (bitRead(panelData[1], 5)) stream->print(F("Memory "));
-    if (bitRead(panelData[1], 4)) stream->print(F("Bypass "));
-    if (bitRead(panelData[1], 3)) stream->print(F("Trouble "));
-    if (bitRead(panelData[1], 2)) stream->print(F("Program "));
-    if (bitRead(panelData[1], 1)) stream->print(F("Fire "));
-    if (bitRead(panelData[1], 0)) stream->print(F("Beep "));
+  if (panelData[statusByte]) {
+    if (bitRead(panelData[statusByte], 7)) stream->print(F("Ready "));
+    if (bitRead(panelData[statusByte], 6)) stream->print(F("Armed "));
+    if (bitRead(panelData[statusByte], 5)) stream->print(F("Memory "));
+    if (bitRead(panelData[statusByte], 4)) stream->print(F("Bypass "));
+    if (bitRead(panelData[statusByte], 3)) stream->print(F("Trouble "));
+    if (bitRead(panelData[statusByte], 2)) stream->print(F("Program "));
+    if (bitRead(panelData[statusByte], 1)) stream->print(F("Fire "));
+    if (bitRead(panelData[statusByte], 0)) stream->print(F("Beep "));
   }
   else stream->print(F("none "));
 
   stream->print(F("| Status: "));
-  if (pc16Data[1]) {
-    if (bitRead(pc16Data[1], 7)) stream->print(F("Trouble "));
-    if (bitRead(pc16Data[1], 6)) stream->print(F("Bypassed zones "));
-    if (bitRead(pc16Data[1], 5)) stream->print(F("Armed (side A) "));
-    if (bitRead(pc16Data[1], 4)) stream->print(F("Armed (side B) "));
-    if (bitRead(pc16Data[1], 3)) stream->print(F("Keypad Panic alarm "));
-    if (bitRead(pc16Data[1], 2)) stream->print(F("Keypad Aux alarm "));
-    if (bitRead(pc16Data[1], 1)) stream->print(F("Keypad Fire alarm "));
-    if (bitRead(pc16Data[1], 0)) stream->print(F("Alarm "));
+  if (pc16Data[statusByte]) {
+    if (bitRead(pc16Data[statusByte], 7)) stream->print(F("Trouble "));
+    if (bitRead(pc16Data[statusByte], 6)) stream->print(F("Bypassed zones "));
+    if (bitRead(pc16Data[statusByte], 5)) stream->print(F("Armed (side A) "));
+    if (bitRead(pc16Data[statusByte], 4)) stream->print(F("Armed (side B) "));
+    if (bitRead(pc16Data[statusByte], 3)) stream->print(F("Keypad Panic alarm "));
+    if (bitRead(pc16Data[statusByte], 2)) stream->print(F("Keypad Aux alarm "));
+    if (bitRead(pc16Data[statusByte], 1)) stream->print(F("Keypad Fire alarm "));
+    if (bitRead(pc16Data[statusByte], 0)) stream->print(F("Alarm "));
   }
   else stream->print(F("none "));
 
   stream->print(F("| Zones open: "));
-  if (panelData[0] == 0) stream->print(F("none "));
+  if (statusByte == 1 && panelData[statusByte - 1] == 0 || (statusByte == 2 && panelData[statusByte - 1] == 0 && panelData[statusByte - 2] == 0)) stream->print(F("none "));
   else {
-    for (byte bit = 7; bit <= 7; bit--) {
-      if (bitRead(panelData[0], bit)) {
-        stream->print(8 - bit);
-        stream->print(F(" "));
+    for (byte i = 1; i <= statusByte; i++) {
+      for (byte bit = 7; bit <= 7; bit--) {
+        if (bitRead(panelData[statusByte - i], bit)) {
+          stream->print((8 - bit) + ((i - 1) * 8));
+          stream->print(F(" "));
+        }
       }
     }
   }
 
-  if (pc16Data[0] & 0xFE) {
+  if (pc16Data[statusByte - 1] & 0xFE) {
     stream->print(F("| Zone alarm: "));
     for (byte bit = 7; bit > 1; bit--) {
-      if (bitRead(pc16Data[0], bit)) {
-        stream->print(8 - bit);
+      if (bitRead(pc16Data[statusByte - 1], bit)) {
+        if (statusByte == 2 && bit == 3) stream->print("5-8");        // PC3000 alarm zones range
+        else if (statusByte == 2 && bit == 2) stream->print("9-16");
+        else stream->print(8 - bit);
         stream->print(F(" "));
       }
     }
   }
 
-  if (bitRead(pc16Data[0], 0)) {
+  if (bitRead(pc16Data[statusByte - 1], 0)) {
     stream->print(F("| Fire alarm"));
   }
 }
@@ -900,7 +919,7 @@ void dscClassicInterface::printModuleMessage() {
       case 0xBB:
       case 0xDB:
       case 0xEB:
-      case 0xD7: Serial.print("[Digit]"); break;
+      case 0xD7: Serial.print(F("[Digit]")); break;
       case 0xB7: Serial.print("*"); break;
       case 0xE7: Serial.print("#"); break;
       case 0x3F: Serial.print(F("Fire alarm")); break;
@@ -972,7 +991,7 @@ void dscClassicInterface::printModuleBinary(bool printSpaces) {
   }
 
   for (byte moduleByte = 0; moduleByte < moduleByteCount; moduleByte++) {
-    if (hideKeypadDigits && keypadDigit && moduleByte == 0) stream->print("........");
+    if (hideKeypadDigits && keypadDigit && moduleByte == 0) stream->print(F("........"));
     else {
       for (byte mask = 0x80; mask; mask >>= 1) {
         if (mask & moduleData[moduleByte]) stream->print("1");
@@ -1130,7 +1149,7 @@ void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
   else {
     static bool moduleDataDetected = false;
 
-    // Saves data and resets counters after the clock cycle is complete (high for at least 1ms)
+    // Saves data and resets counters after the clock cycle is complete (high for at least 2ms)
     if (clockHighTime > 2000) {
       keybusTime = millis();
 

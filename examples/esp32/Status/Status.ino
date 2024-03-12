@@ -62,7 +62,7 @@
 #ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
 #else
-dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin, accessCode);
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin);
 #endif
 
 
