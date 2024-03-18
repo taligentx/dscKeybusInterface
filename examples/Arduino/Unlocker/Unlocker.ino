@@ -1,5 +1,5 @@
 /*
- *  DSC Unlocker 1.3 (Arduino)
+ *  DSC Unlocker 1.4 (Arduino)
  *
  *  Checks all possible 4-digit installer codes until a valid code is found, including handling keypad
  *  lockout if enabled.  The valid code is output to serial as well as repeatedly flashed with the
@@ -19,11 +19,15 @@
  *      wire from PGM1 to Z1). This has been tested with the commonly available relay boards using
  *      the Songle SRD-05VDC-SL-C relay (~1USD shipped).
  *
- *  Example maximum unlocking times on the PC1864:
- *    - Without keypad lockout: ~8h20m
- *    - With 6 attempt/5 minute keypad lockout: ~6d3h13m
- *    - With 6 attempt keypad lockout and skipping via arm/disarm reset: ~10hr18m
- *    - With 6 attempt keypad lockout and skipping via relay reset: ~19h27m
+ *  Example maximum unlocking times:
+ *    PowerSeries (PC1864):
+ *      - Without keypad lockout: ~8h20m
+ *      - With 6 attempt/5 minute keypad lockout: ~6d3h13m
+ *      - With 6 attempt keypad lockout and arm/disarm reset: ~10h18m
+ *      - With 6 attempt keypad lockout and relay reset: ~19h27m
+ *    Classic series (PC1550):
+ *      - Without keypad lockout: ~5h12m
+ *      - With 6 attempt keypad lockout and arm/disarm reset: ~6h42m
  *
  *  Note that if the panel was configured remotely (using the panel communicator), it is possible for the
  *  installer to lock out local programming - if so, this sketch will not be able to determine the code.
@@ -41,6 +45,8 @@
  *      `startingCode`.
  *
  *  Release notes:
+ *    1.4 - Support DSC Classic series
+ *          Add LED pin configuration setting
  *    1.3 - Add skipping keypad lockout by arm/disarm cycle with a valid access code
  *    1.2 - Check for valid panel state at startup
  *    1.0 - Initial release
@@ -59,6 +65,13 @@
  *
  *                                         +--- dscReadPin (Arduino Uno: 2-12)
  *      DSC Green ---- 15k ohm resistor ---|
+ *                                         +--- 10k ohm resistor --- Ground
+ *
+ *      Classic series only, PGM configured for PC16-OUT mode:
+ *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
+ *                 |
+ *                 |                       +--- dscPC16Pin (Arduino Uno: 2-12)
+ *                 +-- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
  *      Virtual keypad:
@@ -85,24 +98,35 @@
  *  This example code is in the public domain.
  */
 
+// DSC Classic series: uncomment for support (requires PC16-OUT per README.md 'DSC Configuration')
+//#define dscClassicSeries
+
 #include <dscKeybusInterface.h>
 
 // Settings
-const char* accessCode = "";   // Optional, skips keypad lockout if enabled by arming/disarming the panel
-const int   startingCode = 0;  // Starting installer code to test (without leading zeros) if the process is interrupted
+const char* accessCode = "";       // Optional, skips keypad lockout if enabled by arming/disarming the panel
+const int   startingCode = 0;      // Starting installer code to test (without leading zeros) if the process is interrupted
+const byte  ledPin = LED_BUILTIN;  // Blinks installer code when found
 
 // Configures the Keybus interface with the specified pins
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
 #define dscRelayPin 7  // Arduino Uno: 2-12 - Optional, leave this pin disconnected if not using a relay
+#define dscPC16Pin  4  // DSC Classic series only, Arduino Uno: 2-12
 
 // Commonly known DSC codes are tested first
 int knownCodes[] = {1000, 1182, 1212, 1234, 1500, 1550, 1555, 1626, 1676, 1984, 2500, 2525, 2530, 3000, 3101,
                     4010, 4020, 4112, 5010, 5020, 5050, 5150, 5555, 6321, 6900, 9010};
 
 // Initialize components
+#ifndef dscClassicSeries
 dscKeybusInterface dsc(dscClockPin, dscReadPin, dscWritePin);
+bool dscClassic = false;
+#else
+dscClassicInterface dsc(dscClockPin, dscReadPin, dscPC16Pin, dscWritePin);
+bool dscClassic = true;
+#endif
 int testCode = 0;
 char testCodeChar[5];
 int knownCodesCount = sizeof(knownCodes) / sizeof(knownCodes[0]);
@@ -120,8 +144,8 @@ void setup() {
   Serial.println();
 
   // Pin setup
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
   pinMode(dscRelayPin, OUTPUT);
   digitalWrite(dscRelayPin, LOW);
 
@@ -180,33 +204,41 @@ void loop() {
     }
   }
 
-  // Loop until the partition 1 status is "Partition ready" (0x01), "Stay/away zones open" (0x02),
+  // Loops until the partition 1 status is "Partition ready" (0x01), "Stay/away zones open" (0x02),
   // "Zones open" (0x03), or "Enter installer code" (0xB7)
   while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x03 && dsc.status[0] != 0xB7) dsc.loop();
 
   // Skips keypad lockout if an access code is available to arm/disarm the panel
   if (testCount == lockoutThreshold && strlen(accessCode)) {
     testCount = 1;
-    dsc.write('#');                                                     // Exit "Enter installer code" prompt
-    while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02) dsc.loop();  // Loop until the partition is ready
-    dsc.write('s');                                                     // Stay arm
-    while (dsc.status[0] != 0x08 && dsc.status[0] != 0x9F) dsc.loop();  // Loop until "Exit delay" or "Enter access code"
-    if (dsc.status[0] == 0x9F) {
-      dsc.write(accessCode);                                            // Enters the access code to arm if required
+    dsc.write('#');                                                       // Exit "Enter installer code" prompt
+    while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02) dsc.loop();    // Loop until the partition is ready
+    if (dscClassic) {
+      dsc.write(accessCode);
+      while (dsc.status[0] != 0x08) dsc.loop();                           // Loop until "Exit delay"
+      dsc.write(accessCode);                                              // Enters the access code to disarm
+      while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02) dsc.loop();  // Loop until the partition is ready
     }
-    while (dsc.status[0] != 0x08) dsc.loop();                           // Loop until "Exit delay"
-    dsc.write(accessCode);                                              // Enters the access code to disarm
-    while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x3E) dsc.loop();  // Loop until the partition is ready
+    else {
+      dsc.write('s');                                                     // Stay arm
+      while (dsc.status[0] != 0x08 && dsc.status[0] != 0x9F) dsc.loop();  // Loop until "Exit delay" or "Enter access code"
+      if (dsc.status[0] == 0x9F) {
+        dsc.write(accessCode);                                            // Enters the access code to arm if required
+      }
+      while (dsc.status[0] != 0x08) dsc.loop();                           // Loop until "Exit delay"
+      dsc.write(accessCode);                                              // Enters the access code to disarm
+      while (dsc.status[0] != 0x01 && dsc.status[0] != 0x02 && dsc.status[0] != 0x3E) dsc.loop();  // Loop until the partition is ready
+    }
   }
 
   // Enters installer programming mode
   if (dsc.status[0] == 0x01 || dsc.status[0] == 0x02 || dsc.status[0] == 0x03 || dsc.status[0] == 0x3E) {
     dsc.write("*8");
-    while (dsc.status[0] != 0xB7) dsc.loop();  // Loop until "Enter installer code" (0xB7)
+    while (dsc.status[0] != 0xB7 && !dscClassic) dsc.loop();  // Loop until "Enter installer code" (0xB7)
   }
 
   // Enters the test code on "Enter installer code"
-  if (dsc.status[0] == 0xB7) {
+  if (dsc.status[0] == 0xB7 || dscClassic) {
     printTimestamp();
     Serial.print(F("Test code: "));
     itoa(testCode, testCodeChar, 10);
@@ -241,7 +273,7 @@ void loop() {
       lockoutThreshold = testCount;
       testCount = 1;
       printTimestamp();
-      Serial.println(F("Keypad lockout"));
+      Serial.print(F("Keypad lockout"));
 
       // Cycles the optional relay
       digitalWrite(dscRelayPin, HIGH);
@@ -249,27 +281,68 @@ void loop() {
       digitalWrite(dscRelayPin, LOW);
 
       // Loops until the lockout expires
-      while (dsc.status[0] == 0x10) dsc.loop();
-      testCode++;
+      if (dscClassic) {
+        static unsigned long lockoutInterval = 0;
+        lockoutThreshold--;
+        if (!knownCodesComplete) knownCodesCounter--;
+        unsigned long delayStart = millis();
+        while (millis() - delayStart < 5000) dsc.loop();
+        dsc.write('#');
+        while (dsc.status[0] == 0x10) dsc.loop();
+
+        // Determines keypad lockout duration
+        unsigned long lockoutStart = millis();
+        if (!lockoutInterval) {
+          while (true) {
+            dsc.write('0');  // Writes a single test character to determine if keypad is locked out
+            unsigned long startTime = millis();
+            while (millis() - startTime < 1200) dsc.loop();
+            if (dsc.status[0] == 0x0E) {
+              while (millis() - startTime < 60000) dsc.loop();  // Waits before retrying the keypad lockout test
+            }
+            else {
+              lockoutInterval = millis() - lockoutStart;  // Test key successful
+              break;
+            }
+          }
+        }
+
+        // Waits for determined lockout interval
+        else {
+          Serial.print(F(": "));
+          Serial.print(lockoutInterval/60000);
+          Serial.print("min");
+          while (millis() - lockoutStart < lockoutInterval) dsc.loop();
+        }
+      }
+      else {
+        while (dsc.status[0] == 0x10) dsc.loop();
+        testCode++;
+      }
+      Serial.println();
     }
 
-    // Invalid access code
+    // Invalid access code - loops until "Enter installer code" (0xB7)
     else if (dsc.status[0] == 0x8F) {
-      while (dsc.status[0] != 0xB7) dsc.loop(); // Loop until "Enter installer code" (0xB7)
+      if (dscClassic) dsc.write("#");
+      else {
+        while (dsc.status[0] != 0xB7) dsc.loop();
+      }
       testCount++;
       testCode++;
     }
 
     // *8 Main Menu
     else if (dsc.status[0] == 0xE4) {
+      if (!dscClassic) {
+        // Attempts to enter keypad programming to check if code is valid for programming
+        dsc.write('0');
+        dsc.write('0');
+        dsc.write('0');
 
-      // Attempts to enter keypad programming to check if code is valid for programming
-      dsc.write('0');
-      dsc.write('0');
-      dsc.write('0');
-
-      // Loops until the panel sends a status message (0x05) or a long beep command (0x7F)
-      while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F) dsc.loop();
+        // Loops until the panel sends a status command (0x05) or a long beep command (0x7F)
+        while (dsc.panelData[0] != 0x05 && dsc.panelData[0] != 0x7F) dsc.loop();
+      }
 
       // Long beep, code is not valid for programming
       if (dsc.panelData[0] == 0x7F) {
@@ -282,12 +355,13 @@ void loop() {
       }
 
       // Entered keypad programming, code is valid - exits the installer menu and outputs the code via serial and LED blinking
-      else if (dsc.status[0] == 0xF8) {
+      else if (dsc.status[0] == 0xF8 || dscClassic) {
         printTimestamp();
         Serial.print(F("Installer code: "));
         Serial.println(testCode);
         dsc.write('#');
         dsc.write('#');
+        dsc.stop();
 
         // Blinks the LED - each digit is indicated by the number of blinks, a long blink indicates "0".
         while(true) {
@@ -314,16 +388,16 @@ void loop() {
             else blinks = testCodeChar[digit - leadingZerosTotal] - 48;
 
             if (blinks == 0) {
-              digitalWrite(LED_BUILTIN, HIGH);
+              digitalWrite(ledPin, HIGH);
               delay(750);
-              digitalWrite(LED_BUILTIN, LOW);
+              digitalWrite(ledPin, LOW);
               delay(400);
             }
             else {
               for (byte i = 0; i < blinks; i++) {
-                digitalWrite(LED_BUILTIN, HIGH);
+                digitalWrite(ledPin, HIGH);
                 delay(100);
-                digitalWrite(LED_BUILTIN, LOW);
+                digitalWrite(ledPin, LOW);
                 delay(400);
               }
             }

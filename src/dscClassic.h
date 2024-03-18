@@ -193,7 +193,7 @@ class dscClassicInterface {
     bool previousFire;
     byte previousOpenZones[dscZones], previousAlarmZones[dscZones];
     byte previousPgmOutput;
-    bool troubleBit, armedBypassBit, armedBit, alarmBit;
+    bool troubleBit, armedBypassBit, armedBitA, armedBitB, alarmBit;
     byte statusByte;
 
     static byte dscClockPin;

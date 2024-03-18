@@ -220,87 +220,41 @@ void dscClassicInterface::resetStatus() {
 void dscClassicInterface::processPanelStatus() {
 
   // Keypad lights - maps Classic series keypad lights to PowerSeries keypad light order for sketch compatibility
-  if (bitRead(panelData[statusByte], 7)) {
-    readyLight = true;
-    bitWrite(lights[0], 0, 1);
-  }
-  else {
-    readyLight = false;
-    bitWrite(lights[0], 0, 0);
-  }
+  readyLight = bitRead(panelData[statusByte], 7);
+  bitWrite(lights[0], 0, readyLight);
 
-  if (bitRead(panelData[statusByte], 6)) {
-    armedLight = true;
-    bitWrite(lights[0], 1, 1);
-  }
-  else {
-    armedLight = false;
-    bitWrite(lights[0], 1, 0);
-  }
+  armedLight = bitRead(panelData[statusByte], 6);
+  bitWrite(lights[0], 1, armedLight);
 
-  if (bitRead(panelData[statusByte], 5)) {
-    memoryLight = true;
-    bitWrite(lights[0], 2, 1);
-  }
-  else {
-    memoryLight = false;
-    bitWrite(lights[0], 2, 0);
-  }
+  memoryLight = bitRead(panelData[statusByte], 5);
+  bitWrite(lights[0], 2, memoryLight);
 
-  if (bitRead(panelData[statusByte], 4)) {
-    bypassLight = true;
-    bitWrite(lights[0], 3, 1);
-  }
-  else {
-    bypassLight = false;
-    bitWrite(lights[0], 3, 0);
-  }
+  bypassLight = bitRead(panelData[statusByte], 4);
+  bitWrite(lights[0], 3, bypassLight);
 
-  if (bitRead(panelData[statusByte], 3)) {
-    troubleLight = true;
-    bitWrite(lights[0], 4, 1);
-  }
-  else {
-    troubleLight = false;
-    bitWrite(lights[0], 4, 0);
-  }
+  troubleLight = bitRead(panelData[statusByte], 3);
+  bitWrite(lights[0], 4, troubleLight);
 
-  if (bitRead(panelData[statusByte], 2)) {
-    programLight = true;
-    bitWrite(lights[0], 5, 1);
-  }
-  else {
-    programLight = false;
-    bitWrite(lights[0], 5, 0);
-  }
+  programLight = bitRead(panelData[statusByte], 2);
+  bitWrite(lights[0], 5, programLight);
 
-  if (bitRead(panelData[statusByte], 1)) {
-    fireLight = true;
-    bitWrite(lights[0], 6, 1);
-  }
-  else {
-    fireLight = false;
-    bitWrite(lights[0], 6, 0);
-  }
-
-  if (bitRead(panelData[statusByte], 0)) beep = true;
-  else beep = false;
+  fireLight = bitRead(panelData[statusByte], 1);
+  bitWrite(lights[0], 6, fireLight);
 
   if (lights[0] != previousLights) {
     previousLights = lights[0];
     if (!pauseStatus) statusChanged = true;
   }
 
-  // PC-16 status
-  if (bitRead(pc16Data[statusByte], 7)) troubleBit = true;
-  else troubleBit = false;
-  if (bitRead(pc16Data[statusByte], 6)) armedBypassBit = true;
-  else armedBypassBit = false;
-  if (bitRead(pc16Data[statusByte], 5)) armedBit = true;
-  else armedBit = false;
-  if (bitRead(pc16Data[statusByte], 0)) alarmBit = true;
-  else alarmBit = false;
+  // Keypad beep
+  beep = bitRead(panelData[statusByte], 0);
 
+  // PC16 status
+  troubleBit = bitRead(pc16Data[statusByte], 7);
+  armedBypassBit = bitRead(pc16Data[statusByte], 6);
+  armedBitA = bitRead(pc16Data[statusByte], 5);
+  armedBitB = bitRead(pc16Data[statusByte], 4);
+  alarmBit = bitRead(pc16Data[statusByte], 0);
 
   // Checks for memory light blinking
   static unsigned long memoryLightTimeOn = 0;
@@ -318,7 +272,7 @@ void dscClassicInterface::processPanelStatus() {
   }
   else {
     memoryLightTimeOff = millis();
-    if (millis() - memoryLightTimeOn > 600) {
+    if (millis() - memoryLightTimeOn > 1200) {
       memoryBlink = false;
       if (!armedBlink && !bypassBlink && !troubleBlink) lightBlink = false;
     }
@@ -391,18 +345,38 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Checks for beep status
-  static unsigned long beepTimeOn = 0;
-  static unsigned long beepTimeOff = 0;
+  static unsigned long beepTimeStart = millis();
+  static unsigned long beepTimeOff = millis();
+  static bool beepOn = false;
   if (beep) {
-    beepTimeOn = millis();
+    beepTimeStart = millis();
+    beepOn = true;
   }
-  else if (millis() - beepTimeOn > 500) {
-    beepTimeOff = millis();
+  else if (beepOn) {
+    unsigned long beepTime = millis() - beepTimeStart;
+    beepOn = false;
+    if (beepTime <= 90) {  // Normal keypress beep
+      if (status[0] == 0x0E) readyChanged[0] = true;
+    }
+    else if (!lights[0] && beepTime > 90 && beepTime <= 800) {
+      status[0] = 0x10;  // Keypad lockout
+      readyChanged[0] = false;
+    }
+    else if (beepTime > 800 && beepTime < 1200) {
+      if (!lights[0]) {
+        status[0] = 0x8F;  // Invalid access code
+        readyChanged[0] = false;
+      }
+      else {
+        status[0] = 0x0E;  // Function not available
+        readyChanged[0] = false;
+      }
+    }
   }
 
   // Armed status
   static bool armedStayTriggered;
-  if (armedBit) {
+  if (armedBitA) {
     armed[0] = true;
     exitDelayArmed = true;
     if (bypassLight || armedBypassBit) {
@@ -421,7 +395,7 @@ void dscClassicInterface::processPanelStatus() {
       armedAway[0] = true;
     }
 
-    if (armedBlink) {
+    if (armedBlink && armedBitA == armedBitB) {
       noEntryDelay[0] = true;
       exitState[0] = DSC_EXIT_NO_ENTRY_DELAY;
     }
@@ -444,7 +418,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Ready status
-  if (readyLight && !armedBit) {
+  if (readyLight && !armedBitA) {
     processReadyStatus(true);
     processArmedStatus(false);
     processAlarmStatus(false);
@@ -469,7 +443,7 @@ void dscClassicInterface::processPanelStatus() {
     }
 
     // Reset armed status
-    else if (!exitDelayArmed && !armedBlink && millis() - armedLightTimeOn > 600) {
+    else if (!exitDelayArmed && !armedBlink && millis() - armedLightTimeOn > 400) {
       processExitDelayStatus(false);
       exitState[0] = 0;
     }
@@ -479,11 +453,11 @@ void dscClassicInterface::processPanelStatus() {
     // Sets ready status if zones lights are on
     if (panelData[statusByte - 1] || (statusByte == 3 && (panelData[statusByte - 1] || panelData[statusByte - 2]))) processReadyStatus(false);
 
-    if (exitDelayArmed && !armedBit) {
+    if (exitDelayArmed && !armedBitA) {
       processReadyStatus(false);
       exitDelayArmed = false;
     }
-    if (exitDelay[0] && armedBit) {
+    if (exitDelay[0] && armedBitA) {
       processExitDelayStatus(false);
     }
   }
@@ -571,8 +545,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Trouble status
-  if (troubleBit) trouble = true;
-  else trouble = false;
+  trouble = troubleBit;
   if (trouble != previousTrouble) {
     previousTrouble = trouble;
     troubleChanged = true;
@@ -580,8 +553,7 @@ void dscClassicInterface::processPanelStatus() {
   }
 
   // Fire status
-  if (bitRead(pc16Data[statusByte - 1], 0)) fire[0] = true;
-  else fire[0] = false;
+  fire[0] = bitRead(pc16Data[statusByte - 1], 0);
   if (fire[0] != previousFire) {
     previousFire = fire[0];
     fireChanged[0] = true;
@@ -622,10 +594,10 @@ void dscClassicInterface::processPanelStatus() {
   if (memoryBlink && bypassBlink && troubleBlink) {
     status[0] = 0xE4;  // Programming
   }
-  else {
-    if (readyChanged[0]) {
+  else if (lights[0]) {
+    if (readyChanged[0] || status[0] == 0x8F || status[0] == 0x10 || status[0] == 0xE4) {
       if (ready[0]) status[0] = 0x01;                                     // Partition ready
-      else if (openZonesStatusChanged && openZones[0]) status[0] = 0x03;  // Zones open
+      else if (openZonesStatusChanged && (openZones[0] || openZones[1])) status[0] = 0x03;  // Zones open
     }
 
     if (armedChanged[0]) {
@@ -649,8 +621,8 @@ void dscClassicInterface::processPanelStatus() {
     }
 
     if (status[0] == 0x3E) {
-     if (ready[0]) status[0] = 0x01;
-     else if (openZones[0]) status[0] = 0x03;
+      if (ready[0]) status[0] = 0x01;
+      else if (openZones[0] || openZones[1]) status[0] = 0x03;
     }
   }
 
@@ -800,7 +772,6 @@ void dscClassicInterface::writeKeys(const char *writeKeysArray) {
 void dscClassicInterface::setWriteKey(const char receivedKey) {
   static unsigned long previousTime;
 
-
   // Sets the binary to write for virtual keypad keys
   if (!writeKeyPending && (millis() - previousTime > 500 || millis() <= 500)) {
     bool validKey = true;
@@ -855,16 +826,17 @@ void dscClassicInterface::printPanelMessage() {
     if (bitRead(panelData[statusByte], 3)) stream->print(F("Trouble "));
     if (bitRead(panelData[statusByte], 2)) stream->print(F("Program "));
     if (bitRead(panelData[statusByte], 1)) stream->print(F("Fire "));
-    if (bitRead(panelData[statusByte], 0)) stream->print(F("Beep "));
   }
   else stream->print(F("none "));
+
+  if (bitRead(panelData[statusByte], 0)) stream->print(F("| Beep "));
 
   stream->print(F("| Status: "));
   if (pc16Data[statusByte]) {
     if (bitRead(pc16Data[statusByte], 7)) stream->print(F("Trouble "));
     if (bitRead(pc16Data[statusByte], 6)) stream->print(F("Bypassed zones "));
-    if (bitRead(pc16Data[statusByte], 5)) stream->print(F("Armed (side A) "));
-    if (bitRead(pc16Data[statusByte], 4)) stream->print(F("Armed (side B) "));
+    if (bitRead(pc16Data[statusByte], 5)) stream->print(F("Armed (Side A) "));
+    if (bitRead(pc16Data[statusByte], 4)) stream->print(F("Armed (Side B) "));
     if (bitRead(pc16Data[statusByte], 3)) stream->print(F("Keypad Panic alarm "));
     if (bitRead(pc16Data[statusByte], 2)) stream->print(F("Keypad Aux alarm "));
     if (bitRead(pc16Data[statusByte], 1)) stream->print(F("Keypad Fire alarm "));
@@ -872,8 +844,8 @@ void dscClassicInterface::printPanelMessage() {
   }
   else stream->print(F("none "));
 
-  stream->print(F("| Zones open: "));
-  if (statusByte == 1 && panelData[statusByte - 1] == 0 || (statusByte == 2 && panelData[statusByte - 1] == 0 && panelData[statusByte - 2] == 0)) stream->print(F("none "));
+  stream->print(F("| Zone lights: "));
+  if ((statusByte == 1 && panelData[statusByte - 1]) == 0 || (statusByte == 2 && panelData[statusByte - 1] == 0 && panelData[statusByte - 2] == 0)) stream->print(F("none "));
   else {
     for (byte i = 1; i <= statusByte; i++) {
       for (byte bit = 7; bit <= 7; bit--) {
@@ -1011,9 +983,7 @@ void dscClassicInterface::printPanelCommand() {
 
 #if defined(__AVR__)
 bool dscClassicInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP8266)
-bool ICACHE_RAM_ATTR dscClassicInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 bool IRAM_ATTR dscClassicInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #endif
 
@@ -1036,9 +1006,7 @@ bool IRAM_ATTR dscClassicInterface::redundantPanelData(byte previousCmd[], volat
 // data after an interval.
 #if defined(__AVR__)
 void dscClassicInterface::dscClockInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscClassicInterface::dscClockInterrupt() {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 void IRAM_ATTR dscClassicInterface::dscClockInterrupt() {
 #endif
 
@@ -1107,7 +1075,7 @@ void IRAM_ATTR dscClassicInterface::dscClockInterrupt() {
 #if defined(__AVR__)
 void dscClassicInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscClassicInterface::dscDataInterrupt() {
+void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscClassicInterface::dscDataInterrupt() {
   timerStop(timer1);

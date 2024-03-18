@@ -224,20 +224,12 @@ bool dscKeybusReaderInterface::loop() {
 
     // Sets status per partition
     for (byte partitionIndex = partitionStart; partitionIndex < partitionCount; partitionIndex++) {
-      byte statusByte, messageByte;
-      if (partitionIndex < 4) {
-        statusByte = (partitionIndex * 2) + 2;
-        messageByte = (partitionIndex * 2) + 3;
-      }
-      else {
-        statusByte = ((partitionIndex - 4) * 2) + 2;
-        messageByte = ((partitionIndex - 4) * 2) + 3;
-      }
+      byte messageByte;
+      if (partitionIndex < 4)  messageByte = (partitionIndex * 2) + 3;
+      else messageByte = ((partitionIndex - 4) * 2) + 3;
 
       // Partition disabled status
-      if (panelData[messageByte] == 0xC7) {
-        disabled[partitionIndex] = true;
-      }
+      if (panelData[messageByte] == 0xC7) disabled[partitionIndex] = true;
       else disabled[partitionIndex] = false;
 
       // Status messages
@@ -278,7 +270,6 @@ void dscKeybusReaderInterface::write(const char receivedKey) {
 
   // Blocks if a previous write is in progress
   while (writeKeyPending || writeKeysPending) loop();
-
   setWriteKey(receivedKey);
 }
 
@@ -434,9 +425,7 @@ void dscKeybusReaderInterface::setWriteKey(const char receivedKey) {
 
 #if defined(__AVR__)
 bool dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP8266)
-bool ICACHE_RAM_ATTR dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 bool IRAM_ATTR dscKeybusReaderInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #endif
 
@@ -470,9 +459,7 @@ bool dscKeybusReaderInterface::validChecksum() {
 // data after an interval.
 #if defined(__AVR__)
 void dscKeybusReaderInterface::dscClockInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusReaderInterface::dscClockInterrupt() {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 void IRAM_ATTR dscKeybusReaderInterface::dscClockInterrupt() {
 #endif
 
@@ -632,7 +619,7 @@ void IRAM_ATTR dscKeybusReaderInterface::dscClockInterrupt() {
 #if defined(__AVR__)
 void dscKeybusReaderInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusReaderInterface::dscDataInterrupt() {
+void IRAM_ATTR dscKeybusReaderInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusReaderInterface::dscDataInterrupt() {
   timerStop(timer1);

@@ -250,9 +250,7 @@ void dscClassicKeypadInterface::buzzer(byte seconds) {
 
 #if defined(__AVR__)
 void dscClassicKeypadInterface::dscClockInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 void IRAM_ATTR dscClassicKeypadInterface::dscClockInterrupt() {
 #endif
 

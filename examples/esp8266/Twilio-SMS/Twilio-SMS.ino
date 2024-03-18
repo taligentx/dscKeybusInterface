@@ -29,7 +29,7 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *      Classic series only, PGM configured for PC-16 output:
+ *      Classic series only, PGM configured for PC16-OUT mode:
  *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
  *                 |
  *                 |                       +--- dscPC16Pin   // Default: D7, GPIO 13
@@ -44,7 +44,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+// DSC Classic series: uncomment for support (requires PC16-OUT per README.md 'DSC Configuration')
 //#define dscClassicSeries
 
 #include <ESP8266WiFi.h>
@@ -63,7 +63,7 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin D1  // GPIO 5
 #define dscReadPin  D2  // GPIO 4
-#define dscPC16Pin  D7  // DSC Classic Series only, GPIO 13
+#define dscPC16Pin  D7  // DSC Classic series only, GPIO 13
 
 // HTTPS root certificate for api.twilio.com: DigiCert Global Root CA, expires 2031.11.10
 const char twilioCertificateRoot[] = R"=EOF=(

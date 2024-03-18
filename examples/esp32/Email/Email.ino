@@ -25,7 +25,7 @@
  *      DSC Green ---- 33k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *      Classic series only, PGM configured for PC-16 output:
+ *      Classic series only, PGM configured for PC16-OUT mode:
  *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
  *                 |
  *                 |                       +--- dscPC16Pin   // Default: 17
@@ -38,7 +38,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+// DSC Classic series: uncomment for support (requires PC16-OUT per README.md 'DSC Configuration')
 //#define dscClassicSeries
 
 #include <WiFiClientSecure.h>
@@ -52,7 +52,7 @@ const char* messagePrefix = "[Security system] ";  // Set a prefix for all messa
 // Configures the Keybus interface with the specified pins.
 #define dscClockPin 18  // 4,13,16-39
 #define dscReadPin  19  // 4,13,16-39
-#define dscPC16Pin  17  // DSC Classic Series only, 4,13,16-39
+#define dscPC16Pin  17  // DSC Classic series only, 4,13,16-39
 
 // Initialize components
 #ifndef dscClassicSeries

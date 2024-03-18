@@ -380,9 +380,7 @@ void dscKeybusInterface::setWriteKey(const char receivedKey) {
 
 #if defined(__AVR__)
 bool dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP8266)
-bool ICACHE_RAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 bool IRAM_ATTR dscKeybusInterface::redundantPanelData(byte previousCmd[], volatile byte currentCmd[], byte checkedBytes) {
 #endif
 
@@ -416,9 +414,7 @@ bool dscKeybusInterface::validChecksum() {
 // data after an interval.
 #if defined(__AVR__)
 void dscKeybusInterface::dscClockInterrupt() {
-#elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscClockInterrupt() {
-#elif defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #endif
 
@@ -563,7 +559,7 @@ void IRAM_ATTR dscKeybusInterface::dscClockInterrupt() {
 #if defined(__AVR__)
 void dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP8266)
-void ICACHE_RAM_ATTR dscKeybusInterface::dscDataInterrupt() {
+void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
 #elif defined(ESP32)
 void IRAM_ATTR dscKeybusInterface::dscDataInterrupt() {
   timerStop(timer1);

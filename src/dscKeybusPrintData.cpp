@@ -178,6 +178,7 @@ void dscKeybusReaderInterface::printModuleMessage() {
         case 0x0C:
         case 0x0E: printModule_Expander(); return;  // Zone expanders 4-7 response
       }
+      [[fallthrough]];
     }
     default: stream->print("Unknown data");
   }

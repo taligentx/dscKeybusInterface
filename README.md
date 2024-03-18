@@ -77,7 +77,7 @@ This library uses a combination of hardware and timer interrupts to accurately c
 * Supported security systems:
   - [DSC PowerSeries](https://www.dsc.com/?n=enduser&o=identify) - all panels are supported, tested with: PC585, PC1555MX, PC1565, PC1565-2P, PC5005, PC5010, PC5015, PC5020, PC1616, PC1808, PC1832, PC1864
   - [DSC Classic series](https://www.dsc.com/?n=enduser&o=identify): PC1500, PC1550, PC2550
-    * Requires configuring the panel through *8 programming to enable PC16-OUT - see [DSC Configuration](https://github.com/taligentx/dscKeybusInterface/tree/master?tab=readme-ov-file#dsc-configuration)
+    * Requires configuring the panel through `*8` programming to enable PC16-OUT mode - see [DSC Configuration](https://github.com/taligentx/dscKeybusInterface/tree/master?tab=readme-ov-file#dsc-configuration)
     * PC2500 and PC3000 require testing, [post an issue](https://github.com/taligentx/dscKeybusInterface/issues) if you're able to test these panels.
   - Rebranded DSC PowerSeries (such as some ADT systems) should also work with this interface.
 * Unsupported security systems:
@@ -102,8 +102,9 @@ This library uses a combination of hardware and timer interrupts to accurately c
 ## Release notes
 * develop
   - New: Keybus decoding for module programming, PC5200, and zones 33-64 extended status - thanks to [kricon](https://github.com/kricon) for this contribution!
-  - New: Classic series PC3000 support (experimental)
+  - New: Classic series PC3000 support (experimental) - with considerations from the PC3000 code by [sfossen](https://github.com/sfossen). The implementations differ, you can also test his original code which is now preserved in the [pc3000 branch](https://github.com/taligentx/dscKeybusInterface/tree/pc3000).
   - New: Isolated `KeybusReader`-specific library functions to capture module data and print Keybus data, reduces size and memory usage across all sketches
+  - Updated: `Unlocker` sketch support for DSC Classic series
   - Updated: `HomeAssistant-MQTT` example configuration for Home Assistant core 2022.06, support changing armed modes while armed, add fire/aux/panic buttons
   - Updated: `VirtualKeypad-Web` to support ArduinoJSON 7.x, use LittleFS for esp8266
 * 3.0
@@ -296,7 +297,7 @@ DSC Green ----+--- 15k ohm resistor ---|
               +--- 33k ohm resistor ---|
                                        +--- 10k ohm resistor --- Ground
 
-Classic series only, PGM configured for PC-16 output:
+Classic series only, PGM configured for PC16-OUT mode:
 DSC PGM ------+--- 1k ohm resistor --- DSC Aux(+)
               |
               |         Arduino        +--- dscPC16Pin (Arduino Uno: 4)
@@ -358,15 +359,36 @@ Keys are sent to partition 1 by default and can be changed to a different partit
 
 ## DSC Configuration
 Panel options affecting this interface, configured by `*8 + installer code` - see the `Unlocker` sketch if your panel's installer code is unknown.  Refer to the DSC installation manual for your panel to configure these options:
-* PC1555MX/5015 section `370`, PC1616/PC1832/PC1864 section `377`:
-  - Swinger shutdown: By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a third-party monitoring service, and also affects this interface.  As I do not use a monitoring service, I disable swinger shutdown by setting this to `000`.
+* Swinger shutdown: By default, the panel will limit the number of alarm commands sent in a single armed cycle to 3 - for example, a zone alarm being triggered multiple times will stop reporting after 3 alerts.  This is to avoid sending alerts repeatedly to a third-party monitoring service, and also affects this interface.  As I do not use a monitoring service, I disable swinger shutdown by setting this to `000`.
+  - PC1555MX/5015: section `370`
+  - PC1616/PC1832/PC1864 section `377`
+  - PC1500/PC1550: section `15`
+  - PC2550: section `22`
 
-  - AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.
+* AC power failure reporting delay: The default delay is 30 minutes and can be set to `000` to immediately report a power failure.
+  - PC1555MX/5015: section `370`
+  - PC1616/PC1832/PC1864 section `377`
+  - PC1500/PC1550: section `17`
+  - PC2500: section `16`
+  - PC2550: section `20`
+  - PC3000: section `22`
 
-* PC1500/PC1550 Classic series - the following configuration is required to get the security system status:
-  - Communicator: Enable in section `12`, option `1` to support PC16-OUT mode
-  - PC16-OUT: Enable section `13`, option `4` to set the PGM output to PC16-OUT mode to send required panel status data on the Keybus.
-  - PGM output: Enable section `24`, option `08` to set the PGM output to trigger while the system alarm is tripped (works together with PC16-OUT mode).
+* Classic series - requires PC16-OUT mode to get the security system status (see wiring section):
+  - Communicator: Enable to support PC16-OUT mode (if not using a monitoring service, "Communicator Call Directions" options can be set to `0`)
+    - PC1500/PC1550: section `12`, option `1` off
+    - PC2500: section `13`, option `1` off
+    - PC2550: section `15`, option `1` off
+    - PC3000: section `18`, option `1` off
+  - PC16-OUT: Enable to set the PGM output to PC16-OUT mode to send required panel status data on the Keybus.
+    - PC1500/PC1550: section `13`, option `4` on
+    - PC2500: section `14`, option `4` on
+    - PC2550: section `16`, option `4` on
+    - PC3000: section `19`, option `4` on
+  - PGM output: Set to "Strobe output" mode to track when the alarm is tripped.
+    - PC1500/PC1550: section `24`, option `08`
+    - PC2500: section `22`, option `x8` (first digit is aux input zone configuration, default `2`)
+    - PC2550: section `30`, option `x8`
+    - PC3000: section `28`, option `x8`
 
 ## Notes
 * For OTA updates on esp8266 and esp32, you may need to stop the interface using `dsc.stop();`:
@@ -394,6 +416,7 @@ Panel options affecting this interface, configured by `*8 + installer code` - se
 If you are running into issues:
 1. Run the `KeybusReader` example sketch and view the serial output to verify that the interface is capturing data successfully without reporting checksum errors.
     * If data is not showing up or has errors, check the clock and data line wiring, resistors, and all connections.  Breadboards can cause issues, connections should be soldered instead.
+    * Power supply issues can also cause data errors or microcontroller crashes/reboots - if this occurs, test with an external power supply set to 5v (Arduino) or 3.3v (esp8266/esp32) and connected to the matching voltage pin (bypassing the voltage regulator on development boards).
 2. For virtual keypad, run the `KeybusReader` example sketch and enter keys through serial and verify that the keys appear in the output and that the panel responds.
     * If keys are not displayed in the output, verify the transistor pinout, base resistor, and wiring connections.
 3. Run the `Status` example sketch and view the serial output to verify that the interface displays events from the security system correctly as partitions are armed, zones opened, etc.

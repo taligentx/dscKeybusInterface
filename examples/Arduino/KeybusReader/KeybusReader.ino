@@ -24,7 +24,7 @@
  *      DSC Green ---- 15k ohm resistor ---|
  *                                         +--- 10k ohm resistor --- Ground
  *
- *      Classic series only, PGM configured for PC-16 output:
+ *      Classic series only, PGM configured for PC16-OUT mode:
  *      DSC PGM ---+-- 1k ohm resistor --- DSC Aux(+)
  *                 |
  *                 |                       +--- dscPC16Pin (Arduino Uno: 2-12)
@@ -47,7 +47,7 @@
  *  This example code is in the public domain.
  */
 
-// DSC Classic series: uncomment for PC1500/PC1550 support (requires PC16-OUT configuration per README.md)
+// DSC Classic series: uncomment for support (requires PC16-OUT per README.md 'DSC Configuration')
 //#define dscClassicSeries
 
 #define dscKeybusReader
@@ -56,9 +56,9 @@
 // Configures the Keybus interface with the specified pins - dscWritePin is optional, leaving it out disables the
 // virtual keypad.
 #define dscClockPin 3  // Arduino Uno hardware interrupt pin: 2,3
-#define dscPC16Pin  4  // DSC Classic Series only, Arduino Uno: 2-12
 #define dscReadPin  5  // Arduino Uno: 2-12
 #define dscWritePin 6  // Arduino Uno: 2-12
+#define dscPC16Pin  4  // DSC Classic series only, Arduino Uno: 2-12
 
 // Initialize components
 #ifndef dscClassicSeries
