@@ -403,7 +403,7 @@ static char encodeHex(char c) {
 // Encodes a char array to URL encoded using '+' for spaces as required for application/x-www-form-urlencoded
 char *encodeURL(const char *src, char *dst) {
    char c, *d = dst;
-   while (c = *src++) {
+   while ((c = *src++)) {
      if (c == ' ') {
       *d++ = '+';
       continue;
